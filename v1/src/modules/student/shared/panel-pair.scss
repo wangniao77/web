@@ -1,0 +1,61 @@
+@use '@/styles/tokens.scss' as *;
+
+// 并排面板（实习 / 竞赛）共用样式
+.pair-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.pair-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pair-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(0, 184, 255, 0.06);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+.pair-stat-num {
+  font-size: $college-fs-highlight;
+  font-weight: 700;
+  color: $color-accent-cyan;
+  line-height: 1.1;
+}
+
+.pair-stat-label {
+  font-size: $college-fs-meta;
+  color: rgba(174, 198, 230, 0.62);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pair-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.06);
+    font-size: $college-fs-label;
+    min-height: 28px;
+  }
+}

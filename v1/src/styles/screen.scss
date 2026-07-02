@@ -1,0 +1,79 @@
+// ============================================================
+// Global screen styles — Tech Luminous
+// ============================================================
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #app {
+  width: 100%; height: 100%; overflow: hidden;
+  height: 100dvh;
+  background: $color-bg-root;
+  font-family: $font-body;
+  color: $color-text-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ── Scrollbar ───────────────────────────────────────────────
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0, 184, 255, 0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 184, 255, 0.3); }
+
+// ── Selection ───────────────────────────────────────────────
+::selection { background: rgba(0, 184, 255, 0.25); color: #fff; }
+
+// ── Layout ──────────────────────────────────────────────────
+.screen-wrapper {
+  width: 100vw; height: 100vh; height: 100dvh; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: $color-bg-root;
+  position: relative;
+
+  // Dot grid overlay
+  &::after {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: radial-gradient(rgba(0, 212, 255, 0.025) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
+
+.screen-scale {
+  width: $design-width;
+  height: $design-height;
+  flex-shrink: 0;
+  transform-origin: center center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+
+  // Scanline effect
+  &::before {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none; z-index: 9999;
+    opacity: 0.015;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0, 212, 255, 0.3) 2px,
+      rgba(0, 212, 255, 0.3) 3px
+    );
+  }
+}
+
+.screen-main {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 6px 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Trend & Status ──────────────────────────────────────────
+.trend-up   { color: $color-success; }
+.trend-down { color: $color-danger; }
+.trend-flat { color: $color-text-secondary; }
+
+.status-ongoing   { color: $color-accent-cyan; }
+.status-completed { color: $color-success; }
+.status-delayed   { color: $color-warning; }
