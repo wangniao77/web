@@ -1,0 +1,190 @@
+// ============================================================
+// College screen local theme
+// ============================================================
+
+.college-screen {
+  --college-font-body: "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+  --college-font-number: "DIN Alternate", "Bahnschrift", "Roboto Condensed", "Arial Narrow", var(--college-font-body);
+
+  // 协调字号阶梯（与 tokens.scss 同步）
+  --fs-display:  #{$college-fs-display};
+  --fs-hero:     #{$college-fs-hero};
+  --fs-highlight:#{$college-fs-highlight};
+  --fs-title:    #{$college-fs-title};
+  --fs-body:     #{$college-fs-body};
+  --fs-label:    #{$college-fs-label};
+  --fs-meta:     #{$college-fs-meta};
+  --fs-chart:    #{$college-fs-chart};
+
+  background:
+    linear-gradient(180deg, #050914 0%, #06142a 48%, #030816 100%),
+    $color-bg-screen;
+  color: #eaf3ff;
+  font-family: var(--college-font-body);
+  font-variant-numeric: tabular-nums;
+
+  .screen-scale {
+    overflow: hidden;
+    background:
+      linear-gradient(115deg, rgba(8, 33, 69, 0.68) 0%, rgba(2, 8, 22, 0.12) 38%, rgba(18, 33, 66, 0.22) 100%),
+      linear-gradient(180deg, rgba(2, 18, 42, 0.92) 0%, rgba(2, 10, 28, 0.96) 100%),
+      $color-bg-screen;
+    box-shadow:
+      inset 0 0 0 1px rgba(82, 191, 255, 0.16),
+      inset 0 24px 90px rgba(57, 144, 255, 0.08),
+      inset 0 -36px 120px rgba(0, 0, 0, 0.52);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: $header-height 0 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(92, 190, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(92, 190, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(115deg, transparent 0%, rgba(0, 229, 255, 0.055) 48%, transparent 49%);
+      background-size: 48px 48px, 48px 48px, 360px 360px;
+      mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 82%, transparent 100%);
+    }
+  }
+
+  .screen-main {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    padding: 8px 10px 10px;
+  }
+
+  .metric-value,
+  .kpi-value,
+  .cat-count,
+  .task-progress,
+  .q-val,
+  .platform-item em {
+    font-family: var(--college-font-number);
+  }
+
+  // ── 顶栏 ────────────────────────────────────────────────────
+  .school-name { font-size: var(--fs-body); }
+  .school-sub  { font-size: var(--fs-label); }
+  .title-text  { font-size: var(--fs-display); }
+  .tag         { font-size: var(--fs-label); }
+  .meta-line   { font-size: var(--fs-label); }
+  .meta-line.semester { font-size: var(--fs-meta); }
+  .time-row .time    { font-size: var(--fs-highlight); }
+  .time-row .weather { font-size: var(--fs-label); }
+
+  // ── 面板 ────────────────────────────────────────────────────
+  .panel-header { height: 48px; }
+  .panel-num    { font-size: var(--fs-meta); }
+  .panel-title  { font-size: var(--fs-title); }
+  .panel-more   { font-size: var(--fs-label); }
+  .panel-body   { padding: 14px 15px; }
+  .panel-placeholder { font-size: var(--fs-body); }
+
+  // ── 指标卡 ──────────────────────────────────────────────────
+  .metrics-row .metric {
+    gap: 5px;
+    padding: 11px 7px;
+  }
+
+  .metrics-row .metric.bordered {
+    background:
+      linear-gradient(180deg, rgba(12, 35, 76, 0.64), rgba(5, 17, 45, 0.56)),
+      rgba(6, 17, 52, 0.42);
+    border: 1px solid rgba(102, 217, 255, 0.1);
+    border-radius: 7px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  }
+
+  .metrics-row .metric.bordered:hover {
+    border-color: rgba(102, 217, 255, 0.24);
+    background:
+      linear-gradient(180deg, rgba(16, 44, 90, 0.7), rgba(6, 20, 50, 0.62)),
+      rgba(8, 22, 55, 0.54);
+    box-shadow: 0 0 14px rgba(0, 184, 255, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  }
+
+  .metrics-row .metric-label {
+    font-size: var(--fs-label);
+    color: rgba(174, 198, 230, 0.68);
+  }
+
+  .metrics-row .metric-value {
+    font-size: var(--fs-hero);
+    font-weight: 700;
+    color: #f2f7ff;
+    text-shadow: 0 0 10px rgba(0, 184, 255, 0.18);
+    white-space: nowrap;
+  }
+
+  .metric-trend,
+  .kpi-trend {
+    font-size: var(--fs-label);
+  }
+
+  // ── KPI 环绕 ────────────────────────────────────────────────
+  .kpi-label { font-size: var(--fs-label); }
+  .kpi-value { font-size: var(--fs-hero); }
+
+  // ── 模块正文 ────────────────────────────────────────────────
+  .chart-label,
+  .section-label {
+    font-size: var(--fs-label);
+    color: rgba(212, 231, 255, 0.82);
+    font-weight: 600;
+  }
+
+  .task-name {
+    font-size: var(--fs-body);
+  }
+
+  .task-list { gap: 5px; }
+
+  .task-status,
+  .task-progress,
+  .cat-change,
+  .gauge-label,
+  .qr-text,
+  .suggestion-btn {
+    font-size: var(--fs-label);
+  }
+
+  .q-name,
+  .quality-list li,
+  .footer-stats,
+  .cat-label,
+  .platform-item {
+    font-size: var(--fs-body);
+  }
+
+  .cat-count small {
+    font-size: var(--fs-meta);
+  }
+
+  .cat-count {
+    font-size: var(--fs-hero);
+  }
+
+  .platform-item em {
+    font-size: var(--fs-body);
+    font-weight: 700;
+  }
+
+  .suggestion-btn {
+    line-height: 1.5;
+    padding: 8px 10px;
+  }
+
+  // 图表容器在 flex 面板内撑满剩余高度
+  .chart-box,
+  .bar-box,
+  .gauge-box {
+    .chart-container {
+      flex: 1;
+      min-height: 0;
+    }
+  }
+}
