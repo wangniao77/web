@@ -577,6 +577,39 @@ body {
   text-shadow: 0 0 10px rgba(255, 184, 46, 0.72);
 }
 
+.metric-card--balance {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: 1fr;
+  align-items: center;
+  height: 100%;
+
+  .metric-card__icon {
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .metric-card__label {
+    align-self: center;
+    padding: 0 8px;
+  }
+
+  .metric-card__value {
+    justify-self: end;
+    text-align: right;
+    padding-right: 2px;
+  }
+}
+
+.metric-card--balance.metric-card--sm {
+  .metric-card__label {
+    font-size: 14px;
+  }
+
+  .metric-card__value {
+    font-size: 26px;
+  }
+}
+
 .metric-row {
   display: grid;
   min-width: 0;

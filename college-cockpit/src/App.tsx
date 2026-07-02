@@ -1,19 +1,44 @@
 import type { CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import Header from './components/Header';
 import FooterNav from './components/FooterNav';
 import CoreMetric from './components/CoreMetric';
-import DashIcon from './components/DashIcon';
 import MetricCard from './components/MetricCard';
 import Panel from './components/Panel';
 import { dashboardData } from './data/mockData';
 import HighPotentialPanel from './components/HighPotentialPanel';
+import HighPotentialDetailPage, {
+  closeHighPotentialDetail,
+  parseHighPotentialRoute
+} from './components/HighPotentialDetailPage';
+import KeyTasksDetailPage, {
+  closeKeyTasksDetail,
+  parseKeyTasksRoute
+} from './components/KeyTasksDetailPage';
+import TaskProgressPanel from './components/TaskProgressPanel';
+import TeachingPanel from './components/TeachingPanel';
+import TeachingCourseDetailPage, {
+  closeTeachingCourseDetail,
+  parseTeachingCourseRoute
+} from './components/TeachingCourseDetailPage';
+import ResearchPlatformDetailPage, {
+  closeResearchPlatformDetail,
+  openResearchPlatformDetail,
+  parseResearchPlatformRoute
+} from './components/ResearchPlatformDetailPage';
+import StudentEmploymentDetailPage, {
+  closeStudentEmploymentDetail,
+  openStudentEmploymentDetail,
+  parseStudentEmploymentRoute
+} from './components/StudentEmploymentDetailPage';
+import WarningPanel from './components/WarningPanel';
+import WarningDetailPage, {
+  closeWarningDetail,
+  parseWarningRoute
+} from './components/WarningDetailPage';
 import {
   EmploymentPieChart,
-  ExcellenceTrendChart,
-  FundingTrendChart,
-  SimpleHBarChart,
-  TaskProgressList,
-  WarningMonitorChart
+  SimpleHBarChart
 } from './components/charts/CockpitCharts';
 
 function ChartFrame({ title, children }: { title: string; children: React.ReactNode }) {
@@ -100,49 +125,64 @@ function CoreGauge() {
   );
 }
 
-function WarningPanel() {
-  const { warning } = dashboardData;
+type AppRoute =
+  | { kind: 'high-potential'; id: NonNullable<ReturnType<typeof parseHighPotentialRoute>> }
+  | { kind: 'key-tasks' }
+  | { kind: 'warning'; id: NonNullable<ReturnType<typeof parseWarningRoute>> }
+  | { kind: 'teaching-courses' }
+  | { kind: 'research-platforms' }
+  | { kind: 'student-employment' };
 
-  return (
-    <div className="warning-panel">
-      <div className="warning-panel__left">
-        <div className="warning-panel__section-title">预警指标（近三个月）</div>
-        <ul className="warning-panel__list">
-          {warning.indicators.map((item) => (
-            <li className={`warning-panel__item warning-panel__item--${item.tone}`} key={item.label}>
-              <div className="warning-panel__badge">
-                <DashIcon kind={item.iconKind} size={24} />
-              </div>
-              <div className="warning-panel__info">
-                <span>{item.label}</span>
-                <strong>
-                  {item.value}
-                  {'unit' in item && item.unit ? <small>{item.unit}</small> : null}
-                </strong>
-                {'delta' in item && item.delta ? <em>{item.delta}</em> : null}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="warning-panel__chart">
-        <div className="warning-panel__chart-title">预警趋势（近六个月）</div>
-        <div className="warning-panel__chart-body">
-          <WarningMonitorChart
-            months={warning.trend.months}
-            academic={warning.trend.academic}
-            mental={warning.trend.mental}
-            employment={warning.trend.employment}
-            research={warning.trend.research}
-          />
-        </div>
-      </div>
-    </div>
-  );
+function parseAppRoute(hash: string): AppRoute | null {
+  const hpId = parseHighPotentialRoute(hash);
+  if (hpId) return { kind: 'high-potential', id: hpId };
+  if (parseKeyTasksRoute(hash)) return { kind: 'key-tasks' };
+  const warningId = parseWarningRoute(hash);
+  if (warningId) return { kind: 'warning', id: warningId };
+  if (parseTeachingCourseRoute(hash)) return { kind: 'teaching-courses' };
+  if (parseResearchPlatformRoute(hash)) return { kind: 'research-platforms' };
+  if (parseStudentEmploymentRoute(hash)) return { kind: 'student-employment' };
+  return null;
 }
 
 export default function App() {
-  const { tasks, studentWork, teaching, research, highPotential } = dashboardData;
+  const [route, setRoute] = useState(() => parseAppRoute(window.location.hash));
+
+  useEffect(() => {
+    const syncRoute = () => setRoute(parseAppRoute(window.location.hash));
+    window.addEventListener('hashchange', syncRoute);
+    return () => window.removeEventListener('hashchange', syncRoute);
+  }, []);
+
+  if (route?.kind === 'high-potential') {
+    return <HighPotentialDetailPage moduleId={route.id} onBack={closeHighPotentialDetail} />;
+  }
+
+  if (route?.kind === 'key-tasks') {
+    return <KeyTasksDetailPage onBack={closeKeyTasksDetail} />;
+  }
+
+  if (route?.kind === 'warning') {
+    return <WarningDetailPage categoryId={route.id} onBack={closeWarningDetail} />;
+  }
+
+  if (route?.kind === 'teaching-courses') {
+    return <TeachingCourseDetailPage onBack={closeTeachingCourseDetail} />;
+  }
+
+  if (route?.kind === 'research-platforms') {
+    return <ResearchPlatformDetailPage onBack={closeResearchPlatformDetail} />;
+  }
+
+  if (route?.kind === 'student-employment') {
+    return <StudentEmploymentDetailPage onBack={closeStudentEmploymentDetail} />;
+  }
+
+  return <CockpitDashboard />;
+}
+
+function CockpitDashboard() {
+  const { tasks, studentWork, research, highPotential } = dashboardData;
 
   return (
     <div className="dashboard cockpit">
@@ -157,25 +197,11 @@ export default function App() {
       <Header />
       <main className="cockpit-main">
         <div className="cockpit-column cockpit-column--left">
-          <Panel number={1} title={tasks.title} iconKind="task">
-            <TaskProgressList items={tasks.items} />
+          <Panel number={1} title={tasks.title} iconKind="task" className="panel--key-tasks">
+            <TaskProgressPanel tasks={tasks} />
           </Panel>
-          <Panel number={2} title={studentWork.title} iconKind="students">
-            <div className="student-work-grid">
-              <div className="kpi-row">
-                {studentWork.kpis.map((kpi) => (
-                  <MetricCard key={kpi.label} {...kpi} size="sm" />
-                ))}
-              </div>
-              <div className="split-charts">
-                <ChartFrame title="2025届就业分布">
-                  <EmploymentPieChart data={studentWork.employmentDist} />
-                </ChartFrame>
-                <ChartFrame title="学生素质发展">
-                  <SimpleHBarChart data={studentWork.qualityDev} unit="%" />
-                </ChartFrame>
-              </div>
-            </div>
+          <Panel number={2} title={highPotential.title} iconKind="potential" className="panel--high-potential">
+            <HighPotentialPanel />
           </Panel>
         </div>
 
@@ -189,26 +215,12 @@ export default function App() {
         </div>
 
         <div className="cockpit-column cockpit-column--right">
-          <Panel number={4} title={teaching.title} iconKind="academic">
-            <div className="teaching-grid">
-              <div className="kpi-row">
-                {teaching.kpis.map((kpi) => (
-                  <MetricCard key={kpi.label} {...kpi} size="sm" />
-                ))}
-              </div>
-              <div className="split-charts">
-                <ChartFrame title="教学评价优秀率趋势">
-                  <ExcellenceTrendChart years={teaching.excellenceTrend.years} rates={teaching.excellenceTrend.rates} />
-                </ChartFrame>
-                <ChartFrame title="课程建设">
-                  <SimpleHBarChart data={teaching.courseConstruction} unit="门" />
-                </ChartFrame>
-              </div>
-            </div>
+          <Panel number={4} title={dashboardData.teaching.title} iconKind="academic">
+            <TeachingPanel />
           </Panel>
           <Panel number={5} title={research.title} iconKind="research">
             <div className="research-grid">
-              <div className="research-kpis">
+              <div className="research-kpis research-kpis--auto">
                 {research.kpis.map((kpi) => (
                   <div className="research-kpi" key={kpi.label}>
                     <span>{kpi.label}</span>
@@ -220,22 +232,53 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <div className="split-charts">
-                <ChartFrame title="科研经费趋势">
-                  <FundingTrendChart
-                    years={research.fundingTrend.years}
-                    vertical={research.fundingTrend.vertical}
-                    horizontal={research.fundingTrend.horizontal}
-                  />
-                </ChartFrame>
-                <ChartFrame title="团队平台">
-                  <SimpleHBarChart data={research.platforms} unit="个" />
-                </ChartFrame>
+              <div className="research-chart-full">
+                <div className="chart-frame chart-frame--teaching">
+                  <div className="chart-frame__head">
+                    <span className="chart-frame__title">团队平台</span>
+                    <button type="button" className="chart-frame__link" onClick={openResearchPlatformDetail}>
+                      查看详情 ›
+                    </button>
+                  </div>
+                  <div className="chart-frame__body chart-frame__body--tall">
+                    <SimpleHBarChart data={research.platforms} unit="个" gridLeft={96} />
+                  </div>
+                </div>
               </div>
             </div>
           </Panel>
-          <Panel number={7} title={highPotential.title} iconKind="potential" className="panel--high-potential">
-            <HighPotentialPanel />
+          <Panel number={3} title={studentWork.title} iconKind="students">
+            <div className="student-work-grid">
+              <div className="kpi-row kpi-row--auto">
+                {studentWork.kpis.map((kpi) => (
+                  <MetricCard key={kpi.label} {...kpi} size="sm" layout="balance" />
+                ))}
+              </div>
+              <div className="split-charts">
+                <div className="chart-frame chart-frame--teaching">
+                  <div className="chart-frame__head">
+                    <span className="chart-frame__title">就业情况</span>
+                    <button type="button" className="chart-frame__link" onClick={openStudentEmploymentDetail}>
+                      查看详情 ›
+                    </button>
+                  </div>
+                  <div className="chart-frame__body chart-frame__body--tall">
+                    <EmploymentPieChart data={studentWork.employmentDist} />
+                  </div>
+                </div>
+                <div className="chart-frame chart-frame--teaching">
+                  <div className="chart-frame__head">
+                    <span className="chart-frame__title">就业分布（地区排行）</span>
+                    <button type="button" className="chart-frame__link" onClick={openStudentEmploymentDetail}>
+                      查看详情 ›
+                    </button>
+                  </div>
+                  <div className="chart-frame__body chart-frame__body--tall">
+                    <SimpleHBarChart data={studentWork.employmentRegions} unit="%" gridLeft={96} />
+                  </div>
+                </div>
+              </div>
+            </div>
           </Panel>
         </div>
       </main>

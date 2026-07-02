@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { EChartsOption } from 'echarts';
-import type { NameValue, TaskProgressItem } from '../../data/mockData';
+import type { NameValue } from '../../data/mockData';
 import BaseChart from './BaseChart';
 import {
   axisLabelStyle,
@@ -74,16 +74,12 @@ export function FundingTrendChart({
 
 export function WarningMonitorChart({
   months,
-  academic,
   mental,
-  employment,
-  research
+  employment
 }: {
   months: readonly string[];
-  academic: readonly number[];
   mental: readonly number[];
   employment: readonly number[];
-  research: readonly number[];
 }) {
   const lineSeries = (name: string, data: readonly number[], color: string) => ({
     name,
@@ -105,26 +101,89 @@ export function WarningMonitorChart({
       itemWidth: 10,
       itemHeight: 6,
       textStyle: legendTextStyle,
-      data: ['学业', '心理', '就业', '科研经费']
+      data: ['心理', '就业']
     },
-    grid: { left: 44, right: 16, top: 36, bottom: 28 },
+    grid: { left: 40, right: 14, top: 28, bottom: 22 },
     xAxis: { type: 'category', data: [...months], ...axisStyle, boundaryGap: false },
     yAxis: { type: 'value', ...axisStyle, splitLine },
     series: [
-      lineSeries('学业', academic, '#ff6b6b'),
       lineSeries('心理', mental, '#ffd166'),
-      lineSeries('就业', employment, '#39e6ff'),
-      lineSeries('科研经费', research, '#a78bfa')
+      lineSeries('就业', employment, '#39e6ff')
     ]
-  }), [academic, employment, mental, months, research]);
+  }), [employment, mental, months]);
 
   return <BaseChart option={option} />;
 }
 
-export function SimpleHBarChart({ data, unit = '' }: { data: readonly NameValue[]; unit?: string }) {
+export function CreditCompletionChart({
+  categories,
+  junior,
+  senior,
+  threshold
+}: {
+  categories: readonly string[];
+  junior: readonly number[];
+  senior: readonly number[];
+  threshold: number;
+}) {
+  const option = useMemo<EChartsOption>(() => {
+    const gradient = (top: string, bottom: string) => ({
+      type: 'linear' as const,
+      x: 0,
+      y: 0,
+      x2: 0,
+      y2: 1,
+      colorStops: [
+        { offset: 0, color: top },
+        { offset: 1, color: bottom }
+      ]
+    });
+
+    const barSeries = (name: string, data: readonly number[], normalTop: string, normalBottom: string) => ({
+      name,
+      type: 'bar' as const,
+      barMaxWidth: 16,
+      data: data.map((value) => ({
+        value,
+        itemStyle: {
+          borderRadius: [4, 4, 0, 0],
+          color:
+            value < threshold
+              ? gradient('#ff8a4a', '#ff3b3b')
+              : gradient(normalTop, normalBottom)
+        }
+      })),
+      label: { show: true, position: 'top' as const, formatter: '{c}%', ...chartLabelStyle }
+    });
+
+    return {
+      tooltip: { ...tooltip, axisPointer: { type: 'shadow' as const }, valueFormatter: (v) => `${v}%` },
+      legend: { top: 2, right: 4, itemWidth: 10, itemHeight: 6, textStyle: legendTextStyle, data: ['大三', '大四'] },
+      grid: { left: 42, right: 14, top: 30, bottom: 26 },
+      xAxis: { type: 'category', data: [...categories], ...axisStyle, axisLabel: axisLabelStyleCompact },
+      yAxis: {
+        type: 'value',
+        name: '完成率',
+        max: 100,
+        nameTextStyle,
+        ...axisStyle,
+        axisLabel: { ...axisLabelStyle, formatter: '{value}%' },
+        splitLine
+      },
+      series: [
+        barSeries('大三', junior, '#5fd0ff', '#0d71ff'),
+        barSeries('大四', senior, '#6effc2', '#12a86e')
+      ]
+    };
+  }, [categories, junior, senior, threshold]);
+
+  return <BaseChart option={option} />;
+}
+
+export function SimpleHBarChart({ data, unit = '', gridLeft = 72 }: { data: readonly NameValue[]; unit?: string; gridLeft?: number }) {
   const option = useMemo<EChartsOption>(() => ({
     tooltip: { ...tooltip, formatter: unit ? `{b}<br />{c}${unit}` : '{b}<br />{c}' },
-    grid: { left: 72, right: 36, top: 8, bottom: 8 },
+    grid: { left: gridLeft, right: 36, top: 8, bottom: 8 },
     xAxis: { type: 'value', show: false },
     yAxis: { type: 'category', inverse: true, data: data.map((d) => d.name), ...axisStyle, axisLabel: axisLabelStyleCompact },
     series: [{
@@ -134,7 +193,7 @@ export function SimpleHBarChart({ data, unit = '' }: { data: readonly NameValue[
       itemStyle: { color: verticalGradient('#65f7ff', '#126dff'), borderRadius: 6, shadowBlur: 6, shadowColor: 'rgba(57,230,255,0.45)' },
       label: { show: true, position: 'right', formatter: unit ? `{c}${unit}` : '{c}', ...chartLabelStyle }
     }]
-  }), [data, unit]);
+  }), [data, unit, gridLeft]);
 
   return <BaseChart option={option} />;
 }
@@ -142,13 +201,19 @@ export function SimpleHBarChart({ data, unit = '' }: { data: readonly NameValue[
 export function EmploymentPieChart({ data }: { data: readonly NameValue[] }) {
   const colors = ['#39e6ff', '#0d71ff', '#ffb82e', '#30d7a4', '#7a8cff'];
   const option = useMemo<EChartsOption>(() => ({
-    tooltip: { ...tooltip, trigger: 'item' },
-    legend: { bottom: 0, left: 'center', itemWidth: 8, itemHeight: 8, textStyle: legendTextStyle },
+    tooltip: { ...tooltip, trigger: 'item', formatter: '{b}<br />{c}%' },
     series: [{
       type: 'pie',
-      radius: ['42%', '68%'],
-      center: ['50%', '44%'],
-      label: { color: '#f2fbff', fontSize: 11, formatter: '{b}\n{d}%' },
+      radius: ['40%', '60%'],
+      center: ['50%', '52%'],
+      avoidLabelOverlap: true,
+      label: {
+        color: '#eef9ff',
+        fontSize: 13,
+        fontWeight: 600,
+        formatter: '{b} {d}%'
+      },
+      labelLine: { length: 10, length2: 12, lineStyle: { color: 'rgba(140,200,240,0.6)' } },
       data: data.map((item, i) => ({
         name: item.name,
         value: item.value,
@@ -160,18 +225,3 @@ export function EmploymentPieChart({ data }: { data: readonly NameValue[] }) {
   return <BaseChart option={option} />;
 }
 
-export function TaskProgressList({ items }: { items: readonly TaskProgressItem[] }) {
-  return (
-    <ul className="task-progress-list">
-      {items.map((item) => (
-        <li key={item.name}>
-          <span>{item.name}</span>
-          <div className="task-progress-list__bar">
-            <i style={{ width: `${item.percent}%` }} />
-          </div>
-          <strong>{item.percent}%</strong>
-        </li>
-      ))}
-    </ul>
-  );
-}

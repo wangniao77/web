@@ -8,11 +8,11 @@ export const orange = '#ff7b2f';
 export const textColor = '#e8f7ff';
 export const textColorBright = '#ffffff';
 
-export const axisLabelStyle = { color: textColor, fontSize: 12, fontWeight: 500 as const };
-export const axisLabelStyleCompact = { color: textColor, fontSize: 11, lineHeight: 14, fontWeight: 500 as const };
-export const chartLabelStyle = { color: '#f4fbff', fontSize: 12, fontWeight: 600 as const };
-export const nameTextStyle = { color: textColor, fontSize: 12, fontWeight: 600 as const };
-export const legendTextStyle = { color: '#d8efff', fontSize: 11, fontWeight: 500 as const };
+export const axisLabelStyle = { color: textColor, fontSize: 13, fontWeight: 500 as const };
+export const axisLabelStyleCompact = { color: textColor, fontSize: 13, lineHeight: 16, fontWeight: 500 as const };
+export const chartLabelStyle = { color: '#f4fbff', fontSize: 14, fontWeight: 700 as const };
+export const nameTextStyle = { color: textColor, fontSize: 13, fontWeight: 600 as const };
+export const legendTextStyle = { color: '#d8efff', fontSize: 13, fontWeight: 500 as const };
 
 export const tooltip = {
   trigger: 'axis' as const,

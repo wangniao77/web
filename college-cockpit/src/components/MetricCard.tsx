@@ -1,9 +1,10 @@
-import DashIcon, { type IconKind } from './DashIcon';
+import DashIcon from './DashIcon';
 import type { MetricItem } from '../data/mockData';
 
 interface MetricCardProps extends MetricItem {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  layout?: 'default' | 'balance';
 }
 
 const iconSizes: Record<NonNullable<MetricCardProps['size']>, number> = {
@@ -19,10 +20,13 @@ export default function MetricCard({
   iconKind,
   tone = 'cyan',
   className = '',
-  size = 'md'
+  size = 'md',
+  layout = 'default'
 }: MetricCardProps) {
+  const isBalance = layout === 'balance';
+
   return (
-    <div className={`metric-card metric-card--${tone} metric-card--${size} ${className}`}>
+    <div className={`metric-card metric-card--${tone} metric-card--${size}${isBalance ? ' metric-card--balance' : ''} ${className}`}>
       <span className="metric-card__icon">
         <DashIcon kind={iconKind} size={iconSizes[size]} />
       </span>
