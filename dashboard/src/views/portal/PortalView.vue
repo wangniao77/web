@@ -1,34 +1,51 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useAppStore } from '@/stores/app'
+import { useAppStore, type ViewMode } from '@/stores/app'
 
 const router = useRouter()
 const appStore = useAppStore()
 
-const entries = [
+type PortalEntry = {
+  mode: ViewMode
+  title: string
+  desc: string
+  route?: string
+  externalUrl?: string
+}
+
+const entries: PortalEntry[] = [
   {
-    mode: 'college' as const,
+    mode: 'college',
     title: '学院大屏',
-    desc: '学院发展与治理驾驶舱',
-    route: '/college',
+    desc: '大数据与人工智能学院发展与治理驾驶舱',
+    externalUrl: import.meta.env.VITE_COLLEGE_COCKPIT_URL || 'http://127.0.0.1:5173',
   },
   {
-    mode: 'university' as const,
+    mode: 'university',
     title: '学校大屏',
     desc: '全校综合发展与治理驾驶舱',
+    externalUrl: import.meta.env.VITE_UNIVERSITY_COCKPIT_URL || undefined,
     route: '/university',
   },
   {
-    mode: 'student' as const,
+    mode: 'student',
     title: '学生个人大屏',
     desc: '个人学业成长与发展驾驶舱',
+    externalUrl: import.meta.env.VITE_STUDENT_COCKPIT_URL || undefined,
     route: '/student',
   },
 ]
 
-function enter(entry: (typeof entries)[number]) {
-  appStore.setViewMode(entry.mode)
-  router.push(entry.route)
+function enter(entry: PortalEntry) {
+  if (entry.externalUrl) {
+    window.location.assign(entry.externalUrl)
+    return
+  }
+
+  if (entry.route) {
+    appStore.setViewMode(entry.mode)
+    router.push(entry.route)
+  }
 }
 </script>
 

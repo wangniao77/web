@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+vite-dev.*.log
+dashboard-qa-1920*.png
+dashboard-branding-check.png
+vite.config.js
+vite.config.d.ts
+vitest.config.js
+vitest.config.d.ts
+.worktrees/
+scripts/launch.log
+scripts/vite-stdout.log
+scripts/vite-stderr.log
