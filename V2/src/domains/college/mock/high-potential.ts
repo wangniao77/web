@@ -1,4 +1,4 @@
-﻿import type { HighPotentialOverviewDTO } from '@/domains/college/types/api/high-potential'
+import type { HighPotentialOverviewDTO } from '@/domains/college/types/api/high-potential'
 
 export const mockHighPotentialOverview: HighPotentialOverviewDTO = {
   summary: {
@@ -66,36 +66,36 @@ export const mockHighPotentialOverview: HighPotentialOverviewDTO = {
     },
     {
       id: 'rural',
-      title: '三下乡高潜',
-      desc: '暑期社会实践、乡村振兴调研、支教与公益项目参与情况。',
+      title: '双百工程高潜',
+      desc: '双百工程、乡村振兴、社会调研与普法宣传等实践经历，展示学生知行合一与服务社会能力。',
       highlights: [
-        { label: '实践团队', value: '18', unit: '支' },
-        { label: '覆盖县区', value: '24', unit: '个' },
-        { label: '核心成员', value: '96', unit: '人' },
+        { label: '实践队伍', value: '24', unit: '支' },
+        { label: '覆盖乡镇', value: '18', unit: '个' },
+        { label: '服务村民', value: '3,200+', unit: '人' },
       ],
-      cardMetric: { label: '实践团队', value: '18', unit: '支' },
+      cardMetric: { label: '实践队伍', value: '24', unit: '支' },
     },
     {
       id: 'internship',
-      title: '实习高潜',
-      desc: '名企实习、科研助理、高质量岗位匹配与实习评价。',
+      title: '实习项目高潜',
+      desc: '优质实习、校企重点项目、专利证书、代码/系统开发成果与深度参与导师项目均为高潜成果。',
       highlights: [
-        { label: '名企实习', value: '186', unit: '人' },
+        { label: '名企实习', value: '86', unit: '人' },
         { label: '科研助理', value: '68', unit: '人' },
         { label: '实习优秀率', value: '91.2', unit: '%' },
       ],
-      cardMetric: { label: '名企实习', value: '186', unit: '人' },
+      cardMetric: { label: '优质实习', value: '86', unit: '人' },
     },
     {
       id: 'career',
       title: '就业升学高潜',
-      desc: '升学深造、优质就业、选调与名企 offer 等发展路径。',
+      desc: '升学深造、名企就业、公务员与创新创业等发展路径，展示高潜学生出口质量与发展后劲。',
       highlights: [
         { label: '升学深造', value: '360', unit: '人' },
         { label: '名企 offer', value: '128', unit: '人' },
         { label: '选调/公考', value: '24', unit: '人' },
       ],
-      cardMetric: { label: '升学深造', value: '360', unit: '人' },
+      cardMetric: { label: '名企就业', value: '52', unit: '%' },
     },
   ],
 }

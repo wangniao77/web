@@ -9,6 +9,7 @@ import ResearchInnovPanel from '@/domains/college/modules/research-innov/Researc
 import WarningRiskPanel from '@/domains/college/modules/warning-risk/WarningRiskPanel.vue'
 import StudentEmploymentPanel from '@/domains/college/modules/student-dev/StudentEmploymentPanel.vue'
 import CollegeFooterBar from '@/domains/college/modules/footer/CollegeFooterBar.vue'
+import CollegeDetailModal from '@/domains/college/modules/detail-modal/CollegeDetailModal.vue'
 import { collegeService } from '@/domains/college/services'
 import { collegeDetailService } from '@/domains/college/services/details'
 import { useAutoRefresh } from '@/shared/composables/useAutoRefresh'
@@ -59,10 +60,10 @@ useAutoRefresh(loadAll)
   <template v-else>
     <main class="cockpit-main">
       <div class="cockpit-column cockpit-column--left">
-        <CockpitPanel :number="1" title="年度重点任务推进" icon="icon-target" panel-class="panel--key-tasks">
+        <CockpitPanel :number="1" title="年度重点任务推进" icon="task" panel-class="panel--key-tasks">
           <KeyTasksPanel :tasks="tasks" :loading="loading" @retry="loadAll" />
         </CockpitPanel>
-        <CockpitPanel :number="2" title="高潜学生发展画像" icon="icon-star" panel-class="panel--high-potential">
+        <CockpitPanel :number="2" title="高潜学生发展画像" icon="potential" panel-class="panel--high-potential">
           <HighPotentialPanel v-if="highPotential" :data="highPotential" />
         </CockpitPanel>
       </div>
@@ -71,24 +72,25 @@ useAutoRefresh(loadAll)
         <div class="cockpit-hero">
           <CoreHeroGauge v-if="hub" :data="hub" />
         </div>
-        <CockpitPanel :number="6" title="预警与风险监测" icon="icon-warning" panel-class="panel--warning">
+        <CockpitPanel :number="6" title="预警与风险监测" icon="warning" panel-class="panel--warning">
           <WarningRiskPanel v-if="warning" :data="warning" />
         </CockpitPanel>
       </div>
 
       <div class="cockpit-column cockpit-column--right">
-        <CockpitPanel :number="4" title="教学质量与运行" icon="icon-education">
+        <CockpitPanel :number="4" title="教学质量与运行" icon="academic">
           <TeachingQualityPanel v-if="teaching" :data="teaching" />
         </CockpitPanel>
-        <CockpitPanel :number="5" title="科研创新与团队平台" icon="icon-research">
+        <CockpitPanel :number="5" title="科研创新与团队平台" icon="research">
           <ResearchInnovPanel v-if="research" :data="research" />
         </CockpitPanel>
-        <CockpitPanel :number="3" title="学生就业与前景" icon="icon-people">
+        <CockpitPanel :number="3" title="学生就业与前景" icon="students">
           <StudentEmploymentPanel v-if="student" :data="student" />
         </CockpitPanel>
       </div>
     </main>
     <CollegeFooterBar />
+    <CollegeDetailModal />
   </template>
 </template>
 

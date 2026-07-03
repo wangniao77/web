@@ -6,7 +6,7 @@ export type HighPotentialModuleId =
   | 'internship'
   | 'career'
 
-export type WarningCategoryType = 'academic' | 'psychological' | 'employment' | 'funding'
+export type WarningCategoryType = 'academic' | 'psychological' | 'employment' | 'credit'
 
 export interface HighPotentialModuleDTO {
   id: HighPotentialModuleId

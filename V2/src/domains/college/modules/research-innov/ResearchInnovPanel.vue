@@ -1,56 +1,75 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import ChartContainer from '@/shared/components/charts/ChartContainer.vue'
-import { ROUTES } from '@/constants/routes'
-import { CHART_COLORS, CHART_FONT, CHART_GRID, AXIS_LABEL_ALT } from '@/styles/echarts-theme'
+import { openCollegeDetail } from '@/domains/college/modules/detail-modal/useCollegeDetail'
+import { CHART_FONT, AXIS_LABEL_ALT } from '@/styles/echarts-theme'
 import type { ResearchOverviewVM } from '@/domains/college/types/view'
 import type { EChartsOption } from 'echarts'
 
 const props = defineProps<{ data: ResearchOverviewVM }>()
 
-const router = useRouter()
+const GRID_LEFT = 104
 
-const barOption = computed<EChartsOption>(() => ({
-  grid: { ...CHART_GRID.barH, left: 96 },
-  xAxis: { type: 'value', show: false },
-  yAxis: {
-    type: 'category',
-    data: props.data.platforms.map((d) => d.name).reverse(),
-    axisLabel: { ...AXIS_LABEL_ALT, width: 88, overflow: 'truncate' },
-    axisLine: { show: false },
-    axisTick: { show: false },
-  },
-  series: [{
-    type: 'bar',
-    data: props.data.platforms.map((d) => d.count).reverse(),
-    barWidth: 12,
-    label: { show: true, position: 'right', distance: 4, color: CHART_COLORS.gold, fontSize: CHART_FONT.label, formatter: '{c}个' },
-    itemStyle: {
-      color: {
-        type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
-        colorStops: [
-          { offset: 0, color: 'rgba(0,212,255,0.25)' },
-          { offset: 1, color: CHART_COLORS.blue },
-        ],
-      },
-      borderRadius: [0, 3, 3, 0],
+const barOption = computed<EChartsOption>(() => {
+  const maxValue = props.data.platforms.reduce((acc, d) => Math.max(acc, d.count), 0)
+  const axisMax = maxValue > 0 ? Math.ceil((maxValue * 1.18) / 5) * 5 : undefined
+  return {
+    grid: { left: GRID_LEFT, right: 24, top: 8, bottom: 8, containLabel: false },
+    xAxis: { type: 'value', show: false, max: axisMax },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      data: props.data.platforms.map((d) => d.name),
+      axisLabel: { ...AXIS_LABEL_ALT, color: '#e8f7ff', fontSize: 14, fontWeight: 500, align: 'left', margin: GRID_LEFT - 6 },
+      axisLine: { show: true, lineStyle: { color: 'rgba(57,230,255,0.45)', width: 1 } },
+      axisTick: { show: false },
     },
-  }],
-}))
+    series: [{
+      type: 'bar',
+      data: props.data.platforms.map((d) => d.count),
+      barWidth: 8,
+      label: { show: true, position: 'right', distance: 4, color: '#f4fbff', fontSize: CHART_FONT.label, fontWeight: 700, formatter: '{c}个' },
+      itemStyle: {
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: '#65f7ff' },
+            { offset: 1, color: '#126dff' },
+          ],
+        },
+        borderRadius: 6,
+        shadowBlur: 6,
+        shadowColor: 'rgba(57,230,255,0.45)',
+      },
+    }],
+  }
+})
 
 function openDetail() {
-  router.push(ROUTES.college.researchPlatforms)
+  openCollegeDetail({ kind: 'research' })
 }
 </script>
 
 <template>
   <div class="research-grid">
     <div class="research-kpis research-kpis--auto">
-      <div v-for="metric in data.metrics.slice(0, 4)" :key="metric.label" class="research-kpi">
+      <button
+        v-for="metric in data.metrics.slice(0, 4)"
+        :key="metric.label"
+        type="button"
+        class="research-kpi research-kpi--clickable"
+        @click="openDetail"
+      >
         <span>{{ metric.label }}</span>
         <strong>{{ metric.value }}</strong>
-      </div>
+        <em
+          v-if="metric.trend"
+          class="research-kpi__trend"
+          :class="`research-kpi__trend--${metric.trend.direction}`"
+        >
+          {{ metric.trend.direction === 'up' ? '↑' : metric.trend.direction === 'down' ? '↓' : '' }}{{ metric.trend.value }}{{ metric.trend.unit || '' }}
+        </em>
+      </button>
     </div>
     <div class="research-chart-full">
       <div class="chart-frame chart-frame--teaching">
@@ -65,3 +84,28 @@ function openDetail() {
     </div>
   </div>
 </template>
+
+<style scoped lang="scss">
+.research-kpi--clickable {
+  cursor: pointer;
+  border: 1px solid transparent;
+  font: inherit;
+  text-align: left;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    border-color: rgba(0, 212, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 120, 255, 0.18);
+  }
+}
+
+.research-kpi__trend {
+  font-size: 13px;
+  font-style: normal;
+
+  &--up { color: #34d399; }
+  &--down { color: #f87171; }
+  &--flat { color: #889ec2; }
+}
+</style>

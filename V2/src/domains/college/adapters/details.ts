@@ -67,5 +67,5 @@ export function adaptEmploymentDetail(dto: EmploymentDetailDTO): EmploymentDetai
 }
 
 export function isWarningCategoryType(value: string): value is WarningCategoryType {
-  return ['academic', 'psychological', 'employment', 'funding'].includes(value)
+  return ['academic', 'psychological', 'employment', 'credit'].includes(value)
 }

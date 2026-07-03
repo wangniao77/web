@@ -4,10 +4,10 @@ export const COCKPIT_THEME = {
   textStyle: {
     color: '#889ec2',
     fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif',
-    fontSize: 16,
+    fontSize: 14,
   },
   title: {
-    textStyle: { color: '#e2edff', fontSize: 18, fontWeight: 600 },
+    textStyle: { color: '#e2edff', fontSize: 16, fontWeight: 600 },
   },
   legend: {
     textStyle: { color: '#889ec2', fontSize: 14 },
@@ -18,7 +18,7 @@ export const COCKPIT_THEME = {
   tooltip: {
     backgroundColor: 'rgba(6, 17, 52, 0.95)',
     borderColor: 'rgba(0, 212, 255, 0.2)',
-    textStyle: { color: '#e2edff', fontSize: 16 },
+    textStyle: { color: '#e2edff', fontSize: 13 },
   },
   categoryAxis: {
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
@@ -36,9 +36,9 @@ export const COCKPIT_THEME = {
 /** 学院大屏图表字号（与 SCSS $college-fs-chart 保持一致） */
 export const CHART_FONT = {
   axis: 15,
-  legend: 14,
+  legend: 15,
   label: 15,
-  tooltip: 16,
+  tooltip: 14,
   /** 中央 Hub 大仪表盘 */
   gauge: 30,
   /** 窄列小仪表盘（综合评价左侧） */

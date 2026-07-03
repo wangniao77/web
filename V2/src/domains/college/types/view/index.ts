@@ -24,6 +24,7 @@ export interface KeyTaskVM {
 export interface StudentOverviewVM {
   metrics: Array<{ label: string; value: string; trend?: TrendInfo }>
   employmentDirection: Array<{ name: string; value: number }>
+  employmentRegions: Array<{ name: string; value: number }>
   qualityDevelopment: Array<{ name: string; value: number }>
   warnings: { academic: number; fundingRate: string }
 }
@@ -53,5 +54,11 @@ export interface WarningOverviewVM {
   trend: {
     months: string[]
     series: Array<{ name: string; data: number[] }>
+  }
+  creditCompletion: {
+    threshold: number
+    categories: string[]
+    junior: number[]
+    senior: number[]
   }
 }

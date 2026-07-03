@@ -61,6 +61,7 @@ export function adaptStudentOverview(dto: StudentOverviewDTO): StudentOverviewVM
       trend: m.trend,
     })),
     employmentDirection: dto.employmentDirection,
+    employmentRegions: dto.employmentRegions,
     qualityDevelopment: dto.qualityDevelopment,
     warnings: {
       academic: dto.warnings.academic,
@@ -101,5 +102,6 @@ export function adaptWarningOverview(dto: WarningOverviewDTO): WarningOverviewVM
       type: c.type,
     })),
     trend: dto.trend,
+    creditCompletion: dto.creditCompletion,
   }
 }
