@@ -1,0 +1,101 @@
+// ============================================================
+// Student screen local theme
+// ============================================================
+
+.student-screen {
+  --student-font-body: "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+  --student-font-number: "DIN Alternate", "Bahnschrift", "Roboto Condensed", "Arial Narrow", var(--student-font-body);
+
+  --fs-display:  #{$college-fs-display};
+  --fs-hero:     #{$college-fs-hero};
+  --fs-highlight:#{$college-fs-highlight};
+  --fs-title:    #{$college-fs-title};
+  --fs-body:     #{$college-fs-body};
+  --fs-label:    #{$college-fs-label};
+  --fs-meta:     #{$college-fs-meta};
+  --fs-chart:    #{$college-fs-chart};
+
+  background:
+    linear-gradient(180deg, #050914 0%, #06142a 48%, #030816 100%),
+    $color-bg-screen;
+  color: #eaf3ff;
+  font-family: var(--student-font-body);
+  font-variant-numeric: tabular-nums;
+
+  .screen-scale {
+    overflow: hidden;
+    background:
+      linear-gradient(115deg, rgba(8, 33, 69, 0.68) 0%, rgba(2, 8, 22, 0.12) 38%, rgba(18, 33, 66, 0.22) 100%),
+      linear-gradient(180deg, rgba(2, 18, 42, 0.92) 0%, rgba(2, 10, 28, 0.96) 100%),
+      $color-bg-screen;
+    box-shadow:
+      inset 0 0 0 1px rgba(82, 191, 255, 0.16),
+      inset 0 24px 90px rgba(57, 144, 255, 0.08),
+      inset 0 -36px 120px rgba(0, 0, 0, 0.52);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: $header-height 0 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(92, 190, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(92, 190, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(115deg, transparent 0%, rgba(0, 229, 255, 0.055) 48%, transparent 49%);
+      background-size: 48px 48px, 48px 48px, 360px 360px;
+      mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 82%, transparent 100%);
+    }
+  }
+
+  .screen-main {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    padding: 8px 10px 10px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metric-value,
+  .kpi-value,
+  .stat-num {
+    font-family: var(--student-font-number);
+  }
+
+  .panel-header { height: 48px; }
+  .panel-num    { font-size: var(--fs-meta); }
+  .panel-title  { font-size: var(--fs-title); }
+  .panel-more   { font-size: var(--fs-label); }
+  .panel-body   { padding: 14px 15px; }
+
+  .chart-box .chart-container {
+    flex: 1;
+    min-height: 0;
+  }
+
+  // DataV 组件主题微调
+  .dv-border-box-8,
+  .dv-border-box-13 {
+    .border-box-content {
+      padding: 2px;
+    }
+  }
+
+  .dv-scroll-board {
+    .header {
+      display: none;
+    }
+
+    .rows .row-item {
+      font-family: var(--student-font-body);
+    }
+  }
+
+  .dv-digital-flop {
+    canvas {
+      filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.35));
+    }
+  }
+}

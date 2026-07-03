@@ -1,0 +1,106 @@
+﻿import type { UniversityOverviewDTO } from '@/domains/university/types/api'
+
+export const mockUniversityOverview: UniversityOverviewDTO = {
+  hub: {
+    developmentIndex: 92.6,
+    maxScore: 100,
+    levelLabel: '优秀',
+    yearDelta: 3.2,
+    kpis: [
+      { key: 'studentDev', label: '学生发展', value: 93.4, trend: { direction: 'up', value: 2.1 } },
+      { key: 'furtherStudy', label: '升学质量', value: 88.7, trend: { direction: 'up', value: 1.8 } },
+      { key: 'research', label: '科研创新', value: 90.3, trend: { direction: 'up', value: 2.5 } },
+      { key: 'employment', label: '就业质量', value: 94.2, trend: { direction: 'up', value: 1.2 } },
+      { key: 'safety', label: '校园安全', value: 96.1, trend: { direction: 'up', value: 0.6 } },
+      { key: 'governance', label: '治理效能', value: 91.8, trend: { direction: 'up', value: 1.5 } },
+    ],
+  },
+  collegeRanking: [
+    { rank: 1, collegeName: '金融学院', score: 97.6, trend: 2.3 },
+    { rank: 2, collegeName: '会计学院', score: 95.1, trend: 1.8 },
+    { rank: 3, collegeName: '经济学院', score: 93.8, trend: 1.2 },
+    { rank: 4, collegeName: '大数据与人工智能学院', score: 92.4, trend: 2.6 },
+    { rank: 5, collegeName: '法学院', score: 90.7, trend: 0.9 },
+    { rank: 6, collegeName: '人文与传播学院', score: 89.2, trend: 0.5 },
+    { rank: 7, collegeName: '信息学院', score: 88.5, trend: -0.3 },
+    { rank: 8, collegeName: '外国语学院', score: 87.1, trend: 0.2 },
+  ],
+  rankingFormula:
+    '综合发展指数 = 学生发展×40% + 教学质量×30% + 科研创新×15% + 就业质量×10% + 治理效能×5%',
+  employmentQuality: {
+    metrics: [
+      { label: '就业率', value: 94.2, unit: '%', trend: { direction: 'up', value: 1.2, unit: '%' } },
+      { label: '升学率', value: 28.6, unit: '%', trend: { direction: 'up', value: 2.1, unit: '%' } },
+      { label: '考研率', value: 17.3, unit: '%', trend: { direction: 'up', value: 1.5, unit: '%' } },
+      { label: '出国率', value: 8.9, unit: '%', trend: { direction: 'up', value: 0.8, unit: '%' } },
+    ],
+    trend: [
+      { term: '2023-1', rate: 91.2 },
+      { term: '2023-2', rate: 91.8 },
+      { term: '2024-1', rate: 92.5 },
+      { term: '2024-2', rate: 93.1 },
+      { term: '2025-1', rate: 93.6 },
+      { term: '2025-2', rate: 94.2 },
+    ],
+    distribution: [
+      { name: '粤港澳大湾区', value: 62.1 },
+      { name: '广东省内其他', value: 18.4 },
+      { name: '省外', value: 12.3 },
+      { name: '境外', value: 7.2 },
+    ],
+  },
+  news: [
+    {
+      id: 'n1',
+      tag: 'important',
+      title: '学校召开2026年度工作部署会',
+      summary: '部署年度重点任务，强调高质量发展与治理效能提升。',
+      date: '06-20',
+    },
+    {
+      id: 'n2',
+      tag: 'headline',
+      title: '我校获批3项国家级一流本科专业建设点',
+      summary: '金融、会计、大数据相关专业入选国家级一流本科专业建设点。',
+      date: '06-18',
+    },
+    {
+      id: 'n3',
+      tag: 'notice',
+      title: '关于2026届毕业生离校手续办理的通知',
+      summary: '请各学院组织毕业生按时完成离校手续与档案转递。',
+      date: '06-15',
+    },
+    {
+      id: 'n4',
+      tag: 'headline',
+      title: '广财与多家金融机构签署战略合作协议',
+      summary: '深化产教融合，共建实习就业与联合培养基地。',
+      date: '06-12',
+    },
+    {
+      id: 'n5',
+      tag: 'notice',
+      title: '2026年暑期校园开放与维修安排公告',
+      summary: '部分教学楼将进行设施升级，请师生注意通行安排。',
+      date: '06-08',
+    },
+    {
+      id: 'n6',
+      tag: 'important',
+      title: '学校开展校园安全专项排查行动',
+      summary: '全面排查消防、实验室与宿舍安全隐患，确保校园平稳。',
+      date: '06-05',
+    },
+  ],
+  keyTasks: [
+    { id: '1', name: '双一流建设攻坚', progress: 78, status: 'ongoing' },
+    { id: '2', name: '专业认证全覆盖', progress: 92, status: 'completed' },
+    { id: '3', name: '智慧校园二期建设', progress: 65, status: 'ongoing' },
+    { id: '4', name: '高层次人才引育', progress: 58, status: 'attention' },
+    { id: '5', name: '产教融合示范基地', progress: 85, status: 'ongoing' },
+    { id: '6', name: '国际化办学提升', progress: 72, status: 'ongoing' },
+    { id: '7', name: '绿色校园达标工程', progress: 96, status: 'completed' },
+    { id: '8', name: '内部治理体系优化', progress: 45, status: 'attention' },
+  ],
+}
