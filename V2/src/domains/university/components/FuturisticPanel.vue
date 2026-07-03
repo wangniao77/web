@@ -117,8 +117,10 @@ defineEmits<{ retry: [] }>()
 .fp__body {
   flex: 1;
   min-height: 0;
-  padding: 8px var(--uni-pad-module) var(--uni-pad-module);
+  padding: 4px var(--uni-pad-module) var(--uni-pad-module);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .fp__state {

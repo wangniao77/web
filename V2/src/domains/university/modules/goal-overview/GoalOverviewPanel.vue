@@ -70,7 +70,9 @@ function goDimension(key: string) {
       </div>
 
       <div class="core__center">
-        <CircularHud :value="data.completionRate" :planned="data.plannedProgress" />
+        <div class="core__hud-wrap">
+          <CircularHud :value="data.completionRate" :planned="data.plannedProgress" />
+        </div>
         <div class="core__tracks">
           <div class="track-row">
             <span>计划进度</span>
@@ -101,7 +103,7 @@ function goDimension(key: string) {
             :value="Math.round(dim.completion)"
             :level="dim.riskLevel"
             :trend-label="dim.trendLabel"
-            :size="66"
+            :size="50"
           />
         </button>
       </div>
@@ -137,25 +139,30 @@ function goDimension(key: string) {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 0.86fr 1.62fr 0.94fr;
-  gap: 4px;
-  align-items: center;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.5fr) minmax(0, 0.9fr);
+  gap: 8px;
+  align-items: stretch;
 }
 
 .core__pods {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 5px;
+  align-content: center;
+  padding-right: 2px;
 
-  // arc toward the core: middle rows hug the ring closest
-  > :nth-child(1),
-  > :nth-child(6) { transform: translateX(0); }
-  > :nth-child(2),
-  > :nth-child(5) { transform: translateX(11px); }
-  > :nth-child(3),
-  > :nth-child(4) { transform: translateX(22px); }
+  :deep(.pill) {
+    padding: 4px 8px;
+    column-gap: 6px;
+  }
+
+  :deep(.pill__value) {
+    font-size: var(--uni-fs-caption);
+  }
+
+  :deep(.pill__label) {
+    font-size: var(--uni-fs-meta);
+  }
 }
 
 .core__center {
@@ -164,27 +171,47 @@ function goDimension(key: string) {
   align-items: center;
   justify-content: center;
   min-height: 0;
-  position: relative;
+  min-width: 0;
+  gap: 4px;
+}
+
+.core__hud-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  :deep(.hud) {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 1;
+    margin: 0;
+  }
 }
 
 .core__tracks {
+  flex-shrink: 0;
   width: 100%;
-  max-width: 320px;
-  margin-top: 4px;
+  max-width: 100%;
+  padding: 0 2px;
 }
 
 .track-row {
   display: grid;
-  grid-template-columns: 60px 1fr 46px;
+  grid-template-columns: 68px 1fr 48px;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 5px;
+  gap: 5px;
+  margin-bottom: 3px;
 
-  span { font-size: 12px; color: var(--uni-text-secondary); }
+  span { font-size: var(--uni-fs-label); color: var(--uni-text-secondary); }
   em {
     font-style: normal;
     font-family: var(--uni-font-number);
-    font-size: 15px;
+    font-size: var(--uni-fs-caption);
     text-align: right;
     color: var(--uni-text-primary);
   }
@@ -192,11 +219,11 @@ function goDimension(key: string) {
 
 .track-gap {
   text-align: center;
-  font-size: 13px;
+  font-size: var(--uni-fs-meta);
   color: var(--uni-text-secondary);
-  margin-top: 1px;
+  margin-top: 0;
 
-  strong { font-family: var(--uni-font-number); font-size: 17px; margin-left: 4px; }
+  strong { font-family: var(--uni-font-number); font-size: var(--uni-fs-caption); margin-left: 4px; }
   &.is-up strong { color: var(--uni-status-normal); }
   &.is-down strong { color: var(--uni-status-attention); }
 }
@@ -204,26 +231,19 @@ function goDimension(key: string) {
 .core__dims {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 11px 4px;
+  gap: 4px 6px;
   align-content: center;
-  justify-items: start;
-
-  // arc toward the core: middle row hugs the ring closest
-  // (margin, not transform, so :hover lift stays intact)
-  > :nth-child(1),
-  > :nth-child(2),
-  > :nth-child(5),
-  > :nth-child(6) { margin-left: -6px; }
-  > :nth-child(3),
-  > :nth-child(4) { margin-left: -18px; }
+  justify-items: center;
+  padding-left: 2px;
 }
 
 .dim {
   background: none;
   border: none;
-  padding: 4px 0;
+  padding: 2px 0;
   cursor: pointer;
   transition: transform 0.2s;
+  max-width: 100%;
 
   &:hover { transform: translateY(-2px); }
 }

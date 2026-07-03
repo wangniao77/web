@@ -18,7 +18,7 @@ defineProps<{ to: RouteLocationRaw; label?: string }>()
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 12px 4px 13px;
+  padding: 5px 14px 5px 15px;
   font-size: var(--uni-fs-caption);
   color: var(--uni-text-secondary);
   text-decoration: none;

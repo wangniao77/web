@@ -77,19 +77,27 @@ const footer = computed(() => props.data.metrics.slice(4, 6))
 <style scoped lang="scss">
 .employ {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: var(--uni-gap-inner);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
   height: 100%;
   min-height: 0;
 }
 
 .employ__kpi {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  grid-template-columns: 1.15fr 1fr;
   grid-template-rows: auto auto;
-  gap: 8px;
+  gap: 6px;
 
   > :first-child { grid-row: 1 / 3; }
+
+  :deep(.glow-metric) {
+    padding: 6px 9px;
+  }
+
+  :deep(.glow-metric--lg .glow-metric__value) {
+    font-size: var(--uni-fs-metric-sm);
+  }
 }
 
 .employ__charts {
@@ -103,7 +111,7 @@ const footer = computed(() => props.data.metrics.slice(4, 6))
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 8px 9px;
+  padding: 6px 8px;
   background: rgba(8, 22, 42, 0.35);
   border: 1px solid rgba(90, 170, 255, 0.08);
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
@@ -112,7 +120,7 @@ const footer = computed(() => props.data.metrics.slice(4, 6))
 }
 
 .cell-title {
-  font-size: 12px;
+  font-size: var(--uni-fs-label);
   color: var(--uni-text-muted);
   margin-bottom: 4px;
 }
@@ -120,24 +128,24 @@ const footer = computed(() => props.data.metrics.slice(4, 6))
 .employ__foot {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
+  gap: 6px;
 }
 
 .foot-item {
   display: flex;
   flex-direction: column;
-  padding: 7px 12px;
+  padding: 5px 10px;
   background: rgba(8, 22, 42, 0.4);
   border-left: 2px solid var(--uni-accent-cyan);
 
-  &__label { font-size: 12px; color: var(--uni-text-secondary); }
+  &__label { font-size: var(--uni-fs-label); color: var(--uni-text-secondary); }
   &__value {
     font-family: var(--uni-font-number);
-    font-size: 23px;
+    font-size: var(--uni-fs-body);
     font-weight: 700;
     color: var(--uni-accent-cyan);
     margin-top: 2px;
   }
-  &__hint { font-size: 11px; color: var(--uni-text-muted); margin-top: 2px; }
+  &__hint { font-size: var(--uni-fs-meta); color: var(--uni-text-muted); margin-top: 2px; }
 }
 </style>

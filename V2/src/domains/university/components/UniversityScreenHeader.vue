@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useClock } from '@/shared/composables/useClock'
 import { ROUTES } from '@/constants/routes'
 import type { DashboardMetaVM } from '@/domains/university/types/view'
@@ -11,11 +11,7 @@ defineProps<{
 
 const principles = ['看全局', '看目标', '看趋势', '看差距', '看风险', '看成效']
 const { dateStr, timeStr, weekStr } = useClock()
-const router = useRouter()
 const route = useRoute()
-
-const selectedYear = ref('2025-2026')
-const selectedSemester = ref('第二学期')
 
 const navItems = [
   { label: '总览', to: ROUTES.university.root, match: 'overview' },
@@ -39,11 +35,6 @@ const activeNav = computed(() => {
   if (name.includes('events')) return 'overview'
   return 'overview'
 })
-
-function toggleFullscreen() {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen()
-  else document.exitFullscreen()
-}
 </script>
 
 <template>
@@ -51,7 +42,11 @@ function toggleFullscreen() {
     <header class="uni-header">
       <div class="uni-header__left">
         <div class="uni-header__logo">
-          <span>广财</span>
+          <img
+            src="/university-logo.png"
+            alt="广东财经大学校徽"
+            class="uni-header__logo-img"
+          >
         </div>
         <div>
           <div class="uni-header__school">广东财经大学</div>
@@ -73,22 +68,6 @@ function toggleFullscreen() {
       </div>
 
       <div class="uni-header__right">
-        <div class="uni-header__controls">
-          <label class="uni-capsule">
-            <select v-model="selectedYear" aria-label="学年">
-              <option value="2025-2026">2025-2026</option>
-              <option value="2024-2025">2024-2025</option>
-            </select>
-          </label>
-          <label class="uni-capsule">
-            <select v-model="selectedSemester" aria-label="学期">
-              <option value="第二学期">第二学期</option>
-              <option value="第一学期">第一学期</option>
-            </select>
-          </label>
-          <button type="button" class="uni-capsule uni-capsule--btn" @click="router.push(ROUTES.university.metrics)">数据口径</button>
-          <button type="button" class="uni-capsule uni-capsule--btn" @click="toggleFullscreen">全屏</button>
-        </div>
         <div class="uni-header__meta">
           <span>{{ dateStr }} {{ weekStr }}</span>
           <span class="uni-header__time">{{ timeStr }}</span>
@@ -121,7 +100,7 @@ function toggleFullscreen() {
 .uni-header {
   height: var(--uni-header-height);
   display: grid;
-  grid-template-columns: 280px 1fr 340px;
+  grid-template-columns: 300px 1fr 360px;
   align-items: center;
   padding: 0 var(--uni-gap-page);
   background: linear-gradient(180deg, rgba(9, 24, 44, 0.5), transparent);
@@ -135,21 +114,23 @@ function toggleFullscreen() {
 }
 
 .uni-header__logo {
-  width: 46px;
-  height: 46px;
+  width: var(--uni-logo-size);
+  height: var(--uni-logo-size);
   display: grid;
   place-items: center;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--uni-accent-cyan);
-  background: linear-gradient(145deg, rgba(51, 217, 255, 0.16), rgba(75, 141, 255, 0.08));
-  border: 1px solid rgba(51, 217, 255, 0.3);
-  clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%);
-  box-shadow: inset 0 0 12px rgba(51, 217, 255, 0.15);
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(51, 217, 255, 0.25));
+}
+
+.uni-header__logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .uni-header__school {
-  font-size: 17px;
+  font-size: var(--uni-fs-body);
   font-weight: 700;
   color: var(--uni-text-primary);
   letter-spacing: 0.04em;
@@ -229,43 +210,6 @@ function toggleFullscreen() {
   text-align: right;
 }
 
-.uni-header__controls {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.uni-capsule {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 12px;
-  font-size: var(--uni-fs-caption);
-  color: var(--uni-text-secondary);
-  background: rgba(9, 24, 44, 0.7);
-  border: 1px solid rgba(90, 170, 255, 0.18);
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
-
-  select {
-    background: transparent;
-    border: none;
-    color: inherit;
-    font-size: inherit;
-    cursor: pointer;
-    outline: none;
-
-    option { background: #0b1c33; color: var(--uni-text-primary); }
-  }
-
-  &:hover {
-    color: var(--uni-accent-cyan);
-    border-color: var(--uni-border-hover);
-    box-shadow: var(--uni-glow-soft);
-  }
-}
-
 .uni-header__meta {
   display: flex;
   justify-content: flex-end;
@@ -277,7 +221,7 @@ function toggleFullscreen() {
 
 .uni-header__time {
   font-family: var(--uni-font-number);
-  font-size: 14px;
+  font-size: var(--uni-fs-body);
   color: var(--uni-accent-cyan);
   text-shadow: 0 0 10px rgba(51, 217, 255, 0.4);
 }
@@ -293,7 +237,7 @@ function toggleFullscreen() {
 
 .uni-nav__item {
   position: relative;
-  padding: 7px 18px;
+  padding: 9px 20px;
   font-size: var(--uni-fs-body);
   color: var(--uni-text-secondary);
   text-decoration: none;

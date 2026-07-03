@@ -27,15 +27,15 @@ export const UNI_TOOLTIP = {
 export const UNI_AXIS = {
   axisLine: { show: false },
   axisTick: { show: false },
-  axisLabel: { color: UNI_CHART.text, fontSize: 12 },
+  axisLabel: { color: UNI_CHART.text, fontSize: 13, hideOverlap: true },
   splitLine: { lineStyle: { color: UNI_CHART.grid, type: 'dashed' as const } },
 }
 
 export const UNI_GRID = {
   tight: { left: 4, right: 8, top: 8, bottom: 4, containLabel: true },
-  line: { left: 6, right: 14, top: 14, bottom: 8, containLabel: true },
+  line: { left: 6, right: 14, top: 14, bottom: 14, containLabel: true },
   barH: { left: 4, right: 36, top: 4, bottom: 4, containLabel: true },
-  barV: { left: 6, right: 8, top: 18, bottom: 6, containLabel: true },
+  barV: { left: 6, right: 8, top: 18, bottom: 10, containLabel: true },
 }
 
 function areaFill(color: string) {
@@ -141,9 +141,29 @@ export function uniTerrain(
   layers: Array<{ name: string; data: number[]; color: string }>,
 ): EChartsOption {
   return {
-    grid: { left: 6, right: 10, top: 10, bottom: 6, containLabel: true },
+    grid: { left: 8, right: 10, top: 8, bottom: 18, containLabel: true },
     tooltip: { ...UNI_TOOLTIP, trigger: 'axis' },
-    xAxis: { type: 'category', data: categories, boundaryGap: false, ...UNI_AXIS, axisLabel: { ...UNI_AXIS.axisLabel, fontSize: 11 } },
+    legend: {
+      show: layers.length > 3,
+      top: 0,
+      right: 0,
+      itemWidth: 10,
+      itemHeight: 8,
+      itemGap: 8,
+      textStyle: { color: UNI_CHART.text, fontSize: 11 },
+    },
+    xAxis: {
+      type: 'category',
+      data: categories,
+      boundaryGap: false,
+      ...UNI_AXIS,
+      axisLabel: {
+        ...UNI_AXIS.axisLabel,
+        fontSize: 12,
+        interval: Math.max(0, Math.ceil(categories.length / 6) - 1),
+        rotate: categories.length > 8 ? 24 : 0,
+      },
+    },
     yAxis: { type: 'value', ...UNI_AXIS, splitLine: { lineStyle: { color: UNI_CHART.grid, type: 'dashed' } } },
     series: layers.map((l, i) => ({
       name: l.name,
@@ -152,8 +172,8 @@ export function uniTerrain(
       data: l.data,
       showSymbol: false,
       z: layers.length - i,
-      lineStyle: { color: l.color, width: 1.8, shadowBlur: 10, shadowColor: `${l.color}aa` },
-      areaStyle: { color: areaFill(l.color), opacity: 0.9 },
+      lineStyle: { color: l.color, width: 1.6, shadowBlur: 8, shadowColor: `${l.color}aa` },
+      areaStyle: { color: areaFill(l.color), opacity: 0.72 },
     })),
   }
 }
@@ -172,15 +192,15 @@ export function uniDonut(
       top: 'middle',
       itemWidth: 8,
       itemHeight: 8,
-      itemGap: 10,
+      itemGap: 6,
       icon: 'roundRect',
-      textStyle: { color: UNI_CHART.text, fontSize: 12 },
+      textStyle: { color: UNI_CHART.text, fontSize: 11 },
     },
     series: [
       {
         type: 'pie',
-        radius: ['54%', '72%'],
-        center: ['32%', '50%'],
+        radius: ['50%', '68%'],
+        center: ['30%', '50%'],
         padAngle: 3,
         itemStyle: { borderRadius: 3, borderColor: 'rgba(6,16,32,0.9)', borderWidth: 2, shadowBlur: 8, shadowColor: 'rgba(51,217,255,0.15)' },
         label: { show: false },

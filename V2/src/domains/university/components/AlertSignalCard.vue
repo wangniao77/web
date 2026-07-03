@@ -60,7 +60,7 @@ defineProps<{ event: SchoolEventVM }>()
 
   &__tag {
     padding: 2px 9px;
-    font-size: 12px;
+    font-size: var(--uni-fs-label);
     color: var(--uni-accent-blue);
     background: rgba(75, 141, 255, 0.12);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 5px 100%, 0 calc(100% - 5px));
@@ -70,7 +70,7 @@ defineProps<{ event: SchoolEventVM }>()
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
+    font-size: var(--uni-fs-label);
     color: var(--uni-status-danger);
   }
 
@@ -87,9 +87,9 @@ defineProps<{ event: SchoolEventVM }>()
     font-size: var(--uni-fs-body);
     font-weight: 500;
     color: var(--uni-text-primary);
-    line-height: 1.4;
+    line-height: 1.35;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
     margin-bottom: 6px;
@@ -98,7 +98,7 @@ defineProps<{ event: SchoolEventVM }>()
   &__foot {
     display: flex;
     gap: 14px;
-    font-size: 12px;
+    font-size: var(--uni-fs-label);
     color: var(--uni-text-muted);
   }
 }

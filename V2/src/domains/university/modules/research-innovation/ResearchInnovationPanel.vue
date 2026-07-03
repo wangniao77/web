@@ -65,8 +65,8 @@ const maxContributor = computed(() =>
 
       <div class="research__bottom">
         <div class="heat">
-          <span class="sub-title">贡献热度榜 · Top 3</span>
-          <div v-for="(c, i) in data.topContributors" :key="c.name" class="heat__item">
+          <span class="sub-title">贡献热度榜 · Top 2</span>
+          <div v-for="(c, i) in data.topContributors.slice(0, 2)" :key="c.name" class="heat__item">
             <em class="heat__rank">{{ i + 1 }}</em>
             <div class="heat__body">
               <span>{{ c.name }}</span>
@@ -86,9 +86,9 @@ const maxContributor = computed(() =>
 
 <style scoped lang="scss">
 .research {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 6px;
   height: 100%;
   min-height: 0;
 }
@@ -96,11 +96,19 @@ const maxContributor = computed(() =>
 .research__kpi {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 6px;
+
+  :deep(.glow-metric) {
+    padding: 6px 9px;
+  }
+
+  :deep(.glow-metric__value) {
+    font-size: var(--uni-fs-body);
+  }
 }
 
 .research__phd {
-  padding: 7px 12px;
+  padding: 5px 10px;
   background: rgba(8, 22, 42, 0.4);
   border: 1px solid rgba(90, 170, 255, 0.1);
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
@@ -116,7 +124,7 @@ const maxContributor = computed(() =>
 
   strong {
     font-family: var(--uni-font-number);
-    font-size: 25px;
+    font-size: var(--uni-fs-metric-sm);
     color: var(--uni-accent-cyan);
     text-shadow: 0 0 12px rgba(51, 217, 255, 0.4);
   }
@@ -127,7 +135,7 @@ const maxContributor = computed(() =>
   align-items: center;
   gap: 7px;
   margin-top: 6px;
-  font-size: 12px;
+  font-size: var(--uni-fs-label);
   color: var(--uni-status-attention);
 
   &__dot {
@@ -140,16 +148,21 @@ const maxContributor = computed(() =>
 }
 
 .research__bottom {
-  flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
+  grid-template-columns: 1fr 1.05fr;
   gap: var(--uni-gap-inner);
+}
+
+.heat {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .sub-title {
   display: block;
-  font-size: 12px;
+  font-size: var(--uni-fs-label);
   color: var(--uni-text-muted);
   margin-bottom: 6px;
   letter-spacing: 0.04em;

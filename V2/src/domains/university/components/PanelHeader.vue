@@ -28,7 +28,7 @@ defineProps<{
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 11px var(--uni-pad-module) 8px;
+  padding: 8px var(--uni-pad-module) 6px;
   flex-shrink: 0;
 }
 
@@ -41,7 +41,7 @@ defineProps<{
 
 .panel-header__index {
   font-family: var(--uni-font-number);
-  font-size: 12px;
+  font-size: var(--uni-fs-label);
   font-weight: 700;
   color: rgba(51, 217, 255, 0.55);
   letter-spacing: 0.06em;
@@ -49,7 +49,7 @@ defineProps<{
 
 .panel-header__bar {
   width: 3px;
-  height: 17px;
+  height: 20px;
   border-radius: 2px;
   background: linear-gradient(180deg, var(--uni-accent-cyan), rgba(51, 217, 255, 0.1));
   box-shadow: 0 0 8px rgba(51, 217, 255, 0.6);

@@ -32,7 +32,7 @@ defineEmits<{ retry: [] }>()
           <RouterLink :to="ROUTES.university.events" class="er__more">全部</RouterLink>
         </header>
         <AlertSignalCard
-          v-for="item in events.slice(0, 2)"
+          v-for="item in events.slice(0, 1)"
           :key="item.id"
           :event="item"
         />
@@ -43,24 +43,25 @@ defineEmits<{ retry: [] }>()
           <h4>人才培养与学业风险</h4>
           <RouterLink :to="ROUTES.university.academicRisk" class="er__more">全部</RouterLink>
         </header>
-        <div class="er__metrics">
-          <GlowMetricCard
-            label="预计延毕"
-            :value="academicRisk.expectedDelayCount"
-            :trend="`同比 ${academicRisk.delayRateChangeLabel}`"
-            tone="warn"
-          />
-          <GlowMetricCard label="学业预警" :value="academicRisk.warningCount" tone="danger" />
-          <GlowMetricCard label="已干预" :value="academicRisk.intervenedCount" tone="ongoing" />
-          <GlowMetricCard label="高风险学院" :value="academicRisk.highRiskCollegeCount" unit="个" tone="warn" />
-        </div>
-        <div class="er__vortex">
-          <RiskVortex
-            :value="academicRisk.riskResolvedLabel"
-            label="风险解除率"
-            tone="gold"
-            caption="预警干预治理闭环"
-          />
+        <div class="er__risk-body">
+          <div class="er__metrics">
+            <GlowMetricCard
+              label="预计延毕"
+              :value="academicRisk.expectedDelayCount"
+              :trend="`同比 ${academicRisk.delayRateChangeLabel}`"
+              tone="warn"
+            />
+            <GlowMetricCard label="学业预警" :value="academicRisk.warningCount" tone="danger" />
+            <GlowMetricCard label="已干预" :value="academicRisk.intervenedCount" tone="ongoing" />
+            <GlowMetricCard label="高风险学院" :value="academicRisk.highRiskCollegeCount" unit="个" tone="warn" />
+          </div>
+          <div class="er__vortex">
+            <RiskVortex
+              :value="academicRisk.riskResolvedLabel"
+              label="风险解除率"
+              tone="gold"
+            />
+          </div>
         </div>
       </section>
     </div>
@@ -70,8 +71,8 @@ defineEmits<{ retry: [] }>()
 <style scoped lang="scss">
 .er {
   display: grid;
-  grid-template-columns: 1fr 1.05fr;
-  gap: var(--uni-gap-inner);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
   height: 100%;
   min-height: 0;
 }
@@ -80,7 +81,8 @@ defineEmits<{ retry: [] }>()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 
   h4 {
     font-size: var(--uni-fs-body);
@@ -90,34 +92,61 @@ defineEmits<{ retry: [] }>()
 }
 
 .er__more {
-  font-size: 12px;
+  font-size: var(--uni-fs-label);
   color: var(--uni-text-secondary);
   text-decoration: none;
+  white-space: nowrap;
 
   &:hover { color: var(--uni-accent-cyan); }
 }
 
 .er__events {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   min-height: 0;
 }
 
 .er__risk {
-  display: grid;
-  grid-template-rows: auto auto 1fr;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.er__risk-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  gap: 6px;
+  align-items: center;
 }
 
 .er__metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  min-height: 0;
+  align-content: center;
+
+  :deep(.glow-metric) {
+    padding: 6px 8px;
+  }
+
+  :deep(.glow-metric__label) {
+    font-size: var(--uni-fs-meta);
+  }
+
+  :deep(.glow-metric__value) {
+    font-size: var(--uni-fs-caption);
+  }
+
+  :deep(.glow-metric__trend) {
+    display: none;
+  }
 }
 
 .er__vortex {
   min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

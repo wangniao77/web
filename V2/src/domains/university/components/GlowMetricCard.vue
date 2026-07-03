@@ -39,7 +39,7 @@ const trendDir = computed(() => {
 <style scoped lang="scss">
 .glow-metric {
   position: relative;
-  padding: 10px 13px;
+  padding: 8px 11px;
   min-height: 0;
   overflow: hidden;
   background: linear-gradient(160deg, rgba(13, 32, 58, 0.6), rgba(8, 20, 38, 0.4));
@@ -91,7 +91,7 @@ const trendDir = computed(() => {
     text-shadow: 0 0 14px var(--tone-glow, rgba(51, 217, 255, 0.45));
 
     small {
-      font-size: 12px;
+      font-size: var(--uni-fs-label);
       font-weight: 500;
       margin-left: 2px;
       color: var(--uni-text-secondary);
@@ -112,12 +112,17 @@ const trendDir = computed(() => {
   &__hint {
     position: relative;
     margin-top: 5px;
-    font-size: 11px;
+    font-size: var(--uni-fs-meta);
     color: var(--uni-text-muted);
     line-height: 1.35;
   }
 
-  &--lg .glow-metric__value { font-size: var(--uni-fs-metric-lg); }
+  &--lg .glow-metric__value { font-size: var(--uni-fs-metric-md); }
+
+  &--md .glow-metric__value,
+  &--lg .glow-metric__value small {
+    max-width: 100%;
+  }
 
   &--cyan { --tone-color: var(--uni-accent-cyan); --tone-glow: rgba(51, 217, 255, 0.5); --tone-wash: rgba(51, 217, 255, 0.09); }
   &--green { --tone-color: var(--uni-status-normal); --tone-glow: rgba(55, 224, 164, 0.45); --tone-wash: rgba(55, 224, 164, 0.08); }

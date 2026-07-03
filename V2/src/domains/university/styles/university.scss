@@ -12,6 +12,8 @@
   color: var(--uni-text-primary);
   font-family: var(--uni-font-body);
   font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 
   // Faint technical grid overlay
   &::before {
@@ -58,16 +60,13 @@
   min-height: 0;
 
   &--top {
-    // central態勢 core widened ~10%; research / employment recede accordingly
     grid-template-columns: 3.32fr 5.3fr 3.32fr;
-    flex: 1.1;
+    flex: 0.94;
   }
 
   &--bottom {
-    // key-tasks stays dominant; disciplines & events slightly narrower
     grid-template-columns: 5.3fr 3.1fr 3.35fr;
-    // second row is deliberately shorter than the top row
-    flex: 0.9;
+    flex: 1.06;
   }
 
   > * {
@@ -79,6 +78,11 @@
 // The central態勢 module is the visual core — slightly taller emphasis on row1
 .university-row--top .cell-goal {
   z-index: 3;
+}
+
+.university-grid .fp__body > * {
+  height: 100%;
+  min-height: 0;
 }
 
 // Side modules recede so the central態勢 core is the absolute focal point.

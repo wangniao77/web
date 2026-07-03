@@ -45,7 +45,7 @@ defineEmits<{ retry: [] }>()
       <div class="disc__focus">
         <div class="focus focus--up">
           <span class="focus__title">提升最快</span>
-          <div v-for="item in data.topRisers.slice(0, 2)" :key="item.name" class="focus__row">
+          <div v-for="item in data.topRisers.slice(0, 1)" :key="item.name" class="focus__row">
             <span class="focus__name">{{ item.name }}</span>
             <em class="focus__change">{{ item.changeLabel }}</em>
             <span class="focus__rank">第 {{ item.currentRank }} 名</span>
@@ -53,7 +53,7 @@ defineEmits<{ retry: [] }>()
         </div>
         <div class="focus focus--down">
           <span class="focus__title">需重点关注</span>
-          <div v-for="item in data.topFallers.slice(0, 2)" :key="item.name" class="focus__row">
+          <div v-for="item in data.topFallers.slice(0, 1)" :key="item.name" class="focus__row">
             <span class="focus__name">{{ item.name }}</span>
             <em class="focus__change">{{ item.changeLabel }}</em>
             <span class="focus__rank">第 {{ item.currentRank }} 名</span>
@@ -69,8 +69,8 @@ defineEmits<{ retry: [] }>()
 <style scoped lang="scss">
 .disc {
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
-  gap: 8px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
   height: 100%;
   min-height: 0;
 }
@@ -78,13 +78,13 @@ defineEmits<{ retry: [] }>()
 .disc__summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .sum {
   --sum-color: var(--uni-accent-cyan);
   text-align: center;
-  padding: 7px 0;
+  padding: 5px 0;
   background: rgba(8, 22, 42, 0.4);
   border: 1px solid rgba(90, 170, 255, 0.1);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
@@ -96,7 +96,7 @@ defineEmits<{ retry: [] }>()
   strong {
     display: block;
     font-family: var(--uni-font-number);
-    font-size: 30px;
+    font-size: var(--uni-fs-metric-sm);
     font-weight: 700;
     line-height: 1;
     color: var(--sum-color);
@@ -106,7 +106,7 @@ defineEmits<{ retry: [] }>()
   span {
     display: block;
     margin-top: 4px;
-    font-size: 12px;
+    font-size: var(--uni-fs-label);
     color: var(--uni-text-secondary);
   }
 }
@@ -118,7 +118,14 @@ defineEmits<{ retry: [] }>()
 .disc__focus {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
+  gap: 6px;
+}
+
+.disc__note {
+  font-size: var(--uni-fs-meta);
+  color: var(--uni-text-muted);
+  text-align: right;
+  margin-top: -2px;
 }
 
 .focus {
@@ -132,7 +139,7 @@ defineEmits<{ retry: [] }>()
 
   &__title {
     display: block;
-    font-size: 12px;
+    font-size: var(--uni-fs-label);
     font-weight: 600;
     color: var(--f-color);
     margin-bottom: 5px;
@@ -159,20 +166,14 @@ defineEmits<{ retry: [] }>()
   &__change {
     font-style: normal;
     font-family: var(--uni-font-number);
-    font-size: 15px;
+    font-size: var(--uni-fs-caption);
     color: var(--f-color);
   }
 
   &__rank {
     grid-column: 1 / -1;
-    font-size: 11px;
+    font-size: var(--uni-fs-meta);
     color: var(--uni-text-muted);
   }
-}
-
-.disc__note {
-  font-size: 11px;
-  color: var(--uni-text-muted);
-  text-align: right;
 }
 </style>

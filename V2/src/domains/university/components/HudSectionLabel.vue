@@ -21,7 +21,7 @@ defineProps<{ title: string; index?: number }>()
 
 .hud-label__index {
   font-family: var(--uni-font-number);
-  font-size: 12px;
+  font-size: var(--uni-fs-label);
   font-weight: 700;
   color: rgba(51, 217, 255, 0.6);
   letter-spacing: 0.06em;

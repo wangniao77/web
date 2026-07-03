@@ -131,17 +131,18 @@ function clamp(v: number) {
 .hud {
   position: relative;
   width: 100%;
-  max-width: 384px;
+  max-width: 280px;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
+  container-type: size;
 }
 
 .hud__aura {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 128%;
-  height: 128%;
+  width: 108%;
+  height: 108%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(circle, rgba(51, 217, 255, 0.26), rgba(51, 217, 255, 0.07) 46%, transparent 66%);
@@ -187,7 +188,6 @@ function clamp(v: number) {
   align-items: center;
   justify-content: center;
 
-  // foreground plate: lifts the number off the ring layer
   &::before {
     content: '';
     position: absolute;
@@ -204,7 +204,7 @@ function clamp(v: number) {
 
 .hud__value {
   font-family: var(--uni-font-number);
-  font-size: 70px;
+  font-size: clamp(44px, 22cqh, var(--uni-fs-hud-hero));
   font-weight: 700;
   line-height: 1;
   color: #f4fbff;
@@ -214,8 +214,8 @@ function clamp(v: number) {
 }
 
 .hud__label {
-  margin-top: 9px;
-  font-size: var(--uni-fs-body);
+  margin-top: 6px;
+  font-size: var(--uni-fs-caption);
   color: var(--uni-text-secondary);
   letter-spacing: 0.08em;
 }

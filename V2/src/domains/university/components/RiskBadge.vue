@@ -30,13 +30,13 @@ const displayLabel = props.label ?? RISK_LEVEL_MAP[props.level].label
   border: 1px solid transparent;
 
   &--sm {
-    padding: 3px 10px;
-    font-size: 11px;
+    padding: 4px 11px;
+    font-size: var(--uni-fs-meta);
   }
 
   &--md {
-    padding: 4px 12px;
-    font-size: 12px;
+    padding: 5px 13px;
+    font-size: var(--uni-fs-label);
   }
 
   &--normal {

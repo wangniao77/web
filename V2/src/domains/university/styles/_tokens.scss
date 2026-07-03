@@ -1,4 +1,4 @@
-// University governance cockpit — futuristic HUD design tokens
+// University governance cockpit — exhibition hall / large-screen tokens (1920×1080 base)
 
 .university-screen {
   // Deep-space backdrop
@@ -26,14 +26,14 @@
   // Text
   --uni-text-primary: #eaf4ff;
   --uni-text-secondary: #9cb6d6;
-  --uni-text-muted: #5f7694;
+  --uni-text-muted: #6a84a3;
 
   // Borders + glow
   --uni-border: rgba(90, 170, 255, 0.16);
   --uni-border-hover: rgba(51, 217, 255, 0.4);
   --uni-hairline: rgba(90, 170, 255, 0.1);
-  --uni-glow-cyan: 0 0 18px rgba(51, 217, 255, 0.35);
-  --uni-glow-soft: 0 0 12px rgba(51, 217, 255, 0.22);
+  --uni-glow-cyan: 0 0 22px rgba(51, 217, 255, 0.38);
+  --uni-glow-soft: 0 0 14px rgba(51, 217, 255, 0.24);
   --uni-shadow-soft: 0 12px 40px rgba(2, 8, 20, 0.5);
   --uni-shadow-inset: inset 0 1px 0 rgba(140, 200, 255, 0.06);
   --uni-panel-bg: linear-gradient(
@@ -43,27 +43,33 @@
     rgba(6, 16, 32, 0.58) 100%
   );
 
-  // Type
+  // Type — tuned for exhibition hall viewing distance
   --uni-font-body: "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Microsoft YaHei UI", sans-serif;
   --uni-font-number: "DIN Alternate", "Bahnschrift", "Rajdhani", "Roboto Condensed", var(--uni-font-body);
 
-  --uni-fs-page-title: 33px;
-  --uni-fs-subtitle: 14px;
-  --uni-fs-module-title: 21px;
-  --uni-fs-metric-lg: 44px;
-  --uni-fs-metric-md: 27px;
-  --uni-fs-body: 15px;
-  --uni-fs-caption: 13px;
+  --uni-fs-page-title: 42px;
+  --uni-fs-subtitle: 18px;
+  --uni-fs-module-title: 28px;
+  --uni-fs-metric-lg: 58px;
+  --uni-fs-metric-md: 36px;
+  --uni-fs-metric-sm: 30px;
+  --uni-fs-hud-hero: 72px;
+  --uni-fs-body: 19px;
+  --uni-fs-caption: 16px;
+  --uni-fs-label: 15px;
+  --uni-fs-meta: 14px;
+  --uni-fs-micro: 13px;
 
-  // Spacing (compacted so the enlarged type still fits 1920×1080)
+  // Spacing + chrome
   --uni-gap-page: 14px;
-  --uni-gap-module: 11px;
-  --uni-gap-inner: 9px;
-  --uni-pad-module: 15px;
-  --uni-pad-inner: 11px;
+  --uni-gap-module: 10px;
+  --uni-gap-inner: 8px;
+  --uni-pad-module: 12px;
+  --uni-pad-inner: 10px;
   --uni-radius-module: 12px;
   --uni-radius-inner: 8px;
-  --uni-header-height: 76px;
-  --uni-nav-height: 34px;
-  --uni-clip: 14px; // HUD corner-cut size
+  --uni-header-height: 86px;
+  --uni-nav-height: 42px;
+  --uni-logo-size: 54px;
+  --uni-clip: 16px;
 }

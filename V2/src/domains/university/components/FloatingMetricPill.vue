@@ -48,7 +48,7 @@ withDefaults(
 
   &__value {
     font-family: var(--uni-font-number);
-    font-size: 25px;
+    font-size: var(--uni-fs-metric-sm);
     font-weight: 700;
     line-height: 1;
     color: var(--pill-color);
@@ -56,7 +56,7 @@ withDefaults(
   }
 
   &__label {
-    font-size: 12px;
+    font-size: var(--uni-fs-label);
     color: var(--uni-text-secondary);
   }
 }

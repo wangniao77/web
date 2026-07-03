@@ -65,34 +65,36 @@ const lanes = computed(() =>
   padding: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 5px;
   height: 100%;
+  min-height: 0;
 }
 
 .flow__lane {
   display: grid;
-  grid-template-columns: 1.4fr 2.6fr auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) 68px;
   align-items: center;
-  gap: 16px;
-  padding: 5px 4px;
+  gap: 8px;
+  padding: 3px 0;
+  flex-shrink: 0;
 }
 
 .flow__head {
   min-width: 0;
 
   h4 {
-    font-size: var(--uni-fs-body);
+    font-size: var(--uni-fs-caption);
     font-weight: 600;
     color: var(--uni-text-primary);
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   span {
-    font-size: 12px;
+    font-size: var(--uni-fs-label);
     color: var(--uni-text-muted);
   }
 }
@@ -152,12 +154,13 @@ const lanes = computed(() =>
 
 .flow__meta {
   text-align: right;
-  min-width: 62px;
+  min-width: 72px;
+  flex-shrink: 0;
 
   strong {
     display: block;
     font-family: var(--uni-font-number);
-    font-size: 27px;
+    font-size: var(--uni-fs-metric-sm);
     font-weight: 700;
     line-height: 1;
     color: var(--lane-color);
@@ -167,8 +170,9 @@ const lanes = computed(() =>
   }
 
   .flow__status {
-    font-size: 13px;
+    font-size: var(--uni-fs-meta);
     color: var(--lane-color);
+    white-space: nowrap;
   }
 }
 

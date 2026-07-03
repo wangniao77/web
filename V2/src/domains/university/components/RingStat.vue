@@ -58,7 +58,8 @@ const dash = computed(() => (Math.min(100, Math.max(0, props.value)) / 100) * ci
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  max-width: 76px;
 }
 
 .ring-stat__ring {
@@ -80,7 +81,7 @@ const dash = computed(() => (Math.min(100, Math.max(0, props.value)) / 100) * ci
   align-items: center;
   justify-content: center;
   font-family: var(--uni-font-number);
-  font-size: 18px;
+  font-size: var(--uni-fs-label);
   font-weight: 700;
   color: var(--uni-text-primary);
 
@@ -94,13 +95,17 @@ const dash = computed(() => (Math.min(100, Math.max(0, props.value)) / 100) * ci
 
 .ring-stat__label {
   display: block;
-  font-size: var(--uni-fs-caption);
+  font-size: var(--uni-fs-meta);
   color: var(--uni-text-secondary);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ring-stat__trend {
   font-style: normal;
-  font-size: 11px;
+  font-size: var(--uni-fs-meta);
   color: var(--rs-color);
 }
 </style>

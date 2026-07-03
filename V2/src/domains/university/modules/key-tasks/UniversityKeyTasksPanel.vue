@@ -36,7 +36,7 @@ const overall = computed(() => {
       </div>
     </template>
 
-    <TaskFlowTrack :tasks="tasks" :limit="5" />
+    <TaskFlowTrack :tasks="tasks" :limit="4" />
   </FuturisticPanel>
 </template>
 
@@ -46,11 +46,11 @@ const overall = computed(() => {
   align-items: baseline;
   gap: 8px;
 
-  span { font-size: 12px; color: var(--uni-text-muted); }
+  span { font-size: var(--uni-fs-label); color: var(--uni-text-muted); }
 
   strong {
     font-family: var(--uni-font-number);
-    font-size: 26px;
+    font-size: var(--uni-fs-metric-sm);
     font-weight: 700;
     color: var(--uni-accent-cyan);
     text-shadow: 0 0 12px rgba(51, 217, 255, 0.4);
