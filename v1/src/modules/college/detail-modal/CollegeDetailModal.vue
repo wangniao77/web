@@ -3,7 +3,14 @@ import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import DashIcon, { type IconKind } from '@/components/DashIcon.vue'
 import { collegeDetailService } from '@/services/college/details'
 import { useCollegeDetail } from './useCollegeDetail'
-import type { WarningCategoryType } from '@/types/api/college/high-potential'
+import {
+  getDormmates,
+  getEmploymentRoster,
+  getHpRoster,
+  getRosterTotal,
+  getWarningRoster,
+} from '@/mock/college/roster'
+import type { HighPotentialModuleId, WarningCategoryType } from '@/types/api/college/high-potential'
 import type {
   EmploymentDetailVM,
   HighPotentialModuleVM,
@@ -78,6 +85,105 @@ function warningLevelClass(level: string) {
   return 'lv-blue'
 }
 
+// ===== 学生名单（花名册）筛选 =====
+const filterText = ref('')
+const filterClass = ref('')
+const filterCounselor = ref('')
+const filterMajor = ref('')
+const filterGrade = ref('')
+const filterLevel = ref('')
+
+const isWarning = computed(() => state.kind === 'warning')
+const showRoster = computed(
+  () =>
+    state.kind === 'high-potential' ||
+    state.kind === 'high-potential-overview' ||
+    state.kind === 'warning',
+)
+
+const baseRoster = computed(() => {
+  if (state.kind === 'high-potential') return getHpRoster((state.id ?? undefined) as HighPotentialModuleId | undefined)
+  if (state.kind === 'high-potential-overview') return getHpRoster()
+  if (state.kind === 'warning') return getWarningRoster((state.id ?? 'academic') as WarningCategoryType)
+  return []
+})
+
+const classOptions = computed(() => Array.from(new Set(baseRoster.value.map((s) => s.className))))
+const counselorOptions = computed(() => Array.from(new Set(baseRoster.value.map((s) => s.counselor))))
+const majorOptions = computed(() => Array.from(new Set(baseRoster.value.map((s) => s.major))))
+const gradeOptions = computed(() => Array.from(new Set(baseRoster.value.map((s) => s.grade))))
+const levelOptions = computed(() =>
+  Array.from(new Set(baseRoster.value.map((s) => s.warnLevel).filter((v): v is string => !!v))),
+)
+
+const rosterRows = computed(() => {
+  const kw = filterText.value.trim()
+  return baseRoster.value
+    .filter((s) => !filterClass.value || s.className === filterClass.value)
+    .filter((s) => !filterCounselor.value || s.counselor === filterCounselor.value)
+    .filter((s) => !filterMajor.value || s.major === filterMajor.value)
+    .filter((s) => !filterGrade.value || s.grade === filterGrade.value)
+    .filter((s) => !filterLevel.value || s.warnLevel === filterLevel.value)
+    .filter(
+      (s) =>
+        !kw ||
+        [s.name, s.studentId, s.className, s.counselor, s.dorm, s.major, s.phone].some((v) =>
+          v.includes(kw),
+        ),
+    )
+    .map((s) => ({ ...s, dormmates: getDormmates(s.dorm, s.id) }))
+})
+
+// ===== 就业毕业生名单筛选 =====
+const empFilterText = ref('')
+const empFilterDirection = ref('')
+const empFilterRegion = ref('')
+const empFilterClass = ref('')
+
+const empBase = computed(() => (state.kind === 'employment' ? getEmploymentRoster() : []))
+const empDirectionOptions = computed(() => Array.from(new Set(empBase.value.map((s) => s.direction))))
+const empRegionOptions = computed(() => Array.from(new Set(empBase.value.map((s) => s.region))))
+const empClassOptions = computed(() => Array.from(new Set(empBase.value.map((s) => s.className))))
+
+const empRows = computed(() => {
+  const kw = empFilterText.value.trim()
+  return empBase.value
+    .filter((s) => !empFilterDirection.value || s.direction === empFilterDirection.value)
+    .filter((s) => !empFilterRegion.value || s.region === empFilterRegion.value)
+    .filter((s) => !empFilterClass.value || s.className === empFilterClass.value)
+    .filter(
+      (s) =>
+        !kw ||
+        [s.name, s.studentId, s.className, s.major, s.counselor, s.unit].some((v) => v.includes(kw)),
+    )
+})
+
+const rosterTotal = computed(() => {
+  if (state.kind === 'warning') return getRosterTotal('warning', (state.id ?? 'academic') as WarningCategoryType)
+  if (state.kind === 'high-potential') return baseRoster.value.length
+  if (state.kind === 'high-potential-overview') return getRosterTotal('hp')
+  return 0
+})
+
+const rosterTitle = computed(() => {
+  if (state.kind === 'warning') return `${warning.value?.label ?? '预警'}学生名单`
+  if (state.kind === 'high-potential') return `${hpModule.value?.title ?? '高潜'}学生名单`
+  return '全部高潜学生名单'
+})
+
+function resetFilters() {
+  filterText.value = ''
+  filterClass.value = ''
+  filterCounselor.value = ''
+  filterMajor.value = ''
+  filterGrade.value = ''
+  filterLevel.value = ''
+  empFilterText.value = ''
+  empFilterDirection.value = ''
+  empFilterRegion.value = ''
+  empFilterClass.value = ''
+}
+
 async function load() {
   if (!state.kind) return
   loading.value = true
@@ -113,7 +219,10 @@ async function load() {
 watch(
   () => [state.visible, state.kind, state.id],
   () => {
-    if (state.visible) load()
+    if (state.visible) {
+      resetFilters()
+      load()
+    }
   },
   { immediate: true },
 )
@@ -233,26 +342,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               </div>
             </template>
 
-            <!-- 预警名单 -->
+            <!-- 预警概览（名单见下方花名册） -->
             <template v-else-if="state.kind === 'warning' && warning">
               <div class="cdm-stat-row">
-                <div class="cdm-stat cdm-stat--orange"><span>{{ warning.label }}人数</span><strong>{{ warning.records.length }}<small>人</small></strong></div>
+                <div class="cdm-stat cdm-stat--orange"><span>{{ warning.label }}人数</span><strong>{{ rosterTotal }}<small>人</small></strong></div>
+                <div class="cdm-stat cdm-stat--blue"><span>重点关注名单</span><strong>{{ baseRoster.length }}<small>人</small></strong></div>
               </div>
-              <table class="cdm-table">
-                <thead>
-                  <tr><th>姓名</th><th>学号</th><th>专业</th><th>年级</th><th>预警原因</th><th>等级</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="r in warning.records" :key="r.studentId">
-                    <td>{{ r.name }}</td>
-                    <td>{{ r.studentId }}</td>
-                    <td>{{ r.major }}</td>
-                    <td>{{ r.grade }}</td>
-                    <td>{{ r.reason }}</td>
-                    <td><em class="cdm-level" :class="warningLevelClass(r.level)">{{ r.level }}</em></td>
-                  </tr>
-                </tbody>
-              </table>
             </template>
 
             <!-- 教学课程明细 -->
@@ -334,9 +429,174 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                   </tbody>
                 </table>
               </div>
+
+              <!-- 毕业生就业名单（具体到人，可筛选） -->
+              <div class="cdm-section cdm-roster">
+                <div class="cdm-roster__head">
+                  <h3>毕业生就业名单<em>（重点样本 {{ empRows.length }} / 共 1,286 人）</em></h3>
+                  <div class="cdm-filters">
+                    <input
+                      v-model="empFilterText"
+                      class="cdm-filter-input"
+                      type="text"
+                      placeholder="搜索 姓名 / 学号 / 班级 / 专业 / 单位"
+                    />
+                    <select v-model="empFilterDirection" class="cdm-filter-select">
+                      <option value="">全部去向</option>
+                      <option v-for="c in empDirectionOptions" :key="c" :value="c">{{ c }}</option>
+                    </select>
+                    <select v-model="empFilterRegion" class="cdm-filter-select">
+                      <option value="">全部地区</option>
+                      <option v-for="c in empRegionOptions" :key="c" :value="c">{{ c }}</option>
+                    </select>
+                    <select v-model="empFilterClass" class="cdm-filter-select">
+                      <option value="">全部班级</option>
+                      <option v-for="c in empClassOptions" :key="c" :value="c">{{ c }}</option>
+                    </select>
+                    <button type="button" class="cdm-filter-reset" @click="resetFilters">重置</button>
+                  </div>
+                </div>
+                <div class="cdm-table-scroll">
+                  <table class="cdm-table cdm-roster-table">
+                    <thead>
+                      <tr>
+                        <th class="col-idx">序号</th>
+                        <th>姓名</th>
+                        <th>性别</th>
+                        <th>学号</th>
+                        <th>班级</th>
+                        <th>专业</th>
+                        <th>辅导员</th>
+                        <th>就业去向</th>
+                        <th>地区</th>
+                        <th>就业单位</th>
+                        <th>岗位</th>
+                        <th>起薪</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(s, i) in empRows" :key="s.id">
+                        <td class="col-idx">{{ i + 1 }}</td>
+                        <td class="cell-name">{{ s.name }}</td>
+                        <td>{{ s.gender }}</td>
+                        <td class="cell-sid">{{ s.studentId }}</td>
+                        <td>{{ s.className }}</td>
+                        <td>{{ s.major }}</td>
+                        <td>{{ s.counselor }}</td>
+                        <td><em class="cdm-badge">{{ s.direction }}</em></td>
+                        <td>{{ s.region }}</td>
+                        <td>{{ s.unit }}</td>
+                        <td>{{ s.position }}</td>
+                        <td class="cell-gpa">{{ s.salary }}</td>
+                      </tr>
+                      <tr v-if="!empRows.length">
+                        <td :colspan="12" class="cdm-roster-empty">无匹配学生</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </template>
 
             <div v-else class="cdm-loading">暂无数据</div>
+
+            <!-- 学生名单花名册（高潜维度 / 高潜总览 / 预警通用） -->
+            <div v-if="showRoster && !loading" class="cdm-section cdm-roster">
+              <div class="cdm-roster__head">
+                <h3>{{ rosterTitle }}<em>（重点样本 {{ rosterRows.length }} / 共 {{ rosterTotal }} 人）</em></h3>
+                <div class="cdm-filters">
+                  <input
+                    v-model="filterText"
+                    class="cdm-filter-input"
+                    type="text"
+                    placeholder="搜索 姓名 / 学号 / 班级 / 专业 / 辅导员 / 宿舍 / 电话"
+                  />
+                  <select v-model="filterMajor" class="cdm-filter-select">
+                    <option value="">全部专业</option>
+                    <option v-for="c in majorOptions" :key="c" :value="c">{{ c }}</option>
+                  </select>
+                  <select v-model="filterClass" class="cdm-filter-select">
+                    <option value="">全部班级</option>
+                    <option v-for="c in classOptions" :key="c" :value="c">{{ c }}</option>
+                  </select>
+                  <select v-model="filterGrade" class="cdm-filter-select">
+                    <option value="">全部年级</option>
+                    <option v-for="c in gradeOptions" :key="c" :value="c">{{ c }}</option>
+                  </select>
+                  <select v-model="filterCounselor" class="cdm-filter-select">
+                    <option value="">全部辅导员</option>
+                    <option v-for="c in counselorOptions" :key="c" :value="c">{{ c }}</option>
+                  </select>
+                  <select v-if="isWarning" v-model="filterLevel" class="cdm-filter-select">
+                    <option value="">全部等级</option>
+                    <option v-for="c in levelOptions" :key="c" :value="c">{{ c }}</option>
+                  </select>
+                  <button type="button" class="cdm-filter-reset" @click="resetFilters">重置</button>
+                </div>
+              </div>
+
+              <div class="cdm-table-scroll">
+                <table class="cdm-table cdm-roster-table">
+                  <thead>
+                    <tr>
+                      <th class="col-idx">序号</th>
+                      <th>姓名</th>
+                      <th>性别</th>
+                      <th>学号</th>
+                      <th>班级</th>
+                      <th>专业</th>
+                      <th>年级</th>
+                      <th>政治面貌</th>
+                      <th>辅导员</th>
+                      <template v-if="isWarning">
+                        <th>预警原因</th>
+                        <th>等级</th>
+                      </template>
+                      <template v-else>
+                        <th>GPA</th>
+                        <th>亮点</th>
+                      </template>
+                      <th>联系电话</th>
+                      <th class="col-dorm">宿舍号 / 同宿舍关注</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(s, i) in rosterRows" :key="s.id">
+                      <td class="col-idx">{{ i + 1 }}</td>
+                      <td class="cell-name">{{ s.name }}</td>
+                      <td>{{ s.gender }}</td>
+                      <td class="cell-sid">{{ s.studentId }}</td>
+                      <td>{{ s.className }}</td>
+                      <td>{{ s.major }}</td>
+                      <td>{{ s.grade }}</td>
+                      <td>{{ s.political }}</td>
+                      <td>{{ s.counselor }}</td>
+                      <template v-if="isWarning">
+                        <td>{{ s.warnReason }}</td>
+                        <td><em class="cdm-level" :class="warningLevelClass(s.warnLevel || '')">{{ s.warnLevel }}</em></td>
+                      </template>
+                      <template v-else>
+                        <td class="cell-gpa">{{ s.gpa.toFixed(2) }}</td>
+                        <td>{{ s.highlight }}</td>
+                      </template>
+                      <td class="cell-phone">{{ s.phone }}</td>
+                      <td class="col-dorm">
+                        <span class="cdm-dorm">{{ s.dorm }}</span>
+                        <span
+                          v-for="d in s.dormmates"
+                          :key="d.name"
+                          class="cdm-dormmate"
+                          :class="d.kind === '预警' ? 'is-warn' : 'is-hp'"
+                        >{{ d.name }}·{{ d.kind }}</span>
+                      </td>
+                    </tr>
+                    <tr v-if="!rosterRows.length">
+                      <td :colspan="13" class="cdm-roster-empty">无匹配学生</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -752,6 +1012,127 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   &__count { font-size: 14px; color: #7fdfff; margin-bottom: 6px; }
 
   p { margin: 0; font-size: 13px; line-height: 1.55; color: #93abc6; }
+}
+
+/* 学生名单花名册 */
+.cdm-roster__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    padding-left: 10px;
+    font-size: 17px;
+    font-weight: 800;
+    color: #b8ecff;
+    border-left: 3px solid #00e5ff;
+
+    em {
+      margin-left: 6px;
+      font-style: normal;
+      font-size: 13px;
+      font-weight: 600;
+      color: #7fa9c8;
+    }
+  }
+}
+
+.cdm-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cdm-filter-input,
+.cdm-filter-select {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 200, 255, 0.28);
+  background: rgba(2, 18, 44, 0.9);
+  color: #dff2ff;
+  font-size: 13px;
+  outline: none;
+
+  &:focus {
+    border-color: rgba(0, 242, 255, 0.7);
+    box-shadow: 0 0 0 2px rgba(0, 180, 255, 0.18);
+  }
+}
+
+.cdm-filter-input {
+  width: 260px;
+  max-width: 46vw;
+
+  &::placeholder { color: #6c8aa6; }
+}
+
+.cdm-filter-select option {
+  background: #02122c;
+  color: #dff2ff;
+}
+
+.cdm-filter-reset {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 200, 255, 0.28);
+  background: rgba(0, 90, 180, 0.22);
+  color: #bfeaff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s;
+
+  &:hover { border-color: rgba(0, 242, 255, 0.6); background: rgba(0, 120, 220, 0.34); }
+}
+
+.cdm-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 200, 255, 0.35) transparent;
+}
+
+.cdm-roster-table {
+  font-size: 14px;
+
+  th, td { white-space: nowrap; }
+  .col-idx { width: 52px; text-align: center; }
+  td.col-idx { text-align: center; color: #7fa9c8; }
+  .cell-name { font-weight: 700; color: #eaf7ff; }
+  .cell-sid { font-family: var(--college-font-number); color: #a9c6de; }
+  .cell-phone { font-family: var(--college-font-number); color: #a9c6de; }
+  .cell-gpa { font-family: var(--college-font-number); font-weight: 700; color: #6effc2; }
+  .col-dorm { min-width: 200px; white-space: normal; }
+}
+
+.cdm-dorm {
+  display: inline-block;
+  margin-right: 6px;
+  font-weight: 600;
+  color: #cfe6f7;
+}
+
+.cdm-dormmate {
+  display: inline-block;
+  margin: 2px 4px 2px 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+
+  &.is-hp { color: #8ef6c8; background: rgba(30, 180, 120, 0.18); border: 1px solid rgba(46, 230, 168, 0.35); }
+  &.is-warn { color: #ffc19a; background: rgba(220, 120, 40, 0.18); border: 1px solid rgba(255, 150, 80, 0.38); }
+}
+
+.cdm-roster-empty {
+  padding: 24px !important;
+  text-align: center;
+  color: #7fa9c8 !important;
 }
 
 /* 过渡动画 */

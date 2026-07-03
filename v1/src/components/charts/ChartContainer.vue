@@ -31,6 +31,10 @@ const props = defineProps<{
   option: EChartsOption
 }>()
 
+const emit = defineEmits<{
+  chartClick: [params: unknown]
+}>()
+
 const chartRef = ref<HTMLElement | null>(null)
 const chartInstance = shallowRef<echarts.ECharts | null>(null)
 const screenStore = useScreenStore()
@@ -40,6 +44,7 @@ function initChart() {
   chartInstance.value?.dispose()
   chartInstance.value = echarts.init(chartRef.value, undefined, { renderer: 'canvas' })
   chartInstance.value.setOption(props.option, { notMerge: true })
+  chartInstance.value.on('click', (params) => emit('chartClick', params))
 }
 
 function resizeChart() {

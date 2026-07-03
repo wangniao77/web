@@ -66,8 +66,8 @@ export const mockHighPotentialOverview: HighPotentialOverviewDTO = {
     },
     {
       id: 'rural',
-      title: '三下乡实践高潜',
-      desc: '三下乡、乡村振兴、社会调研与普法宣传等实践经历，展示学生知行合一与服务社会能力。',
+      title: '双百工程高潜',
+      desc: '双百工程、乡村振兴、社会调研与普法宣传等实践经历，展示学生知行合一与服务社会能力。',
       highlights: [
         { label: '实践队伍', value: '24', unit: '支' },
         { label: '覆盖乡镇', value: '18', unit: '个' },

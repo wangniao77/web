@@ -184,9 +184,11 @@ function openWarning(type: string) {
         </div>
       </div>
       <div class="warning-panel__chart warning-panel__chart--credit">
-        <div class="warning-panel__chart-title">第二课堂学分完成率（大三 / 大四）</div>
+        <button type="button" class="warning-panel__chart-title warning-panel__chart-title--link" @click="openWarning('credit')">
+          第二课堂学分完成率（大三 / 大四）›
+        </button>
         <div class="warning-panel__chart-body">
-          <ChartContainer :option="creditOption" />
+          <ChartContainer :option="creditOption" @chart-click="openWarning('credit')" />
         </div>
       </div>
     </div>
@@ -198,5 +200,24 @@ function openWarning(type: string) {
   width: 24px;
   height: 24px;
   color: inherit;
+}
+
+.warning-panel__chart-title--link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #7fe9ff;
+  }
+}
+
+.warning-panel__chart--credit .warning-panel__chart-body {
+  cursor: pointer;
 }
 </style>
