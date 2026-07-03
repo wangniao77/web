@@ -15,9 +15,8 @@ const resolvedIcon = computed(() => (props.icon ? resolveIconKind(props.icon) : 
 <template>
   <section class="panel panel--section" :class="panelClass">
     <div class="panel__title">
-      <span class="panel__number">{{ number }}</span>
       <span v-if="resolvedIcon" class="panel__icon">
-        <DashIcon :kind="resolvedIcon" :size="15" />
+        <DashIcon :kind="resolvedIcon" :size="18" />
       </span>
       <span class="panel__label">{{ title }}</span>
     </div>

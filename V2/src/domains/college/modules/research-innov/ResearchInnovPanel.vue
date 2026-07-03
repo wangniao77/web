@@ -1,49 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import ChartContainer from '@/shared/components/charts/ChartContainer.vue'
 import { openCollegeDetail } from '@/domains/college/modules/detail-modal/useCollegeDetail'
-import { CHART_FONT, AXIS_LABEL_ALT } from '@/styles/echarts-theme'
 import type { ResearchOverviewVM } from '@/domains/college/types/view'
-import type { EChartsOption } from 'echarts'
 
-const props = defineProps<{ data: ResearchOverviewVM }>()
-
-const GRID_LEFT = 104
-
-const barOption = computed<EChartsOption>(() => {
-  const maxValue = props.data.platforms.reduce((acc, d) => Math.max(acc, d.count), 0)
-  const axisMax = maxValue > 0 ? Math.ceil((maxValue * 1.18) / 5) * 5 : undefined
-  return {
-    grid: { left: GRID_LEFT, right: 24, top: 8, bottom: 8, containLabel: false },
-    xAxis: { type: 'value', show: false, max: axisMax },
-    yAxis: {
-      type: 'category',
-      inverse: true,
-      data: props.data.platforms.map((d) => d.name),
-      axisLabel: { ...AXIS_LABEL_ALT, color: '#e8f7ff', fontSize: 14, fontWeight: 500, align: 'left', margin: GRID_LEFT - 6 },
-      axisLine: { show: true, lineStyle: { color: 'rgba(57,230,255,0.45)', width: 1 } },
-      axisTick: { show: false },
-    },
-    series: [{
-      type: 'bar',
-      data: props.data.platforms.map((d) => d.count),
-      barWidth: 8,
-      label: { show: true, position: 'right', distance: 4, color: '#f4fbff', fontSize: CHART_FONT.label, fontWeight: 700, formatter: '{c}个' },
-      itemStyle: {
-        color: {
-          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-          colorStops: [
-            { offset: 0, color: '#65f7ff' },
-            { offset: 1, color: '#126dff' },
-          ],
-        },
-        borderRadius: 6,
-        shadowBlur: 6,
-        shadowColor: 'rgba(57,230,255,0.45)',
-      },
-    }],
-  }
-})
+defineProps<{ data: ResearchOverviewVM }>()
 
 function openDetail() {
   openCollegeDetail({ kind: 'research' })
@@ -51,13 +10,13 @@ function openDetail() {
 </script>
 
 <template>
-  <div class="research-grid">
-    <div class="research-kpis research-kpis--auto">
+  <div class="research-panel">
+    <div class="research-kpis research-kpis--grid">
       <button
         v-for="metric in data.metrics.slice(0, 4)"
         :key="metric.label"
         type="button"
-        class="research-kpi research-kpi--clickable"
+        class="research-kpi research-kpi--clickable research-kpi--block"
         @click="openDetail"
       >
         <span>{{ metric.label }}</span>
@@ -71,37 +30,81 @@ function openDetail() {
         </em>
       </button>
     </div>
-    <div class="research-chart-full">
-      <div class="chart-frame chart-frame--teaching">
-        <div class="chart-frame__head">
-          <span class="chart-frame__title">团队平台</span>
-          <button type="button" class="chart-frame__link" @click="openDetail">查看详情 ›</button>
-        </div>
-        <div class="chart-frame__body chart-frame__body--tall">
-          <ChartContainer :option="barOption" />
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
+.research-panel {
+  height: 100%;
+  min-height: 0;
+}
+
+/* KPI：2×2 铺满整个面板，数字单行不换行 */
+.research-kpis--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+.research-kpi--block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  row-gap: 2px;
+  align-content: center;
+  align-items: baseline;
+  min-width: 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(57, 230, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(0, 80, 160, 0.18);
+
+  span {
+    grid-column: 1 / -1;
+    overflow: hidden;
+    color: #d8efff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  strong {
+    grid-column: 1;
+    grid-row: 2;
+    color: #5cecff;
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.05;
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 10px rgba(57, 230, 255, 0.4);
+  }
+}
+
 .research-kpi--clickable {
   cursor: pointer;
-  border: 1px solid transparent;
   font: inherit;
   text-align: left;
   transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 
   &:hover {
-    border-color: rgba(0, 212, 255, 0.5);
+    border-color: rgba(0, 212, 255, 0.6);
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(0, 120, 255, 0.18);
   }
 }
 
 .research-kpi__trend {
-  font-size: 13px;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  align-self: end;
+  padding-bottom: 4px;
+  font-size: 14px;
   font-style: normal;
 
   &--up { color: #34d399; }

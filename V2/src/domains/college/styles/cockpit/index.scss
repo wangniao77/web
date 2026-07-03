@@ -14,3 +14,23 @@
     min-height: 0;
   }
 }
+
+/* ── 等比缩放（fluid）模式 ── */
+.dashboard.cockpit.screen-shell--scaled {
+  padding: 0;
+
+  /* 外层内边距移入 stage，使 1920×1080 画布自带边距，缩放后不贴边 */
+  .cockpit-stage--scaled {
+    padding: 0 20px 14px;
+  }
+
+  /* stage 内部 header/main 各自填充画布高度 */
+  .cockpit-header {
+    flex-shrink: 0;
+  }
+
+  .screen-main {
+    flex: 1;
+    min-height: 0;
+  }
+}

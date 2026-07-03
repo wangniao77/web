@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
 import { ScrollBoard } from '@kjgl77/datav-vue3'
 import CollegePanelCard from '@/domains/college/components/CollegePanelCard.vue'
@@ -173,8 +173,8 @@ const highlightBoardConfig = computed(() => ({
 }
 
 .insight-row {
-  flex: 1 1 auto;
-  min-height: 140px;
+  flex: 1.15 1 0;
+  min-height: 120px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
@@ -378,7 +378,16 @@ const highlightBoardConfig = computed(() => ({
 }
 
 .basis-section {
-  flex-shrink: 0;
+  flex: 0.85 1 0;
+  min-height: 0;
+}
+
+.basis-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.28) transparent;
 }
 
 .basis-list,
@@ -408,10 +417,23 @@ const highlightBoardConfig = computed(() => ({
 }
 
 .advice-row {
-  flex-shrink: 0;
+  flex: 1 1 0;
+  min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.advice-row .section {
+  min-height: 0;
+}
+
+.advice-row .suggest-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.28) transparent;
 }
 
 .suggest-list.long li::before {

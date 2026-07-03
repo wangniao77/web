@@ -1,4 +1,4 @@
-﻿import type { StudentDashboardDTO } from '@/domains/student/types/api'
+import type { StudentDashboardDTO } from '@/domains/student/types/api'
 
 export const mockStudentDashboard: StudentDashboardDTO = {
   profile: {
@@ -17,11 +17,11 @@ export const mockStudentDashboard: StudentDashboardDTO = {
   },
   growthPortrait: {
     dimensions: [
-      { name: '学业能力', personal: 92.6, gradeAvg: 85.2 },
-      { name: '专业创新', personal: 89.7, gradeAvg: 82.5 },
-      { name: '实践能力', personal: 88.1, gradeAvg: 80.8 },
-      { name: '身心素质', personal: 85.3, gradeAvg: 84.0 },
-      { name: '组织协调', personal: 83.4, gradeAvg: 81.6 },
+      { name: '学业能力', personal: 92.6, gradeAvg: 71.5 },
+      { name: '专业创新', personal: 89.7, gradeAvg: 67.8 },
+      { name: '实践能力', personal: 88.1, gradeAvg: 65.4 },
+      { name: '身心素质', personal: 85.3, gradeAvg: 72.6 },
+      { name: '组织协调', personal: 83.4, gradeAvg: 69.2 },
     ],
   },
   aiAssistant: {

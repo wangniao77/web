@@ -1,7 +1,7 @@
 :root {
   color: #f2fbff;
   background: #020b1f;
-  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+  font-family: "Rajdhani", "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -582,6 +582,7 @@ body {
   grid-template-rows: 1fr;
   align-items: center;
   height: 100%;
+  column-gap: 6px;
 
   .metric-card__icon {
     grid-row: 1;
@@ -590,7 +591,7 @@ body {
 
   .metric-card__label {
     align-self: center;
-    padding: 0 8px;
+    padding: 0 4px;
   }
 
   .metric-card__value {
@@ -601,12 +602,19 @@ body {
 }
 
 .metric-card--balance.metric-card--sm {
+  padding: 6px 8px;
+
+  .metric-card__icon {
+    width: 26px;
+    height: 26px;
+  }
+
   .metric-card__label {
     font-size: 14px;
   }
 
   .metric-card__value {
-    font-size: 26px;
+    font-size: 23px;
   }
 }
 
@@ -682,9 +690,9 @@ body {
     border-radius: 3px;
     background: linear-gradient(180deg, #252525, #0c0d10 48%, #242424 50%, #101217);
     color: #ffffff;
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 26px;
-    font-weight: 800;
+    font-family: "Rajdhani", Consolas, "Courier New", monospace;
+    font-size: 28px;
+    font-weight: 700;
     box-shadow: 0 0 12px rgba(57, 230, 255, 0.2);
     animation: digitGlow 2.8s ease-in-out infinite;
   }

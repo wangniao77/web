@@ -8,7 +8,6 @@ import TeachingQualityPanel from '@/domains/college/modules/teaching-quality/Tea
 import ResearchInnovPanel from '@/domains/college/modules/research-innov/ResearchInnovPanel.vue'
 import WarningRiskPanel from '@/domains/college/modules/warning-risk/WarningRiskPanel.vue'
 import StudentEmploymentPanel from '@/domains/college/modules/student-dev/StudentEmploymentPanel.vue'
-import CollegeFooterBar from '@/domains/college/modules/footer/CollegeFooterBar.vue'
 import CollegeDetailModal from '@/domains/college/modules/detail-modal/CollegeDetailModal.vue'
 import { collegeService } from '@/domains/college/services'
 import { collegeDetailService } from '@/domains/college/services/details'
@@ -89,7 +88,6 @@ useAutoRefresh(loadAll)
         </CockpitPanel>
       </div>
     </main>
-    <CollegeFooterBar />
     <CollegeDetailModal />
   </template>
 </template>

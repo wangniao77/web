@@ -64,11 +64,11 @@ function openDetail() {
         v-for="metric in data.metrics"
         :key="metric.label"
         type="button"
-        class="metric-card metric-card--sm metric-card--balance metric-card--clickable"
+        class="metric-card metric-card--sm metric-card--clickable"
         @click="openDetail"
       >
         <span class="metric-card__icon">
-          <DashIcon :kind="kpiIcon[metric.label] || 'course'" :size="16" />
+          <DashIcon :kind="kpiIcon[metric.label] || 'course'" :size="17" />
         </span>
         <span class="metric-card__label">{{ metric.label }}</span>
         <strong class="metric-card__value">{{ metric.value }}</strong>

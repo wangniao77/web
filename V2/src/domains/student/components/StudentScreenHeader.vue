@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { useClock } from '@/shared/composables/useClock'
 import { useScope } from '@/shared/composables/useScope'
 
@@ -155,7 +155,9 @@ const { termLabel } = useScope()
 
 .subtitle {
   font-size: $college-fs-label;
-  color: rgba(174, 198, 230, 0.72);
+  color: rgba(206, 226, 250, 0.92);
+  letter-spacing: 0.28em;
+  text-shadow: 0 1px 3px rgba(0, 10, 30, 0.9);
   margin-bottom: 6px;
 }
 

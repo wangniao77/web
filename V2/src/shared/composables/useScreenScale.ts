@@ -77,9 +77,13 @@ export function useScreenScale(options: ScreenScaleOptions = {}) {
   const scale = ref(1)
   const canvasWidth = ref(DESIGN_WIDTH)
   const canvasHeight = ref(DESIGN_HEIGHT)
+  const viewportW = ref(typeof window !== 'undefined' ? window.innerWidth : DESIGN_WIDTH)
+  const viewportH = ref(typeof window !== 'undefined' ? window.innerHeight : DESIGN_HEIGHT)
 
   function updateScale() {
     const { w, h } = getViewportSize()
+    viewportW.value = w
+    viewportH.value = h
     const result = computeScreenScale(w, h, mode, safeInset)
     scale.value = result.scale
     canvasWidth.value = result.canvasWidth
@@ -109,12 +113,29 @@ export function useScreenScale(options: ScreenScaleOptions = {}) {
     height: `${canvasHeight.value}px`,
   }))
 
+  /** 合并画布尺寸 + 缩放 + 居中偏移（top-left 原点，避免 transform 占位溢出） */
+  const stageStyle = computed(() => {
+    const sw = canvasWidth.value * scale.value
+    const sh = canvasHeight.value * scale.value
+    return {
+      width: `${canvasWidth.value}px`,
+      height: `${canvasHeight.value}px`,
+      transform: `scale(${scale.value})`,
+      transformOrigin: 'top left',
+      marginLeft: `${Math.max(0, (viewportW.value - sw) / 2)}px`,
+      marginTop: `${Math.max(0, (viewportH.value - sh) / 2)}px`,
+    }
+  })
+
   return {
     scale,
     canvasWidth,
     canvasHeight,
+    viewportW,
+    viewportH,
     scaleStyle,
     canvasStyle,
+    stageStyle,
     designWidth: DESIGN_WIDTH,
     designHeight: DESIGN_HEIGHT,
   }

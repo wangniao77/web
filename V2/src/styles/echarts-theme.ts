@@ -3,7 +3,7 @@ export const COCKPIT_THEME = {
   backgroundColor: 'transparent',
   textStyle: {
     color: '#889ec2',
-    fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif',
+    fontFamily: 'Rajdhani, "Noto Sans SC", "Microsoft YaHei", sans-serif',
     fontSize: 14,
   },
   title: {

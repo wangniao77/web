@@ -5,7 +5,7 @@ import '@/domains/college/styles/cockpit/index.scss'
 </script>
 
 <template>
-  <CollegeScreenLayout theme="college" :show-hud="true">
+  <CollegeScreenLayout theme="college" scale-mode="fluid" :show-hud="true">
     <div class="college-shell">
       <RouterView />
     </div>

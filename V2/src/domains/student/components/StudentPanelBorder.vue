@@ -27,10 +27,12 @@ withDefaults(
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid rgba(0, 200, 255, 0.55);
+  border: 1px solid rgba(0, 200, 255, 0.45);
   background:
-    linear-gradient(180deg, rgba(6, 36, 82, 0.82), rgba(2, 14, 42, 0.9)),
-    rgba(2, 20, 50, 0.82);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 15%),
+    linear-gradient(150deg, rgba(24, 60, 116, 0.4) 0%, rgba(8, 24, 60, 0.26) 46%, rgba(3, 13, 38, 0.36) 100%);
+  backdrop-filter: blur(16px) saturate(1.25);
+  -webkit-backdrop-filter: blur(16px) saturate(1.25);
   clip-path: polygon(
     0 12px, 12px 0,
     calc(100% - 12px) 0, 100% 12px,
@@ -38,8 +40,8 @@ withDefaults(
     12px 100%, 0 calc(100% - 12px)
   );
   box-shadow:
-    0 0 16px rgba(0, 180, 255, 0.32),
-    inset 0 0 22px rgba(0, 127, 255, 0.2);
+    0 0 16px rgba(0, 180, 255, 0.26),
+    inset 0 0 26px rgba(0, 127, 255, 0.12);
   animation: framePulse 4.5s ease-in-out infinite;
 
   &::before {

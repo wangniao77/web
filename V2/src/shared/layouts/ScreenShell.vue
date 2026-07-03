@@ -31,7 +31,7 @@ const scaleOptions = computed(() =>
   props.scaleMode === 'none' ? undefined : { mode: props.scaleMode as ScreenScaleMode },
 )
 
-const { scaleStyle, canvasStyle } = useScreenScale(scaleOptions.value ?? { mode: 'contain' })
+const { stageStyle, canvasStyle, scaleStyle } = useScreenScale(scaleOptions.value ?? { mode: 'contain' })
 const useScale = computed(() => props.scaleMode !== 'none')
 
 const wrapperClass = computed(() => [
@@ -41,6 +41,10 @@ const wrapperClass = computed(() => [
 ])
 
 const scaleStyles = computed(() =>
+  useScale.value ? stageStyle.value : {},
+)
+
+const studentScaleStyles = computed(() =>
   useScale.value ? { ...canvasStyle.value, ...scaleStyle.value } : {},
 )
 </script>
@@ -55,14 +59,18 @@ const scaleStyles = computed(() =>
       <span class="cockpit-hud__corner cockpit-hud__corner--br" />
       <span class="cockpit-hud__ring" />
     </div>
-    <CollegeScreenHeader />
-    <main class="screen-main">
-      <slot />
-    </main>
+    <div class="cockpit-viewport">
+      <div class="cockpit-stage" :class="{ 'cockpit-stage--scaled': useScale }" :style="scaleStyles">
+        <CollegeScreenHeader />
+        <main class="screen-main">
+          <slot />
+        </main>
+      </div>
+    </div>
   </div>
 
   <div v-else-if="theme === 'student'" class="screen-wrapper student-screen" :class="wrapperClass">
-    <div class="screen-scale" :style="scaleStyles">
+    <div class="screen-scale" :style="studentScaleStyles">
       <StudentScreenHeader />
       <main class="screen-main">
         <slot />
@@ -71,7 +79,7 @@ const scaleStyles = computed(() =>
   </div>
 
   <div v-else class="screen-wrapper" :class="wrapperClass">
-    <div class="screen-scale" :style="scaleStyles">
+    <div class="screen-scale" :style="studentScaleStyles">
       <ScreenHeader :title="title" :subtitle="subtitle" :principles="principles" />
       <main class="screen-main">
         <slot />
@@ -89,6 +97,36 @@ const scaleStyles = computed(() =>
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* 学院大屏：1920×1080 设计画布，按视口等比缩放（fluid） */
+.dashboard.cockpit.screen-shell--scaled {
+  display: block;
+  padding: 0;
+}
+
+.cockpit-viewport {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cockpit-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.cockpit-stage--scaled {
+  flex: none;
+  flex-shrink: 0;
+  /* transform-origin / margin 由 stageStyle 内联控制 */
 }
 
 .screen-wrapper {
