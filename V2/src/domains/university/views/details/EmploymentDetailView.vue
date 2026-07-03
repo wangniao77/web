@@ -126,6 +126,20 @@ const pieOption = computed<EChartsOption>(() => {
           </table>
         </div>
       </section>
+      <section v-if="data.salaryCoverage" class="group">
+        <h3>薪酬区间分布（覆盖率 {{ data.salaryCoverage }}%）</h3>
+        <div class="table-wrap">
+          <table class="detail-table">
+            <thead><tr><th>区间</th><th>人数</th></tr></thead>
+            <tbody>
+              <tr v-for="row in data.salaryDistribution" :key="row.range">
+                <td>{{ row.range }}</td>
+                <td>{{ row.count }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </template>
   </UniversityDetailLayout>
 </template>

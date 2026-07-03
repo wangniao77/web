@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import UniversityDetailLayout from '@/domains/university/components/UniversityDetailLayout.vue'
+import RiskBadge from '@/domains/university/components/RiskBadge.vue'
 import { universityDetailService } from '@/domains/university/services/details'
 import type { KeyTasksDetailVM } from '@/domains/university/types/view/details'
 
@@ -15,16 +16,10 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-function statusKey(statusClass: string) {
-  if (statusClass === 'status-completed') return 'completed'
-  if (statusClass === 'status-delayed') return 'attention'
-  return 'in-progress'
-}
 </script>
 
 <template>
-  <UniversityDetailLayout title="年度重点任务进展" subtitle="任务明细与里程碑">
+  <UniversityDetailLayout title="年度重点任务进度" subtitle="任务明细、风险等级与里程碑">
     <div v-if="loading" class="detail-placeholder">加载中...</div>
     <template v-else-if="data">
       <div class="summary-row">
@@ -32,12 +27,13 @@ function statusKey(statusClass: string) {
         <span>已完成 {{ data.summary.completed }}</span>
         <span>推进中 {{ data.summary.ongoing }}</span>
         <span>需关注 {{ data.summary.attention }}</span>
+        <span v-if="data.summary.overdue != null">逾期 {{ data.summary.overdue }}</span>
       </div>
       <div class="task-cards">
         <article v-for="task in data.tasks" :key="task.id" class="task-card">
           <header>
             <h3>{{ task.name }}</h3>
-            <span :class="`tag tag--${statusKey(task.statusClass)}`">{{ task.statusLabel }}</span>
+            <RiskBadge :level="task.riskLevel" />
           </header>
           <p class="task-desc">{{ task.description }}</p>
           <div class="task-meta">
@@ -79,7 +75,7 @@ function statusKey(statusClass: string) {
 .task-card {
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid rgba(102, 217, 255, 0.12);
+  border: 1px solid rgba(85, 168, 255, 0.12);
   background: rgba(4, 14, 38, 0.55);
 
   header {
@@ -93,29 +89,6 @@ function statusKey(statusClass: string) {
       font-size: 15px;
       color: #f3f8ff;
     }
-  }
-}
-
-.tag {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-
-  &--in-progress {
-    color: #8ef6ff;
-    background: rgba(0, 120, 220, 0.28);
-  }
-
-  &--completed {
-    color: #9dffd4;
-    background: rgba(30, 180, 120, 0.25);
-  }
-
-  &--attention {
-    color: #ffd0b8;
-    background: rgba(200, 80, 40, 0.28);
   }
 }
 
@@ -169,7 +142,7 @@ function statusKey(statusClass: string) {
       content: '○';
       position: absolute;
       left: 0;
-      color: rgba(0, 212, 255, 0.4);
+      color: rgba(85, 168, 255, 0.4);
     }
 
     &.done {

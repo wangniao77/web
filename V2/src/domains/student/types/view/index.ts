@@ -1,3 +1,9 @@
+export interface StudentAwardVM {
+  name: string
+  level: string
+  date?: string
+}
+
 export interface PersonalInfoVM {
   name: string
   studentId: string
@@ -11,6 +17,7 @@ export interface PersonalInfoVM {
   motto: string
   mottoSub?: string
   avatarUrl?: string
+  awards: StudentAwardVM[]
 }
 
 export interface GrowthPortraitVM {
@@ -67,10 +74,15 @@ export interface AcademicDevVM {
   classTotal: number
   departmentRank: number
   departmentTotal: number
+  majorRank: number
+  majorTotal: number
+  physicalTestScore: number
   semesters: string[]
   gpaValues: number[]
   classRankValues: number[]
   departmentRankValues: number[]
+  majorRankValues: number[]
+  physicalTestValues: number[]
   courseGrades: CourseGradeVM[]
   courseCompletionRate: number
   excellentCourses: number

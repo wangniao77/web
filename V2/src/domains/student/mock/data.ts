@@ -14,6 +14,13 @@ export const mockStudentDashboard: StudentDashboardDTO = {
     motto: '持续学习，勇于探索',
     mottoSub: '未来可期，步履不停',
     avatarUrl: '/student/avatar.png',
+    awards: [
+      { name: '国家励志奖学金', level: '国家级', date: '2023-11' },
+      { name: '校一等奖学金', level: '校级', date: '2024-09' },
+      { name: '校级优秀学生干部', level: '校级', date: '2024-06' },
+      { name: '校级三好学生', level: '校级', date: '2023-10' },
+      { name: '优秀共青团员', level: '院级', date: '2024-05' },
+    ],
   },
   growthPortrait: {
     dimensions: [
@@ -52,9 +59,9 @@ export const mockStudentDashboard: StudentDashboardDTO = {
   highlights: [
     { id: '1', label: '全国大学生数学建模竞赛省一等奖', date: '2024-09' },
     { id: '2', label: 'ACM 程序设计竞赛校赛金奖', date: '2024-05' },
-    { id: '3', label: '国家励志奖学金', date: '2023-11' },
-    { id: '4', label: '校级优秀学生干部', date: '2024-06' },
-    { id: '5', label: 'Python 数据分析高级证书', date: '2024-03' },
+    { id: '3', label: 'Python 数据分析高级证书', date: '2024-03' },
+    { id: '4', label: '创新创业训练计划立项', date: '2023-12' },
+    { id: '5', label: '校园数据可视化平台（项目）', date: '2024-01' },
   ],
   attention: [
     { id: '1', label: '《数据结构》课程成绩 62 分，存在学业预警风险', category: '学业预警', level: 'high' },
@@ -67,6 +74,9 @@ export const mockStudentDashboard: StudentDashboardDTO = {
     classTotal: 45,
     departmentRank: 15,
     departmentTotal: 620,
+    majorRank: 3,
+    majorTotal: 86,
+    physicalTestScore: 82,
     gpaTrend: {
       semesters: ['2022秋', '2023春', '2023秋', '2024春'],
       values: [3.45, 3.58, 3.65, 3.72],
@@ -78,6 +88,14 @@ export const mockStudentDashboard: StudentDashboardDTO = {
     departmentRankTrend: {
       semesters: ['2022秋', '2023春', '2023秋', '2024春'],
       values: [45, 32, 22, 15],
+    },
+    majorRankTrend: {
+      semesters: ['2022秋', '2023春', '2023秋', '2024春'],
+      values: [12, 8, 5, 3],
+    },
+    physicalTestTrend: {
+      semesters: ['2022秋', '2023春', '2023秋', '2024春'],
+      values: [74, 78, 80, 82],
     },
     courseGrades: [
       { name: '机器学习', score: 95 },

@@ -1,3 +1,9 @@
+export interface StudentAwardDTO {
+  name: string
+  level: string
+  date?: string
+}
+
 export interface StudentProfileDTO {
   name: string
   studentId: string
@@ -11,6 +17,7 @@ export interface StudentProfileDTO {
   motto: string
   mottoSub?: string
   avatarUrl?: string
+  awards: StudentAwardDTO[]
 }
 
 export interface GrowthPortraitDTO {
@@ -65,9 +72,14 @@ export interface AcademicDevDTO {
   classTotal: number
   departmentRank: number
   departmentTotal: number
+  majorRank: number
+  majorTotal: number
+  physicalTestScore: number
   gpaTrend: { semesters: string[]; values: number[] }
   classRankTrend: { semesters: string[]; values: number[] }
   departmentRankTrend: { semesters: string[]; values: number[] }
+  majorRankTrend: { semesters: string[]; values: number[] }
+  physicalTestTrend: { semesters: string[]; values: number[] }
   courseGrades: CourseGradeDTO[]
   courseCompletionRate: number
   excellentCourses: number

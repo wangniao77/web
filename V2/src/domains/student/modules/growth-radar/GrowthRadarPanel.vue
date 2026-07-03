@@ -449,7 +449,7 @@ onUnmounted(() => {
 }
 
 .hub-label {
-  font-size: 12px;
+  font-size: var(--fs-meta);
   color: rgba(174, 198, 230, 0.58);
   letter-spacing: 0.06em;
   line-height: 1;
@@ -504,7 +504,7 @@ onUnmounted(() => {
 }
 
 .chip-name {
-  font-size: 12px;
+  font-size: var(--fs-label);
   font-weight: 600;
   color: rgba(210, 228, 252, 0.86);
   white-space: nowrap;
@@ -525,7 +525,7 @@ onUnmounted(() => {
 }
 
 .chip-delta {
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 8px;

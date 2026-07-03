@@ -11,9 +11,15 @@ export const ROUTES = {
   },
   university: {
     root: '/university',
-    keyTasks: '/university/key-tasks',
+    research: '/university/research',
+    tasks: '/university/tasks',
+    keyTasks: '/university/tasks',
+    disciplines: '/university/disciplines',
     employment: '/university/employment',
-    news: '/university/news',
+    events: '/university/events',
+    academicRisk: '/university/academic-risk',
+    metrics: '/university/metrics',
+    news: '/university/events',
   },
   student: '/student',
 } as const

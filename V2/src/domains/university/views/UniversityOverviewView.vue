@@ -1,10 +1,11 @@
 ﻿<script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import CollegeRankingPanel from '@/domains/university/modules/college-ranking/CollegeRankingPanel.vue'
-import SchoolHubPanel from '@/domains/university/modules/school-hub/SchoolHubPanel.vue'
-import EmploymentQualityPanel from '@/domains/university/modules/employment-quality/EmploymentQualityPanel.vue'
-import NewsBroadcastPanel from '@/domains/university/modules/news-broadcast/NewsBroadcastPanel.vue'
+import GoalOverviewPanel from '@/domains/university/modules/goal-overview/GoalOverviewPanel.vue'
+import ResearchInnovationPanel from '@/domains/university/modules/research-innovation/ResearchInnovationPanel.vue'
 import UniversityKeyTasksPanel from '@/domains/university/modules/key-tasks/UniversityKeyTasksPanel.vue'
+import DisciplineCompetitivenessPanel from '@/domains/university/modules/discipline-competitiveness/DisciplineCompetitivenessPanel.vue'
+import EmploymentQualityPanel from '@/domains/university/modules/employment-quality/EmploymentQualityPanel.vue'
+import EventsRiskPanel from '@/domains/university/modules/events-risk/EventsRiskPanel.vue'
 import UniversityLoadingSkeleton from '@/domains/university/components/UniversityLoadingSkeleton.vue'
 import { useUniversityEntrance } from '@/shared/composables/useUniversityEntrance'
 import { useAutoRefresh } from '@/shared/composables/useAutoRefresh'
@@ -42,42 +43,53 @@ useAutoRefresh(loadAll)
     <button type="button" @click="loadAll">重试</button>
   </div>
   <div v-else-if="dashboard" class="university-grid">
-    <CollegeRankingPanel
-      class="cell-ranking panel-row1"
-      :items="dashboard.collegeRanking"
-      :formula="dashboard.rankingFormula"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <SchoolHubPanel
-      class="cell-hub panel-row1"
-      :data="dashboard.hub"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <EmploymentQualityPanel
-      class="cell-employ panel-row1"
-      :data="dashboard.employmentQuality"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <NewsBroadcastPanel
-      class="cell-news panel-row2"
-      :items="dashboard.news"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <UniversityKeyTasksPanel
-      class="cell-tasks panel-row2"
-      :tasks="dashboard.keyTasks"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
+    <div class="university-row university-row--top">
+      <ResearchInnovationPanel
+        class="cell-research panel-row1"
+        :data="dashboard.research"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+      <GoalOverviewPanel
+        class="cell-goal panel-row1"
+        :data="dashboard.goalOverview"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+      <EmploymentQualityPanel
+        class="cell-employ panel-row1"
+        :data="dashboard.employment"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+    </div>
+    <div class="university-row university-row--bottom">
+      <UniversityKeyTasksPanel
+        class="cell-tasks panel-row2"
+        :tasks="dashboard.keyTasks"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+      <DisciplineCompetitivenessPanel
+        class="cell-disciplines panel-row2"
+        :data="dashboard.disciplines"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+      <EventsRiskPanel
+        class="cell-events panel-row2"
+        :events="dashboard.events"
+        :academic-risk="dashboard.academicRisk"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+    </div>
   </div>
 </template>
 
@@ -89,11 +101,11 @@ useAutoRefresh(loadAll)
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: rgba(174, 198, 230, 0.72);
+  color: var(--uni-text-secondary);
 
   button {
-    color: $color-accent;
-    text-decoration: underline;
+    color: var(--uni-accent-cyan);
+    cursor: pointer;
   }
 }
 </style>

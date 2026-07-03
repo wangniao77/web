@@ -1,11 +1,16 @@
 import type {
+  AcademicRiskDetailDTO,
+  DisciplineDetailDTO,
   EmploymentDetailDTO,
+  EventsDetailDTO,
   KeyTasksDetailDTO,
+  MetricsDetailDTO,
   NewsDetailDTO,
+  ResearchDetailDTO,
 } from '@/domains/university/types/api/details'
 
 export const mockKeyTasksDetail: KeyTasksDetailDTO = {
-  summary: { total: 8, completed: 2, ongoing: 4, attention: 2 },
+  summary: { total: 8, completed: 2, ongoing: 4, attention: 1, overdue: 1 },
   tasks: [
     {
       id: '1',
@@ -143,6 +148,28 @@ export const mockEmploymentDetail: EmploymentDetailDTO = {
     { name: '省外', value: 12.3 },
     { name: '境外', value: 7.2 },
   ],
+  destinationStructure: [
+    { name: '企业就业', value: 58.4 },
+    { name: '国内升学', value: 19.7 },
+    { name: '机关事业', value: 12.6 },
+    { name: '境外升学', value: 5.8 },
+    { name: '其他', value: 3.5 },
+  ],
+  industryShare: [
+    { name: '金融', value: 32.1 },
+    { name: '信息技术', value: 18.6 },
+    { name: '公共管理', value: 14.2 },
+    { name: '制造业', value: 11.8 },
+    { name: '其他', value: 23.3 },
+  ],
+  salaryDistribution: [
+    { range: '10万以下', count: 412 },
+    { range: '10-20万', count: 1864 },
+    { range: '20-30万', count: 892 },
+    { range: '30-50万', count: 486 },
+    { range: '50万以上', count: 312 },
+  ],
+  salaryCoverage: 73.8,
   byCollege: [
     { collegeName: '金融学院', employmentRate: 96.8, furtherRate: 32.1 },
     { collegeName: '会计学院', employmentRate: 95.6, furtherRate: 28.5 },
@@ -234,6 +261,132 @@ export const mockNewsDetail: NewsDetailDTO = {
         '图书馆2026年暑假期间实行分区域开放，主馆周一至周五8:00-22:00开放，周末9:00-17:00开放，电子资源24小时访问。',
       date: '2026-05-28',
       source: '图书馆',
+    },
+  ],
+}
+
+export const mockResearchDetail: ResearchDetailDTO = {
+  projects: [
+    { name: '国家级重大项目', level: '国家级', count: 12, funding: 0.86 },
+    { name: '省部级项目', level: '省部级', count: 47, funding: 0.62 },
+    { name: '市厅级项目', level: '市厅级', count: 83, funding: 0.28 },
+  ],
+  papers: [
+    { type: 'CSSCI/SSCI', count: 186, trend: 12.4 },
+    { type: 'SCI/EI', count: 94, trend: 8.6 },
+    { type: '顶级期刊', count: 23, trend: 15.2 },
+  ],
+  platforms: [
+    { name: '粤港澳大湾区金融研究院', level: '省级', college: '金融学院' },
+    { name: '数字经济与管理实验室', level: '省级', college: '经济学院' },
+    { name: '智能财务研究中心', level: '校级', college: '会计学院' },
+  ],
+  phdIndicators: [
+    { name: '高水平论文', target: 200, current: 176, gap: 24, dept: '科研处', deadline: '2026-12' },
+    { name: '国家级项目', target: 15, current: 12, gap: 3, dept: '科研处', deadline: '2026-12' },
+    { name: '博士学位教师占比', target: 65, current: 58.3, gap: 6.7, dept: '人事处', deadline: '2026-12' },
+  ],
+  collegeRanking: [
+    { collegeName: '金融学院', projects: 18, funding: 0.62, papers: 52 },
+    { collegeName: '会计学院', projects: 14, funding: 0.48, papers: 41 },
+    { collegeName: '经济学院', projects: 12, funding: 0.41, papers: 38 },
+    { collegeName: '大数据与人工智能学院', projects: 11, funding: 0.36, papers: 35 },
+  ],
+  fundingTrend: [
+    { year: '2023', value: 1.82 },
+    { year: '2024', value: 2.15 },
+    { year: '2025', value: 2.47 },
+  ],
+}
+
+export const mockDisciplineDetail: DisciplineDetailDTO = {
+  disciplines: [
+    { name: '应用经济学', currentRank: 28, previousRank: 35, change: 7, percentile: 12.4, targetRank: 25, gap: 3, benchmarkSchool: '暨南大学', trend: [{ year: '2023', rank: 38 }, { year: '2024', rank: 35 }, { year: '2025', rank: 28 }] },
+    { name: '工商管理', currentRank: 42, previousRank: 48, change: 6, percentile: 18.6, targetRank: 40, gap: 2, benchmarkSchool: '华南理工大学', trend: [{ year: '2023', rank: 52 }, { year: '2024', rank: 48 }, { year: '2025', rank: 42 }] },
+    { name: '统计学', currentRank: 31, previousRank: 36, change: 5, percentile: 14.2, targetRank: 28, gap: 3, trend: [{ year: '2023', rank: 41 }, { year: '2024', rank: 36 }, { year: '2025', rank: 31 }] },
+    { name: '法学', currentRank: 58, previousRank: 52, change: -6, percentile: 28.4, targetRank: 50, gap: 8, trend: [{ year: '2023', rank: 49 }, { year: '2024', rank: 52 }, { year: '2025', rank: 58 }] },
+    { name: '理论经济学', currentRank: 44, previousRank: 44, change: 0, percentile: 20.1, targetRank: 40, gap: 4, trend: [{ year: '2023', rank: 46 }, { year: '2024', rank: 44 }, { year: '2025', rank: 44 }] },
+    { name: '马克思主义理论', currentRank: 45, previousRank: 41, change: -4, percentile: 21.3, targetRank: 38, gap: 7, trend: [{ year: '2023', rank: 39 }, { year: '2024', rank: 41 }, { year: '2025', rank: 45 }] },
+    { name: '外国语言文学', currentRank: 71, previousRank: 66, change: -5, percentile: 35.8, targetRank: 60, gap: 11, trend: [{ year: '2023', rank: 62 }, { year: '2024', rank: 66 }, { year: '2025', rank: 71 }] },
+    { name: '计算机科学与技术', currentRank: 53, previousRank: 56, change: 3, percentile: 24.6, targetRank: 48, gap: 5, trend: [{ year: '2023', rank: 61 }, { year: '2024', rank: 56 }, { year: '2025', rank: 53 }] },
+    { name: '管理科学与工程', currentRank: 47, previousRank: 49, change: 2, percentile: 22.4, targetRank: 42, gap: 5, trend: [{ year: '2023', rank: 54 }, { year: '2024', rank: 49 }, { year: '2025', rank: 47 }] },
+    { name: '公共管理', currentRank: 39, previousRank: 41, change: 2, percentile: 17.2, targetRank: 35, gap: 4, trend: [{ year: '2023', rank: 45 }, { year: '2024', rank: 41 }, { year: '2025', rank: 39 }] },
+    { name: '新闻传播学', currentRank: 36, previousRank: 38, change: 2, percentile: 15.8, targetRank: 32, gap: 4, trend: [{ year: '2023', rank: 42 }, { year: '2024', rank: 38 }, { year: '2025', rank: 36 }] },
+    { name: '数学', currentRank: 62, previousRank: 60, change: -2, percentile: 30.2, targetRank: 55, gap: 7, trend: [{ year: '2023', rank: 58 }, { year: '2024', rank: 60 }, { year: '2025', rank: 62 }] },
+  ],
+}
+
+export const mockEventsDetail: EventsDetailDTO = {
+  items: [
+    { id: 'e1', category: 'teaching', title: '本科教育教学审核评估迎评推进会', summary: '梳理迎评材料清单，明确各学院整改节点。', date: '2026-07-01', status: 'ongoing', needsAttention: true, leadDept: '教务处', nextAction: '7月10日前完成材料初审' },
+    { id: 'e2', category: 'research', title: '申博关键指标专项督导会', summary: '对照申博指标体系逐项排查短板。', date: '2026-06-28', status: 'ongoing', needsAttention: true, leadDept: '科研处', nextAction: '形成短板清单并报送校领导' },
+    { id: 'e3', category: 'talent', title: '高层次人才引进季度评估', summary: '评估引才计划执行进度与到岗情况。', date: '2026-06-25', status: 'planned', needsAttention: false, leadDept: '人事处', nextAction: '发布三季度引才计划' },
+    { id: 'e4', category: 'safety', title: '暑期校园安全专项排查', summary: '消防、实验室、宿舍安全隐患排查。', date: '2026-06-20', status: 'ongoing', needsAttention: false, leadDept: '保卫处', nextAction: '7月5日前完成整改验收' },
+    { id: 'e5', category: 'international', title: '海外合作院校签约', summary: '与3所海外高校签署交换生协议。', date: '2026-06-15', status: 'completed', needsAttention: false, leadDept: '国际交流处' },
+    { id: 'e6', category: 'service', title: '产教融合基地年度评估', summary: '评估12家共建基地运行成效。', date: '2026-06-10', status: 'completed', needsAttention: false, leadDept: '就业指导中心' },
+  ],
+}
+
+export const mockAcademicRiskDetail: AcademicRiskDetailDTO = {
+  summary: {
+    expectedDelayCount: 127,
+    delayRateChange: -1.2,
+    warningCount: 486,
+    intervenedCount: 312,
+    riskResolvedRate: 64.2,
+    highRiskCollegeCount: 3,
+  },
+  trend: [
+    { month: '2026-01', warning: 512, delay: 142 },
+    { month: '2026-02', warning: 498, delay: 138 },
+    { month: '2026-03', warning: 476, delay: 134 },
+    { month: '2026-04', warning: 462, delay: 131 },
+    { month: '2026-05', warning: 448, delay: 129 },
+    { month: '2026-06', warning: 486, delay: 127 },
+  ],
+  riskTypes: [
+    { type: '学分不足', count: 186 },
+    { type: '挂科预警', count: 142 },
+    { type: '论文延期', count: 98 },
+    { type: '实习未完成', count: 60 },
+  ],
+  collegeDistribution: [
+    { collegeName: '信息学院', warningCount: 86, delayCount: 28 },
+    { collegeName: '人文与传播学院', warningCount: 72, delayCount: 24 },
+    { collegeName: '外国语学院', warningCount: 68, delayCount: 22 },
+    { collegeName: '法学院', warningCount: 54, delayCount: 18 },
+    { collegeName: '经济学院', warningCount: 48, delayCount: 14 },
+  ],
+  interventionProgress: [
+    { month: '2026-03', intervened: 42, resolved: 28 },
+    { month: '2026-04', intervened: 58, resolved: 36 },
+    { month: '2026-05', intervened: 72, resolved: 48 },
+    { month: '2026-06', intervened: 86, resolved: 56 },
+  ],
+}
+
+export const mockMetricsDetail: MetricsDetailDTO = {
+  sections: [
+    {
+      title: '年度目标达成度',
+      items: [
+        { name: '年度目标完成率', definition: '已完成年度重点任务数占年度任务总数的比例', source: '发展规划处任务管理系统', formula: '已完成任务数 ÷ 任务总数 × 100%' },
+        { name: '计划进度差距', definition: '实际完成率与按时间节点折算的计划进度之差', source: '发展规划处', formula: '实际完成率 − 计划进度' },
+      ],
+    },
+    {
+      title: '就业与升学',
+      items: [
+        { name: '毕业去向落实率', definition: '已落实毕业去向的毕业生占毕业生总数的比例', source: '就业指导中心', formula: '落实人数 ÷ 毕业生总数 × 100%' },
+        { name: '薪酬信息覆盖率', definition: '有薪酬样本数据的毕业生占落实就业人数的比例', source: '就业指导中心', formula: '有薪酬样本人数 ÷ 落实就业人数 × 100%' },
+      ],
+    },
+    {
+      title: '学业风险',
+      items: [
+        { name: '预计延毕人数', definition: '根据学业预警模型预测的本学年可能延毕学生汇总人数', source: '教务处学业预警系统', formula: '模型预测汇总（不含个人明细）' },
+        { name: '风险解除率', definition: '经干预后解除学业预警的学生占预警学生总数的比例', source: '教务处', formula: '解除预警人数 ÷ 预警总人数 × 100%' },
+      ],
     },
   ],
 }

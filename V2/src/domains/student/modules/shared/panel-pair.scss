@@ -28,14 +28,14 @@
 }
 
 .pair-stat-num {
-  font-size: $college-fs-highlight;
+  font-size: var(--fs-highlight);
   font-weight: 700;
   color: $color-accent-cyan;
   line-height: 1.1;
 }
 
 .pair-stat-label {
-  font-size: $college-fs-meta;
+  font-size: var(--fs-meta);
   color: rgba(174, 198, 230, 0.62);
   text-align: center;
   white-space: nowrap;
@@ -55,7 +55,7 @@
     gap: 8px;
     padding: 5px 0;
     border-bottom: 1px solid rgba(0, 212, 255, 0.06);
-    font-size: $college-fs-label;
+    font-size: var(--fs-label);
     min-height: 28px;
   }
 }

@@ -79,7 +79,7 @@ defineEmits<{ retry: [] }>()
 }
 
 .role-tag {
-  font-size: $college-fs-meta;
+  font-size: var(--fs-meta);
   padding: 2px 8px;
   border-radius: 10px;
   background: rgba(240, 192, 64, 0.12);
@@ -90,7 +90,7 @@ defineEmits<{ retry: [] }>()
 .counts {
   display: flex;
   gap: 16px;
-  font-size: $college-fs-label;
+  font-size: var(--fs-label);
   color: rgba(174, 198, 230, 0.68);
 
   em {
@@ -122,7 +122,7 @@ defineEmits<{ retry: [] }>()
 }
 
 .skill-name {
-  font-size: $college-fs-meta;
+  font-size: var(--fs-meta);
   color: rgba(174, 198, 230, 0.62);
   text-align: center;
 }

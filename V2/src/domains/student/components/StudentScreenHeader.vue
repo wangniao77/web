@@ -2,7 +2,6 @@
 import { useClock } from '@/shared/composables/useClock'
 import { useScope } from '@/shared/composables/useScope'
 
-const principles = ['我的学业', '我的成长', '我的规划']
 const { dateStr, timeStr, weekStr } = useClock()
 const { termLabel } = useScope()
 </script>
@@ -33,12 +32,6 @@ const { termLabel } = useScope()
       <h1 class="title">
         <span class="title-text">学生个人成长档案</span>
       </h1>
-      <p class="subtitle">看见我的成长，规划我的未来</p>
-      <div class="principles">
-        <span v-for="(p, i) in principles" :key="p" class="tag">
-          {{ p }}<span v-if="i < principles.length - 1" class="tag-sep" />
-        </span>
-      </div>
     </div>
 
     <div class="header-right">
@@ -54,9 +47,9 @@ const { termLabel } = useScope()
 
 <style scoped lang="scss">
 .header {
-  height: $header-height;
+  height: 88px;
   display: grid;
-  grid-template-columns: 300px 1fr 240px;
+  grid-template-columns: 320px 1fr 260px;
   align-items: center;
   padding: 0 30px;
   position: relative;
@@ -131,12 +124,12 @@ const { termLabel } = useScope()
 .logo-svg { width: 42px; height: 42px; display: block; }
 
 .school { display: flex; flex-direction: column; gap: 2px; }
-.school-name { font-size: $college-fs-body; font-weight: 700; color: #f4f8ff; }
-.school-sub  { font-size: $college-fs-label; color: rgba(174, 198, 230, 0.62); }
+.school-name { font-size: var(--fs-body); font-weight: 700; color: #f4f8ff; }
+.school-sub  { font-size: var(--fs-label); color: rgba(174, 198, 230, 0.62); }
 
 .header-center { text-align: center; position: relative; z-index: 1; }
 
-.title { margin-bottom: 4px; }
+.title { margin: 0; line-height: 1.08; }
 
 .title-text {
   font-family: var(--student-font-body, inherit);
@@ -153,61 +146,41 @@ const { termLabel } = useScope()
   50%      { text-shadow: 0 0 18px rgba(255, 255, 255, 0.72), 0 0 36px rgba(57, 230, 255, 0.72); }
 }
 
-.subtitle {
-  font-size: $college-fs-label;
-  color: rgba(174, 198, 230, 0.72);
-  margin-bottom: 6px;
-}
-
-.principles { display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-.tag {
-  font-size: $college-fs-label;
-  color: rgba(191, 213, 240, 0.76);
-  padding: 0 8px;
-}
-
-.tag-sep {
-  display: inline-block;
-  width: 1px;
-  height: 10px;
-  background: rgba(255,255,255,0.08);
-  vertical-align: middle;
-  margin-left: 8px;
-}
-
 .header-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 3px;
+  gap: 2px;
   position: relative;
   z-index: 1;
 }
 
 .meta-line {
-  font-size: $college-fs-label;
+  font-size: var(--fs-label);
+  line-height: 1.2;
   color: $color-text-secondary;
   white-space: nowrap;
 
-  &.semester { font-size: $college-fs-meta; color: $color-text-muted; }
+  &.semester { font-size: var(--fs-meta); color: $color-text-muted; }
 }
 
 .time-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  line-height: 1.1;
 
   .time {
     font-family: var(--student-font-number, inherit);
-    font-size: $college-fs-highlight;
+    font-size: var(--fs-highlight);
     font-weight: 700;
+    line-height: 1.1;
     color: $color-text-primary;
     text-shadow: 0 0 10px rgba(0, 184, 255, 0.28);
   }
 
   .weather {
-    font-size: $college-fs-label;
+    font-size: var(--fs-label);
     color: $color-accent-cyan;
   }
 }
