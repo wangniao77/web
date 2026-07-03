@@ -118,8 +118,14 @@ const { termLabel } = useScope()
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(145deg, rgba(0, 229, 255, 0.12), rgba(5, 14, 34, 0.18));
-  box-shadow: inset 0 0 18px rgba(0, 184, 255, 0.16), 0 0 18px rgba(0, 184, 255, 0.08);
+  background: linear-gradient(145deg, rgba(0, 229, 255, 0.2), rgba(5, 14, 34, 0.28));
+  box-shadow: inset 0 0 20px rgba(0, 184, 255, 0.3), 0 0 20px rgba(0, 184, 255, 0.22);
+  animation: student-logo-glow 4.5s ease-in-out infinite;
+}
+
+@keyframes student-logo-glow {
+  0%, 100% { box-shadow: inset 0 0 18px rgba(0, 184, 255, 0.24), 0 0 16px rgba(0, 184, 255, 0.16); }
+  50%      { box-shadow: inset 0 0 24px rgba(0, 184, 255, 0.38), 0 0 26px rgba(0, 184, 255, 0.3); }
 }
 
 .logo-svg { width: 42px; height: 42px; display: block; }
@@ -135,13 +141,16 @@ const { termLabel } = useScope()
 .title-text {
   font-family: var(--student-font-body, inherit);
   font-size: $college-fs-display;
-  font-weight: 800;
-  color: #f7fbff;
-  background: linear-gradient(180deg, #ffffff 0%, #d8edff 46%, #82dfff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 18px rgba(0, 184, 255, 0.22);
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.55), 0 0 28px rgba(57, 230, 255, 0.55);
+  letter-spacing: 0.02em;
+  animation: student-title-glow 4s ease-in-out infinite;
+}
+
+@keyframes student-title-glow {
+  0%, 100% { text-shadow: 0 0 14px rgba(255, 255, 255, 0.5), 0 0 22px rgba(57, 230, 255, 0.45); }
+  50%      { text-shadow: 0 0 18px rgba(255, 255, 255, 0.72), 0 0 36px rgba(57, 230, 255, 0.72); }
 }
 
 .subtitle {

@@ -1,6 +1,4 @@
-<script setup lang="ts">
-import { computed } from 'vue'
-
+<script lang="ts">
 /**
  * 学院大屏统一图标组件（移植自 React college-cockpit 的 DashIcon）
  * 内联 SVG，描边风格与 5173 参考版保持一致。
@@ -69,6 +67,24 @@ export type IconKind =
   | 'ranking'
   | 'influence'
   | 'funding'
+
+/** 兼容 V2 大学域等仍使用 icons.svg 旧 id 的场景 */
+const LEGACY_ICON_MAP: Record<string, IconKind> = {
+  'icon-target': 'task',
+  'icon-star': 'potential',
+  'icon-warning': 'warning',
+  'icon-education': 'academic',
+  'icon-research': 'research',
+  'icon-people': 'students',
+}
+
+export function resolveIconKind(icon: IconKind | string): IconKind {
+  return LEGACY_ICON_MAP[icon] ?? (icon as IconKind)
+}
+</script>
+
+<script setup lang="ts">
+import { computed } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -151,20 +167,6 @@ const icons: Record<IconKind, { inner: string; stroke?: string }> = {
 
 const entry = computed(() => icons[props.kind] ?? icons.status)
 const strokeColor = computed(() => entry.value.stroke ?? props.stroke)
-
-/** 兼容 V2 大学域等仍使用 icons.svg 旧 id 的场景 */
-const LEGACY_ICON_MAP: Record<string, IconKind> = {
-  'icon-target': 'task',
-  'icon-star': 'potential',
-  'icon-warning': 'warning',
-  'icon-education': 'academic',
-  'icon-research': 'research',
-  'icon-people': 'students',
-}
-
-export function resolveIconKind(icon: IconKind | string): IconKind {
-  return LEGACY_ICON_MAP[icon] ?? (icon as IconKind)
-}
 </script>
 
 <template>

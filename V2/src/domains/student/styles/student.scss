@@ -16,7 +16,10 @@
   --fs-chart:    #{$college-fs-chart};
 
   background:
-    linear-gradient(180deg, #050914 0%, #06142a 48%, #030816 100%),
+    radial-gradient(circle at 50% 32%, rgba(0, 200, 255, 0.22) 0, transparent 34%),
+    radial-gradient(circle at 12% 18%, rgba(0, 118, 255, 0.2) 0, transparent 28%),
+    radial-gradient(circle at 88% 72%, rgba(57, 230, 255, 0.16) 0, transparent 30%),
+    linear-gradient(180deg, #051025 0%, #06142a 48%, #030816 100%),
     $color-bg-screen;
   color: #eaf3ff;
   font-family: var(--student-font-body);
@@ -40,12 +43,44 @@
       pointer-events: none;
       z-index: 0;
       background-image:
-        linear-gradient(rgba(92, 190, 255, 0.045) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(92, 190, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(115deg, transparent 0%, rgba(0, 229, 255, 0.055) 48%, transparent 49%);
-      background-size: 48px 48px, 48px 48px, 360px 360px;
+        linear-gradient(rgba(92, 190, 255, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(92, 190, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(115deg, transparent 0%, rgba(0, 229, 255, 0.08) 48%, transparent 49%);
+      background-size: 46px 46px, 46px 46px, 360px 360px;
       mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 82%, transparent 100%);
+      animation: studentGridDrift 26s linear infinite;
     }
+
+    // 漂浮粒子 + 顶部斜向光束
+    &::before {
+      content: '';
+      position: absolute;
+      inset: $header-height 0 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        radial-gradient(circle, rgba(57, 230, 255, 0.9) 0 1px, transparent 1.6px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.6px);
+      background-position: 30px 80px, 180px 140px;
+      background-size: 200px 170px, 280px 230px;
+      opacity: 0.4;
+      animation: studentParticleDrift 20s ease-in-out infinite alternate;
+    }
+  }
+
+  // 扫描光束
+  .screen-main::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 4;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(57, 230, 255, 0.5), transparent);
+    box-shadow: 0 0 18px rgba(57, 230, 255, 0.6);
+    opacity: 0.4;
+    animation: studentScanBeam 9s linear infinite;
   }
 
   .screen-main {
@@ -53,9 +88,19 @@
     z-index: 1;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
     padding: 8px 10px 10px;
     display: flex;
     flex-direction: column;
+  }
+
+  // 关键数字辉光（对齐学院驾驶舱高亮质感）
+  .metric-value,
+  .kpi-value,
+  .stat-num,
+  .pair-stat-num,
+  .footer-stat__value {
+    text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 8px rgba(57, 230, 255, 0.42);
   }
 
   .metric-value,
@@ -97,5 +142,30 @@
     canvas {
       filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.35));
     }
+  }
+}
+
+@keyframes studentGridDrift {
+  0%   { background-position: 0 0, 0 0, 0 0; }
+  100% { background-position: 46px 46px, 46px 46px, 0 0; }
+}
+
+@keyframes studentParticleDrift {
+  0%   { background-position: 30px 80px, 180px 140px; opacity: 0.3; }
+  100% { background-position: 90px 140px, 240px 60px; opacity: 0.5; }
+}
+
+@keyframes studentScanBeam {
+  0%   { top: -4%; opacity: 0; }
+  8%   { opacity: 0.45; }
+  92%  { opacity: 0.45; }
+  100% { top: 104%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-screen .screen-scale::after,
+  .student-screen .screen-scale::before,
+  .student-screen .screen-main::after {
+    animation: none;
   }
 }
