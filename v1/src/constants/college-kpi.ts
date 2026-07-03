@@ -1,10 +1,11 @@
 import type { KpiKey } from '@/types/api/college'
+import type { IconKind } from '@/components/DashIcon.vue'
 
-export const kpiLayout: Record<KpiKey, { icon: string; position: 'tl' | 'ml' | 'bl' | 'tr' | 'mr' | 'br' }> = {
-  students: { icon: 'icon-people', position: 'tl' },
-  faculty: { icon: 'icon-star', position: 'tr' },
-  funding: { icon: 'icon-funding', position: 'ml' },
-  ranking: { icon: 'icon-ranking', position: 'mr' },
-  satisfaction: { icon: 'icon-satisfaction', position: 'bl' },
-  influence: { icon: 'icon-influence', position: 'br' },
+export const kpiLayout: Record<KpiKey, { icon: IconKind; position: 'tl' | 'ml' | 'bl' | 'tr' | 'mr' | 'br' }> = {
+  students: { icon: 'students', position: 'tl' },
+  faculty: { icon: 'faculty', position: 'ml' },
+  funding: { icon: 'potential', position: 'bl' },
+  ranking: { icon: 'ranking', position: 'tr' },
+  satisfaction: { icon: 'satisfaction', position: 'mr' },
+  influence: { icon: 'trophy', position: 'br' },
 }

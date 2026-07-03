@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import DashIcon, { type IconKind } from '@/components/DashIcon.vue'
+
 defineProps<{
   number: number
   title: string
-  icon?: string
+  icon?: IconKind
   panelClass?: string
 }>()
 </script>
@@ -12,7 +14,7 @@ defineProps<{
     <div class="panel__title">
       <span class="panel__number">{{ number }}</span>
       <span v-if="icon" class="panel__icon">
-        <svg aria-hidden="true"><use :href="`/icons.svg#${icon}`" /></svg>
+        <DashIcon :kind="icon" :size="15" />
       </span>
       <span class="panel__label">{{ title }}</span>
     </div>
@@ -21,11 +23,3 @@ defineProps<{
     </div>
   </section>
 </template>
-
-<style scoped lang="scss">
-.panel__icon svg {
-  width: 15px;
-  height: 15px;
-  color: #42d8ff;
-}
-</style>

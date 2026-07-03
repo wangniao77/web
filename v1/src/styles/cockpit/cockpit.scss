@@ -269,7 +269,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  height: calc(100vh - 112px - 54px);
+  height: calc(100vh - 112px - 12px);
   min-height: 0;
   grid-template-columns: 28% 44% 28%;
   gap: 8px;
@@ -380,7 +380,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 10px;
+    font-size: 12px;
     color: #8ec8e8;
 
     i {
@@ -443,7 +443,7 @@
   &__name {
     overflow: hidden;
     color: #eef9ff;
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -484,7 +484,7 @@
 
   &__percent {
     color: #dff7ff;
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 800;
     text-align: right;
   }
@@ -493,10 +493,10 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    height: 20px;
-    padding: 0 6px;
+    height: 22px;
+    padding: 0 8px;
     border-radius: 999px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
 
@@ -543,18 +543,18 @@
     }
 
     > span {
-      font-size: 10px;
+      font-size: 12px;
       color: #8ec8e8;
     }
 
     > strong {
       color: #e8fbff;
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 800;
 
       small {
         margin: 0 2px;
-        font-size: 10px;
+        font-size: 12px;
         color: #7fdfff;
       }
     }
@@ -594,7 +594,7 @@
     border: none;
     background: transparent;
     color: #63ffe1;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
     transition: color 0.2s;
@@ -794,7 +794,11 @@
 
 .research-kpi {
   display: grid;
-  gap: 2px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  row-gap: 2px;
+  align-items: end;
   min-width: 0;
   padding: 6px 8px;
   border: 1px solid rgba(57, 230, 255, 0.28);
@@ -802,17 +806,20 @@
   background: rgba(0, 80, 160, 0.18);
 
   span {
+    grid-column: 1 / -1;
     overflow: hidden;
     color: #d8efff;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
   strong {
+    grid-column: 1;
+    grid-row: 2;
     color: #5cecff;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 900;
 
     small {
@@ -823,8 +830,13 @@
   }
 
   em {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    align-self: end;
+    padding-bottom: 3px;
     color: #37ffb1;
-    font-size: 12px;
+    font-size: 13px;
     font-style: normal;
     font-weight: 700;
   }
@@ -1757,11 +1769,11 @@
   padding: 5px 6px;
 
   .metric-card__label {
-    font-size: 11px;
+    font-size: 13px;
   }
 
   .metric-card__value {
-    font-size: 17px;
+    font-size: 20px;
   }
 }
 
@@ -1824,16 +1836,16 @@
   border: 1px solid rgba(0, 242, 255, 0.12);
 
   span {
-    font-size: 10px;
+    font-size: 12px;
     color: #8ec8e8;
   }
 
   strong {
-    font-size: 15px;
+    font-size: 17px;
     color: #dff7ff;
 
     small {
-      font-size: 10px;
+      font-size: 12px;
       margin-left: 2px;
       color: #7fdfff;
     }
@@ -1872,7 +1884,7 @@
   min-height: 58px;
 
   .chart-frame__title {
-    font-size: 10px;
+    font-size: 12px;
     color: #8ec8e8;
     margin-bottom: 2px;
   }
@@ -2275,7 +2287,7 @@
   flex: 0 0 38%;
   min-height: 112px;
   display: grid;
-  grid-template-columns: 0.95fr 1.55fr;
+  grid-template-columns: 0.85fr 1.7fr;
   gap: 10px;
   padding: 10px;
   border-radius: 8px;
@@ -2292,24 +2304,28 @@
 
   > div {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
-    padding: 8px 10px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 14px;
     border-radius: 6px;
     background: rgba(0, 80, 140, 0.16);
 
     span {
-      font-size: 11px;
+      font-size: 13px;
       color: #8ec8e8;
+      white-space: nowrap;
     }
 
     strong {
-      font-size: 20px;
+      font-size: 28px;
+      font-weight: 900;
       color: #e8fbff;
+      white-space: nowrap;
 
       small {
-        font-size: 11px;
+        font-size: 13px;
         margin-left: 2px;
         color: #7fdfff;
       }
@@ -2330,8 +2346,9 @@
   .chart-frame__title {
     flex-shrink: 0;
     margin-bottom: 4px;
-    font-size: 11px;
-    color: #8ec8e8;
+    font-size: 13px;
+    font-weight: 700;
+    color: #b8ecff;
   }
 }
 
@@ -2344,7 +2361,7 @@
   flex-shrink: 0;
   margin: 0;
   padding-top: 2px;
-  font-size: 10px;
+  font-size: 12px;
   color: #7eb8d8;
   text-align: center;
 }
@@ -2393,26 +2410,26 @@
   }
 
   &__title {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 800;
     color: #dff7ff;
   }
 
   &__metric {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 900;
     color: #fff;
     line-height: 1;
 
     small {
-      font-size: 11px;
+      font-size: 13px;
       margin-left: 2px;
       color: #7fdfff;
     }
   }
 
   &__label {
-    font-size: 10px;
+    font-size: 12px;
     color: #8ec8e8;
   }
 

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useClock } from '@/composables/useClock'
+import DashIcon from '@/components/DashIcon.vue'
+import collegeLogo from '@/assets/college-logo.png'
 
 const principles = ['看全局', '抓重点', '强治理', '促发展', '提效能']
 const { dateStr, timeStr } = useClock()
@@ -9,10 +11,7 @@ const { dateStr, timeStr } = useClock()
   <header class="cockpit-header">
     <div class="cockpit-header__brand">
       <div class="school-emblem">
-        <svg viewBox="0 0 64 64" class="school-emblem__svg" aria-hidden="true">
-          <circle cx="32" cy="32" r="30" fill="none" stroke="rgba(0,242,255,0.35)" stroke-width="1.5" />
-          <text x="32" y="38" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">广财</text>
-        </svg>
+        <img :src="collegeLogo" class="school-emblem__img" alt="广东财经大学校徽" />
       </div>
       <div class="school-name">
         <span class="school-name__title">广东财经大学</span>
@@ -33,15 +32,15 @@ const { dateStr, timeStr } = useClock()
 
     <div class="cockpit-header__meta">
       <div class="meta-card">
-        <svg aria-hidden="true"><use href="/icons.svg#icon-clock" /></svg>
+        <DashIcon kind="calendar" :size="16" />
         <span>{{ dateStr }}</span>
       </div>
       <div class="meta-card">
-        <svg aria-hidden="true"><use href="/icons.svg#icon-clock" /></svg>
+        <DashIcon kind="clock" :size="16" />
         <span>{{ timeStr }}</span>
       </div>
       <div class="meta-card">
-        <svg aria-hidden="true"><use href="/icons.svg#icon-warning" /></svg>
+        <DashIcon kind="status" :size="16" />
         <span>22°C 多云</span>
       </div>
     </div>
@@ -49,10 +48,11 @@ const { dateStr, timeStr } = useClock()
 </template>
 
 <style scoped lang="scss">
-.school-emblem__svg {
+.school-emblem__img {
   width: 64px;
   height: 64px;
   display: block;
+  object-fit: contain;
 }
 
 .meta-card svg {

@@ -16,9 +16,9 @@ import type {
 } from '@/types/view/college'
 
 const statusMap = {
-  ongoing: { label: '进行中', class: 'status-ongoing' },
+  ongoing: { label: '推进中', class: 'status-ongoing' },
   completed: { label: '已完成', class: 'status-completed' },
-  delayed: { label: '滞后', class: 'status-delayed' },
+  delayed: { label: '需关注', class: 'status-delayed' },
 } as const
 
 function formatValue(value: number | string, unit?: string): string {
@@ -61,6 +61,7 @@ export function adaptStudentOverview(dto: StudentOverviewDTO): StudentOverviewVM
       trend: m.trend,
     })),
     employmentDirection: dto.employmentDirection,
+    employmentRegions: dto.employmentRegions,
     qualityDevelopment: dto.qualityDevelopment,
     warnings: {
       academic: dto.warnings.academic,
@@ -101,5 +102,6 @@ export function adaptWarningOverview(dto: WarningOverviewDTO): WarningOverviewVM
       type: c.type,
     })),
     trend: dto.trend,
+    creditCompletion: dto.creditCompletion,
   }
 }

@@ -38,6 +38,7 @@ export interface StudentOverviewDTO {
     trend?: TrendInfo
   }>
   employmentDirection: Array<{ name: string; value: number }>
+  employmentRegions: Array<{ name: string; value: number }>
   qualityDevelopment: Array<{ name: string; value: number }>
   warnings: { academic: number; fundingRate: number }
 }
@@ -67,7 +68,7 @@ export interface ResearchOverviewDTO {
 
 export interface WarningOverviewDTO {
   categories: Array<{
-    type: 'academic' | 'psychological' | 'employment' | 'funding'
+    type: 'academic' | 'psychological' | 'employment' | 'credit'
     label: string
     count: number
     momChange: number
@@ -75,5 +76,11 @@ export interface WarningOverviewDTO {
   trend: {
     months: string[]
     series: Array<{ name: string; data: number[] }>
+  }
+  creditCompletion: {
+    threshold: number
+    categories: string[]
+    junior: number[]
+    senior: number[]
   }
 }

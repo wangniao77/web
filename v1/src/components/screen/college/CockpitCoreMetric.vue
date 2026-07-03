@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { formatTrend } from '@/utils/trend'
+import DashIcon, { type IconKind } from '@/components/DashIcon.vue'
 import type { TrendInfo } from '@/types/api/common'
 
 defineProps<{
   label: string
   value: string
   trend?: TrendInfo
-  icon: string
+  icon: IconKind
   position: 'tl' | 'ml' | 'bl' | 'tr' | 'mr' | 'br'
 }>()
 
@@ -19,7 +20,7 @@ const side = (position: string) => (['tl', 'ml', 'bl'].includes(position) ? 'lef
     :class="[`core-orbit-metric--${side(position)}`, `core-orbit--${position}`]"
   >
     <div class="core-orbit-metric__icon">
-      <svg aria-hidden="true"><use :href="`/icons.svg#${icon}`" /></svg>
+      <DashIcon :kind="icon" :size="20" />
     </div>
     <div class="core-orbit-metric__body">
       <span class="core-orbit-metric__label">{{ label }}</span>
@@ -28,11 +29,3 @@ const side = (position: string) => (['tl', 'ml', 'bl'].includes(position) ? 'lef
     </div>
   </div>
 </template>
-
-<style scoped lang="scss">
-.core-orbit-metric__icon svg {
-  width: 20px;
-  height: 20px;
-  color: #55dfff;
-}
-</style>

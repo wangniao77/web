@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ROUTES } from '@/constants/routes'
+import DashIcon, { type IconKind } from '@/components/DashIcon.vue'
+import { openCollegeDetail } from '@/modules/college/detail-modal/useCollegeDetail'
 import type { KeyTaskVM } from '@/types/view/college'
 
 const props = defineProps<{
@@ -10,8 +10,6 @@ const props = defineProps<{
 }>()
 
 defineEmits<{ retry: [] }>()
-
-const router = useRouter()
 
 const summary = computed(() => {
   const total = props.tasks.length
@@ -35,8 +33,22 @@ function statusKey(statusClass: string) {
   return 'in-progress'
 }
 
+const taskIcon: Record<string, IconKind> = {
+  双一流建设: 'research',
+  专业认证: 'academic',
+  师资队伍建设: 'faculty',
+  科研平台建设: 'innovation',
+  学科竞赛组织: 'trophy',
+  学生工作重点项目: 'students',
+  就业率提升工程: 'placement',
+  就业攻坚任务: 'complete',
+}
+function iconFor(name: string): IconKind {
+  return taskIcon[name] ?? 'task'
+}
+
 function openDetail() {
-  router.push(ROUTES.college.keyTasks)
+  openCollegeDetail({ kind: 'key-tasks' })
 }
 </script>
 
@@ -52,11 +64,12 @@ function openDetail() {
       <li
         v-for="task in tasks"
         :key="task.id"
-        class="task-progress-panel__row"
+        class="task-progress-panel__row task-progress-panel__row--clickable"
         :class="`task-progress-panel__row--${statusKey(task.statusClass)}`"
+        @click="openDetail"
       >
         <span class="task-progress-panel__icon">
-          <svg aria-hidden="true"><use href="/icons.svg#icon-target" /></svg>
+          <DashIcon :kind="iconFor(task.name)" :size="16" />
         </span>
         <span class="task-progress-panel__name">{{ task.name }}</span>
         <div class="task-progress-panel__bar">
@@ -103,5 +116,14 @@ function openDetail() {
   width: 16px;
   height: 16px;
   color: #55dfff;
+}
+
+.task-progress-panel__row--clickable {
+  cursor: pointer;
+  transition: background 0.18s;
+
+  &:hover {
+    background: rgba(0, 130, 230, 0.12);
+  }
 }
 </style>

@@ -150,12 +150,13 @@ export const mockWarningDetails: Record<string, WarningDetailDTO> = {
       { name: '周同学', studentId: '2021001155', major: '计算机科学与技术', grade: '2021级', reason: '实习中断，就业意向不明确', level: '橙色' },
     ],
   },
-  funding: {
-    type: 'funding',
-    label: '资助预警',
+  credit: {
+    type: 'credit',
+    label: '第二课堂学分预警',
     records: [
-      { name: '吴同学', studentId: '2023003088', major: '软件工程', grade: '2023级', reason: '家庭经济状况变化，需复核', level: '黄色' },
-      { name: '郑同学', studentId: '2022002099', major: '人工智能', grade: '2022级', reason: '资助材料待补充', level: '黄色' },
+      { name: '陈俊宇', studentId: '2021010233', major: '计算机科学与技术', grade: '2021级', reason: '第二课堂学分完成 6/10，创新创业类缺口', level: '红色' },
+      { name: '林嘉欣', studentId: '2021011045', major: '软件工程', grade: '2021级', reason: '菁英成长与技能培训类学分未达标', level: '橙色' },
+      { name: '吴梦洁', studentId: '2022011290', major: '大数据管理与应用', grade: '2022级', reason: '文体艺术类学分缺 1.5 分', level: '黄色' },
     ],
   },
 }
