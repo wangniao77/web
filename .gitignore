@@ -1,0 +1,8 @@
+# 仅跟踪 V2 项目目录
+/*
+!/V2/
+!/.gitignore
+
+# 仓库根目录本地文件
+.cursor/
+.agents/
