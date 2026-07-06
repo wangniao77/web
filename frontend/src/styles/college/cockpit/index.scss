@@ -1,0 +1,16 @@
+@import './global.scss';
+@import './cockpit.scss';
+
+.dashboard.cockpit {
+  .cockpit-main {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+  }
+
+  .screen-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+}

@@ -1,8 +1,13 @@
-# 仅跟踪 V2 项目目录
-/*
-!/V2/
-!/.gitignore
-
-# 仓库根目录本地文件
-.cursor/
-.agents/
+__pycache__/
+.vscode/
+.idea/
+.pytest_cache/
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.test
+.env.production
