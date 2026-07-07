@@ -1,6 +1,6 @@
-# 仅跟踪 V2 项目目录
+# 仅跟踪 Frontend 项目目录
 /*
-!/V2/
+!/Frontend/
 !/.gitignore
 
 # 仓库根目录本地文件
