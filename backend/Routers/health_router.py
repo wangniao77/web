@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from Routers.Models.resp.common_model import ApiResponse, HealthResp
+from Routers.Models.resp.common_model import ApiResponse, HealthResp, ok
 from Services.health_service import HealthService
 
 router = APIRouter(tags=["健康检查"])
@@ -12,4 +12,4 @@ async def health_check() -> ApiResponse[HealthResp]:
     """服务健康检查。"""
 
     data = await health_service.get_health()
-    return ApiResponse(data=data)
+    return ok(data)

@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
 
+    superadmin_username: str = "superadmin"
+    superadmin_password: str = "superadmin123"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+
 
 @lru_cache
 def get_settings() -> Settings:

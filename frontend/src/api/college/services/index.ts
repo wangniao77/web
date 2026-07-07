@@ -1,5 +1,6 @@
 ﻿import { createService } from '@/api/createService'
 import { collegeApi } from '@/api/college'
+import { unwrapApiData } from '@/api/unwrap'
 import {
   adaptKeyTasks,
   adaptOverviewHub,
@@ -22,7 +23,7 @@ const fetchOverviewHub = createService<CollegeScope | undefined, ReturnType<type
   mock: () => adaptOverviewHub(mockOverviewHub),
   fetch: async (params) => {
     const res = await collegeApi.getHub(params)
-    return adaptOverviewHub(res.data.data)
+    return adaptOverviewHub(unwrapApiData(res))
   },
 })
 
@@ -30,7 +31,7 @@ const fetchKeyTasks = createService<CollegeScope | undefined, ReturnType<typeof 
   mock: () => adaptKeyTasks(mockKeyTasks),
   fetch: async (params) => {
     const res = await collegeApi.getKeyTasks(params)
-    return adaptKeyTasks(res.data.data)
+    return adaptKeyTasks(unwrapApiData(res))
   },
 })
 
@@ -41,7 +42,7 @@ const fetchStudentOverview = createService<
   mock: () => adaptStudentOverview(mockStudentOverview),
   fetch: async (params) => {
     const res = await collegeApi.getStudentOverview(params)
-    return adaptStudentOverview(res.data.data)
+    return adaptStudentOverview(unwrapApiData(res))
   },
 })
 
@@ -52,7 +53,7 @@ const fetchTeachingOverview = createService<
   mock: () => adaptTeachingOverview(mockTeachingOverview),
   fetch: async (params) => {
     const res = await collegeApi.getTeachingOverview(params)
-    return adaptTeachingOverview(res.data.data)
+    return adaptTeachingOverview(unwrapApiData(res))
   },
 })
 
@@ -63,7 +64,7 @@ const fetchResearchOverview = createService<
   mock: () => adaptResearchOverview(mockResearchOverview),
   fetch: async (params) => {
     const res = await collegeApi.getResearchOverview(params)
-    return adaptResearchOverview(res.data.data)
+    return adaptResearchOverview(unwrapApiData(res))
   },
 })
 
@@ -74,7 +75,7 @@ const fetchWarningOverview = createService<
   mock: () => adaptWarningOverview(mockWarningOverview),
   fetch: async (params) => {
     const res = await collegeApi.getWarningOverview(params)
-    return adaptWarningOverview(res.data.data)
+    return adaptWarningOverview(unwrapApiData(res))
   },
 })
 

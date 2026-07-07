@@ -2,14 +2,9 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
 import { collegeDetailService } from '@/api/college/services/details'
+import type { EmploymentRosterDTO, RosterStudentDTO } from '@/api/college/details'
 import { useCollegeDetail } from './useCollegeDetail'
-import {
-  getDormmates,
-  getEmploymentRoster,
-  getHpRoster,
-  getRosterTotal,
-  getWarningRoster,
-} from '@/mock/college/roster'
+import { useScope } from '@/composables/useScope'
 import type { HighPotentialModuleId, WarningCategoryType } from '@/types/college/api/high-potential'
 import type {
   EmploymentDetailVM,
@@ -22,6 +17,7 @@ import type {
 } from '@/types/college/view/details'
 
 const { state, closeCollegeDetail } = useCollegeDetail()
+const { collegeScope } = useScope()
 
 const loading = ref(false)
 const keyTasks = ref<KeyTasksDetailVM | null>(null)
@@ -30,6 +26,9 @@ const warning = ref<WarningDetailVM | null>(null)
 const teaching = ref<TeachingCoursesDetailVM | null>(null)
 const research = ref<ResearchPlatformsDetailVM | null>(null)
 const employment = ref<EmploymentDetailVM | null>(null)
+const hpRoster = ref<RosterStudentDTO[]>([])
+const warningRoster = ref<RosterStudentDTO[]>([])
+const empRoster = ref<EmploymentRosterDTO[]>([])
 
 const hpModule = computed<HighPotentialModuleVM | null>(() => {
   if (state.kind !== 'high-potential' || !hpOverview.value) return null
@@ -102,9 +101,8 @@ const showRoster = computed(
 )
 
 const baseRoster = computed(() => {
-  if (state.kind === 'high-potential') return getHpRoster((state.id ?? undefined) as HighPotentialModuleId | undefined)
-  if (state.kind === 'high-potential-overview') return getHpRoster()
-  if (state.kind === 'warning') return getWarningRoster((state.id ?? 'academic') as WarningCategoryType)
+  if (state.kind === 'high-potential' || state.kind === 'high-potential-overview') return hpRoster.value
+  if (state.kind === 'warning') return warningRoster.value
   return []
 })
 
@@ -131,7 +129,7 @@ const rosterRows = computed(() => {
           v.includes(kw),
         ),
     )
-    .map((s) => ({ ...s, dormmates: getDormmates(s.dorm, s.id) }))
+    .map((s) => ({ ...s, dormmates: [] as { name: string; kind: string }[] }))
 })
 
 // ===== 就业毕业生名单筛选 =====
@@ -140,7 +138,7 @@ const empFilterDirection = ref('')
 const empFilterRegion = ref('')
 const empFilterClass = ref('')
 
-const empBase = computed(() => (state.kind === 'employment' ? getEmploymentRoster() : []))
+const empBase = computed(() => (state.kind === 'employment' ? empRoster.value : []))
 const empDirectionOptions = computed(() => Array.from(new Set(empBase.value.map((s) => s.direction))))
 const empRegionOptions = computed(() => Array.from(new Set(empBase.value.map((s) => s.region))))
 const empClassOptions = computed(() => Array.from(new Set(empBase.value.map((s) => s.className))))
@@ -159,9 +157,8 @@ const empRows = computed(() => {
 })
 
 const rosterTotal = computed(() => {
-  if (state.kind === 'warning') return getRosterTotal('warning', (state.id ?? 'academic') as WarningCategoryType)
-  if (state.kind === 'high-potential') return baseRoster.value.length
-  if (state.kind === 'high-potential-overview') return getRosterTotal('hp')
+  if (state.kind === 'warning') return warningRoster.value.length
+  if (state.kind === 'high-potential' || state.kind === 'high-potential-overview') return hpRoster.value.length
   return 0
 })
 
@@ -187,28 +184,42 @@ function resetFilters() {
 async function load() {
   if (!state.kind) return
   loading.value = true
+  const scope = collegeScope.value
   try {
     switch (state.kind) {
       case 'key-tasks':
-        keyTasks.value = await collegeDetailService.fetchKeyTasksDetail()
+        keyTasks.value = await collegeDetailService.fetchKeyTasksDetail(scope)
         break
       case 'high-potential':
       case 'high-potential-overview':
-        hpOverview.value = await collegeDetailService.fetchHighPotentialOverview()
+        hpOverview.value = await collegeDetailService.fetchHighPotentialOverview(scope)
+        hpRoster.value = await collegeDetailService.fetchHighPotentialRoster({
+          ...scope,
+          moduleId:
+            state.kind === 'high-potential'
+              ? ((state.id ?? undefined) as HighPotentialModuleId | undefined)
+              : undefined,
+        })
         break
       case 'warning':
         warning.value = await collegeDetailService.fetchWarningDetail(
           (state.id ?? 'academic') as WarningCategoryType,
+          scope,
+        )
+        warningRoster.value = await collegeDetailService.fetchWarningRoster(
+          (state.id ?? 'academic') as WarningCategoryType,
+          scope,
         )
         break
       case 'teaching':
-        teaching.value = await collegeDetailService.fetchTeachingCoursesDetail()
+        teaching.value = await collegeDetailService.fetchTeachingCoursesDetail(scope)
         break
       case 'research':
-        research.value = await collegeDetailService.fetchResearchPlatformsDetail()
+        research.value = await collegeDetailService.fetchResearchPlatformsDetail(scope)
         break
       case 'employment':
-        employment.value = await collegeDetailService.fetchEmploymentDetail()
+        employment.value = await collegeDetailService.fetchEmploymentDetail(scope)
+        empRoster.value = await collegeDetailService.fetchEmploymentRoster(scope)
         break
     }
   } finally {

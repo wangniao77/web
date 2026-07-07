@@ -20,7 +20,13 @@ const statusMap = {
   ongoing: { label: '进行中', class: 'status-ongoing' },
   completed: { label: '已完成', class: 'status-completed' },
   delayed: { label: '滞后', class: 'status-delayed' },
+  attention: { label: '需关注', class: 'status-delayed' },
+  overdue: { label: '逾期', class: 'status-delayed' },
 } as const
+
+function resolveTaskStatus(status: string) {
+  return statusMap[status as keyof typeof statusMap] ?? statusMap.ongoing
+}
 
 export function adaptHighPotentialOverview(dto: HighPotentialOverviewDTO): HighPotentialOverviewVM {
   return {
@@ -32,11 +38,14 @@ export function adaptHighPotentialOverview(dto: HighPotentialOverviewDTO): HighP
 export function adaptKeyTasksDetail(dto: KeyTasksDetailDTO): KeyTasksDetailVM {
   return {
     summary: dto.summary,
-    tasks: dto.tasks.map((task) => ({
-      ...task,
-      statusLabel: statusMap[task.status].label,
-      statusClass: statusMap[task.status].class,
-    })),
+    tasks: dto.tasks.map((task) => {
+      const status = resolveTaskStatus(task.status)
+      return {
+        ...task,
+        statusLabel: status.label,
+        statusClass: status.class,
+      }
+    }),
   }
 }
 

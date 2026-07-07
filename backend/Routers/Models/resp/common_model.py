@@ -1,3 +1,4 @@
+from time import time
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
@@ -11,6 +12,11 @@ class ApiResponse(BaseModel, Generic[T]):
     code: int = Field(default=0, description="业务状态码，0 表示成功")
     message: str = Field(default="ok", description="提示信息")
     data: T | None = Field(default=None, description="业务数据")
+    timestamp: int = Field(default_factory=lambda: int(time() * 1000))
+
+
+def ok(data: Any = None, message: str = "ok") -> ApiResponse[Any]:
+    return ApiResponse(data=data, message=message)
 
 
 class PageData(BaseModel, Generic[T]):

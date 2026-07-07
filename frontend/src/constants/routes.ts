@@ -1,5 +1,5 @@
 export const ROUTES = {
-  portal: '/',
+  portal: '/portal',
   college: {
     root: '/college',
     keyTasks: '/college/key-tasks',

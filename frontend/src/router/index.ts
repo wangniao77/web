@@ -1,9 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ROUTES } from '@/constants/routes'
 
+function defaultEntryPath() {
+  const view = import.meta.env.VITE_DEFAULT_VIEW
+  if (view === 'college') return ROUTES.college.root
+  if (view === 'university') return ROUTES.university.root
+  if (view === 'student') return ROUTES.student
+  return ROUTES.portal
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/',
+      redirect: defaultEntryPath,
+    },
     {
       path: ROUTES.portal,
       name: 'portal',

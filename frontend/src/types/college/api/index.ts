@@ -25,7 +25,7 @@ export interface KeyTaskDTO {
   id: string
   name: string
   progress: number
-  status: 'ongoing' | 'completed' | 'delayed'
+  status: 'ongoing' | 'completed' | 'delayed' | 'attention' | 'overdue'
   deadline?: string
 }
 
