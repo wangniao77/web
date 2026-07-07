@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useScreenScale } from '@/composables/useScreenScale'
 import { useAppStore, type ViewMode } from '@/stores/app'
 import { ROUTES } from '@/constants/routes'
 
 const router = useRouter()
 const appStore = useAppStore()
+const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
 
 type PortalEntry = {
   mode: ViewMode
@@ -41,37 +43,50 @@ function enter(entry: PortalEntry) {
 </script>
 
 <template>
-  <div class="portal">
-    <div class="portal-bg" />
-    <div class="portal-content">
-      <h1 class="portal-title">发展与治理驾驶舱</h1>
-      <p class="portal-sub">广东财经大学 · 请选择进入视图</p>
-      <div class="portal-cards">
-        <button
-          v-for="entry in entries"
-          :key="entry.mode"
-          type="button"
-          class="portal-card"
-          @click="enter(entry)"
-        >
-          <span class="card-title">{{ entry.title }}</span>
-          <span class="card-desc">{{ entry.desc }}</span>
-        </button>
+  <div class="screen-wrapper portal-screen">
+    <div class="screen-scale portal" :style="{ ...canvasStyle, ...scaleStyle }">
+      <div class="portal-bg" />
+      <div class="portal-content">
+        <h1 class="portal-title">发展与治理驾驶舱</h1>
+        <p class="portal-sub">广东财经大学 · 请选择进入视图</p>
+        <div class="portal-cards">
+          <button
+            v-for="entry in entries"
+            :key="entry.mode"
+            type="button"
+            class="portal-card"
+            @click="enter(entry)"
+          >
+            <span class="card-title">{{ entry.title }}</span>
+            <span class="card-desc">{{ entry.desc }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.portal {
+.portal-screen {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: $color-bg-root;
+}
+
+.screen-scale.portal {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transform-origin: center center;
   overflow: hidden;
+  background: $color-bg-root;
 }
 
 .portal-bg {

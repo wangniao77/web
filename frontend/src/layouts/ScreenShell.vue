@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useScreenScale } from '@/composables/useScreenScale'
 import CollegeScreenHeader from '@/components/college/CollegeScreenHeader.vue'
 
 withDefaults(
@@ -9,34 +10,47 @@ withDefaults(
     showHud: false,
   },
 )
+
+const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
 </script>
 
 <template>
-  <div class="dashboard cockpit screen-shell">
-    <div v-if="showHud" class="dashboard-scanline" aria-hidden="true" />
-    <div v-if="showHud" class="cockpit-hud" aria-hidden="true">
-      <span class="cockpit-hud__corner cockpit-hud__corner--tl" />
-      <span class="cockpit-hud__corner cockpit-hud__corner--tr" />
-      <span class="cockpit-hud__corner cockpit-hud__corner--bl" />
-      <span class="cockpit-hud__corner cockpit-hud__corner--br" />
-      <span class="cockpit-hud__ring" />
+  <div class="screen-wrapper college-screen">
+    <div class="screen-scale dashboard cockpit" :style="{ ...canvasStyle, ...scaleStyle }">
+      <div v-if="showHud" class="dashboard-scanline" aria-hidden="true" />
+      <div v-if="showHud" class="cockpit-hud" aria-hidden="true">
+        <span class="cockpit-hud__corner cockpit-hud__corner--tl" />
+        <span class="cockpit-hud__corner cockpit-hud__corner--tr" />
+        <span class="cockpit-hud__corner cockpit-hud__corner--bl" />
+        <span class="cockpit-hud__corner cockpit-hud__corner--br" />
+        <span class="cockpit-hud__ring" />
+      </div>
+      <CollegeScreenHeader />
+      <main class="screen-main">
+        <slot />
+      </main>
     </div>
-    <CollegeScreenHeader />
-    <main class="screen-main">
-      <slot />
-    </main>
   </div>
 </template>
 
 <style scoped lang="scss">
-.dashboard.cockpit,
-.screen-shell {
+.college-screen {
   width: 100vw;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
   display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen-scale {
+  position: relative;
+  display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  transform-origin: center center;
+  overflow: hidden;
 }
 
 .screen-main {
@@ -44,5 +58,7 @@ withDefaults(
   min-height: 0;
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
 }
 </style>

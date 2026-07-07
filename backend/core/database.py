@@ -23,7 +23,8 @@ TORTOISE_ORM = {
 async def init_db(*, generate_schema: bool = False) -> None:
     """初始化 Tortoise；首次开发调试时可临时开启 generate_schema。"""
 
-    await Tortoise.init(config=TORTOISE_ORM)
+    # Tortoise 1.1+ 在 lifespan 初始化、请求任务查询时分属不同 context，需开启全局 fallback
+    await Tortoise.init(config=TORTOISE_ORM, _enable_global_fallback=True)
     if generate_schema:
         await Tortoise.generate_schemas(safe=True)
 

@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import StudentScreenLayout from '@/components/student/StudentScreenLayout.vue'
 import PersonalInfoPanel from '@/components/student/modules/personal-info/PersonalInfoPanel.vue'
 import GrowthRadarPanel from '@/components/student/modules/growth-radar/GrowthRadarPanel.vue'
@@ -16,7 +17,11 @@ import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM } from '@/types/student/view'
 import '@/styles/student/student.scss'
 
+const route = useRoute()
 const { studentScope } = useScope()
+const activeStudentId = computed(
+  () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
+)
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -26,7 +31,7 @@ async function loadAll() {
   loading.value = true
   error.value = null
   try {
-    dashboard.value = await studentService.fetchDashboard(studentScope.value.studentId)
+    dashboard.value = await studentService.fetchDashboard(activeStudentId.value)
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载失败'
   } finally {
@@ -36,6 +41,7 @@ async function loadAll() {
 }
 
 onMounted(loadAll)
+watch(activeStudentId, loadAll)
 useAutoRefresh(loadAll)
 </script>
 
