@@ -14,7 +14,17 @@ const props = defineProps<{
 
 defineEmits<{ retry: [] }>()
 
-const axisCompact = { ...AXIS_LABEL, fontSize: 11, margin: 6 }
+const axisCompact = { ...AXIS_LABEL, fontSize: 13, margin: 6 }
+
+function gradeOf(score: number): string {
+  if (score >= 90) return '优'
+  if (score >= 80) return '良'
+  if (score >= 70) return '中'
+  if (score >= 60) return '及格'
+  return '不及格'
+}
+
+const physicalGrade = computed(() => gradeOf(props.data.physicalTestScore))
 
 const gpaOption = computed<EChartsOption>(() => ({
   grid: { ...CHART_GRID.line, top: 8, bottom: 2 },
@@ -44,42 +54,69 @@ const gpaOption = computed<EChartsOption>(() => ({
 
 const rankOption = computed<EChartsOption>(() => ({
   grid: { ...CHART_GRID.lineLegend, top: 28, bottom: 2 },
-  tooltip: { trigger: 'axis' },
+  tooltip: {
+    trigger: 'axis',
+    formatter: (params: unknown) => {
+      const arr = params as Array<{ axisValue: string; seriesName: string; value: number; marker: string }>
+      if (!Array.isArray(arr) || !arr.length) return ''
+      const lines = arr.map((p) => {
+        const val = p.seriesName === '体测成绩' ? gradeOf(p.value) : `第 ${p.value} 名`
+        return `${p.marker}${p.seriesName}：${val}`
+      })
+      return `${arr[0].axisValue}<br/>${lines.join('<br/>')}`
+    },
+  },
   legend: {
     top: 0,
     right: 0,
     itemWidth: 10,
     itemHeight: 8,
     textStyle: { color: '#889ec2', fontSize: CHART_FONT.legend - 2 },
-    data: ['系排', '班排'],
+    data: ['体测成绩', '专业排名'],
   },
   xAxis: {
     type: 'category',
     data: props.data.semesters,
     axisLabel: axisCompact,
   },
-  yAxis: {
-    type: 'value',
-    inverse: true,
-    axisLabel: axisCompact,
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.04)' } },
-  },
-  series: [
+  yAxis: [
     {
-      name: '系排',
-      type: 'line',
-      smooth: true,
-      data: props.data.departmentRankValues,
-      lineStyle: { color: CHART_COLORS.gold, width: 2 },
-      itemStyle: { color: CHART_COLORS.gold },
+      type: 'value',
+      min: 60,
+      max: 100,
+      interval: 10,
+      axisLabel: {
+        ...axisCompact,
+        formatter: (val: number) => (val >= 100 ? '' : gradeOf(val)),
+      },
+      splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.04)' } },
     },
     {
-      name: '班排',
+      type: 'value',
+      inverse: true,
+      axisLabel: axisCompact,
+      splitLine: { show: false },
+    },
+  ],
+  series: [
+    {
+      name: '体测成绩',
       type: 'line',
       smooth: true,
-      data: props.data.classRankValues,
+      yAxisIndex: 0,
+      data: props.data.physicalTestValues,
       lineStyle: { color: CHART_COLORS.cyan, width: 2 },
       itemStyle: { color: CHART_COLORS.cyan },
+      areaStyle: { color: 'rgba(0, 212, 255, 0.08)' },
+    },
+    {
+      name: '专业排名',
+      type: 'line',
+      smooth: true,
+      yAxisIndex: 1,
+      data: props.data.majorRankValues,
+      lineStyle: { color: CHART_COLORS.gold, width: 2 },
+      itemStyle: { color: CHART_COLORS.gold },
     },
   ],
 }))
@@ -116,15 +153,15 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
           <span class="kpi-value">{{ data.gpa }}</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">班排</span>
-          <span class="kpi-value">{{ data.classRank }}<small>/{{ data.classTotal }}</small></span>
+          <span class="kpi-label">体测成绩</span>
+          <span class="kpi-value">{{ physicalGrade }}</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">系排</span>
-          <span class="kpi-value">{{ data.departmentRank }}<small>/{{ data.departmentTotal }}</small></span>
+          <span class="kpi-label">专业排名</span>
+          <span class="kpi-value">{{ data.majorRank }}<small>/{{ data.majorTotal }}</small></span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">完成率</span>
+          <span class="kpi-label">学分完成率</span>
           <span class="kpi-value">{{ data.courseCompletionRate }}<small>%</small></span>
         </div>
       </div>
@@ -135,7 +172,7 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
           <ChartContainer :option="gpaOption" />
         </div>
         <div class="chart-box">
-          <span class="chart-label">系排 / 班排变化</span>
+          <span class="chart-label">体测成绩 / 专业排名变化</span>
           <ChartContainer :option="rankOption" />
         </div>
       </div>
@@ -189,14 +226,14 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
 }
 
 .kpi-label {
-  font-size: $college-fs-meta;
+  font-size: var(--fs-meta);
   color: rgba(190, 210, 238, 0.8);
   white-space: nowrap;
 }
 
 .kpi-value {
   font-family: var(--student-font-number, inherit);
-  font-size: $college-fs-body;
+  font-size: var(--fs-body);
   font-weight: 700;
   color: #f2f7ff;
 
@@ -220,7 +257,7 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
   min-height: 0;
 
   .chart-label {
-    font-size: $college-fs-meta;
+    font-size: var(--fs-meta);
     color: rgba(198, 216, 242, 0.82);
     margin-bottom: 2px;
     flex-shrink: 0;
@@ -245,7 +282,7 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
 
 .course-line {
   margin: 0;
-  font-size: $college-fs-label;
+  font-size: var(--fs-label);
   line-height: 1.45;
   display: flex;
   gap: 2px;

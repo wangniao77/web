@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import CollegePanelCard from '@/domains/college/components/CollegePanelCard.vue'
-import UniversityPanelBorder from '@/domains/university/components/UniversityPanelBorder.vue'
+import FuturisticPanel from '@/domains/university/components/FuturisticPanel.vue'
+import TaskFlowTrack from '@/domains/university/components/TaskFlowTrack.vue'
 import { ROUTES } from '@/constants/routes'
 import type { KeyTaskVM } from '@/domains/university/types/view'
 
@@ -13,87 +13,49 @@ const props = defineProps<{
 
 defineEmits<{ retry: [] }>()
 
-const summary = computed(() => {
-  const total = props.tasks.length
-  const completed = props.tasks.filter((t) => t.statusClass === 'status-completed').length
-  const delayed = props.tasks.filter((t) => t.statusClass === 'status-delayed').length
-  const ongoing = total - completed - delayed
-  return {
-    total,
-    completed,
-    ongoing,
-    delayed,
-    completedPct: total ? Math.round((completed / total) * 100) : 0,
-    ongoingPct: total ? Math.round((ongoing / total) * 100) : 0,
-    delayedPct: total ? Math.round((delayed / total) * 100) : 0,
-  }
+const overall = computed(() => {
+  if (!props.tasks.length) return 0
+  const sum = props.tasks.reduce((a, t) => a + t.progress, 0)
+  return Math.round(sum / props.tasks.length)
 })
-
-function statusKey(statusClass: string) {
-  if (statusClass === 'status-completed') return 'completed'
-  if (statusClass === 'status-delayed') return 'attention'
-  return 'in-progress'
-}
 </script>
 
 <template>
-  <UniversityPanelBorder variant="13">
-    <CollegePanelCard
-      :index="5"
-      title="年度重点任务进展"
-      :loading="loading"
-      :error="error"
-      show-more
-      :more-to="ROUTES.university.keyTasks"
-      @retry="$emit('retry')"
-    >
-      <div class="task-progress-panel">
-        <div class="task-progress-panel__legend" aria-label="任务状态图例">
-          <span class="task-progress-panel__legend-item task-progress-panel__legend-item--completed"><i /> 已完成</span>
-          <span class="task-progress-panel__legend-item task-progress-panel__legend-item--progress"><i /> 推进中</span>
-          <span class="task-progress-panel__legend-item task-progress-panel__legend-item--attention"><i /> 需关注</span>
-        </div>
-
-        <ul class="task-progress-panel__list">
-          <li
-            v-for="task in tasks"
-            :key="task.id"
-            class="task-progress-panel__row"
-            :class="`task-progress-panel__row--${statusKey(task.statusClass)}`"
-          >
-            <span class="task-progress-panel__icon">
-              <svg aria-hidden="true"><use href="/icons.svg#icon-target" /></svg>
-            </span>
-            <span class="task-progress-panel__name">{{ task.name }}</span>
-            <div class="task-progress-panel__bar">
-              <i :style="{ width: `${task.progress}%` }" />
-            </div>
-            <strong class="task-progress-panel__percent">{{ task.progress }}%</strong>
-            <span class="task-progress-panel__tag" :class="`task-progress-panel__tag--${statusKey(task.statusClass)}`">
-              {{ task.statusLabel }}
-            </span>
-          </li>
-        </ul>
-
-        <div class="task-progress-panel__summary">
-          <div class="task-progress-panel__summary-item">
-            <span>重点任务总数</span>
-            <strong>{{ summary.total }}<small>项</small></strong>
-          </div>
-          <div class="task-progress-panel__summary-item">
-            <span>已完成</span>
-            <strong>{{ summary.completed }}<small>项</small> {{ summary.completedPct }}%</strong>
-          </div>
-          <div class="task-progress-panel__summary-item">
-            <span>推进中</span>
-            <strong>{{ summary.ongoing }}<small>项</small> {{ summary.ongoingPct }}%</strong>
-          </div>
-          <div class="task-progress-panel__summary-item">
-            <span>需关注</span>
-            <strong>{{ summary.delayed }}<small>项</small> {{ summary.delayedPct }}%</strong>
-          </div>
-        </div>
+  <FuturisticPanel
+    :index="4"
+    title="年度重点任务进度"
+    :detail-to="ROUTES.university.tasks"
+    :loading="loading"
+    :error="error"
+    @retry="$emit('retry')"
+  >
+    <template #actions>
+      <div class="tasks-summary">
+        <span>总体完成率</span>
+        <strong>{{ overall }}<i>%</i></strong>
       </div>
-    </CollegePanelCard>
-  </UniversityPanelBorder>
+    </template>
+
+    <TaskFlowTrack :tasks="tasks" :limit="4" />
+  </FuturisticPanel>
 </template>
+
+<style scoped lang="scss">
+.tasks-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+
+  span { font-size: var(--uni-fs-label); color: var(--uni-text-muted); }
+
+  strong {
+    font-family: var(--uni-font-number);
+    font-size: var(--uni-fs-metric-sm);
+    font-weight: 700;
+    color: var(--uni-accent-cyan);
+    text-shadow: 0 0 12px rgba(51, 217, 255, 0.4);
+
+    i { font-style: normal; font-size: 0.5em; margin-left: 1px; color: var(--uni-text-secondary); }
+  }
+}
+</style>

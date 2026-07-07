@@ -1,0 +1,75 @@
+// University governance cockpit — exhibition hall / large-screen tokens (1920×1080 base)
+
+.university-screen {
+  // Deep-space backdrop
+  --uni-bg-primary: #050d1a;
+  --uni-bg-secondary: #071426;
+  --uni-bg-deep: #030812;
+
+  // Panel surfaces (translucent glass)
+  --uni-surface-primary: rgba(11, 28, 51, 0.55);
+  --uni-surface-secondary: rgba(13, 30, 54, 0.42);
+  --uni-surface-inner: rgba(8, 22, 42, 0.55);
+  --uni-surface-elevated: rgba(15, 39, 67, 0.72);
+  --uni-surface-glass: rgba(9, 24, 44, 0.7);
+
+  // Accents
+  --uni-accent-cyan: #33d9ff;
+  --uni-accent-cyan-soft: rgba(51, 217, 255, 0.16);
+  --uni-accent-blue: #4b8dff;
+  --uni-accent-violet: #7c8bff;
+  --uni-status-normal: #37e0a4;
+  --uni-status-ongoing: #4b8dff;
+  --uni-status-attention: #ffb057;
+  --uni-status-danger: #ff6b78;
+
+  // Text
+  --uni-text-primary: #eaf4ff;
+  --uni-text-secondary: #9cb6d6;
+  --uni-text-muted: #6a84a3;
+
+  // Borders + glow
+  --uni-border: rgba(90, 170, 255, 0.16);
+  --uni-border-hover: rgba(51, 217, 255, 0.4);
+  --uni-hairline: rgba(90, 170, 255, 0.1);
+  --uni-glow-cyan: 0 0 22px rgba(51, 217, 255, 0.38);
+  --uni-glow-soft: 0 0 14px rgba(51, 217, 255, 0.24);
+  --uni-shadow-soft: 0 12px 40px rgba(2, 8, 20, 0.5);
+  --uni-shadow-inset: inset 0 1px 0 rgba(140, 200, 255, 0.06);
+  --uni-panel-bg: linear-gradient(
+    160deg,
+    rgba(13, 32, 58, 0.62) 0%,
+    rgba(8, 22, 42, 0.5) 55%,
+    rgba(6, 16, 32, 0.58) 100%
+  );
+
+  // Type — tuned for exhibition hall viewing distance
+  --uni-font-body: "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --uni-font-number: "DIN Alternate", "Bahnschrift", "Rajdhani", "Roboto Condensed", var(--uni-font-body);
+
+  --uni-fs-page-title: 42px;
+  --uni-fs-subtitle: 18px;
+  --uni-fs-module-title: 28px;
+  --uni-fs-metric-lg: 58px;
+  --uni-fs-metric-md: 36px;
+  --uni-fs-metric-sm: 30px;
+  --uni-fs-hud-hero: 72px;
+  --uni-fs-body: 19px;
+  --uni-fs-caption: 16px;
+  --uni-fs-label: 15px;
+  --uni-fs-meta: 14px;
+  --uni-fs-micro: 13px;
+
+  // Spacing + chrome
+  --uni-gap-page: 14px;
+  --uni-gap-module: 10px;
+  --uni-gap-inner: 8px;
+  --uni-pad-module: 12px;
+  --uni-pad-inner: 10px;
+  --uni-radius-module: 12px;
+  --uni-radius-inner: 8px;
+  --uni-header-height: 86px;
+  --uni-nav-height: 42px;
+  --uni-logo-size: 54px;
+  --uni-clip: 16px;
+}

@@ -48,7 +48,7 @@ defineEmits<{ retry: [] }>()
 @use '../shared/panel-pair.scss';
 
 .type-tag {
-  font-size: $college-fs-meta;
+  font-size: var(--fs-meta);
   padding: 1px 6px;
   border-radius: 4px;
   background: rgba(139, 92, 246, 0.15);

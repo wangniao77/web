@@ -60,9 +60,23 @@ const router = createRouter({
           component: () => import('@/domains/university/views/UniversityOverviewView.vue'),
         },
         {
-          path: 'key-tasks',
-          name: 'university-key-tasks',
+          path: 'research',
+          name: 'university-research',
+          component: () => import('@/domains/university/views/details/ResearchDetailView.vue'),
+        },
+        {
+          path: 'tasks',
+          name: 'university-tasks',
           component: () => import('@/domains/university/views/details/KeyTasksDetailView.vue'),
+        },
+        {
+          path: 'key-tasks',
+          redirect: { name: 'university-tasks' },
+        },
+        {
+          path: 'disciplines',
+          name: 'university-disciplines',
+          component: () => import('@/domains/university/views/details/DisciplineDetailView.vue'),
         },
         {
           path: 'employment',
@@ -70,9 +84,23 @@ const router = createRouter({
           component: () => import('@/domains/university/views/details/EmploymentDetailView.vue'),
         },
         {
+          path: 'events',
+          name: 'university-events',
+          component: () => import('@/domains/university/views/details/EventsDetailView.vue'),
+        },
+        {
           path: 'news',
-          name: 'university-news',
-          component: () => import('@/domains/university/views/details/NewsDetailView.vue'),
+          redirect: { name: 'university-events' },
+        },
+        {
+          path: 'academic-risk',
+          name: 'university-academic-risk',
+          component: () => import('@/domains/university/views/details/AcademicRiskDetailView.vue'),
+        },
+        {
+          path: 'metrics',
+          name: 'university-metrics',
+          component: () => import('@/domains/university/views/details/MetricsDetailView.vue'),
         },
       ],
     },

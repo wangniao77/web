@@ -57,6 +57,6 @@ defineEmits<{ retry: [] }>()
 
 .highlight-list .detail {
   color: rgba(174, 198, 230, 0.5);
-  font-size: $college-fs-meta;
+  font-size: var(--fs-meta);
 }
 </style>

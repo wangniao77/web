@@ -53,10 +53,15 @@ export function adaptStudentDashboard(dto: StudentDashboardDTO): StudentDashboar
       classTotal: dto.academic.classTotal,
       departmentRank: dto.academic.departmentRank,
       departmentTotal: dto.academic.departmentTotal,
+      majorRank: dto.academic.majorRank,
+      majorTotal: dto.academic.majorTotal,
+      physicalTestScore: dto.academic.physicalTestScore,
       semesters: dto.academic.gpaTrend.semesters,
       gpaValues: dto.academic.gpaTrend.values,
       classRankValues: dto.academic.classRankTrend.values,
       departmentRankValues: dto.academic.departmentRankTrend.values,
+      majorRankValues: dto.academic.majorRankTrend.values,
+      physicalTestValues: dto.academic.physicalTestTrend.values,
       courseGrades: [...dto.academic.courseGrades]
         .sort((a, b) => b.score - a.score)
         .map((course, index) => ({

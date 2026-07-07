@@ -1,196 +1,151 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { EChartsOption } from 'echarts'
-import CollegePanelCard from '@/domains/college/components/CollegePanelCard.vue'
+import FuturisticPanel from '@/domains/university/components/FuturisticPanel.vue'
+import GlowMetricCard from '@/domains/university/components/GlowMetricCard.vue'
 import ChartContainer from '@/shared/components/charts/ChartContainer.vue'
-import UniversityPanelBorder from '@/domains/university/components/UniversityPanelBorder.vue'
 import { ROUTES } from '@/constants/routes'
-import { CHART_COLORS, CHART_FONT, CHART_GRID } from '@/styles/echarts-theme'
-import type { EmploymentQualityVM } from '@/domains/university/types/view'
-import { formatTrend } from '@/shared/utils/trend'
+import { uniAreaLine, uniDonut } from '@/domains/university/charts/presets'
+import type { EmploymentSummaryVM } from '@/domains/university/types/view'
 
 const props = defineProps<{
-  data: EmploymentQualityVM
+  data: EmploymentSummaryVM
   loading?: boolean
   error?: string | null
 }>()
 
 defineEmits<{ retry: [] }>()
 
-const trendOption = computed<EChartsOption>(() => ({
-  grid: { ...CHART_GRID.line, top: 24, bottom: 24, left: 36, right: 12 },
-  tooltip: {
-    trigger: 'axis',
-    backgroundColor: 'rgba(6, 17, 52, 0.96)',
-    borderColor: 'rgba(0, 212, 255, 0.28)',
-    textStyle: { color: '#e2edff', fontSize: CHART_FONT.tooltip },
-  },
-  xAxis: {
-    type: 'category',
-    data: props.data.trend.map((t) => t.term),
-    axisLabel: { color: '#8eb4d8', fontSize: CHART_FONT.axis },
-    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.15)' } },
-  },
-  yAxis: {
-    type: 'value',
-    min: 88,
-    max: 100,
-    axisLabel: { color: '#8eb4d8', fontSize: CHART_FONT.axis, formatter: '{value}%' },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
-  },
-  series: [{
-    type: 'line',
-    smooth: true,
-    data: props.data.trend.map((t) => t.rate),
-    symbol: 'circle',
-    symbolSize: 6,
-    lineStyle: { color: CHART_COLORS.cyan, width: 2 },
-    itemStyle: { color: CHART_COLORS.cyan },
-    areaStyle: {
-      color: {
-        type: 'linear',
-        x: 0, y: 0, x2: 0, y2: 1,
-        colorStops: [
-          { offset: 0, color: 'rgba(0, 229, 255, 0.25)' },
-          { offset: 1, color: 'rgba(0, 229, 255, 0.02)' },
-        ],
-      },
-    },
-  }],
-}))
+const kpiOrder = [0, 2, 3, 1]
+const kpiTones = ['cyan', 'green', 'ongoing', 'violet'] as const
 
-const pieOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
-  legend: {
-    orient: 'vertical',
-    right: 0,
-    top: 'center',
-    textStyle: { color: '#8eb4d8', fontSize: CHART_FONT.label },
-  },
-  series: [{
-    type: 'pie',
-    radius: ['42%', '62%'],
-    center: ['38%', '50%'],
-    label: { show: false },
-    data: props.data.distribution.map((d, i) => ({
-      name: d.name,
-      value: d.value,
-      itemStyle: {
-        color: [CHART_COLORS.cyan, CHART_COLORS.blue, CHART_COLORS.gold, CHART_COLORS.green][i],
-      },
-    })),
-  }],
-}))
+const trendOption = computed(() =>
+  uniAreaLine(
+    props.data.trend.map((t) => t.year),
+    props.data.trend.map((t) => t.rate),
+    { min: 88, max: 100, suffix: '%', color: '#37e0a4' },
+  ),
+)
+
+const pieOption = computed(() => uniDonut(props.data.destinationStructure))
+const footer = computed(() => props.data.metrics.slice(4, 6))
 </script>
 
 <template>
-  <UniversityPanelBorder variant="8">
-    <CollegePanelCard
-      :index="3"
-      title="就业与升学质量"
-      :loading="loading"
-      :error="error"
-      show-more
-      :more-to="ROUTES.university.employment"
-      @retry="$emit('retry')"
-    >
-      <div class="employment-panel">
-        <div class="kpi-row">
-          <div v-for="metric in data.metrics" :key="metric.label" class="kpi-card">
-            <span class="kpi-label">{{ metric.label }}</span>
-            <strong class="kpi-value">{{ metric.value }}</strong>
-            <em v-if="formatTrend(metric.trend)" class="kpi-trend">{{ formatTrend(metric.trend) }}</em>
-          </div>
+  <FuturisticPanel
+    :index="3"
+    title="就业与升学质量"
+    :detail-to="ROUTES.university.employment"
+    :loading="loading"
+    :error="error"
+    @retry="$emit('retry')"
+  >
+    <div class="employ">
+      <div class="employ__kpi">
+        <GlowMetricCard
+          v-for="(idx, i) in kpiOrder"
+          :key="data.metrics[idx].label"
+          :label="data.metrics[idx].label"
+          :value="data.metrics[idx].value"
+          :trend="data.metrics[idx].trendLabel"
+          :tone="kpiTones[i]"
+          :size="i === 0 ? 'lg' : 'md'"
+        />
+      </div>
+
+      <div class="employ__charts">
+        <div class="chart-cell">
+          <span class="cell-title">毕业去向结构</span>
+          <ChartContainer :option="pieOption" />
         </div>
-        <div class="charts-row">
-          <div class="chart-box">
-            <span class="chart-title">近6学期就业率趋势</span>
-            <ChartContainer :option="trendOption" />
-          </div>
-          <div class="chart-box">
-            <span class="chart-title">就业地域分布</span>
-            <ChartContainer :option="pieOption" />
-          </div>
+        <div class="chart-cell">
+          <span class="cell-title">近三年落实率</span>
+          <ChartContainer :option="trendOption" />
         </div>
       </div>
-    </CollegePanelCard>
-  </UniversityPanelBorder>
+
+      <div class="employ__foot">
+        <div v-for="m in footer" :key="m.label" class="foot-item">
+          <span class="foot-item__label">{{ m.label }}</span>
+          <strong class="foot-item__value">{{ m.value }}</strong>
+          <span v-if="m.hint" class="foot-item__hint">{{ m.hint }}</span>
+        </div>
+      </div>
+    </div>
+  </FuturisticPanel>
 </template>
 
 <style scoped lang="scss">
-.employment-panel {
-  display: flex;
-  flex-direction: column;
+.employ {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
   height: 100%;
   min-height: 0;
-  gap: 8px;
 }
 
-.kpi-row {
+.employ__kpi {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  flex-shrink: 0;
+  grid-template-columns: 1.15fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 6px;
+
+  > :first-child { grid-row: 1 / 3; }
+
+  :deep(.glow-metric) {
+    padding: 6px 9px;
+  }
+
+  :deep(.glow-metric--lg .glow-metric__value) {
+    font-size: var(--uni-fs-metric-sm);
+  }
 }
 
-.kpi-card {
+.employ__charts {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: var(--uni-gap-inner);
+}
+
+.chart-cell {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: rgba(0, 60, 120, 0.18);
-  border: 1px solid rgba(0, 212, 255, 0.12);
-}
-
-.kpi-label {
-  font-size: 10px;
-  color: rgba(174, 198, 230, 0.72);
-}
-
-.kpi-value {
-  font-size: 18px;
-  font-weight: 800;
-  color: #00e5ff;
-  font-family: var(--university-font-number);
-  line-height: 1.1;
-}
-
-.kpi-trend {
-  font-size: 10px;
-  font-style: normal;
-  color: #37ffb1;
-  font-weight: 700;
-}
-
-.charts-row {
-  flex: 1;
   min-height: 0;
+  padding: 6px 8px;
+  background: rgba(8, 22, 42, 0.35);
+  border: 1px solid rgba(90, 170, 255, 0.08);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+
+  :deep(.chart-container) { flex: 1; min-height: 0; }
+}
+
+.cell-title {
+  font-size: var(--uni-fs-label);
+  color: var(--uni-text-muted);
+  margin-bottom: 4px;
+}
+
+.employ__foot {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 6px;
 }
 
-.chart-box {
+.foot-item {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  padding: 4px;
-  border-radius: 6px;
-  background: rgba(0, 40, 80, 0.12);
-  border: 1px solid rgba(0, 212, 255, 0.08);
-}
+  padding: 5px 10px;
+  background: rgba(8, 22, 42, 0.4);
+  border-left: 2px solid var(--uni-accent-cyan);
 
-.chart-title {
-  flex-shrink: 0;
-  font-size: 10px;
-  color: rgba(174, 198, 230, 0.68);
-  margin-bottom: 2px;
-}
-
-.chart-box :deep(.chart-container) {
-  flex: 1;
-  min-height: 0;
+  &__label { font-size: var(--uni-fs-label); color: var(--uni-text-secondary); }
+  &__value {
+    font-family: var(--uni-font-number);
+    font-size: var(--uni-fs-body);
+    font-weight: 700;
+    color: var(--uni-accent-cyan);
+    margin-top: 2px;
+  }
+  &__hint { font-size: var(--uni-fs-meta); color: var(--uni-text-muted); margin-top: 2px; }
 }
 </style>

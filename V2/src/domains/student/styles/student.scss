@@ -6,14 +6,16 @@
   --student-font-body: "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
   --student-font-number: "DIN Alternate", "Bahnschrift", "Roboto Condensed", "Arial Narrow", var(--student-font-body);
 
-  --fs-display:  #{$college-fs-display};
-  --fs-hero:     #{$college-fs-hero};
-  --fs-highlight:#{$college-fs-highlight};
-  --fs-title:    #{$college-fs-title};
-  --fs-body:     #{$college-fs-body};
-  --fs-label:    #{$college-fs-label};
-  --fs-meta:     #{$college-fs-meta};
-  --fs-chart:    #{$college-fs-chart};
+  // 展厅大屏：整体放大字号阶梯，保证远距离可读
+  --fs-display:  44px;  // 主标题
+  --fs-hero:     36px;  // 核心指标 / KPI
+  --fs-highlight:30px;  // 次级大数 / 时钟
+  --fs-title:    22px;  // 面板标题
+  --fs-body:     20px;  // 正文 / 列表
+  --fs-label:    17px;  // 标签 / 图表小标题
+  --fs-meta:     15px;  // 辅助 / 日期 / 状态
+  --fs-chart:    17px;  // 坐标轴 / 图例
+  --fs-micro:    14px;  // 极小标记（尽量少用）
 
   background:
     radial-gradient(circle at 50% 32%, rgba(0, 200, 255, 0.22) 0, transparent 34%),
@@ -39,7 +41,7 @@
     &::after {
       content: '';
       position: absolute;
-      inset: $header-height 0 0;
+      inset: 88px 0 0;
       pointer-events: none;
       z-index: 0;
       background-image:
