@@ -21,13 +21,13 @@ const barOption = computed<EChartsOption>(() => {
   const maxValue = props.data.courseConstruction.reduce((acc, d) => Math.max(acc, d.value), 0)
   const axisMax = maxValue > 0 ? Math.ceil((maxValue * 1.18) / 5) * 5 : undefined
   return {
-    grid: { left: GRID_LEFT, right: 24, top: 8, bottom: 8, containLabel: false },
+    grid: { left: GRID_LEFT, right: 36, top: 8, bottom: 8, containLabel: false },
     xAxis: { type: 'value', show: false, max: axisMax },
     yAxis: {
       type: 'category',
       inverse: true,
       data: props.data.courseConstruction.map((d) => d.name),
-      axisLabel: { ...AXIS_LABEL_ALT, color: '#e8f7ff', fontSize: 14, fontWeight: 500, align: 'left', margin: GRID_LEFT - 6 },
+      axisLabel: { ...AXIS_LABEL_ALT, color: '#e8f7ff', fontSize: 12, fontWeight: 500, align: 'left', margin: GRID_LEFT - 6 },
       axisLine: { show: true, lineStyle: { color: 'rgba(57,230,255,0.45)', width: 1 } },
       axisTick: { show: false },
     },
@@ -35,7 +35,7 @@ const barOption = computed<EChartsOption>(() => {
       type: 'bar',
       data: props.data.courseConstruction.map((d) => d.value),
       barWidth: 8,
-      label: { show: true, position: 'right', distance: 4, color: '#f4fbff', fontSize: CHART_FONT.label, fontWeight: 700, formatter: '{c}门' },
+      label: { show: true, position: 'right', distance: 6, color: '#f4fbff', fontSize: 12, fontWeight: 700, formatter: '{c}门' },
       itemStyle: {
         color: {
           type: 'linear', x: 0, y: 0, x2: 0, y2: 1,

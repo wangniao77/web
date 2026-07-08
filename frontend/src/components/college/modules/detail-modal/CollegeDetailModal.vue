@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
+import {
+  COLLEGE_SIMULATED_DATA_HINT,
+  isCollegeSimulatedModule,
+  isCollegeSimulatedWarning,
+} from '@/constants/college/simulated-modules'
 import { collegeDetailService } from '@/api/college/services/details'
 import type { EmploymentRosterDTO, RosterStudentDTO } from '@/api/college/details'
 import { useCollegeDetail } from './useCollegeDetail'
@@ -253,7 +258,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           <header class="cdm-head">
             <span class="cdm-head__icon"><DashIcon :kind="headerIcon" :size="22" /></span>
             <div class="cdm-head__text">
-              <h2>{{ headerTitle }}</h2>
+              <h2>
+                {{ headerTitle }}
+                <span
+                  v-if="isCollegeSimulatedModule(state.kind) || (state.kind === 'warning' && isCollegeSimulatedWarning(state.id))"
+                  class="sim-data-badge"
+                  :title="COLLEGE_SIMULATED_DATA_HINT"
+                  aria-label="模拟数据"
+                >
+                  模拟数据
+                </span>
+              </h2>
               <span>{{ headerSubtitle }}</span>
             </div>
             <button type="button" class="cdm-close" @click="closeCollegeDetail" aria-label="关闭">×</button>
@@ -662,6 +677,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     min-width: 0;
 
     h2 {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
       margin: 0;
       font-size: 22px;
       font-weight: 800;

@@ -123,10 +123,16 @@ useAutoRefresh(loadAll)
   <template v-else>
     <main class="cockpit-main">
       <div class="cockpit-column cockpit-column--left">
-        <CockpitPanel :number="1" title="年度重点任务推进" icon="task" panel-class="panel--key-tasks">
+        <CockpitPanel
+          title="年度重点任务推进"
+          icon="task"
+          panel-class="panel--key-tasks"
+          module-id="key-tasks"
+          :simulated="true"
+        >
           <KeyTasksPanel :tasks="tasks" :loading="loading" @retry="loadAll" />
         </CockpitPanel>
-        <CockpitPanel :number="2" title="高潜学生发展画像" icon="potential" panel-class="panel--high-potential">
+        <CockpitPanel title="高潜学生发展画像" icon="potential" panel-class="panel--high-potential">
           <HighPotentialPanel v-if="highPotential" :data="highPotential" />
           <div v-else class="cockpit-panel-empty">高潜数据暂不可用</div>
         </CockpitPanel>
@@ -137,22 +143,22 @@ useAutoRefresh(loadAll)
           <CoreHeroGauge v-if="hub" :data="hub" />
           <div v-else class="cockpit-panel-empty">核心指标暂不可用</div>
         </div>
-        <CockpitPanel :number="6" title="预警与风险监测" icon="warning" panel-class="panel--warning">
+        <CockpitPanel title="预警与风险监测" icon="warning" panel-class="panel--warning">
           <WarningRiskPanel v-if="warning" :data="warning" />
           <div v-else class="cockpit-panel-empty">预警数据暂不可用</div>
         </CockpitPanel>
       </div>
 
       <div class="cockpit-column cockpit-column--right">
-        <CockpitPanel :number="4" title="教学质量与运行" icon="academic">
+        <CockpitPanel title="教学质量与运行" icon="academic" module-id="teaching" :simulated="true">
           <TeachingQualityPanel v-if="teaching" :data="teaching" />
           <div v-else class="cockpit-panel-empty">教学数据暂不可用</div>
         </CockpitPanel>
-        <CockpitPanel :number="5" title="科研创新与团队平台" icon="research">
+        <CockpitPanel title="科研创新与团队平台" icon="research">
           <ResearchInnovPanel v-if="research" :data="research" />
           <div v-else class="cockpit-panel-empty">科研数据暂不可用</div>
         </CockpitPanel>
-        <CockpitPanel :number="3" title="学生就业与前景" icon="students">
+        <CockpitPanel title="学生就业与前景" icon="students" module-id="employment" :simulated="true">
           <StudentEmploymentPanel v-if="student" :data="student" />
           <div v-else class="cockpit-panel-empty">学生数据暂不可用</div>
         </CockpitPanel>

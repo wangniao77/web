@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
 import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { isCollegeSimulatedWarning } from '@/constants/college/simulated-modules'
 import type { WarningOverviewVM } from '@/types/college/view'
 import type { EChartsOption } from 'echarts'
 
@@ -161,10 +162,19 @@ function openWarning(type: string) {
             @click="openWarning(cat.type)"
           >
             <div class="warning-panel__badge">
-              <DashIcon :kind="typeMeta[cat.type]?.icon || 'warning'" :size="24" />
+              <DashIcon :kind="typeMeta[cat.type]?.icon || 'warning'" :size="22" />
             </div>
             <div class="warning-panel__info">
-              <span>{{ cat.label }}</span>
+              <span class="warning-panel__label-row">
+                {{ cat.label }}
+                <em
+                  v-if="isCollegeSimulatedWarning(cat.type)"
+                  class="sim-data-badge sim-data-badge--sm"
+                  title="接口尚未对接，当前为模拟演示数据"
+                >
+                  模拟数据
+                </em>
+              </span>
               <strong>{{ cat.count }}<small>人</small></strong>
             </div>
             <div class="warning-panel__side">
@@ -178,7 +188,16 @@ function openWarning(type: string) {
     </div>
     <div class="warning-panel__charts">
       <div class="warning-panel__chart warning-panel__chart--trend">
-        <div class="warning-panel__chart-title">预警趋势（近六个月）</div>
+        <div class="warning-panel__chart-title">
+          预警趋势（近六个月）
+          <em
+            v-if="isCollegeSimulatedWarning('psychological')"
+            class="sim-data-badge sim-data-badge--sm"
+            title="心理预警趋势为模拟数据"
+          >
+            心理·模拟
+          </em>
+        </div>
         <div class="warning-panel__chart-body">
           <ChartContainer :option="lineOption" />
         </div>
@@ -197,8 +216,8 @@ function openWarning(type: string) {
 
 <style scoped lang="scss">
 .warning-panel__badge svg {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   color: inherit;
 }
 

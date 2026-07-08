@@ -52,10 +52,10 @@ $main-height:    1000px;
 $college-fs-display:   40px;  // 主标题
 $college-fs-hero:      34px;  // 核心指标 / KPI
 $college-fs-highlight: 28px;  // 次级大数 / 时钟
-$college-fs-title:     19px;  // 面板标题
-$college-fs-body:      17px;  // 正文 / 列表
-$college-fs-label:     15px;  // 标签 / 图表小标题
-$college-fs-meta:      14px;  // 辅助 / 日期 / 状态
+$college-fs-title:     18px;  // 面板标题
+$college-fs-body:      15px;  // 正文 / 列表
+$college-fs-label:     14px;  // 标签 / 图表小标题
+$college-fs-meta:      12px;  // 辅助 / 日期 / 状态
 $college-fs-chart:     15px;  // 坐标轴 / 图例
 
 // 兼容旧变量名
@@ -77,7 +77,9 @@ $glow-cyan:    0 0 16px rgba(0, 229, 255, 0.3);
 $glow-purple:  0 0 12px rgba(139, 92, 246, 0.25);
 $glow-gold:    0 0 10px rgba(240, 192, 64, 0.2);
 $glow-danger:  0 0 10px rgba(248, 113, 113, 0.2);
-$glow-text:    0 0 8px rgba(0, 184, 255, 0.4);
+$glow-text:    0 0 6px rgba(0, 184, 255, 0.35);
+$glow-text-strong: 0 0 8px rgba(0, 242, 255, 0.5), 0 0 14px rgba(0, 200, 255, 0.22);
+$glow-text-soft: 0 0 4px rgba(0, 242, 255, 0.28);
 
 // ── Transition ──────────────────────────────────────────────
 $transition-fast: 0.15s ease;

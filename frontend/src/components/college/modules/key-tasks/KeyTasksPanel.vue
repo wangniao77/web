@@ -75,7 +75,6 @@ function openDetail() {
         <div class="task-progress-panel__bar">
           <i :style="{ width: `${task.progress}%` }" />
         </div>
-        <strong class="task-progress-panel__percent">{{ task.progress }}%</strong>
         <span class="task-progress-panel__tag" :class="`task-progress-panel__tag--${statusKey(task.statusClass)}`">
           {{ task.statusLabel }}
         </span>

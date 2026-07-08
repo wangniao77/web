@@ -4,6 +4,11 @@ import { useScreenStore } from '@/stores/screen'
 const DESIGN_WIDTH = 1920
 const DESIGN_HEIGHT = 1080
 
+/** fluid 模式下画布最大拉宽比例（相对 1920） */
+const FLUID_MAX_WIDTH_RATIO = 1.08
+/** 宽屏额外横向空间被吸收的比例（0~1，越小变化越平缓） */
+const FLUID_STRETCH_ABSORB = 0.22
+
 export type ScreenScaleMode = 'contain' | 'cover' | 'adapt' | 'fluid'
 
 export interface ScreenScaleResult {
@@ -26,9 +31,9 @@ function getViewportSize() {
 }
 
 /**
- * fluid（学院大屏推荐）：
- * - 始终以高度为基准缩放 → 顶底完整可见
- * - 宽于 16:9 时拉宽画布至 viewport 宽度 → 消除两侧留白
+ * contain：等比缩放，画布固定 1920×1080，变化最平稳
+ * adapt：同 contain（兼容别名）
+ * fluid（学院大屏）：等比缩放 + 宽屏时最多拉宽 8% 画布，避免布局剧烈拉伸
  */
 export function computeScreenScale(
   w: number,
@@ -46,26 +51,29 @@ export function computeScreenScale(
   if (mode === 'cover') {
     scale = Math.max(sx, sy)
     canvasWidth = DESIGN_WIDTH
-  } else if (mode === 'fluid' || mode === 'adapt') {
-    // 1. 以高度适配，保证 1080 设计高度完整显示
-    scale = sy
-    canvasWidth = w / scale
+  } else if (mode === 'fluid') {
+    // 以 contain 为基准，缩放变化与窗口宽高同步、无突变
+    scale = Math.min(sx, sy)
+    const fittedWidth = w / scale
+    const maxCanvasWidth = DESIGN_WIDTH * FLUID_MAX_WIDTH_RATIO
 
-    // 2. 画布窄于 1920（偏高屏）：回退标准画布 + contain
-    if (canvasWidth < DESIGN_WIDTH) {
-      scale = Math.min(sx, sy)
+    if (fittedWidth <= DESIGN_WIDTH) {
       canvasWidth = DESIGN_WIDTH
     } else {
-      canvasWidth = w / scale
+      const extra = fittedWidth - DESIGN_WIDTH
+      canvasWidth = DESIGN_WIDTH + extra * FLUID_STRETCH_ABSORB
+      canvasWidth = Math.min(canvasWidth, maxCanvasWidth)
     }
+  } else if (mode === 'adapt') {
+    scale = Math.min(sx, sy)
+    canvasWidth = DESIGN_WIDTH
   } else {
     scale = Math.min(sx, sy)
     canvasWidth = DESIGN_WIDTH
   }
 
   if (mode !== 'cover' && safeInset) {
-    scale *= 0.995
-    canvasWidth = mode === 'fluid' || mode === 'adapt' ? w / scale : DESIGN_WIDTH
+    scale *= 0.998
   }
 
   return { scale, canvasWidth, canvasHeight }
@@ -77,8 +85,9 @@ export function useScreenScale(options: ScreenScaleOptions = {}) {
   const scale = ref(1)
   const canvasWidth = ref(DESIGN_WIDTH)
   const canvasHeight = ref(DESIGN_HEIGHT)
+  let rafId = 0
 
-  function updateScale() {
+  function applyScale() {
     const { w, h } = getViewportSize()
     const result = computeScreenScale(w, h, mode, safeInset)
     scale.value = result.scale
@@ -87,16 +96,24 @@ export function useScreenScale(options: ScreenScaleOptions = {}) {
     screenStore.setScale(result.scale)
   }
 
+  function updateScale() {
+    cancelAnimationFrame(rafId)
+    rafId = requestAnimationFrame(applyScale)
+  }
+
   onMounted(() => {
     updateScale()
     window.addEventListener('resize', updateScale)
     window.visualViewport?.addEventListener('resize', updateScale)
+    window.addEventListener('orientationchange', updateScale)
     document.addEventListener('fullscreenchange', updateScale)
   })
 
   onUnmounted(() => {
+    cancelAnimationFrame(rafId)
     window.removeEventListener('resize', updateScale)
     window.visualViewport?.removeEventListener('resize', updateScale)
+    window.removeEventListener('orientationchange', updateScale)
     document.removeEventListener('fullscreenchange', updateScale)
   })
 

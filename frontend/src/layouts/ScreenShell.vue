@@ -11,7 +11,7 @@ withDefaults(
   },
 )
 
-const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
+const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'contain' })
 </script>
 
 <template>
