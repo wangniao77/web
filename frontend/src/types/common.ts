@@ -18,7 +18,13 @@ export interface StudentScope extends FilterParams {
   studentId?: string
 }
 
-export interface UniversityScope extends FilterParams {}
+export type StatsPeriod = 'semester' | 'year' | 'three_years'
+export type SchoolScope = 'all' | 'guangzhou' | 'foshan'
+
+export interface UniversityScope extends FilterParams {
+  statsPeriod?: StatsPeriod
+  schoolScope?: SchoolScope
+}
 
 export type TrendDirection = 'up' | 'down' | 'flat'
 

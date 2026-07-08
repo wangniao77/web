@@ -25,16 +25,12 @@ const trendOption = computed(() =>
     { suffix: ' 亿', color: '#33d9ff' },
   ),
 )
-
-const maxContributor = computed(() =>
-  Math.max(...props.data.topContributors.map((c) => Number(c.value)), 1),
-)
 </script>
 
 <template>
   <FuturisticPanel
-    :index="1"
-    title="科研创新与申博支撑"
+    :index="6"
+    title="科研创新"
     :detail-to="ROUTES.university.research"
     :loading="loading"
     :error="error"
@@ -43,42 +39,30 @@ const maxContributor = computed(() =>
     <div class="research">
       <div class="research__kpi">
         <GlowMetricCard
-          v-for="(m, i) in data.metrics"
+          v-for="(m, i) in data.metrics.slice(0, 6)"
           :key="m.label"
           :label="m.label"
           :value="m.value"
           :unit="m.unit"
           :tone="kpiTones[i % kpiTones.length]"
+          size="sm"
         />
       </div>
 
       <div class="research__phd">
         <div class="phd-head">
-          <span>申博关键指标完成度</span>
+          <span>重点平台 · 申博支撑</span>
           <strong>{{ data.phdSupportLabel }}</strong>
         </div>
-        <ProgressTrack :value="data.phdSupportRate" tone="ongoing" :height="9" />
+        <ProgressTrack :value="data.phdSupportRate" tone="ongoing" :height="6" />
         <p v-if="data.phdHasGap" class="phd-gap">
           <i class="phd-gap__dot" />{{ data.phdGapHint }}
         </p>
       </div>
 
-      <div class="research__bottom">
-        <div class="heat">
-          <span class="sub-title">贡献热度榜 · Top 3</span>
-          <div v-for="(c, i) in data.topContributors" :key="c.name" class="heat__item">
-            <em class="heat__rank">{{ i + 1 }}</em>
-            <div class="heat__body">
-              <span>{{ c.name }}</span>
-              <ProgressTrack :value="(Number(c.value) / maxContributor) * 100" tone="normal" :height="4" />
-            </div>
-            <strong>{{ c.value }}</strong>
-          </div>
-        </div>
-        <div class="trend">
-          <span class="sub-title">科研经费趋势</span>
-          <ChartContainer :option="trendOption" />
-        </div>
+      <div class="research__trend">
+        <span class="sub-title">科研经费趋势</span>
+        <ChartContainer :option="trendOption" />
       </div>
     </div>
   </FuturisticPanel>
@@ -95,8 +79,8 @@ const maxContributor = computed(() =>
 
 .research__kpi {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
 }
 
 .research__phd {
@@ -139,60 +123,23 @@ const maxContributor = computed(() =>
   }
 }
 
-.research__bottom {
+.research__trend {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  gap: var(--uni-gap-inner);
+  display: flex;
+  flex-direction: column;
+
+  :deep(.chart-container) {
+    flex: 1;
+    min-height: 0;
+  }
 }
 
 .sub-title {
   display: block;
   font-size: 12px;
   color: var(--uni-text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   letter-spacing: 0.04em;
-}
-
-.heat__item {
-  display: grid;
-  grid-template-columns: 20px 1fr auto;
-  gap: 9px;
-  align-items: center;
-  padding: 3px 0;
-
-  & + .heat__item { border-top: 1px solid rgba(90, 170, 255, 0.06); }
-}
-
-.heat__rank {
-  font-style: normal;
-  font-family: var(--uni-font-number);
-  font-weight: 700;
-  color: var(--uni-accent-cyan);
-}
-
-.heat__body span {
-  display: block;
-  font-size: var(--uni-fs-body);
-  color: var(--uni-text-primary);
-  margin-bottom: 3px;
-}
-
-.heat__item strong {
-  font-family: var(--uni-font-number);
-  color: var(--uni-status-normal);
-  font-size: var(--uni-fs-body);
-}
-
-.trend {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-
-  :deep(.chart-container) {
-    flex: 1;
-    min-height: 0;
-  }
 }
 </style>

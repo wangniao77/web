@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { useScreenScale } from '@/composables/useScreenScale'
 import UniversityScreenHeader from '@/components/university/UniversityScreenHeader.vue'
+import UniversityScreenFooter from '@/components/university/UniversityScreenFooter.vue'
 import StarfieldBackdrop from '@/components/university/StarfieldBackdrop.vue'
 import ParticleRainBackground from '@/components/university/ParticleRainBackground.vue'
-import type { DashboardMetaVM } from '@/types/university/view'
-
-defineProps<{
-  meta?: DashboardMetaVM | null
-}>()
 
 const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
 </script>
@@ -17,10 +13,11 @@ const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
     <div class="screen-scale" :style="{ ...canvasStyle, ...scaleStyle }">
       <StarfieldBackdrop />
       <ParticleRainBackground :count="96" />
-      <UniversityScreenHeader :meta="meta" />
+      <UniversityScreenHeader />
       <main class="screen-main">
         <slot />
       </main>
+      <UniversityScreenFooter />
     </div>
   </div>
 </template>

@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "发展与治理驾驶舱 · 数据流图",
+    "subtitle": "Excel 入库、PostgreSQL 聚合、API 契约与 Mock 双路径到大屏展示",
+    "output": "system-dataflow.html",
+    "viewBox": [1080, 720]
+  },
+  "stages": [
+    { "label": "数据源" },
+    { "label": "接入" },
+    { "label": "处理" },
+    { "label": "转换" },
+    { "label": "展示" }
+  ],
+  "nodes": [
+    { "id": "excel", "type": "external", "label": "学籍 Excel", "sublabel": "Datas/*.xlsx", "stage": 0, "row": 0, "tag": "离线源" },
+    { "id": "mockJson", "type": "database", "label": "Mock 数据集", "sublabel": "frontend/src/mock", "stage": 0, "row": 2, "tag": "演示源" },
+    { "id": "postgres", "type": "database", "label": "PostgreSQL", "sublabel": "governance_cockpit", "stage": 0, "row": 4, "tag": "持久化" },
+
+    { "id": "etl", "type": "backend", "label": "Excel ETL", "sublabel": "app/importers", "stage": 1, "row": 0, "tag": "批量导入" },
+    { "id": "httpReq", "type": "frontend", "label": "HTTP 请求", "sublabel": "axios /api/v1/*", "stage": 1, "row": 2, "tag": "联调路径" },
+    { "id": "createSvc", "type": "frontend", "label": "createService", "sublabel": "Mock / Fetch 分支", "stage": 1, "row": 4, "tag": "调度" },
+
+    { "id": "tortoise", "type": "backend", "label": "Tortoise ORM", "sublabel": "模型查询", "stage": 2, "row": 1, "tag": "读库" },
+    { "id": "services", "type": "backend", "label": "Services", "sublabel": "College / University 聚合", "stage": 2, "row": 3, "tag": "业务计算" },
+
+    { "id": "apiResp", "type": "backend", "label": "ApiResponse", "sublabel": "{ code, data, message }", "stage": 3, "row": 1, "tag": "DTO" },
+    { "id": "adapters", "type": "frontend", "label": "Adapters", "sublabel": "DTO → ViewModel", "stage": 3, "row": 3, "tag": "映射" },
+
+    { "id": "viewModel", "type": "frontend", "label": "ViewModel", "sublabel": "面板/图表绑定数据", "stage": 4, "row": 2, "tag": "展示模型" },
+    { "id": "cockpit", "type": "frontend", "label": "大屏 UI", "sublabel": "Vue + ECharts", "stage": 4, "row": 4, "tag": "渲染" }
+  ],
+  "flows": [
+    {
+      "from": "excel",
+      "to": "etl",
+      "label": "xlsx 行记录",
+      "classification": "学籍成绩宽表",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -23
+    },
+    {
+      "from": "etl",
+      "to": "postgres",
+      "label": "bulk upsert",
+      "classification": "student_academic_records",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "straight",
+      "labelDy": 53
+    },
+    {
+      "from": "postgres",
+      "to": "tortoise",
+      "label": "SQL 查询",
+      "classification": "ORM models",
+      "variant": "default",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "tortoise",
+      "to": "services",
+      "label": "ORM 记录",
+      "classification": "students / tasks / events",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [530, 410]
+    },
+    {
+      "from": "httpReq",
+      "to": "services",
+      "label": "GET 请求",
+      "classification": "college · university",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [400, 318]
+    },
+    {
+      "from": "services",
+      "to": "apiResp",
+      "label": "聚合 KPI",
+      "classification": "hub / warnings / hub KPIs",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -26
+    },
+    {
+      "from": "apiResp",
+      "to": "adapters",
+      "label": "unwrapApiData",
+      "classification": "提取 data 字段",
+      "variant": "default",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "httpReq",
+      "to": "adapters",
+      "label": "JSON",
+      "classification": "响应 payload",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "auto",
+      "labelAt": [530, 542]
+    },
+    {
+      "from": "mockJson",
+      "to": "createSvc",
+      "label": "本地 JSON",
+      "classification": "VITE_USE_MOCK=true",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "createSvc",
+      "to": "adapters",
+      "label": "mock() + adapt",
+      "classification": "200ms 模拟延迟",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": 56
+    },
+    {
+      "from": "createSvc",
+      "to": "httpReq",
+      "label": "fetch()",
+      "classification": "VITE_USE_MOCK=false",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -2
+    },
+    {
+      "from": "adapters",
+      "to": "viewModel",
+      "label": "格式化字段",
+      "classification": "label / trend / riskClass",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "viewModel",
+      "to": "cockpit",
+      "label": "props 绑定",
+      "classification": "面板 + 图表序列",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "联调主路径（真实数据）",
+      "items": [
+        "Vue 页面调用 createService.fetch → axios GET /api/v1/college/*",
+        "FastAPI Router → CollegeService 从 PostgreSQL 聚合学籍、课程、任务",
+        "返回 ApiResponse DTO → unwrapApiData → Adapter 转 ViewModel → 大屏渲染"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "演示路径（Mock）",
+      "items": [
+        "VITE_USE_MOCK=true 时跳过 HTTP，直接读取 frontend/src/mock",
+        "mock 数据经同一套 Adapter 转换，保证 UI 与联调结构一致",
+        "适用于展厅部署或后端接口尚未就绪的模块"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "离线入库路径",
+      "items": [
+        "Datas/*.xlsx 经 app/importers 解析为学籍宽表记录",
+        "bulk upsert 写入 PostgreSQL，供 CollegeService 实时聚合",
+        "aerich 管理 accounts、tasks、events 等 schema 迁移"
+      ]
+    }
+  ]
+}

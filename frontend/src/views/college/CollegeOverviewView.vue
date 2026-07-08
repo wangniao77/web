@@ -36,74 +36,79 @@ async function loadAll() {
   loading.value = true
   error.value = null
 
-  const scope = collegeScope.value
-  const [
-    hubRes,
-    tasksRes,
-    highPotentialRes,
-    teachingRes,
-    researchRes,
-    warningRes,
-    studentRes,
-  ] = await Promise.allSettled([
-    collegeService.fetchOverviewHub(scope),
-    collegeService.fetchKeyTasks(scope),
-    collegeDetailService.fetchHighPotentialOverview(scope),
-    collegeService.fetchTeachingOverview(scope),
-    collegeService.fetchResearchOverview(scope),
-    collegeService.fetchWarningOverview(scope),
-    collegeService.fetchStudentOverview(scope),
-  ])
+  try {
+    const scope = collegeScope.value
+    const [
+      hubRes,
+      tasksRes,
+      highPotentialRes,
+      teachingRes,
+      researchRes,
+      warningRes,
+      studentRes,
+    ] = await Promise.allSettled([
+      collegeService.fetchOverviewHub(scope),
+      collegeService.fetchKeyTasks(scope),
+      collegeDetailService.fetchHighPotentialOverview(scope),
+      collegeService.fetchTeachingOverview(scope),
+      collegeService.fetchResearchOverview(scope),
+      collegeService.fetchWarningOverview(scope),
+      collegeService.fetchStudentOverview(scope),
+    ])
 
-  const failures: string[] = []
+    const failures: string[] = []
 
-  if (hubRes.status === 'fulfilled') hub.value = hubRes.value
-  else {
-    failures.push(`hub: ${formatError(hubRes.reason)}`)
-    console.error('[college] hub 加载失败', hubRes.reason)
+    if (hubRes.status === 'fulfilled') hub.value = hubRes.value
+    else {
+      failures.push(`hub: ${formatError(hubRes.reason)}`)
+      console.error('[college] hub 加载失败', hubRes.reason)
+    }
+
+    if (tasksRes.status === 'fulfilled') tasks.value = tasksRes.value
+    else {
+      failures.push(`tasks: ${formatError(tasksRes.reason)}`)
+      console.error('[college] tasks 加载失败', tasksRes.reason)
+    }
+
+    if (highPotentialRes.status === 'fulfilled') highPotential.value = highPotentialRes.value
+    else {
+      failures.push(`highPotential: ${formatError(highPotentialRes.reason)}`)
+      console.error('[college] highPotential 加载失败', highPotentialRes.reason)
+    }
+
+    if (teachingRes.status === 'fulfilled') teaching.value = teachingRes.value
+    else {
+      failures.push(`teaching: ${formatError(teachingRes.reason)}`)
+      console.error('[college] teaching 加载失败', teachingRes.reason)
+    }
+
+    if (researchRes.status === 'fulfilled') research.value = researchRes.value
+    else {
+      failures.push(`research: ${formatError(researchRes.reason)}`)
+      console.error('[college] research 加载失败', researchRes.reason)
+    }
+
+    if (warningRes.status === 'fulfilled') warning.value = warningRes.value
+    else {
+      failures.push(`warning: ${formatError(warningRes.reason)}`)
+      console.error('[college] warning 加载失败', warningRes.reason)
+    }
+
+    if (studentRes.status === 'fulfilled') student.value = studentRes.value
+    else {
+      failures.push(`student: ${formatError(studentRes.reason)}`)
+      console.error('[college] student 加载失败', studentRes.reason)
+    }
+
+    if (!hub.value && failures.length > 0) {
+      error.value = failures.join('；')
+    }
+  } catch (e) {
+    error.value = formatError(e)
+    console.error('[college] loadAll 异常', e)
+  } finally {
+    loading.value = false
   }
-
-  if (tasksRes.status === 'fulfilled') tasks.value = tasksRes.value
-  else {
-    failures.push(`tasks: ${formatError(tasksRes.reason)}`)
-    console.error('[college] tasks 加载失败', tasksRes.reason)
-  }
-
-  if (highPotentialRes.status === 'fulfilled') highPotential.value = highPotentialRes.value
-  else {
-    failures.push(`highPotential: ${formatError(highPotentialRes.reason)}`)
-    console.error('[college] highPotential 加载失败', highPotentialRes.reason)
-  }
-
-  if (teachingRes.status === 'fulfilled') teaching.value = teachingRes.value
-  else {
-    failures.push(`teaching: ${formatError(teachingRes.reason)}`)
-    console.error('[college] teaching 加载失败', teachingRes.reason)
-  }
-
-  if (researchRes.status === 'fulfilled') research.value = researchRes.value
-  else {
-    failures.push(`research: ${formatError(researchRes.reason)}`)
-    console.error('[college] research 加载失败', researchRes.reason)
-  }
-
-  if (warningRes.status === 'fulfilled') warning.value = warningRes.value
-  else {
-    failures.push(`warning: ${formatError(warningRes.reason)}`)
-    console.error('[college] warning 加载失败', warningRes.reason)
-  }
-
-  if (studentRes.status === 'fulfilled') student.value = studentRes.value
-  else {
-    failures.push(`student: ${formatError(studentRes.reason)}`)
-    console.error('[college] student 加载失败', studentRes.reason)
-  }
-
-  if (!hub.value && failures.length > 0) {
-    error.value = failures.join('；')
-  }
-
-  loading.value = false
 }
 
 onMounted(loadAll)

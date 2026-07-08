@@ -14,6 +14,8 @@ defineProps<{ event: SchoolEventVM }>()
       </span>
     </div>
     <h5 class="signal__title">{{ event.title }}</h5>
+    <p v-if="event.progressNote" class="signal__note">{{ event.progressNote }}</p>
+    <p v-if="event.nextStep" class="signal__next">下一步：{{ event.nextStep }}</p>
     <div class="signal__foot">
       <span class="signal__date">{{ event.date }}</span>
       <span class="signal__status">{{ event.statusLabel }}</span>
@@ -92,7 +94,19 @@ defineProps<{ event: SchoolEventVM }>()
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
+  }
+
+  &__note,
+  &__next {
+    font-size: 11px;
+    color: var(--uni-text-secondary);
+    line-height: 1.35;
+    margin-bottom: 4px;
+  }
+
+  &__next {
+    color: var(--uni-accent-cyan);
   }
 
   &__foot {

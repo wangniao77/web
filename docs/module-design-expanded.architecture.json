@@ -1,0 +1,559 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "高校数据平台模块设计图 展开版",
+    "subtitle": "College / Student / University 三端模块地图，Student 使用“财宝助手”命名",
+    "output": "module-design-expanded.html",
+    "viewBox": [1660, 1240]
+  },
+  "components": [
+    {
+      "id": "collegeRole",
+      "type": "external",
+      "label": "College",
+      "sublabel": "学院管理视角",
+      "pos": [50, 155],
+      "size": [150, 64]
+    },
+    {
+      "id": "collegeHub",
+      "type": "messagebus",
+      "label": "学院端模块导航",
+      "sublabel": "学院运行与学生管理",
+      "pos": [250, 155],
+      "size": [176, 64]
+    },
+    {
+      "id": "collegeOverview",
+      "type": "frontend",
+      "label": "总览仪表盘",
+      "sublabel": "发展指数/师资/人数/任务",
+      "pos": [480, 65],
+      "size": [190, 62]
+    },
+    {
+      "id": "collegePortrait",
+      "type": "frontend",
+      "label": "学生画像",
+      "sublabel": "潜力识别与风险预警",
+      "pos": [480, 185],
+      "size": [190, 62]
+    },
+    {
+      "id": "collegePotential",
+      "type": "cloud",
+      "label": "潜力",
+      "sublabel": "就业/考公/竞赛",
+      "pos": [720, 145],
+      "size": [160, 56]
+    },
+    {
+      "id": "collegeWarning",
+      "type": "security",
+      "label": "预警",
+      "sublabel": "心理/学业/就业",
+      "pos": [720, 225],
+      "size": [160, 56]
+    },
+    {
+      "id": "collegeOutcome",
+      "type": "frontend",
+      "label": "成果",
+      "sublabel": "竞赛/论文/项目",
+      "pos": [940, 65],
+      "size": [190, 62]
+    },
+    {
+      "id": "collegeGraduate",
+      "type": "frontend",
+      "label": "毕业去向",
+      "sublabel": "就业落实率/升学/工作去向",
+      "pos": [940, 185],
+      "size": [190, 62]
+    },
+    {
+      "id": "collegeTeaching",
+      "type": "frontend",
+      "label": "教学质量",
+      "sublabel": "成绩/学科评级",
+      "pos": [1180, 125],
+      "size": [190, 62]
+    },
+    {
+      "id": "studentRole",
+      "type": "external",
+      "label": "Student",
+      "sublabel": "学生个人视角",
+      "pos": [50, 480],
+      "size": [150, 64]
+    },
+    {
+      "id": "studentHub",
+      "type": "messagebus",
+      "label": "学生端模块导航",
+      "sublabel": "个人画像与成长建议",
+      "pos": [250, 480],
+      "size": [176, 64]
+    },
+    {
+      "id": "studentAcademic",
+      "type": "frontend",
+      "label": "1. 学业",
+      "sublabel": "绩点/体测/优势/劣势",
+      "pos": [480, 370],
+      "size": [190, 62]
+    },
+    {
+      "id": "studentGpa",
+      "type": "database",
+      "label": "绩点与排名",
+      "sublabel": "GPA/排名",
+      "pos": [720, 345],
+      "size": [160, 56]
+    },
+    {
+      "id": "studentSubject",
+      "type": "database",
+      "label": "学科表现",
+      "sublabel": "优势学科/劣势学科",
+      "pos": [720, 425],
+      "size": [160, 56]
+    },
+    {
+      "id": "studentInfo",
+      "type": "frontend",
+      "label": "2. 个人信息",
+      "sublabel": "基础档案",
+      "pos": [480, 510],
+      "size": [190, 62]
+    },
+    {
+      "id": "studentRadar",
+      "type": "frontend",
+      "label": "3. 五维雷达",
+      "sublabel": "综合能力画像",
+      "pos": [940, 345],
+      "size": [190, 62]
+    },
+    {
+      "id": "studentPractice",
+      "type": "frontend",
+      "label": "4. 实习、实践",
+      "sublabel": "实践经历",
+      "pos": [940, 465],
+      "size": [190, 62]
+    },
+    {
+      "id": "studentResearch",
+      "type": "frontend",
+      "label": "5. 科研、竞赛、证书",
+      "sublabel": "科研竞赛与证书成果",
+      "pos": [1180, 345],
+      "size": [210, 62]
+    },
+    {
+      "id": "studentTreasure",
+      "type": "frontend",
+      "label": "6. 财宝助手",
+      "sublabel": "分析/规划/就业建议",
+      "pos": [1180, 500],
+      "size": [210, 62]
+    },
+    {
+      "id": "studentTreasureAnalysis",
+      "type": "cloud",
+      "label": "亮点与关注",
+      "sublabel": "亮点分析/需关注事项",
+      "pos": [1435, 455],
+      "size": [170, 56]
+    },
+    {
+      "id": "studentTreasurePlan",
+      "type": "cloud",
+      "label": "规划与建议",
+      "sublabel": "匹配依据/短长期规划/就业",
+      "pos": [1435, 535],
+      "size": [170, 56]
+    },
+    {
+      "id": "universityRole",
+      "type": "external",
+      "label": "University",
+      "sublabel": "校级领导视角",
+      "pos": [50, 825],
+      "size": [150, 64]
+    },
+    {
+      "id": "globalTop",
+      "type": "cloud",
+      "label": "顶部全局区",
+      "sublabel": "学年/周期/范围/筛选",
+      "tag": "所有页面通用",
+      "pos": [250, 720],
+      "size": [176, 64]
+    },
+    {
+      "id": "universityHub",
+      "type": "messagebus",
+      "label": "校级模块导航",
+      "sublabel": "学校态势与决策专题",
+      "pos": [250, 860],
+      "size": [176, 64]
+    },
+    {
+      "id": "universityAlert",
+      "type": "security",
+      "label": "预警与待决策",
+      "sublabel": "重点预警/待决策/逾期任务",
+      "pos": [480, 720],
+      "size": [210, 64]
+    },
+    {
+      "id": "universityOverall",
+      "type": "backend",
+      "label": "模块一 学校综合态势",
+      "sublabel": "基本盘/核心指标/趋势",
+      "pos": [480, 860],
+      "size": [210, 62]
+    },
+    {
+      "id": "universityRank",
+      "type": "backend",
+      "label": "模块二 竞争力排名",
+      "sublabel": "综合/财经类/省内/归因",
+      "pos": [735, 720],
+      "size": [210, 62]
+    },
+    {
+      "id": "universityFirstClass",
+      "type": "backend",
+      "label": "模块三 双一流跟踪",
+      "sublabel": "任务/学科/师资/风险",
+      "pos": [735, 860],
+      "size": [210, 62]
+    },
+    {
+      "id": "universityDiscipline",
+      "type": "backend",
+      "label": "模块四 学科与专业",
+      "sublabel": "学科全景/专业/结构优化",
+      "pos": [990, 720],
+      "size": [210, 62]
+    },
+    {
+      "id": "universityTeaching",
+      "type": "backend",
+      "label": "模块五 培养教学质量",
+      "sublabel": "招生/教学/学业/毕业",
+      "pos": [990, 860],
+      "size": [210, 62]
+    },
+    {
+      "id": "universityResearch",
+      "type": "backend",
+      "label": "模块六 师资科研服务",
+      "sublabel": "师资/科研/平台/社会服务",
+      "pos": [1245, 790],
+      "size": [220, 62]
+    },
+    {
+      "id": "dataSource",
+      "type": "database",
+      "label": "数据口径与来源",
+      "sublabel": "更新时间/覆盖范围/来源说明",
+      "pos": [1245, 930],
+      "size": [220, 62]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "College 学院端",
+      "wraps": [
+        "collegeRole",
+        "collegeHub",
+        "collegeOverview",
+        "collegePortrait",
+        "collegePotential",
+        "collegeWarning",
+        "collegeOutcome",
+        "collegeGraduate",
+        "collegeTeaching"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Student 学生端",
+      "wraps": [
+        "studentRole",
+        "studentHub",
+        "studentAcademic",
+        "studentGpa",
+        "studentSubject",
+        "studentInfo",
+        "studentRadar",
+        "studentPractice",
+        "studentResearch",
+        "studentTreasure",
+        "studentTreasureAnalysis",
+        "studentTreasurePlan"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "University 校级端",
+      "wraps": [
+        "universityRole",
+        "globalTop",
+        "universityHub",
+        "universityAlert",
+        "universityOverall",
+        "universityRank",
+        "universityFirstClass",
+        "universityDiscipline",
+        "universityTeaching",
+        "universityResearch",
+        "dataSource"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "collegeRole",
+      "to": "collegeHub",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "collegeHub",
+      "to": "collegeOverview",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "collegeHub",
+      "to": "collegePortrait",
+      "variant": "emphasis",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "collegePortrait",
+      "to": "collegePotential",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "collegePortrait",
+      "to": "collegeWarning",
+      "variant": "security",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "collegeHub",
+      "to": "collegeOutcome",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "collegeHub",
+      "to": "collegeGraduate",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "collegeHub",
+      "to": "collegeTeaching",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentRole",
+      "to": "studentHub",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentHub",
+      "to": "studentAcademic",
+      "variant": "emphasis",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentAcademic",
+      "to": "studentGpa",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentAcademic",
+      "to": "studentSubject",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentHub",
+      "to": "studentInfo",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentHub",
+      "to": "studentRadar",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentHub",
+      "to": "studentPractice",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentHub",
+      "to": "studentResearch",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentHub",
+      "to": "studentTreasure",
+      "variant": "emphasis",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentTreasure",
+      "to": "studentTreasureAnalysis",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentTreasure",
+      "to": "studentTreasurePlan",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "universityRole",
+      "to": "globalTop",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h"
+    },
+    {
+      "from": "universityRole",
+      "to": "universityHub",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "globalTop",
+      "to": "universityAlert",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "globalTop",
+      "to": "dataSource",
+      "variant": "dashed",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "universityHub",
+      "to": "universityOverall",
+      "variant": "emphasis",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "universityHub",
+      "to": "universityRank",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "universityHub",
+      "to": "universityFirstClass",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "universityHub",
+      "to": "universityDiscipline",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "universityHub",
+      "to": "universityTeaching",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "universityHub",
+      "to": "universityResearch",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "College 展开原则",
+      "items": [
+        "直接展示 5 个学院端一级模块：总览、学生画像、成果、毕业去向、教学质量",
+        "学生画像进一步拆成潜力与预警，分别承载就业/考公/竞赛和心理/学业/就业"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Student 展开原则",
+      "items": [
+        "直接展示 6 个学生端一级模块：学业、个人信息、五维雷达、实习实践、科研竞赛证书、财宝助手",
+        "学业拆出绩点排名与学科表现，财宝助手拆出亮点关注、规划建议"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "University 展开原则",
+      "items": [
+        "顶部全局区承担范围、筛选、预警和数据口径入口",
+        "校级端保留六大专题模块，面向学校态势、排名、双一流、学科专业、培养质量、师资科研服务"
+      ]
+    }
+  ]
+}

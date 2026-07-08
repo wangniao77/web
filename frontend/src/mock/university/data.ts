@@ -1,11 +1,26 @@
 ﻿import type { UniversityOverviewDTO } from '@/types/university/api'
+import { mockUniversityModules } from '@/mock/university/modules'
 
 export const mockUniversityOverview: UniversityOverviewDTO = {
   meta: {
     dataUpdatedAt: '2026-07-02 18:00',
     dataScope: '全校汇总数据，不含学生个人明细',
     academicYear: '2025-2026',
-    semester: '第二学期',
+    semester: '2',
+    statsPeriod: 'semester',
+    schoolScope: 'all',
+  },
+  modules: mockUniversityModules,
+  schoolPosture: {
+    enrolledStudents: 27542,
+    collegeCount: 18,
+    majorCount: 63,
+    disciplineCount: 12,
+    facultyCount: 1680,
+    researchPlatforms: 16,
+    enrollment: 5820,
+    graduation: 6892,
+    developmentIndex: 86.4,
   },
   goalOverview: {
     totalTasks: 42,
@@ -27,6 +42,21 @@ export const mockUniversityOverview: UniversityOverviewDTO = {
       { key: 'governance', label: '治理安全', completion: 88.1, trend: { direction: 'up', value: 0.9 }, riskLevel: 'normal' },
     ],
   },
+  benchmark: {
+    nationalRank: 156,
+    provincialRank: 12,
+    financeRank: 8,
+    gapVsPeers: [
+      { name: '上海财经大学', gap: -18 },
+      { name: '中央财经大学', gap: -22 },
+      { name: '西南财经大学', gap: -6 },
+    ],
+    attribution: [
+      { factor: '科研经费增速', impact: '排名提升 +2' },
+      { factor: '高水平论文', impact: '排名提升 +1' },
+      { factor: '师资结构优化', impact: '持平' },
+    ],
+  },
   research: {
     nationalProjects: 12,
     provincialProjects: 47,
@@ -34,6 +64,8 @@ export const mockUniversityOverview: UniversityOverviewDTO = {
     researchAwards: 8,
     researchFunding: 2.47,
     keyPlatforms: 6,
+    booksPatents: 124,
+    thinkTankOutputs: 38,
     phdSupportRate: 78.3,
     phdHasGap: true,
     phdGapHint: '高水平论文指标距申博目标差 12%',
@@ -49,19 +81,37 @@ export const mockUniversityOverview: UniversityOverviewDTO = {
     ],
   },
   keyTasks: [
-    { id: 't1', name: '双一流建设', progress: 78, status: 'ongoing', plannedNode: '2026-Q3', riskLevel: 'ongoing' },
-    { id: 't2', name: '申博建设', progress: 62, status: 'attention', plannedNode: '2026-Q4', riskLevel: 'attention' },
-    { id: 't3', name: '专业认证', progress: 92, status: 'completed', plannedNode: '2026-Q2', riskLevel: 'normal' },
-    { id: 't4', name: '本科教育教学审核评估', progress: 71, status: 'ongoing', plannedNode: '2026-Q3', riskLevel: 'ongoing' },
-    { id: 't5', name: '高层次人才引进', progress: 58, status: 'attention', plannedNode: '2026-Q3', riskLevel: 'attention' },
-    { id: 't6', name: '数字校园建设', progress: 65, status: 'ongoing', plannedNode: '2026-Q4', riskLevel: 'ongoing' },
-    { id: 't7', name: '安全稳定任务', progress: 94, status: 'completed', plannedNode: '2026-Q2', riskLevel: 'normal' },
+    {
+      id: 't1', name: '双一流建设', progress: 78, status: 'ongoing', plannedNode: '2026-Q3', riskLevel: 'ongoing',
+      department: '发展规划处', currentIssue: '部分指标进度偏慢', nextAction: '专项督导推进会', rectifyDeadline: '2026-08-30',
+    },
+    {
+      id: 't2', name: '申博建设', progress: 62, status: 'attention', plannedNode: '2026-Q4', riskLevel: 'attention',
+      department: '研究生院', currentIssue: '高水平论文缺口', nextAction: '学院对标补弱', rectifyDeadline: '2026-09-15',
+    },
+    {
+      id: 't3', name: '专业认证', progress: 92, status: 'completed', plannedNode: '2026-Q2', riskLevel: 'normal',
+      department: '教务处', nextAction: '持续改进报告', rectifyDeadline: '—',
+    },
+    {
+      id: 't4', name: '本科教育教学审核评估', progress: 71, status: 'ongoing', plannedNode: '2026-Q3', riskLevel: 'ongoing',
+      department: '教务处', currentIssue: '材料归档待完善', nextAction: '学院自查复核', rectifyDeadline: '2026-07-31',
+    },
+    {
+      id: 't5', name: '高层次人才引进', progress: 58, status: 'attention', plannedNode: '2026-Q3', riskLevel: 'attention',
+      department: '人事处', currentIssue: '领军人才缺口', nextAction: '海内外专场招聘', rectifyDeadline: '2026-10-01',
+    },
   ],
   disciplines: {
     risingCount: 5,
     stableCount: 4,
     fallingCount: 3,
     focusCount: 4,
+    keyDisciplines: 4,
+    phdPoints: 3,
+    masterPoints: 12,
+    firstClassMajors: 8,
+    structureOptimization: '理工类占比提升至 32%',
     topRisers: [
       { name: '应用经济学', currentRank: 28, previousRank: 35, change: 7 },
       { name: '工商管理', currentRank: 42, previousRank: 48, change: 6 },
@@ -84,6 +134,14 @@ export const mockUniversityOverview: UniversityOverviewDTO = {
       falling: [46, 41, 44, 38, 34, 43, 40, 42],
     },
   },
+  teaching: {
+    admissionQuality: 92.6,
+    courseCount: 186,
+    teachingEval: 4.62,
+    academicDev: 78.4,
+    gradRate: 96.8,
+    degreeRate: 98.2,
+  },
   employment: {
     placementRate: 94.2,
     provinceRank: 8,
@@ -95,6 +153,7 @@ export const mockUniversityOverview: UniversityOverviewDTO = {
     topUniversityCount: 186,
     highSalaryCount: 312,
     salaryCoverage: 73.8,
+    majorMatchRate: 82.4,
     trend: [
       { year: '2023', rate: 91.2 },
       { year: '2024', rate: 92.8 },
@@ -115,11 +174,30 @@ export const mockUniversityOverview: UniversityOverviewDTO = {
       { name: '其他', value: 23.3 },
     ],
   },
+  faculty: {
+    total: 1680,
+    fullTime: 1426,
+    highLevelTalent: 186,
+    phdRatio: 78.6,
+    professorRatio: 32.4,
+    youngFaculty: 412,
+  },
+  riskWarning: {
+    academic: 486,
+    employment: 128,
+    taskOverdue: 3,
+    indicatorMiss: 7,
+    fundingSlow: 4,
+    crossDept: [
+      { title: '申博指标协同', dept: '研究生院·科研处' },
+      { title: '就业质量联动', dept: '就业中心·教务处' },
+    ],
+  },
   events: [
-    { id: 'e1', category: 'teaching', title: '本科教育教学审核评估迎评推进会', date: '07-01', status: 'ongoing', needsAttention: true },
-    { id: 'e2', category: 'research', title: '申博关键指标专项督导会', date: '06-28', status: 'ongoing', needsAttention: true },
-    { id: 'e3', category: 'talent', title: '高层次人才引进季度评估', date: '06-25', status: 'planned', needsAttention: false },
-    { id: 'e4', category: 'safety', title: '暑期校园安全专项排查', date: '06-20', status: 'ongoing', needsAttention: false },
+    { id: 'e1', category: 'teaching', title: '本科教育教学审核评估迎评推进会', date: '07-01', status: 'ongoing', needsAttention: true, progressNote: '材料完成 78%', nextStep: '学院自查复核' },
+    { id: 'e2', category: 'research', title: '申博关键指标专项督导会', date: '06-28', status: 'ongoing', needsAttention: true, progressNote: '论文指标补弱中' },
+    { id: 'e3', category: 'talent', title: '高层次人才引进季度评估', date: '06-25', status: 'planned', needsAttention: false, nextStep: '海内外专场招聘' },
+    { id: 'e4', category: 'research', title: '国家级科研项目获批 12 项', date: '06-20', status: 'completed', needsAttention: false, isAchievement: true },
     { id: 'e5', category: 'international', title: '海外合作院校签约与交换项目启动', date: '06-15', status: 'completed', needsAttention: false },
   ],
   academicRisk: {

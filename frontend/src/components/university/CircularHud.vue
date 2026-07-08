@@ -7,7 +7,7 @@ const props = withDefaults(
     planned: number
     label?: string
   }>(),
-  { label: '年度目标达成度' },
+  { label: '' },
 )
 
 const SIZE = 260
@@ -122,7 +122,7 @@ function clamp(v: number) {
 
     <div class="hud__center">
       <strong class="hud__value">{{ value.toFixed(1) }}<span>%</span></strong>
-      <span class="hud__label">{{ label }}</span>
+      <span v-if="label" class="hud__label">{{ label }}</span>
     </div>
   </div>
 </template>
@@ -204,7 +204,7 @@ function clamp(v: number) {
 
 .hud__value {
   font-family: var(--uni-font-number);
-  font-size: 70px;
+  font-size: var(--uni-fs-hud-value);
   font-weight: 700;
   line-height: 1;
   color: #f4fbff;

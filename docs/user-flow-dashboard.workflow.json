@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "学校发展与学生成长大屏用户流程图",
+    "subtitle": "基于一期需求规格说明书：进入、鉴权、分角色驾驶舱、分析下钻与闭环审计",
+    "output": "user-flow-dashboard.html",
+    "viewBox": [720, 860]
+  },
+  "lanes": [
+    { "id": "entry", "label": "统一入口" },
+    { "id": "permission", "label": "鉴权与数据范围" },
+    { "id": "cockpit", "label": "按角色进入驾驶舱" },
+    { "id": "analysis", "label": "查看、筛选与下钻" },
+    { "id": "closure", "label": "处置、导出与审计", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "access", "label": "进入", "fromCol": 0, "toCol": 1 },
+    { "id": "auth", "label": "授权", "fromCol": 2, "toCol": 3, "variant": "security" },
+    { "id": "branch", "label": "分角色路径", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "groups": [
+    { "id": "cockpit_paths", "label": "三类一级入口", "lane": "cockpit", "fromCol": 1, "toCol": 5, "variant": "emphasis" },
+    { "id": "analysis_paths", "label": "业务分析路径", "lane": "analysis", "fromCol": 1, "toCol": 5, "variant": "dashed" },
+    { "id": "closure_paths", "label": "合规闭环", "lane": "closure", "fromCol": 1, "toCol": 5, "variant": "security" }
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "lane": "entry",
+      "col": 0,
+      "type": "external",
+      "label": "打开大屏",
+      "sublabel": "浏览器 / 展示终端"
+    },
+    {
+      "id": "portal",
+      "lane": "entry",
+      "col": 1,
+      "type": "frontend",
+      "label": "统一门户",
+      "sublabel": "学校 / 学院 / 学生"
+    },
+    {
+      "id": "login",
+      "lane": "permission",
+      "col": 1,
+      "type": "security",
+      "label": "登录识别",
+      "sublabel": "角色 / 组织 / 职责"
+    },
+    {
+      "id": "scope",
+      "lane": "permission",
+      "col": 3,
+      "type": "security",
+      "label": "确定权限范围",
+      "sublabel": "全校 / 学院 / 班级 / 本人"
+    },
+    {
+      "id": "policy",
+      "lane": "permission",
+      "col": 5,
+      "type": "security",
+      "label": "应用隐私规则",
+      "sublabel": "最小必要 / 匿名统计"
+    },
+    {
+      "id": "schoolCockpit",
+      "lane": "cockpit",
+      "col": 1,
+      "type": "frontend",
+      "label": "学校驾驶舱",
+      "sublabel": "校领导 / 职能部门"
+    },
+    {
+      "id": "collegeCockpit",
+      "lane": "cockpit",
+      "col": 3,
+      "type": "frontend",
+      "label": "学院驾驶舱",
+      "sublabel": "学院领导 / 管理人员"
+    },
+    {
+      "id": "studentCockpit",
+      "lane": "cockpit",
+      "col": 5,
+      "type": "frontend",
+      "label": "学生画像",
+      "sublabel": "学生 / 辅导员"
+    },
+    {
+      "id": "schoolAnalyze",
+      "lane": "analysis",
+      "col": 1,
+      "type": "backend",
+      "label": "学校态势分析",
+      "sublabel": "排名 / 双一流 / 风险"
+    },
+    {
+      "id": "collegeAnalyze",
+      "lane": "analysis",
+      "col": 3,
+      "type": "backend",
+      "label": "学院运行分析",
+      "sublabel": "课程 / 科研 / 重点学生"
+    },
+    {
+      "id": "studentAnalyze",
+      "lane": "analysis",
+      "col": 5,
+      "type": "backend",
+      "label": "成长证据分析",
+      "sublabel": "课程对比 / 画像 / 建议"
+    },
+    {
+      "id": "schoolClosure",
+      "lane": "closure",
+      "col": 1,
+      "type": "database",
+      "label": "决策简报",
+      "sublabel": "汇总导出 / 留痕"
+    },
+    {
+      "id": "collegeClosure",
+      "lane": "closure",
+      "col": 3,
+      "type": "messagebus",
+      "label": "任务与预警处置",
+      "sublabel": "人工复核 / 跟踪"
+    },
+    {
+      "id": "studentClosure",
+      "lane": "closure",
+      "col": 5,
+      "type": "database",
+      "label": "成长支持闭环",
+      "sublabel": "辅导确认 / 审计日志"
+    }
+  ],
+  "edges": [
+    { "from": "open", "to": "portal", "variant": "emphasis" },
+    {
+      "from": "portal",
+      "to": "login",
+      "label": "登录",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "drop",
+      "labelSegment": 1
+    },
+    { "from": "login", "to": "scope", "variant": "security" },
+    { "from": "scope", "to": "policy", "variant": "security" },
+    {
+      "from": "scope",
+      "to": "schoolCockpit",
+      "label": "校领导",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "drop",
+      "labelSegment": 1,
+      "labelAt": [330, 290]
+    },
+    {
+      "from": "scope",
+      "to": "collegeCockpit",
+      "label": "学院/管理",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "drop",
+      "labelSegment": 1,
+      "labelAt": [430, 290]
+    },
+    {
+      "from": "policy",
+      "to": "studentCockpit",
+      "label": "学生/辅导员",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "drop",
+      "labelSegment": 1,
+      "labelAt": [620, 290]
+    },
+    { "from": "schoolCockpit", "to": "schoolAnalyze", "variant": "emphasis" },
+    { "from": "collegeCockpit", "to": "collegeAnalyze", "variant": "emphasis" },
+    { "from": "studentCockpit", "to": "studentAnalyze", "variant": "emphasis" },
+    { "from": "schoolAnalyze", "to": "schoolClosure", "variant": "dashed" },
+    { "from": "collegeAnalyze", "to": "collegeClosure", "variant": "security" },
+    { "from": "studentAnalyze", "to": "studentClosure", "variant": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "角色路径",
+      "items": [
+        "学校领导：全校汇总、学院对比、排名、双一流、趋势预警",
+        "学院领导：本学院整体、专业/班级汇总、重点学生名单",
+        "学生：本人画像、课程对比、成长建议；辅导员查看所带范围"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "核心操作",
+      "items": [
+        "按学校、学院、专业、年级、班级进行筛选和下钻",
+        "排名、任务、学生画像、课程对比都要展示可追溯证据",
+        "所有页面展示数据统计截止时间和最后更新时间"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "隐私约束",
+      "items": [
+        "学生端不得看到其他学生可识别成绩、排名和敏感信息",
+        "学校领导默认看汇总指标，个人数据下钻需额外授权",
+        "预警和智能建议仅供人工参考，不能直接作为处分或奖惩依据"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "闭环要求",
+      "items": [
+        "导出支持脱敏、水印、审批和权限限制",
+        "预警处置、成长建议和宿舍共同成长支持需要人工确认",
+        "访问、查询、导出、配置操作全部记录审计日志"
+      ]
+    }
+  ]
+}

@@ -19,7 +19,7 @@ export const UNI_TOOLTIP = {
   borderColor: UNI_CHART.tooltipBorder,
   borderWidth: 1,
   padding: [10, 14] as [number, number],
-  textStyle: { color: '#eaf4ff', fontSize: 13 },
+  textStyle: { color: '#eaf4ff', fontSize: 16 },
   extraCssText:
     'backdrop-filter: blur(12px); border-radius: 6px; box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(51,217,255,0.06);',
 }
@@ -27,7 +27,7 @@ export const UNI_TOOLTIP = {
 export const UNI_AXIS = {
   axisLine: { show: false },
   axisTick: { show: false },
-  axisLabel: { color: UNI_CHART.text, fontSize: 12 },
+  axisLabel: { color: UNI_CHART.text, fontSize: 14 },
   splitLine: { lineStyle: { color: UNI_CHART.grid, type: 'dashed' as const } },
 }
 
@@ -127,7 +127,7 @@ export function uniGlowBars(
           show: true,
           position: 'top',
           color: '#eaf4ff',
-          fontSize: 12,
+          fontSize: 14,
           formatter: opts?.suffix ? `{c}${opts.suffix}` : '{c}',
         },
       },
@@ -143,7 +143,7 @@ export function uniTerrain(
   return {
     grid: { left: 6, right: 10, top: 10, bottom: 6, containLabel: true },
     tooltip: { ...UNI_TOOLTIP, trigger: 'axis' },
-    xAxis: { type: 'category', data: categories, boundaryGap: false, ...UNI_AXIS, axisLabel: { ...UNI_AXIS.axisLabel, fontSize: 11 } },
+    xAxis: { type: 'category', data: categories, boundaryGap: false, ...UNI_AXIS, axisLabel: { ...UNI_AXIS.axisLabel, fontSize: 13 } },
     yAxis: { type: 'value', ...UNI_AXIS, splitLine: { lineStyle: { color: UNI_CHART.grid, type: 'dashed' } } },
     series: layers.map((l, i) => ({
       name: l.name,
@@ -174,7 +174,7 @@ export function uniDonut(
       itemHeight: 8,
       itemGap: 10,
       icon: 'roundRect',
-      textStyle: { color: UNI_CHART.text, fontSize: 12 },
+      textStyle: { color: UNI_CHART.text, fontSize: 14 },
     },
     series: [
       {
@@ -190,6 +190,64 @@ export function uniDonut(
   }
 }
 
+/** Radar chart for benchmark comparison */
+export function uniRadar(
+  indicators: string[],
+  series: Array<{ name: string; value: number[]; color?: string }>,
+): EChartsOption {
+  const colors = series.map((s, i) => s.color ?? [UNI_CHART.cyan, UNI_CHART.green, UNI_CHART.violet][i % 3])
+  return {
+    tooltip: { ...UNI_TOOLTIP },
+    legend: {
+      bottom: 0,
+      textStyle: { color: UNI_CHART.text, fontSize: 14 },
+      itemWidth: 10,
+      itemHeight: 10,
+    },
+    radar: {
+      indicator: indicators.map((name) => ({ name, max: 100 })),
+      center: ['50%', '48%'],
+      radius: '58%',
+      axisName: { color: UNI_CHART.text, fontSize: 13 },
+      splitArea: { areaStyle: { color: ['rgba(90,170,255,0.03)', 'rgba(90,170,255,0.06)'] } },
+      splitLine: { lineStyle: { color: UNI_CHART.grid } },
+      axisLine: { lineStyle: { color: UNI_CHART.grid } },
+    },
+    series: [{
+      type: 'radar',
+      data: series.map((s, i) => ({
+        name: s.name,
+        value: s.value,
+        areaStyle: { color: `${colors[i]}33` },
+        lineStyle: { color: colors[i], width: 2 },
+        itemStyle: { color: colors[i] },
+      })),
+    }],
+  }
+}
+
+/** Grouped vertical bars */
+export function uniGroupedBars(
+  categories: string[],
+  series: Array<{ name: string; data: number[]; color?: string }>,
+): EChartsOption {
+  const palette = [UNI_CHART.cyan, UNI_CHART.orange, UNI_CHART.green]
+  return {
+    grid: UNI_GRID.barV,
+    tooltip: { ...UNI_TOOLTIP, trigger: 'axis' },
+    legend: { top: 0, textStyle: { color: UNI_CHART.text, fontSize: 14 }, itemWidth: 10, itemHeight: 10 },
+    xAxis: { type: 'category', data: categories, ...UNI_AXIS },
+    yAxis: { type: 'value', ...UNI_AXIS, splitLine: { show: false } },
+    series: series.map((s, i) => ({
+      name: s.name,
+      type: 'bar',
+      data: s.data,
+      barWidth: '28%',
+      itemStyle: { color: s.color ?? palette[i % palette.length], borderRadius: [3, 3, 0, 0] },
+    })),
+  }
+}
+
 /** Horizontal rounded bars with dim track. */
 export function uniRoundedBars(
   labels: string[],
@@ -199,7 +257,7 @@ export function uniRoundedBars(
   return {
     grid: UNI_GRID.barH,
     xAxis: { type: 'value', show: false, max: Math.max(...values) * 1.25 },
-    yAxis: { type: 'category', data: labels, ...UNI_AXIS, axisLabel: { color: UNI_CHART.text, fontSize: 13 } },
+    yAxis: { type: 'category', data: labels, ...UNI_AXIS, axisLabel: { color: UNI_CHART.text, fontSize: 15 } },
     series: [
       {
         type: 'bar',
@@ -207,7 +265,7 @@ export function uniRoundedBars(
         barWidth: 12,
         showBackground: true,
         backgroundStyle: { color: 'rgba(90,170,255,0.08)', borderRadius: [0, 5, 5, 0] },
-        label: { show: true, position: 'right', color: '#eaf4ff', fontSize: 13, formatter: '{c} 个' },
+        label: { show: true, position: 'right', color: '#eaf4ff', fontSize: 15, formatter: '{c} 个' },
       },
     ],
   }

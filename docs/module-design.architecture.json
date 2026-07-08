@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "高校数据大屏模块设计图",
+    "subtitle": "由 D:/DATA/OBDISIAN data/know/模块设计.md 生成的模块地图",
+    "output": "module-design.html",
+    "viewBox": [1280, 900]
+  },
+  "components": [
+    {
+      "id": "roleUniversity",
+      "type": "external",
+      "label": "University",
+      "sublabel": "校级领导视角",
+      "pos": [52, 120],
+      "size": [150, 64]
+    },
+    {
+      "id": "roleCollege",
+      "type": "external",
+      "label": "College",
+      "sublabel": "学院管理视角",
+      "pos": [52, 300],
+      "size": [150, 64]
+    },
+    {
+      "id": "roleStudent",
+      "type": "external",
+      "label": "Student",
+      "sublabel": "学生个人视角",
+      "pos": [52, 480],
+      "size": [150, 64]
+    },
+    {
+      "id": "globalTop",
+      "type": "cloud",
+      "label": "顶部全局区",
+      "sublabel": "学年/周期/范围/筛选",
+      "tag": "所有页面通用",
+      "pos": [300, 64],
+      "size": [230, 72]
+    },
+    {
+      "id": "dataScope",
+      "type": "database",
+      "label": "数据口径与来源",
+      "sublabel": "更新时间/覆盖范围/来源说明",
+      "pos": [300, 176],
+      "size": [230, 72]
+    },
+    {
+      "id": "alerts",
+      "type": "security",
+      "label": "预警与待决策",
+      "sublabel": "重点预警/待决策/逾期任务",
+      "pos": [590, 176],
+      "size": [230, 72]
+    },
+    {
+      "id": "universityCockpit",
+      "type": "backend",
+      "label": "校级大屏驾驶舱",
+      "sublabel": "首页与校级决策入口",
+      "pos": [590, 64],
+      "size": [230, 72]
+    },
+    {
+      "id": "moduleHub",
+      "type": "messagebus",
+      "label": "校级专题模块导航",
+      "sublabel": "六大模块并列下钻",
+      "pos": [590, 388],
+      "size": [230, 72]
+    },
+    {
+      "id": "moduleOne",
+      "type": "backend",
+      "label": "模块一 学校综合态势",
+      "sublabel": "基本盘/发展指标/全校趋势",
+      "pos": [908, 48],
+      "size": [250, 72]
+    },
+    {
+      "id": "moduleTwo",
+      "type": "backend",
+      "label": "模块二 竞争力排名",
+      "sublabel": "综合/财经类/省内/归因",
+      "pos": [908, 158],
+      "size": [250, 72]
+    },
+    {
+      "id": "moduleThree",
+      "type": "backend",
+      "label": "模块三 双一流跟踪",
+      "sublabel": "任务进度/学科/师资/风险",
+      "pos": [908, 268],
+      "size": [250, 72]
+    },
+    {
+      "id": "moduleFour",
+      "type": "backend",
+      "label": "模块四 学科与专业",
+      "sublabel": "学科全景/专业建设/结构优化",
+      "pos": [908, 418],
+      "size": [250, 72]
+    },
+    {
+      "id": "moduleFive",
+      "type": "backend",
+      "label": "模块五 培养与教学质量",
+      "sublabel": "招生/教学/学业/毕业发展",
+      "pos": [908, 528],
+      "size": [250, 72]
+    },
+    {
+      "id": "moduleSix",
+      "type": "backend",
+      "label": "模块六 师资科研社会服务",
+      "sublabel": "师资/科研/平台/社会服务",
+      "pos": [908, 638],
+      "size": [250, 72]
+    },
+    {
+      "id": "collegeWorkspace",
+      "type": "frontend",
+      "label": "College 学院工作台",
+      "sublabel": "仪表盘/画像/成果/去向/质量",
+      "pos": [300, 330],
+      "size": [258, 74]
+    },
+    {
+      "id": "studentWorkspace",
+      "type": "frontend",
+      "label": "Student 学生画像",
+      "sublabel": "学业/五维雷达/实践/财报助手",
+      "pos": [300, 510],
+      "size": [258, 74]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "角色入口层",
+      "wraps": ["roleUniversity", "roleCollege", "roleStudent"]
+    },
+    {
+      "kind": "region",
+      "label": "通用控制与数据范围",
+      "wraps": ["globalTop", "dataScope", "alerts"]
+    },
+    {
+      "kind": "security-group",
+      "label": "University 校级大屏专题域",
+      "wraps": [
+        "universityCockpit",
+        "moduleHub",
+        "moduleOne",
+        "moduleTwo",
+        "moduleThree",
+        "moduleFour",
+        "moduleFive",
+        "moduleSix"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "College 学院侧模块",
+      "wraps": ["collegeWorkspace"]
+    },
+    {
+      "kind": "region",
+      "label": "Student 学生侧模块",
+      "wraps": ["studentWorkspace"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "roleUniversity",
+      "to": "globalTop",
+      "label": "进入校级大屏",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "globalTop",
+      "to": "dataScope",
+      "label": "统一筛选",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [353, 150]
+    },
+    {
+      "from": "globalTop",
+      "to": "universityCockpit",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "dataScope",
+      "to": "alerts",
+      "label": "预警口径",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "alerts",
+      "to": "universityCockpit",
+      "label": "决策事项",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDx": 70
+    },
+    {
+      "from": "universityCockpit",
+      "to": "moduleHub",
+      "label": "专题下钻",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [640, 290]
+    },
+    {
+      "from": "moduleHub",
+      "to": "moduleOne",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "moduleHub",
+      "to": "moduleTwo",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "moduleHub",
+      "to": "moduleThree",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "moduleHub",
+      "to": "moduleFour",
+      "variant": "emphasis",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "moduleHub",
+      "to": "moduleFive",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "moduleHub",
+      "to": "moduleSix",
+      "route": "orthogonal-h",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "roleCollege",
+      "to": "collegeWorkspace",
+      "label": "学院驾驶舱",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "roleStudent",
+      "to": "studentWorkspace",
+      "label": "个人画像",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "dataScope",
+      "to": "collegeWorkspace",
+      "label": "学院数据",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDx": -64
+    },
+    {
+      "from": "dataScope",
+      "to": "studentWorkspace",
+      "label": "学生数据",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [640, 470]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "顶部全局区",
+      "items": [
+        "当前学年、学期、统计周期、更新时间",
+        "学校、校区、学院、学科门类、对标高校等快捷筛选",
+        "全校重点预警、待决策事项、逾期任务与数据来源说明"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "College 模块",
+      "items": [
+        "总览仪表盘：发展指数、师资队伍、在校人数、专业班级、重点任务完成度",
+        "学生画像：潜力与预警，覆盖就业、考公、竞赛、心理、学业等方向",
+        "成果、毕业去向、教学质量：竞赛论文项目、就业升学、成绩与学科评级"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Student 模块",
+      "items": [
+        "学业：绩点排名、体测、优势学科、劣势学科",
+        "个人信息、五维雷达、实习实践、科研竞赛证书",
+        "财报助手：亮点分析、关注事项、匹配依据、规划与就业建议"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "University 六大模块",
+      "items": [
+        "综合态势、竞争力排名、双一流建设跟踪",
+        "学科与专业建设、人才培养与教学质量、师资科研与社会服务",
+        "每个模块支持趋势分析、对标比较、任务进度、风险与责任追踪"
+      ]
+    }
+  ]
+}

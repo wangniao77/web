@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import FuturisticPanel from '@/components/university/FuturisticPanel.vue'
 import CircularHud from '@/components/university/CircularHud.vue'
-import RingStat from '@/components/university/RingStat.vue'
 import FloatingMetricPill from '@/components/university/FloatingMetricPill.vue'
-import HudSectionLabel from '@/components/university/HudSectionLabel.vue'
-import BackgroundGlowLayer from '@/components/university/BackgroundGlowLayer.vue'
 import ProgressTrack from '@/components/university/ProgressTrack.vue'
 import { ROUTES } from '@/constants/routes'
 import type { GoalOverviewVM } from '@/types/university/view'
@@ -20,233 +18,157 @@ defineEmits<{ retry: [] }>()
 const router = useRouter()
 
 const pods = [
-  { label: '任务总数', key: 'totalTasks', tone: 'cyan' },
-  { label: '已完成', key: 'completedTasks', tone: 'green' },
-  { label: '推进中', key: 'inProgressTasks', tone: 'ongoing' },
-  { label: '需关注', key: 'riskTasks', tone: 'warn' },
-  { label: '逾期', key: 'overdueTasks', tone: 'danger' },
-  { label: '本月新增', key: 'monthlyCompleted', tone: 'cyan', plus: true },
+  { label: '年度重点目标', key: 'totalTasks', tone: 'cyan' },
+  { label: '风险任务', key: 'riskTasks', tone: 'warn' },
+  { label: '逾期事项', key: 'overdueTasks', tone: 'danger' },
 ] as const
 
-function podValue(key: keyof GoalOverviewVM, plus?: boolean) {
-  const v = props.data[key] as number
-  return plus ? `+${v}` : v
-}
-
-function goDimension(key: string) {
-  const map: Record<string, string> = {
-    research: ROUTES.university.research,
-    discipline: ROUTES.university.disciplines,
-    employment: ROUTES.university.employment,
-    talent: ROUTES.university.academicRisk,
-  }
-  const target = map[key]
-  if (target) router.push(target)
+function podValue(key: keyof GoalOverviewVM) {
+  return props.data[key] as number
 }
 </script>
 
 <template>
-  <section class="core">
-    <BackgroundGlowLayer class="core__bg" variant="center" />
-    <header class="core__label">
-      <HudSectionLabel :index="2" title="年度高质量发展总体态势" />
-    </header>
+  <FuturisticPanel
+    :index="2"
+    title="目标总览"
+    :detail-to="ROUTES.university.tasks"
+    accent="cyan"
+    :loading="loading"
+    :error="error"
+    @retry="$emit('retry')"
+  >
+    <div class="goal">
+      <div class="goal__main">
+        <div class="goal__ring">
+          <CircularHud :value="data.completionRate" :planned="data.plannedProgress" />
+          <span class="goal__ring-label">年度完成率</span>
+        </div>
 
-    <div v-if="loading" class="core__state">数据加载中</div>
-    <div v-else-if="error" class="core__state core__state--error">
-      <span>{{ error }}</span>
-      <button type="button" @click="$emit('retry')">重试</button>
-    </div>
-
-    <div v-else class="core__grid">
-      <div class="core__pods">
-        <FloatingMetricPill
-          v-for="pod in pods"
-          :key="pod.key"
-          :label="pod.label"
-          :value="podValue(pod.key, (pod as { plus?: boolean }).plus)"
-          :tone="pod.tone"
-        />
-      </div>
-
-      <div class="core__center">
-        <CircularHud :value="data.completionRate" :planned="data.plannedProgress" />
-        <div class="core__tracks">
-          <div class="track-row">
-            <span>计划进度</span>
-            <ProgressTrack :value="data.plannedProgress" tone="ongoing" :height="5" />
-            <em>{{ data.plannedProgress }}%</em>
-          </div>
-          <div class="track-row">
-            <span>实际进度</span>
-            <ProgressTrack :value="data.completionRate" tone="normal" :height="5" />
-            <em>{{ data.completionRate }}%</em>
-          </div>
-          <div class="track-gap" :class="data.progressGap >= 0 ? 'is-up' : 'is-down'">
-            进度差 <strong>{{ data.progressGapLabel }}</strong>
+        <div class="goal__metrics">
+          <FloatingMetricPill
+            v-for="pod in pods"
+            :key="pod.key"
+            :label="pod.label"
+            :value="podValue(pod.key)"
+            :tone="pod.tone"
+          />
+          <div class="goal__tracks">
+            <div class="track-row">
+              <span>计划进度</span>
+              <ProgressTrack :value="data.plannedProgress" tone="ongoing" :height="4" />
+              <em>{{ data.plannedProgress }}%</em>
+            </div>
+            <div class="track-row">
+              <span>进度差距</span>
+              <ProgressTrack :value="Math.abs(data.progressGap)" :tone="data.progressGap >= 0 ? 'normal' : 'attention'" :height="4" />
+              <em :class="data.progressGap >= 0 ? 'is-up' : 'is-down'">{{ data.progressGapLabel }}</em>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="core__dims">
+      <div v-if="data.dimensions.length" class="goal__dims">
         <button
-          v-for="dim in data.dimensions"
+          v-for="dim in data.dimensions.slice(0, 4)"
           :key="dim.key"
           type="button"
-          class="dim"
-          @click="goDimension(dim.key)"
+          class="goal__dim"
+          @click="router.push(ROUTES.university.tasks)"
         >
-          <RingStat
-            :label="dim.label"
-            :value="Math.round(dim.completion)"
-            :level="dim.riskLevel"
-            :trend-label="dim.trendLabel"
-            :size="66"
-          />
+          <span>{{ dim.label }}</span>
+          <strong>{{ dim.completionLabel }}</strong>
         </button>
       </div>
     </div>
-  </section>
+  </FuturisticPanel>
 </template>
 
 <style scoped lang="scss">
-.core {
-  position: relative;
-  z-index: 3;
+.goal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   height: 100%;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 2px 8px 2px;
 }
 
-.core__bg {
-  z-index: 0;
-}
-
-.core__label {
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
-  padding: 2px 4px 0;
-}
-
-.core__grid {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  min-height: 0;
+.goal__main {
   display: grid;
-  grid-template-columns: 0.86fr 1.62fr 0.94fr;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.goal__ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 4px;
-  align-items: center;
+
+  :deep(.circular-hud) { transform: scale(0.72); transform-origin: center; }
 }
 
-.core__pods {
+.goal__ring-label {
+  font-size: 11px;
+  color: var(--uni-text-muted);
+  letter-spacing: 0.06em;
+}
+
+.goal__metrics {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  justify-content: center;
-
-  // arc toward the core: middle rows hug the ring closest
-  > :nth-child(1),
-  > :nth-child(6) { transform: translateX(0); }
-  > :nth-child(2),
-  > :nth-child(5) { transform: translateX(11px); }
-  > :nth-child(3),
-  > :nth-child(4) { transform: translateX(22px); }
+  gap: 8px;
 }
 
-.core__center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  position: relative;
-}
-
-.core__tracks {
-  width: 100%;
-  max-width: 320px;
-  margin-top: 4px;
+.goal__tracks {
+  padding-top: 4px;
 }
 
 .track-row {
   display: grid;
-  grid-template-columns: 60px 1fr 46px;
+  grid-template-columns: 56px 1fr 42px;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 5px;
+  gap: 6px;
+  margin-bottom: 4px;
 
-  span { font-size: 12px; color: var(--uni-text-secondary); }
+  span { font-size: 11px; color: var(--uni-text-secondary); }
   em {
     font-style: normal;
     font-family: var(--uni-font-number);
-    font-size: 15px;
+    font-size: 13px;
     text-align: right;
     color: var(--uni-text-primary);
+
+    &.is-up { color: var(--uni-status-normal); }
+    &.is-down { color: var(--uni-status-attention); }
   }
 }
 
-.track-gap {
-  text-align: center;
-  font-size: 13px;
-  color: var(--uni-text-secondary);
-  margin-top: 1px;
-
-  strong { font-family: var(--uni-font-number); font-size: 17px; margin-left: 4px; }
-  &.is-up strong { color: var(--uni-status-normal); }
-  &.is-down strong { color: var(--uni-status-attention); }
-}
-
-.core__dims {
+.goal__dims {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 11px 4px;
-  align-content: center;
-  justify-items: start;
-
-  // arc toward the core: middle row hugs the ring closest
-  // (margin, not transform, so :hover lift stays intact)
-  > :nth-child(1),
-  > :nth-child(2),
-  > :nth-child(5),
-  > :nth-child(6) { margin-left: -6px; }
-  > :nth-child(3),
-  > :nth-child(4) { margin-left: -18px; }
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
-.dim {
-  background: none;
-  border: none;
-  padding: 4px 0;
-  cursor: pointer;
-  transition: transform 0.2s;
-
-  &:hover { transform: translateY(-2px); }
-}
-
-.core__state {
-  position: relative;
-  z-index: 1;
-  flex: 1;
+.goal__dim {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: var(--uni-text-secondary);
-  font-size: var(--uni-fs-body);
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  background: rgba(8, 22, 42, 0.4);
+  border: 1px solid rgba(90, 170, 255, 0.1);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s;
 
-  &--error { color: var(--uni-status-attention); }
-
-  button {
-    padding: 4px 14px;
+  span { font-size: 11px; color: var(--uni-text-muted); }
+  strong {
+    font-family: var(--uni-font-number);
+    font-size: 14px;
     color: var(--uni-accent-cyan);
-    background: rgba(51, 217, 255, 0.08);
-    border: 1px solid var(--uni-border);
-    cursor: pointer;
   }
+
+  &:hover { border-color: rgba(51, 217, 255, 0.35); }
 }
 </style>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from Routers.Models.resp.common_model import ApiResponse, ok
 from Services.university_service import UniversityService
@@ -8,8 +8,20 @@ university_service = UniversityService()
 
 
 @router.get("/overview", response_model=ApiResponse)
-async def overview() -> ApiResponse:
-    return ok(await university_service.get_overview())
+async def overview(
+    academicYear: str | None = Query(default=None),
+    semester: str | None = Query(default=None),
+    statsPeriod: str | None = Query(default=None),
+    schoolScope: str | None = Query(default=None),
+) -> ApiResponse:
+    return ok(
+        await university_service.get_overview(
+            academic_year=academicYear,
+            semester=semester,
+            stats_period=statsPeriod,
+            school_scope=schoolScope,
+        )
+    )
 
 
 @router.get("/tasks/detail", response_model=ApiResponse)

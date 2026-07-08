@@ -22,6 +22,8 @@ export function useScope() {
   const universityScope = computed<UniversityScope>(() => ({
     academicYear: filterStore.academicYear,
     semester: filterStore.semester,
+    statsPeriod: filterStore.statsPeriod,
+    schoolScope: filterStore.schoolScope,
   }))
 
   const termLabel = computed(

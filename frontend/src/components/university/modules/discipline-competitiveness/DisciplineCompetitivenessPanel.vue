@@ -15,14 +15,22 @@ defineEmits<{ retry: [] }>()
 
 <template>
   <FuturisticPanel
-    :index="5"
-    title="一级学科竞争力变化"
+    :index="7"
+    title="学科与专业建设"
     :detail-to="ROUTES.university.disciplines"
     :loading="loading"
     :error="error"
     @retry="$emit('retry')"
   >
     <div class="disc">
+      <div v-if="data.keyDisciplines != null" class="disc__build">
+        <span>重点学科 <strong>{{ data.keyDisciplines }}</strong></span>
+        <span>博士点 <strong>{{ data.phdPoints }}</strong></span>
+        <span>硕士点 <strong>{{ data.masterPoints }}</strong></span>
+        <span>一流专业 <strong>{{ data.firstClassMajors }}</strong></span>
+      </div>
+      <p v-if="data.structureOptimization" class="disc__opt">{{ data.structureOptimization }}</p>
+
       <div class="disc__summary">
         <div class="sum sum--up">
           <strong>{{ data.risingCount }}</strong>
@@ -69,10 +77,33 @@ defineEmits<{ retry: [] }>()
 <style scoped lang="scss">
 .disc {
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
-  gap: 8px;
+  grid-template-rows: auto auto auto 1fr auto auto;
+  gap: 6px;
   height: 100%;
   min-height: 0;
+}
+
+.disc__build {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  font-size: 10px;
+  color: var(--uni-text-secondary);
+
+  strong {
+    display: block;
+    font-family: var(--uni-font-number);
+    font-size: 16px;
+    color: var(--uni-accent-cyan);
+  }
+}
+
+.disc__opt {
+  font-size: 10px;
+  color: var(--uni-text-muted);
+  padding: 4px 8px;
+  background: rgba(8, 22, 42, 0.35);
+  border-left: 2px solid var(--uni-accent-violet, #7c8bff);
 }
 
 .disc__summary {

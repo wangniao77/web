@@ -1,0 +1,36 @@
+@import './tokens';
+
+.uni-overview-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1.15fr 1fr;
+  grid-template-columns: 1fr 1.35fr 1fr;
+  grid-template-areas:
+    'goals hero benchmark'
+    'discipline research employment';
+  gap: var(--uni-gap-module);
+
+  > * {
+    min-height: 0;
+    min-width: 0;
+  }
+}
+
+.uni-overview-goals { grid-area: goals; }
+.uni-overview-hero { grid-area: hero; }
+.uni-overview-benchmark { grid-area: benchmark; }
+.uni-overview-discipline { grid-area: discipline; }
+.uni-overview-research { grid-area: research; }
+.uni-overview-employment { grid-area: employment; }
+
+.uni-footer {
+  flex-shrink: 0;
+  padding: 6px var(--uni-gap-page) 8px;
+  text-align: center;
+  font-size: var(--uni-fs-small);
+  color: var(--uni-text-muted);
+  letter-spacing: 0.12em;
+  border-top: 1px solid rgba(90, 170, 255, 0.08);
+  background: linear-gradient(0deg, rgba(9, 24, 44, 0.45), transparent);
+}

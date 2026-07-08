@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "高校发展与治理驾驶舱整体架构",
+    "subtitle": "Vue 3 大屏前端、FastAPI 后端、Excel ETL 与 PostgreSQL 数据层",
+    "output": "project-architecture-overview.html"
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "大屏用户",
+      "sublabel": "Browser / Display",
+      "pos": [40, 330],
+      "size": [135, 64]
+    },
+    {
+      "id": "portal",
+      "type": "frontend",
+      "label": "Portal + Router",
+      "sublabel": "/ college university student",
+      "pos": [235, 210],
+      "size": [150, 64]
+    },
+    {
+      "id": "views",
+      "type": "frontend",
+      "label": "三类驾驶舱",
+      "sublabel": "学院 / 学校 / 学生",
+      "pos": [235, 330],
+      "size": [150, 64]
+    },
+    {
+      "id": "state",
+      "type": "frontend",
+      "label": "Pinia + Composables",
+      "sublabel": "scope, refresh, scale",
+      "pos": [235, 450],
+      "size": [150, 64]
+    },
+    {
+      "id": "apiServices",
+      "type": "backend",
+      "label": "API Services",
+      "sublabel": "createService + adapters",
+      "pos": [455, 330],
+      "size": [160, 64]
+    },
+    {
+      "id": "mockData",
+      "type": "database",
+      "label": "Mock Data",
+      "sublabel": "frontend/src/mock",
+      "pos": [455, 450],
+      "size": [160, 64],
+      "tag": "default demo"
+    },
+    {
+      "id": "viteProxy",
+      "type": "cloud",
+      "label": "Vite Dev Proxy",
+      "sublabel": "/api -> localhost:8080",
+      "pos": [665, 330],
+      "size": [150, 64]
+    },
+    {
+      "id": "routers",
+      "type": "backend",
+      "label": "FastAPI Routers",
+      "sublabel": "/api/health now",
+      "pos": [850, 210],
+      "size": [155, 64],
+      "tag": "/api/v1 pending"
+    },
+    {
+      "id": "services",
+      "type": "backend",
+      "label": "Services Layer",
+      "sublabel": "business orchestration",
+      "pos": [850, 330],
+      "size": [155, 64]
+    },
+    {
+      "id": "utils",
+      "type": "backend",
+      "label": "Utils Layer",
+      "sublabel": "DB read/write, Auth, Agent",
+      "pos": [850, 450],
+      "size": [155, 64]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "student_academic_records",
+      "pos": [1085, 330],
+      "size": [160, 64]
+    },
+    {
+      "id": "etl",
+      "type": "backend",
+      "label": "Excel ETL",
+      "sublabel": "openpyxl + Tortoise",
+      "pos": [1085, 465],
+      "size": [160, 64]
+    },
+    {
+      "id": "excel",
+      "type": "external",
+      "label": "Datas/*.xlsx",
+      "sublabel": "22-25 grade records",
+      "pos": [1085, 585],
+      "size": [160, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "frontend/ Vue 3 SPA",
+      "wraps": ["portal", "views", "state", "apiServices", "mockData", "viteProxy"]
+    },
+    {
+      "kind": "region",
+      "label": "backend/ FastAPI",
+      "wraps": ["routers", "services", "utils"]
+    },
+    {
+      "kind": "region",
+      "label": "app + Datas + PostgreSQL",
+      "wraps": ["postgres", "etl", "excel"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "users",
+      "to": "portal",
+      "label": "open dashboard",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "portal",
+      "to": "views",
+      "label": "route",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "views",
+      "to": "state",
+      "label": "view state",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "views",
+      "to": "apiServices",
+      "label": "service calls",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "state",
+      "to": "apiServices",
+      "label": "scope params",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelDy": 32
+    },
+    {
+      "from": "apiServices",
+      "to": "mockData",
+      "label": "VITE_USE_MOCK=true",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "apiServices",
+      "to": "viteProxy",
+      "label": "VITE_USE_MOCK=false",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": 56
+    },
+    {
+      "from": "viteProxy",
+      "to": "routers",
+      "label": "/api proxy",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelDy": 32
+    },
+    {
+      "from": "routers",
+      "to": "services",
+      "label": "Router -> Service",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "services",
+      "to": "utils",
+      "label": "Service -> Utils",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "utils",
+      "to": "postgres",
+      "label": "Tortoise ORM",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "excel",
+      "to": "etl",
+      "label": "xlsx import",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -2
+    },
+    {
+      "from": "etl",
+      "to": "postgres",
+      "label": "bulk create / upsert",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -2
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend",
+      "items": [
+        "Vue Router exposes portal, college, university, and student screens",
+        "Pinia and composables provide scope, refresh, scaling, and entrance logic",
+        "Adapters convert API DTOs into view models before rendering"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Backend",
+      "items": [
+        "FastAPI initializes Tortoise during application lifespan",
+        "Current implemented HTTP surface is GET /api/health",
+        "Domain APIs under /api/v1 are represented in frontend contracts and pending server implementation"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Data",
+      "items": [
+        "Excel files in Datas are imported through app/importers",
+        "PostgreSQL stores the student_academic_records wide table",
+        "app and backend currently keep separate Tortoise model definitions"
+      ]
+    }
+  ]
+}

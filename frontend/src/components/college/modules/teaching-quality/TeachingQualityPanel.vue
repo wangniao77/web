@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
 import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
-import { CHART_FONT, AXIS_LABEL_ALT } from '@/styles/echarts-theme'
+import { AXIS_LABEL_ALT } from '@/styles/echarts-theme'
 import type { TeachingOverviewVM } from '@/types/college/view'
 import type { EChartsOption } from 'echarts'
 

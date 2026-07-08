@@ -1,0 +1,532 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "页面模块与交互流程图",
+    "subtitle": "学校、学院、学生三类入口进入后应包含的模块、功能与使用交互",
+    "output": "page-module-interaction-flow.html",
+    "viewBox": [2050, 1360]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "用户",
+      "sublabel": "领导 / 管理员 / 辅导员 / 学生",
+      "pos": [40, 90],
+      "size": [150, 66]
+    },
+    {
+      "id": "portal",
+      "type": "frontend",
+      "label": "统一门户",
+      "sublabel": "选择学院 / 学校 / 学生",
+      "pos": [265, 90],
+      "size": [160, 66]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "登录与授权",
+      "sublabel": "角色 + 数据范围",
+      "pos": [500, 90],
+      "size": [160, 66]
+    },
+    {
+      "id": "globalControls",
+      "type": "frontend",
+      "label": "全局控制条",
+      "sublabel": "学年学期 / 学院 / 刷新",
+      "pos": [735, 90],
+      "size": [170, 66]
+    },
+    {
+      "id": "timeInfo",
+      "type": "database",
+      "label": "数据时点",
+      "sublabel": "统计截止 + 最后更新",
+      "pos": [980, 90],
+      "size": [170, 66]
+    },
+    {
+      "id": "schoolHeader",
+      "type": "frontend",
+      "label": "学校页头",
+      "sublabel": "学校名称 / 周期 / 筛选",
+      "pos": [90, 285],
+      "size": [190, 66]
+    },
+    {
+      "id": "schoolBenchmark",
+      "type": "frontend",
+      "label": "外部对标模块",
+      "sublabel": "软科 / 财经类 / 省内排名",
+      "pos": [90, 405],
+      "size": [190, 66],
+      "tag": "可进详情"
+    },
+    {
+      "id": "schoolStrategic",
+      "type": "frontend",
+      "label": "战略达成模块",
+      "sublabel": "总体态势 / 双一流进度",
+      "pos": [330, 405],
+      "size": [190, 66],
+      "tag": "核心中区"
+    },
+    {
+      "id": "schoolTasks",
+      "type": "frontend",
+      "label": "重点任务模块",
+      "sublabel": "任务轨道 / 责任单位",
+      "pos": [90, 525],
+      "size": [190, 66],
+      "tag": "可下钻"
+    },
+    {
+      "id": "schoolRisk",
+      "type": "frontend",
+      "label": "风险预测模块",
+      "sublabel": "异常波动 / 风险预警",
+      "pos": [330, 525],
+      "size": [190, 66],
+      "tag": "需复核"
+    },
+    {
+      "id": "schoolMetrics",
+      "type": "frontend",
+      "label": "核心指标模块",
+      "sublabel": "人才 / 科研 / 就业 / 服务",
+      "pos": [90, 645],
+      "size": [190, 66]
+    },
+    {
+      "id": "schoolEmployment",
+      "type": "frontend",
+      "label": "培养质量模块",
+      "sublabel": "就业升学 / 重点成果",
+      "pos": [330, 645],
+      "size": [190, 66]
+    },
+    {
+      "id": "collegeHeader",
+      "type": "frontend",
+      "label": "学院页头",
+      "sublabel": "学院名称 / 年度目标",
+      "pos": [705, 285],
+      "size": [190, 66]
+    },
+    {
+      "id": "collegeHub",
+      "type": "frontend",
+      "label": "发展总览",
+      "sublabel": "核心仪表 / 完成进度",
+      "pos": [945, 405],
+      "size": [190, 66],
+      "tag": "中心区"
+    },
+    {
+      "id": "collegeTasks",
+      "type": "frontend",
+      "label": "年度重点任务",
+      "sublabel": "进度 / 节点 / 责任",
+      "pos": [705, 405],
+      "size": [190, 66],
+      "tag": "可进详情"
+    },
+    {
+      "id": "collegeTeaching",
+      "type": "frontend",
+      "label": "教学质量模块",
+      "sublabel": "课程成绩 / 学业预警",
+      "pos": [705, 525],
+      "size": [190, 66]
+    },
+    {
+      "id": "collegeResearch",
+      "type": "frontend",
+      "label": "科研创新模块",
+      "sublabel": "平台 / 项目 / 成果",
+      "pos": [945, 525],
+      "size": [190, 66]
+    },
+    {
+      "id": "collegePotential",
+      "type": "frontend",
+      "label": "高潜学生模块",
+      "sublabel": "画像 / 证据 / 分类建议",
+      "pos": [705, 645],
+      "size": [190, 66],
+      "tag": "需证据"
+    },
+    {
+      "id": "collegeWarning",
+      "type": "frontend",
+      "label": "预警风险模块",
+      "sublabel": "学业 / 指标 / 待处理",
+      "pos": [945, 645],
+      "size": [190, 66],
+      "tag": "需处置"
+    },
+    {
+      "id": "collegeEmployment",
+      "type": "frontend",
+      "label": "就业前景模块",
+      "sublabel": "就业 / 实习 / 升学",
+      "pos": [825, 765],
+      "size": [190, 66]
+    },
+    {
+      "id": "studentHeader",
+      "type": "frontend",
+      "label": "学生页头",
+      "sublabel": "本人 / 所带学生切换",
+      "pos": [1320, 285],
+      "size": [190, 66]
+    },
+    {
+      "id": "studentProfile",
+      "type": "frontend",
+      "label": "个人信息模块",
+      "sublabel": "学籍 / 质量摘要 / 状态",
+      "pos": [1320, 405],
+      "size": [190, 66]
+    },
+    {
+      "id": "studentAcademic",
+      "type": "frontend",
+      "label": "学业发展模块",
+      "sublabel": "GPA / 学分 / 成绩趋势",
+      "pos": [1560, 405],
+      "size": [190, 66]
+    },
+    {
+      "id": "studentRadar",
+      "type": "frontend",
+      "label": "成长雷达模块",
+      "sublabel": "五维能力 / 变化趋势",
+      "pos": [1320, 525],
+      "size": [190, 66],
+      "tag": "核心中区"
+    },
+    {
+      "id": "studentPractice",
+      "type": "frontend",
+      "label": "实践竞赛模块",
+      "sublabel": "实习 / 竞赛 / 项目成果",
+      "pos": [1560, 525],
+      "size": [190, 66]
+    },
+    {
+      "id": "studentAi",
+      "type": "frontend",
+      "label": "AI成长助手",
+      "sublabel": "证据解释 / 资源推荐",
+      "pos": [1320, 645],
+      "size": [190, 66],
+      "tag": "供参考"
+    },
+    {
+      "id": "dormSupport",
+      "type": "frontend",
+      "label": "宿舍成长支持",
+      "sublabel": "匿名统计 / 互助方向",
+      "pos": [1560, 645],
+      "size": [190, 66],
+      "tag": "不贴标签"
+    },
+    {
+      "id": "studentFooter",
+      "type": "frontend",
+      "label": "底部状态栏",
+      "sublabel": "成长里程 / 更新时间",
+      "pos": [1440, 765],
+      "size": [190, 66]
+    },
+    {
+      "id": "detailPages",
+      "type": "backend",
+      "label": "详情页 / 弹窗",
+      "sublabel": "排名、任务、课程、学生名单",
+      "pos": [470, 970],
+      "size": [210, 72],
+      "tag": "点击模块进入"
+    },
+    {
+      "id": "reviewActions",
+      "type": "messagebus",
+      "label": "人工复核与处置",
+      "sublabel": "预警确认 / 培养措施 / 跟踪",
+      "pos": [870, 970],
+      "size": [210, 72],
+      "tag": "闭环动作"
+    },
+    {
+      "id": "privacyGuard",
+      "type": "security",
+      "label": "隐私与权限拦截",
+      "sublabel": "脱敏 / 匿名 / 额外授权",
+      "pos": [1270, 970],
+      "size": [210, 72],
+      "tag": "强约束"
+    },
+    {
+      "id": "exportAudit",
+      "type": "database",
+      "label": "导出与审计",
+      "sublabel": "水印 / 审批 / 操作日志",
+      "pos": [1670, 970],
+      "size": [210, 72],
+      "tag": "全程留痕"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "进入与全局交互",
+      "wraps": ["user", "portal", "auth", "globalControls", "timeInfo"]
+    },
+    {
+      "kind": "region",
+      "label": "学校发展与治理驾驶舱 /university",
+      "wraps": ["schoolHeader", "schoolBenchmark", "schoolStrategic", "schoolTasks", "schoolRisk", "schoolMetrics", "schoolEmployment"]
+    },
+    {
+      "kind": "region",
+      "label": "学院发展与治理驾驶舱 /college",
+      "wraps": ["collegeHeader", "collegeHub", "collegeTasks", "collegeTeaching", "collegeResearch", "collegePotential", "collegeWarning", "collegeEmployment"]
+    },
+    {
+      "kind": "region",
+      "label": "学生成长画像驾驶舱 /student",
+      "wraps": ["studentHeader", "studentProfile", "studentAcademic", "studentRadar", "studentPractice", "studentAi", "dormSupport", "studentFooter"]
+    },
+    {
+      "kind": "security-group",
+      "label": "交互闭环与合规边界",
+      "wraps": ["detailPages", "reviewActions", "privacyGuard", "exportAudit"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "user",
+      "to": "portal",
+      "label": "打开",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "portal",
+      "to": "auth",
+      "label": "选择入口",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "auth",
+      "to": "globalControls",
+      "label": "授权后进入",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "globalControls",
+      "to": "timeInfo",
+      "label": "显示时点",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "globalControls",
+      "to": "schoolHeader",
+      "label": "学校入口",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [385, 230]
+    },
+    {
+      "from": "globalControls",
+      "to": "collegeHeader",
+      "label": "学院入口",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [805, 230]
+    },
+    {
+      "from": "globalControls",
+      "to": "studentHeader",
+      "label": "学生入口",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [1265, 230]
+    },
+    {
+      "from": "schoolHeader",
+      "to": "schoolStrategic",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "collegeHeader",
+      "to": "collegeHub",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "studentHeader",
+      "to": "studentProfile",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "schoolBenchmark",
+      "to": "detailPages",
+      "label": "查看趋势/口径",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "labelAt": [300, 840]
+    },
+    {
+      "from": "collegeTasks",
+      "to": "detailPages",
+      "label": "任务详情",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [690, 900]
+    },
+    {
+      "from": "collegePotential",
+      "to": "detailPages",
+      "label": "学生证据",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [750, 880]
+    },
+    {
+      "from": "schoolRisk",
+      "to": "reviewActions",
+      "label": "风险复核",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [760, 840]
+    },
+    {
+      "from": "collegeWarning",
+      "to": "reviewActions",
+      "label": "处置跟踪",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1000, 870]
+    },
+    {
+      "from": "studentAi",
+      "to": "reviewActions",
+      "label": "建议确认",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1230, 850]
+    },
+    {
+      "from": "studentAcademic",
+      "to": "privacyGuard",
+      "label": "同学数据匿名",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1450, 850]
+    },
+    {
+      "from": "dormSupport",
+      "to": "privacyGuard",
+      "label": "不做负面标签",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1580, 880]
+    },
+    {
+      "from": "detailPages",
+      "to": "exportAudit",
+      "label": "导出/查询留痕",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [1140, 1010]
+    },
+    {
+      "from": "reviewActions",
+      "to": "exportAudit",
+      "label": "处置留痕",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [1350, 1080]
+    },
+    {
+      "from": "privacyGuard",
+      "to": "exportAudit",
+      "label": "审批/水印/审计",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [1580, 1010]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "学校页如何使用",
+      "items": [
+        "进入 /university 后先看战略达成、外部对标、核心指标和风险总览",
+        "点击排名、重点任务、学科、风险、指标卡进入对应详情页",
+        "通过年份、排名类型、对标高校、学院/学科范围筛选，下钻到学院、学科或任务证据"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "学院页如何使用",
+      "items": [
+        "进入 /college 后中心看学院发展总览，左右查看重点任务、教学质量、科研创新、就业与预警",
+        "点击重点任务、高潜学生、预警、课程、科研平台、就业模块进入详情或弹窗",
+        "学院端按本学院、专业、年级、班级筛选；重点学生和预警事项需要人工复核后使用"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "学生页如何使用",
+      "items": [
+        "进入 /student 后查看个人信息、学业发展、成长雷达、竞赛实践和 AI 成长助手",
+        "课程横向对比只展示匿名统计，不能展示其他学生姓名、学号或具体成绩",
+        "AI 建议必须引用证据，仅作为成长参考，辅导员确认后进入支持闭环"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "通用交互规则",
+      "items": [
+        "所有页面显示数据统计截止时间和最后更新时间",
+        "刷新、重试、自动轮播、手动切换、详情下钻、导出都是可预期交互",
+        "导出必须经过脱敏、水印、审批和权限限制；访问、查询、导出、配置均记录审计日志"
+      ]
+    }
+  ]
+}

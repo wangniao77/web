@@ -1,4 +1,6 @@
 @import './tokens';
+@import './cockpit-grid';
+@import './overview-grid';
 
 .university-screen {
   position: relative;
@@ -11,6 +13,7 @@
     linear-gradient(180deg, var(--uni-bg-primary) 0%, var(--uni-bg-deep) 100%);
   color: var(--uni-text-primary);
   font-family: var(--uni-font-body);
+  font-size: var(--uni-fs-body);
   font-variant-numeric: tabular-nums;
 
   // Faint technical grid overlay

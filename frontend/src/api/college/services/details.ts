@@ -87,8 +87,13 @@ export const collegeDetailService = {
       await new Promise((r) => setTimeout(r, 200))
       return adaptWarningDetail(mockWarningDetails[type])
     }
-    const res = await collegeDetailApi.getWarningDetail(type, params)
-    return adaptWarningDetail(unwrapApiData(res))
+    try {
+      const res = await collegeDetailApi.getWarningDetail(type, params)
+      return adaptWarningDetail(unwrapApiData(res))
+    } catch (error) {
+      console.warn('[college] warning detail fetch failed, using mock', error)
+      return adaptWarningDetail(mockWarningDetails[type])
+    }
   },
   fetchTeachingCoursesDetail,
   fetchResearchPlatformsDetail,
