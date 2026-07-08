@@ -5,7 +5,6 @@ export const POSTURE_SECTIONS = [
   { key: 'disciplines', label: '学科资源概况' },
   { key: 'faculty', label: '师资资源概况' },
   { key: 'platforms', label: '科研平台概况' },
-  { key: 'enrollment', label: '招生毕业概况' },
   { key: 'index', label: '核心发展指数' },
 ] as const
 

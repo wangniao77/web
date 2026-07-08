@@ -70,12 +70,12 @@ const posClass: Record<string, string> = {
   strong { font-family: var(--uni-font-number); font-size: var(--uni-fs-metric-sm); color: var(--uni-accent-cyan); }
   small { font-size: var(--uni-fs-micro); color: var(--uni-text-secondary); margin-left: 2px; }
 
-  &--tl { top: 4%; left: 6%; }
-  &--tr { top: 4%; right: 6%; }
-  &--ml { top: 38%; left: 2%; }
-  &--mr { top: 38%; right: 2%; }
-  &--ll { bottom: 18%; left: 8%; }
-  &--rr { bottom: 18%; right: 8%; }
+  &--tl { top: 6%; left: 4%; }
+  &--tr { top: 6%; right: 4%; }
+  &--ml { top: 50%; left: 2%; transform: translateY(-50%); }
+  &--mr { top: 50%; right: 2%; transform: translateY(-50%); }
+  &--ll { bottom: 6%; left: 4%; }
+  &--rr { bottom: 6%; right: 4%; }
   &--bl { bottom: 4%; left: 22%; }
   &--br { bottom: 4%; right: 22%; }
 }

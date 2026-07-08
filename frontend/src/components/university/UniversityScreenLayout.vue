@@ -5,7 +5,7 @@ import UniversityScreenFooter from '@/components/university/UniversityScreenFoot
 import StarfieldBackdrop from '@/components/university/StarfieldBackdrop.vue'
 import ParticleRainBackground from '@/components/university/ParticleRainBackground.vue'
 
-const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
+const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fill' })
 </script>
 
 <template>

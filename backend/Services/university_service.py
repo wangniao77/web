@@ -200,8 +200,6 @@ class UniversityService:
                     {"key": "disciplines", "label": "学科", "value": 12, "unit": "个", "position": "mr"},
                     {"key": "faculty", "label": "专任教师", "value": 1680, "unit": "人", "position": "ll"},
                     {"key": "platforms", "label": "科研平台", "value": 42, "unit": "个", "position": "rr"},
-                    {"key": "enrollment", "label": "招生人数", "value": 8200, "unit": "人", "position": "bl"},
-                    {"key": "graduation", "label": "毕业人数", "value": 7650, "unit": "人", "position": "br"},
                 ],
                 "sections": {"overview": {"title": "综合态势总览"}},
             },

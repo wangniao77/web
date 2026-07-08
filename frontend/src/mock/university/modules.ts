@@ -15,8 +15,6 @@ export const mockUniversityModules: UniversityModulesDTO = {
       { key: 'disciplines', label: '学科', value: 12, unit: '个', position: 'mr' },
       { key: 'faculty', label: '专任教师', value: 1680, unit: '人', position: 'll' },
       { key: 'platforms', label: '科研平台', value: 42, unit: '个', position: 'rr' },
-      { key: 'enrollment', label: '招生人数', value: 8200, unit: '人', position: 'bl' },
-      { key: 'graduation', label: '毕业人数', value: 7650, unit: '人', position: 'br' },
     ],
     sections: {
       overview: section('综合态势总览', [
@@ -28,7 +26,6 @@ export const mockUniversityModules: UniversityModulesDTO = {
       disciplines: section('学科资源概况', [{ label: '一级学科', value: 12 }]),
       faculty: section('师资资源概况', [{ label: '专任教师', value: 1680, unit: '人' }]),
       platforms: section('科研平台概况', [{ label: '科研平台', value: 42, unit: '个' }]),
-      enrollment: section('招生毕业概况', [{ label: '招生', value: 8200 }, { label: '毕业', value: 7650 }]),
       index: section('核心发展指数', [{ label: '指数', value: 91.4 }]),
     },
   },

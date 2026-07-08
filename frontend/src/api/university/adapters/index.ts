@@ -169,8 +169,6 @@ function adaptSchoolPosture(dto: SchoolPostureDTO): SchoolPostureVM {
       { label: '学科', value: String(dto.disciplineCount), unit: '个' },
       { label: '师资', value: String(dto.facultyCount), unit: '人' },
       { label: '科研平台', value: String(dto.researchPlatforms), unit: '个' },
-      { label: '招生', value: String(dto.enrollment), unit: '人' },
-      { label: '毕业', value: String(dto.graduation), unit: '人' },
     ],
   }
 }

@@ -271,9 +271,10 @@ function onAvatarError() {
   padding: 0;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 0;
 }
 
@@ -282,9 +283,10 @@ function onAvatarError() {
   grid-template-columns: 28px 58px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  padding: 1px 0;
+  padding: 0;
   border-bottom: 1px solid rgba(0, 212, 255, 0.07);
   font-size: var(--fs-label);
+  line-height: 1.25;
 
   &:last-child {
     border-bottom: none;
