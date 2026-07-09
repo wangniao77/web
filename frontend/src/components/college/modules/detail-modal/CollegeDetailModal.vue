@@ -51,8 +51,8 @@ const moduleIcon: Record<string, IconKind> = {
 
 const titleMap: Record<string, { icon: IconKind; title: string }> = {
   'key-tasks': { icon: 'task', title: '年度重点任务推进' },
-  'high-potential': { icon: 'potential', title: '高潜学生发展画像' },
-  'high-potential-overview': { icon: 'potential', title: '高潜学生发展画像' },
+  'high-potential': { icon: 'potential', title: '学生发展与质量 · 高潜' },
+  'high-potential-overview': { icon: 'potential', title: '学生发展与质量 · 高潜' },
   warning: { icon: 'warning', title: '预警与风险监测' },
   teaching: { icon: 'academic', title: '教学质量与运行' },
   research: { icon: 'research', title: '科研创新与团队平台' },

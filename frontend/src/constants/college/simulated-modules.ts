@@ -4,6 +4,7 @@
  */
 export const COLLEGE_SIMULATED_MODULE_IDS = [
   'key-tasks',
+  'student-dev-quality',
   'teaching',
   'employment',
 ] as const

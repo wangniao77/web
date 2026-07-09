@@ -2,8 +2,8 @@
 import { onMounted, ref } from 'vue'
 import CockpitPanel from '@/components/college/CockpitPanel.vue'
 import CoreHeroGauge from '@/components/college/modules/center-hub/CoreHeroGauge.vue'
-import KeyTasksPanel from '@/components/college/modules/key-tasks/KeyTasksPanel.vue'
-import HighPotentialPanel from '@/components/college/modules/high-potential/HighPotentialPanel.vue'
+import KeyTasksCarouselPanel from '@/components/college/modules/key-tasks/KeyTasksCarouselPanel.vue'
+import StudentDevQualityPanel from '@/components/college/modules/student-dev/StudentDevQualityPanel.vue'
 import TeachingQualityPanel from '@/components/college/modules/teaching-quality/TeachingQualityPanel.vue'
 import ResearchInnovPanel from '@/components/college/modules/research-innov/ResearchInnovPanel.vue'
 import WarningRiskPanel from '@/components/college/modules/warning-risk/WarningRiskPanel.vue'
@@ -130,11 +130,22 @@ useAutoRefresh(loadAll)
           module-id="key-tasks"
           :simulated="true"
         >
-          <KeyTasksPanel :tasks="tasks" :loading="loading" @retry="loadAll" />
+          <KeyTasksCarouselPanel :tasks="tasks" :loading="loading" @retry="loadAll" />
         </CockpitPanel>
-        <CockpitPanel title="高潜学生发展画像" icon="potential" panel-class="panel--high-potential">
-          <HighPotentialPanel v-if="highPotential" :data="highPotential" />
-          <div v-else class="cockpit-panel-empty">高潜数据暂不可用</div>
+        <CockpitPanel
+          title="学生发展与质量"
+          icon="students"
+          panel-class="panel--student-dev-quality"
+          module-id="student-dev-quality"
+          :simulated="true"
+        >
+          <StudentDevQualityPanel
+            v-if="student && highPotential && warning"
+            :student="student"
+            :high-potential="highPotential"
+            :warning="warning"
+          />
+          <div v-else class="cockpit-panel-empty">学生发展数据暂不可用</div>
         </CockpitPanel>
       </div>
 
