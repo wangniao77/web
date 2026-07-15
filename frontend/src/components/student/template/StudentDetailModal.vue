@@ -11,16 +11,16 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>()
 
 const titleMap: Record<string, string> = {
-  basic: '基础档案',
+  basic: '学生基础信息台账',
   timetable: '本学期课表',
-  academic: '学业详情',
-  quality: '综合素质详情',
-  career: '实习与就业详情',
-  graduation: '毕业与升学规划',
+  academic: '学情轨迹护航详情',
+  quality: '综合素养荣誉与纪律台账',
+  career: '出口发展详情（实习·就业·升学）',
+  graduation: '毕业审核与论文',
   mental: '心理与成长详情',
   warning: '预警与记录',
   credit: '发展与学分建议',
-  ai: 'AI 成长规划',
+  ai: '智能育航',
 }
 
 const title = computed(() => (props.section ? titleMap[props.section] ?? '详情' : '详情'))
@@ -45,7 +45,7 @@ function onBackdrop(e: MouseEvent) {
               <p><span>性别</span><strong>{{ dashboard.profile.gender || '男' }}</strong></p>
               <p><span>学号</span><strong>{{ dashboard.profile.studentId }}</strong></p>
               <p><span>班级</span><strong>{{ dashboard.profile.className }}</strong></p>
-              <p><span>在校状态</span><strong>{{ dashboard.profile.onCampusStatus }}</strong></p>
+              <p><span>学籍状态</span><strong>{{ dashboard.profile.onCampusStatus }}</strong></p>
               <p><span>高潜标签</span><strong>{{ dashboard.profile.highPotentialTags?.join('、') || '无' }}</strong></p>
               <p><span>政治面貌</span><strong>{{ dashboard.profile.politicalStatus }}</strong></p>
               <p><span>辅导员</span><strong>{{ dashboard.profile.counselor }}</strong></p>
@@ -69,8 +69,20 @@ function onBackdrop(e: MouseEvent) {
             </ul>
           </template>
           <template v-else-if="section === 'academic'">
-            <p>GPA：<strong>{{ dashboard.academic.gpa }}</strong> · 班排 {{ dashboard.academic.classRank }}/{{ dashboard.academic.classTotal }}</p>
+            <p>GPA：<strong>{{ dashboard.academic.gpa }}</strong> · 班排 {{ dashboard.academic.classRank }}/{{ dashboard.academic.classTotal }} · 专业 {{ dashboard.academic.majorRank }}/{{ dashboard.academic.majorTotal }}</p>
             <p>学分完成：{{ dashboard.creditProgress.earned }}/{{ dashboard.creditProgress.required }}（{{ dashboard.creditProgress.earnedPercent }}%）</p>
+            <p>等级考试：四级 {{ dashboard.profile.cet4Score ?? '—' }} · 六级 {{ dashboard.profile.cet6Score ?? '—' }}</p>
+            <p>毕设进度：{{ dashboard.profile.thesisStatus || '未开始' }} · 导师 {{ dashboard.profile.thesisAdvisor || dashboard.profile.mentor || '—' }}</p>
+            <h3>挂科课程</h3>
+            <ul>
+              <li v-for="course in dashboard.failedCritical" :key="course.name">{{ course.name }} · {{ course.score }} 分</li>
+              <li v-if="!dashboard.failedCritical.length">暂无挂科课程</li>
+            </ul>
+            <h3>学业帮扶记录</h3>
+            <ul>
+              <li v-for="(r, i) in (dashboard.academic.supportRecords || [])" :key="i">{{ r.date }} · {{ r.person }}：{{ r.content }}</li>
+              <li v-if="!(dashboard.academic.supportRecords?.length)">暂无谈心谈话 / 干预台账</li>
+            </ul>
             <h3>历年成绩与排名趋势</h3>
             <ul>
               <li v-for="(term, index) in dashboard.academic.semesters" :key="term">
@@ -83,22 +95,30 @@ function onBackdrop(e: MouseEvent) {
                 {{ c.name }} — {{ c.score }} 分
               </li>
             </ul>
-            <h3>影响毕业课程</h3>
-            <ul>
-              <li v-for="course in dashboard.failedCritical" :key="course.name">{{ course.name }} · {{ course.score }} 分</li>
-            </ul>
           </template>
           <template v-else-if="section === 'quality'">
             <p>综合测评排名：<strong>{{ dashboard.growthOverview.overallRank }}/{{ dashboard.growthOverview.overallTotal }}</strong></p>
-            <p>志愿服务：{{ dashboard.quality.volunteerHours }} 小时 · 社会实践 {{ dashboard.quality.socialPractices }} 次</p>
-            <h3>奖学金与荣誉</h3>
+            <p>行为记录台账：志愿服务 {{ dashboard.quality.volunteerHours }} 小时 · 社会实践 {{ dashboard.quality.socialPractices }} 次</p>
+            <h3>荣誉成果全景</h3>
             <ul>
               <li v-for="item in dashboard.scholarships" :key="`${item.year}-${item.name}`">{{ item.year }} · {{ item.name }}</li>
               <li v-for="award in dashboard.profile.awards" :key="`${award.name}-${award.date}`">{{ award.name }} · {{ award.level }}</li>
             </ul>
-            <h3>德智体美劳与能力表现</h3>
+            <h3>创新实践与表彰</h3>
             <ul>
               <li v-for="skill in dashboard.quality.softSkills" :key="skill.name">{{ skill.name }}：{{ skill.score }} 分</li>
+              <li v-if="!dashboard.quality.softSkills.length">暂无软技能评分记录</li>
+            </ul>
+            <h3>纪律惩戒记录</h3>
+            <ul>
+              <li
+                v-for="row in dashboard.quality.disciplineRecords"
+                :key="row.id"
+              >
+                {{ row.date }} · <strong>{{ row.type }}</strong> · {{ row.reason }}
+                <span v-if="row.status">（{{ row.status }}）</span>
+              </li>
+              <li v-if="!dashboard.quality.disciplineRecords.length">暂无受处分 / 违纪处罚记录</li>
             </ul>
             <h3>专业证书</h3>
             <ul>
@@ -106,13 +126,29 @@ function onBackdrop(e: MouseEvent) {
             </ul>
           </template>
           <template v-else-if="section === 'career'">
-            <p>就业意向：<strong>{{ dashboard.careerDev.employmentIntention }}</strong></p>
+            <p>就业去向类型：<strong>{{ dashboard.careerDev.employmentDestination || dashboard.careerDev.employmentIntention || '待实习' }}</strong></p>
+            <p>求职意向城市：{{ dashboard.careerDev.targetCity || '未填报' }}</p>
+            <p>期望薪资：{{ dashboard.careerDev.expectedSalary || '未填报' }}</p>
+            <p>简历完成状态：{{ dashboard.careerDev.resumeStatus || '未完善' }}</p>
             <p>实习单位：{{ dashboard.careerDev.internshipBases.join('、') || '暂无' }}</p>
-            <p>实习评价：良好 · 能够独立完成阶段任务</p>
-            <p>就业城市：广州、深圳</p>
-            <h3>岗位匹配</h3>
+            <h3>推荐岗位明细</h3>
             <ul>
-              <li v-for="job in dashboard.aiPortrait.jobMatches" :key="job.role">{{ job.role }} · 匹配度 {{ job.match }}%</li>
+              <li v-for="job in dashboard.aiPortrait.jobMatches" :key="job.role">
+                {{ job.role }} · 匹配度 {{ job.match }}%
+                <span v-if="job.city"> · 城市 {{ job.city }}</span>
+                <span v-if="job.salary"> · 薪资 {{ job.salary }}</span>
+                <span v-if="job.requirements"> · 要求 {{ job.requirements }}</span>
+              </li>
+            </ul>
+            <h3>项目经历清单</h3>
+            <ul>
+              <li
+                v-for="(proj, idx) in (dashboard.careerDev.projectExperiences?.length
+                  ? dashboard.careerDev.projectExperiences
+                  : dashboard.internship.items.filter((e) => e.type === '项目').map((e) => e.name))"
+                :key="`${idx}-${proj}`"
+              >{{ proj }}</li>
+              <li v-if="!(dashboard.careerDev.projectExperiences?.length || dashboard.internship.items.some((e) => e.type === '项目'))">暂无项目经历</li>
             </ul>
             <h3>技能与经历</h3>
             <ul>
@@ -120,11 +156,11 @@ function onBackdrop(e: MouseEvent) {
             </ul>
           </template>
           <template v-else-if="section === 'graduation'">
-            <p>毕业进度：<strong>正常</strong></p>
-            <p>毕业论文：{{ dashboard.profile.thesisStatus || '未开始' }}</p>
-            <p>指导教师：{{ dashboard.profile.thesisAdvisor || dashboard.profile.mentor }}</p>
-            <p>当前发展方向：就业 · {{ dashboard.careerDev.employmentIntention }}</p>
-            <h3>阶段建议</h3>
+            <p>学分完成：{{ dashboard.creditProgress.earned }}/{{ dashboard.creditProgress.required }}（{{ dashboard.creditProgress.earnedPercent }}%）</p>
+            <p>毕业论文：{{ dashboard.profile.thesisStatus || '未开始' }} · 指导教师 {{ dashboard.profile.thesisAdvisor || dashboard.profile.mentor }}</p>
+            <p>挂科课程：{{ dashboard.failedCritical.length }} 门</p>
+            <p class="detail-note">考研/就业/考公等出口去向与岗位匹配见「出口发展」模块；本页只跟进能否顺利毕业（学分、挂科、论文）。</p>
+            <h3>分阶段行动建议</h3>
             <ul>
               <li>{{ dashboard.employment.developmentPath.short }}</li>
               <li>{{ dashboard.employment.developmentPath.medium }}</li>

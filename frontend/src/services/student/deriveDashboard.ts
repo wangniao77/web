@@ -88,6 +88,32 @@ function academicRiskLevel(record: StudentAcademicRow): 'low' | 'medium' | 'high
   return 'low'
 }
 
+const CADRE_TITLES = [
+  '班长',
+  '副班长',
+  '团支书',
+  '副团支书',
+  '学习委员',
+  '生活委员',
+  '文体委员',
+  '文艺委员',
+  '体育委员',
+  '心理委员',
+  '组织委员',
+  '宣传委员',
+  '纪检委员',
+  '科技委员',
+  '党支书',
+  '寝室长',
+  '舍长',
+] as const
+
+function extractCadreRoles(...texts: Array<string | null | undefined>): string[] {
+  const blob = texts.filter(Boolean).join('｜')
+  if (!blob) return []
+  return CADRE_TITLES.filter((title) => blob.includes(title))
+}
+
 function buildHighPotentialTags(record: StudentAcademicRow, majorRank: RankResult): string[] {
   const tags: string[] = []
   const gpa = num(record.average_credit_gpa)
@@ -105,6 +131,9 @@ function buildHighPotentialTags(record: StudentAcademicRow, majorRank: RankResul
   const highLevel = parsed.some((p) => p.level === '国家级' || p.level === '省部级')
   if (awards >= 1 && (highLevel || /国家级|省部级|省级/.test(detail))) tags.push('竞赛高潜')
   else if (awards >= 2) tags.push('竞赛高潜')
+  if (extractCadreRoles(detail).length || /优干|优秀学生干部|班干部/.test(detail)) {
+    tags.push('干部奉献高潜')
+  }
   return tags
 }
 
@@ -142,8 +171,92 @@ function recommendDirection(record: StudentAcademicRow) {
   else if (gpa >= 3.0) adj += 3
   if (majorAvg >= 85) adj += 4
 
+  const catalog: Record<string, { city: string; salary: string; requirements: string; reason: string }> = {
+    'AI 应用开发工程师': {
+      city: '深圳 / 广州',
+      salary: '12-20K',
+      requirements: 'Python/深度学习基础；有项目作品优先',
+      reason: '专业与竞赛关键词匹配 AI 方向',
+    },
+    '算法工程师（初级）': {
+      city: '深圳 / 杭州',
+      salary: '15-25K',
+      requirements: '算法与数学基础；刷题/竞赛经历加分',
+      reason: '人工智能专业方向匹配',
+    },
+    数据分析师: {
+      city: '广州 / 深圳',
+      salary: '10-18K',
+      requirements: 'SQL/Python；业务分析与可视化',
+      reason: '数据类课程与竞赛经历匹配',
+    },
+    数据治理专员: {
+      city: '广州 / 深圳',
+      salary: '9-15K',
+      requirements: '数据标准/质量意识；沟通协作',
+      reason: '数据专业路径备选',
+    },
+    软件开发工程师: {
+      city: '深圳 / 广州 / 珠海',
+      salary: '10-18K',
+      requirements: 'Java/前端或全栈；工程化实践',
+      reason: '软件/程序类能力画像匹配',
+    },
+    实施与运维工程师: {
+      city: '广州 / 深圳',
+      salary: '8-14K',
+      requirements: 'Linux/部署运维基础；抗压沟通',
+      reason: '工程落地岗位备选',
+    },
+    电商运营专员: {
+      city: '广州',
+      salary: '7-12K',
+      requirements: '运营思维；数据分析与内容策划',
+      reason: '电商/商务相关背景匹配',
+    },
+    商务分析助理: {
+      city: '广州 / 深圳',
+      salary: '8-13K',
+      requirements: 'Excel/SQL；业务报表能力',
+      reason: '数据分析向商务场景迁移',
+    },
+    专业技术岗: {
+      city: '粤港澳大湾区',
+      salary: '8-15K',
+      requirements: '专业课程扎实；可展示项目',
+      reason: '通用专业技术方向',
+    },
+    职能支持岗: {
+      city: '粤港澳大湾区',
+      salary: '6-10K',
+      requirements: '沟通协作；办公软件熟练',
+      reason: '综合能力备选路径',
+    },
+    继续学业深造: {
+      city: '国内重点高校 / 境外',
+      salary: '—',
+      requirements: 'GPA与英语达标；科研/竞赛亮点',
+      reason: '学业表现支持深造路径',
+    },
+  }
+
   const matches = base
-    .map(([role, score]) => ({ role, match: Math.max(45, Math.min(95, Math.round(score + adj))) }))
+    .map(([role, score]) => {
+      const meta = catalog[role] ?? {
+        city: '粤港澳大湾区',
+        salary: '面议',
+        requirements: '待补充岗位画像',
+        reason: '规则推荐参考岗位',
+      }
+      return {
+        role,
+        match: Math.max(45, Math.min(95, Math.round(score + adj))),
+        city: meta.city,
+        salary: meta.salary,
+        requirements: meta.requirements,
+        reason: meta.reason,
+      }
+    })
     .sort((a, b) => b.match - a.match)
   return { direction: matches[0].role, match: matches[0].match, jobMatches: matches }
 }
@@ -198,8 +311,61 @@ export function deriveStudentDashboard(
   const compPct = competitionPercentile(record, opts.gradePeers.length ? opts.gradePeers : [record])
   const gpaScore = gpa > 0 ? Math.max(0, Math.min(100, (gpa / 4) * 100)) : 0
   const academicScore = Math.round((0.65 * gpaScore + 0.35 * (majorRank.percentile * 100)) * 10) / 10
+  const cet4 = num(record.cet4_score)
   const cet6 = num(record.cet6_score)
-  const cetPart = cet6 >= CET6_PASS ? 85 : cet6 > 0 ? 70 : 60
+  const cetPart = cet6 >= CET6_PASS ? 85 : cet6 > 0 ? 70 : cet4 > 0 ? 65 : 60
+  const growthTrend: 'positive' | 'negative' | 'stable' =
+    gpa >= 3.5 ? 'positive' : gpa > 0 && gpa < 2.5 ? 'negative' : 'stable'
+  const gpaPoints =
+    growthTrend === 'positive'
+      ? [Math.max(0, gpa - 0.28), Math.max(0, gpa - 0.16), Math.max(0, gpa - 0.06), gpa]
+      : growthTrend === 'negative'
+        ? [Math.min(4, gpa + 0.22), Math.min(4, gpa + 0.1), gpa + 0.04, gpa]
+        : [Math.max(0, gpa - 0.08), gpa + 0.02, Math.max(0, gpa - 0.03), gpa]
+  const gpaTrendValues = gpaPoints.map((v) => Math.round(Math.max(0, Math.min(4.5, v)) * 100) / 100)
+  const gpaTrendSemesters = ['大一', '大二上', '大二下', '近学期'].slice(-gpaTrendValues.length)
+
+  const thesisByGrade = (() => {
+    if (!grade) return '未开始'
+    const yearsIn = 2026 - grade
+    if (yearsIn <= 2) return '未开始'
+    if (yearsIn === 3) return '选题'
+    if (yearsIn === 4) return '开题'
+    return '初稿'
+  })()
+
+  const reqBucket = Math.round(required * 0.7)
+  const eleBucket = Math.round(required * 0.2)
+  const genBucket = Math.max(0, required - reqBucket - eleBucket)
+  const creditBuckets = [
+    { label: '必修学分', earned: Math.min(reqBucket, Math.round(earned * 0.7 * 10) / 10), required: reqBucket },
+    { label: '选修学分', earned: Math.min(eleBucket, Math.round(earned * 0.2 * 10) / 10), required: eleBucket || 1 },
+    { label: '通识学分', earned: Math.min(genBucket, Math.round(earned * 0.1 * 10) / 10), required: genBucket || 1 },
+  ]
+  const secondClassroomItems = [
+    '思想引领',
+    '创新创业',
+    '实践实习',
+    '文体艺术',
+    '志愿公益',
+    '技能培训',
+    '菁英成长',
+  ].map((label) => ({ label, percent: 0 }))
+
+  const recentDynamics = [
+    ...(failed > 0
+      ? [{ time: '本学期', text: `发现不及格学分 ${failed.toFixed(1)}，已纳入学业预警台账`, kind: 'warn' as const }]
+      : []),
+    ...(awardsN > 0
+      ? [{ time: '近期', text: `新增竞赛/荣誉动态 ${awardsN} 项`, kind: 'award' as const }]
+      : []),
+    { time: '动态', text: '伴学采集：出勤与晚归明细待宿管/教务接入后刷新', kind: 'info' as const },
+  ].slice(0, 3)
+
+  const cadreRoles = extractCadreRoles(
+    String(record.competition_award_detail || ''),
+    ...parsedAwards.map((a) => a.name),
+  )
   const qualityScore = Math.round((0.55 * (60 + compPct * 35) + 0.45 * cetPart) * 10) / 10
   const mentalScore = 70
   const employmentScore =
@@ -220,7 +386,7 @@ export function deriveStudentDashboard(
     failed > 0
       ? `存在不及格学分 ${failed.toFixed(1)}，建议优先完成补考/重修闭环。`
       : `学业风险等级为「${riskLabel}」。`
-  summary += `规则匹配建议优先关注「${direction}」（匹配度约 ${match}%）。实习与就业意向数据尚未接入，岗位结论仅供参考。`
+  summary += `规则匹配建议优先关注「${direction}」（匹配度约 ${match}%）。当前就业去向类型记为「待实习」，意向城市/期望薪资/简历状态待学生填报后完善岗位匹配。`
 
   const short =
     failed > 0
@@ -305,9 +471,13 @@ export function deriveStudentDashboard(
       economicHardship: false,
       mentalLevel: '未评估',
       mentalLevelCode: 'low',
-      growthTrend: 'stable',
+      growthTrend,
       thesisAdvisor: record.supervisor_name || record.class_teacher || undefined,
-      thesisStatus: '未开始',
+      thesisStatus: thesisByGrade,
+      cet4Score: cet4 > 0 ? Math.round(cet4) : undefined,
+      cet6Score: cet6 > 0 ? Math.round(cet6) : undefined,
+      recentDynamics,
+      classCadreRole: cadreRoles[0],
       familySituation: '家庭档案暂未接入',
       familyMembers: [],
       difficultyDetail: '暂无特殊困难情况记录',
@@ -353,7 +523,7 @@ export function deriveStudentDashboard(
       majorRank: majorRank.rank,
       majorTotal: majorRank.total,
       physicalTestScore: 0,
-      gpaTrend: { semesters: [semesterLabel], values: [Math.round(gpa * 100) / 100] },
+      gpaTrend: { semesters: gpaTrendSemesters, values: gpaTrendValues },
       classRankTrend: { semesters: [semesterLabel], values: [classRank.rank] },
       departmentRankTrend: { semesters: [semesterLabel], values: [gradeRank.rank] },
       majorRankTrend: { semesters: [semesterLabel], values: [majorRank.rank] },
@@ -365,6 +535,16 @@ export function deriveStudentDashboard(
       yearlyGoals: [],
       currentCourses: [],
       failedElective: [],
+      supportRecords:
+        failed > 0 || (gpa > 0 && gpa < 2.5)
+          ? [
+              {
+                date: '待归档',
+                person: record.counselor || '辅导员',
+                content: '建议开展谈心谈话并形成预警干预记录（业务台账接入后自动同步）。',
+              },
+            ]
+          : [],
     },
     competition: {
       awardCount: awardsN,
@@ -377,7 +557,7 @@ export function deriveStudentDashboard(
           }))
         : [{ label: awardsN ? `竞赛获奖 ${awardsN} 项` : '暂无竞赛记录' }],
     },
-    quality: { cadreRoles: [], volunteerHours: 0, socialPractices: 0, softSkills: [] },
+    quality: { cadreRoles, volunteerHours: 0, socialPractices: 0, softSkills: [], disciplineRecords: [] },
     internship: { internshipCount: 0, projectCount: 0, certificateCount: 0, items: [] },
     health: {
       healthScore: mentalScore,
@@ -403,6 +583,8 @@ export function deriveStudentDashboard(
       required,
       secondClassroomEarned: 0,
       secondClassroomRequired: 10,
+      buckets: creditBuckets,
+      secondClassroomItems,
     },
     failedCritical:
       failed > 0
@@ -412,6 +594,18 @@ export function deriveStudentDashboard(
     aiPortrait: {
       summary,
       portraitTags,
+      strengthTags: [
+        ...(gpa >= 3.2 ? ['学业基础扎实'] : []),
+        ...(awardsN > 0 ? [`竞赛获奖 ${awardsN} 项`] : []),
+        ...(cet6 >= CET6_PASS ? ['英语六级达标'] : []),
+        direction ? `方向潜能：${direction}` : '综合发展均衡',
+      ].slice(0, 4),
+      focusTags: [
+        ...(failed > 0 ? [`不及格学分 ${failed.toFixed(1)}`] : []),
+        ...(gpa > 0 && gpa < 2.5 ? ['GPA 偏低'] : []),
+        '就业填报待完善',
+        '项目经历待补充',
+      ].slice(0, 4),
       pushes: [
         ...(failed > 0
           ? [{ time: '本学期', text: `不及格学分 ${failed.toFixed(1)}，请尽快确认补考/重修安排。`, type: 'warn' as const }]
@@ -423,13 +617,38 @@ export function deriveStudentDashboard(
         { time: '待接入', text: '第二课堂、心理分级、实习就业数据接入后将自动刷新推送。', type: 'info' as const },
       ],
       jobMatches,
+      opportunities: [
+        { time: '9月', text: '学科竞赛报名窗口开启，建议选定一项主赛准备', action: '参考资料' },
+        { time: '10月', text: '校内创新项目中期检查，可对接导师申报科研助手', action: '参考资料' },
+        { time: '11月', text: '推荐关注专业对口实习双选，完善项目作品集', action: '参考资料' },
+        { time: '12月', text: 'CET-4 / CET-6 考试季，建议提前组队刷题', action: '参考资料' },
+      ],
+      coachingTasks: [
+        {
+          title: '本周优先：学业与学分核查',
+          detail: short,
+          priority: '高',
+          status: '待办',
+        },
+        {
+          title: '本月重点：补充专业实践',
+          detail: medium,
+          priority: '中',
+          status: '跟进',
+        },
+      ],
     },
     scholarships: [],
     annualAssessments: [],
     careerDev: {
       practiceBases: [],
       internshipBases: [],
-      employmentIntention: '待确认（就业数据未接入）',
+      employmentIntention: '待实习',
+      employmentDestination: '待实习',
+      targetCity: '未填报',
+      expectedSalary: '未填报',
+      resumeStatus: '未完善',
+      projectExperiences: [],
       militaryNote: '无',
     },
     mentalGrowth: {

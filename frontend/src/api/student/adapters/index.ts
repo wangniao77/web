@@ -1,6 +1,7 @@
 import type { StudentDashboardDTO } from '@/types/student/api'
 import type {
   AttentionItemVM,
+  CareerDevVM,
   StudentDashboardVM,
 } from '@/types/student/view'
 
@@ -83,9 +84,13 @@ export function adaptStudentDashboard(dto: StudentDashboardDTO): StudentDashboar
       yearlyGoals: dto.academic.yearlyGoals ?? [],
       currentCourses: dto.academic.currentCourses ?? [],
       failedElective: dto.academic.failedElective ?? [],
+      supportRecords: dto.academic.supportRecords ?? [],
     },
     competition: { ...dto.competition },
-    quality: { ...dto.quality },
+    quality: {
+      ...dto.quality,
+      disciplineRecords: dto.quality.disciplineRecords ?? [],
+    },
     internship: { ...dto.internship },
     health: { ...emptyHealth, ...(dto.health ?? {}) },
     employment: { ...dto.employment },
@@ -101,24 +106,48 @@ export function adaptStudentDashboard(dto: StudentDashboardDTO): StudentDashboar
       secondPercent: dto.creditProgress
         ? Math.round((dto.creditProgress.secondClassroomEarned / dto.creditProgress.secondClassroomRequired) * 100)
         : 0,
+      buckets: dto.creditProgress?.buckets,
+      secondClassroomItems: dto.creditProgress?.secondClassroomItems,
     },
     failedCritical: dto.failedCritical ?? [],
     timeline: dto.timeline ?? [],
     aiPortrait: {
       summary: dto.aiPortrait?.summary ?? '',
       portraitTags: dto.aiPortrait?.portraitTags ?? [],
+      strengthTags: dto.aiPortrait?.strengthTags ?? [],
+      focusTags: dto.aiPortrait?.focusTags ?? [],
       pushes: (dto.aiPortrait?.pushes ?? []).map((p) => ({
         ...p,
         type: p.type ?? 'info',
       })),
-      jobMatches: dto.aiPortrait?.jobMatches ?? [],
+      jobMatches: (dto.aiPortrait?.jobMatches ?? []).map((job) => ({
+        role: job.role,
+        match: job.match,
+        city: job.city,
+        salary: job.salary,
+        requirements: job.requirements,
+        reason: job.reason,
+      })),
+      opportunities: dto.aiPortrait?.opportunities,
+      coachingTasks: dto.aiPortrait?.coachingTasks,
     },
     scholarships: dto.scholarships ?? [],
     annualAssessments: dto.annualAssessments ?? [],
     careerDev: {
       practiceBases: dto.careerDev?.practiceBases ?? [],
       internshipBases: dto.careerDev?.internshipBases ?? [],
-      employmentIntention: dto.careerDev?.employmentIntention ?? '',
+      employmentIntention: dto.careerDev?.employmentDestination ?? dto.careerDev?.employmentIntention ?? '待实习',
+      employmentDestination:
+        (dto.careerDev?.employmentDestination as CareerDevVM['employmentDestination']) ||
+        (['考研备考', '考公备考', '企业就业', '自主创业', '暂缓就业', '待实习', '在岗实习'].includes(
+          dto.careerDev?.employmentIntention ?? '',
+        )
+          ? (dto.careerDev!.employmentIntention as CareerDevVM['employmentDestination'])
+          : '待实习'),
+      targetCity: dto.careerDev?.targetCity ?? '未填报',
+      expectedSalary: dto.careerDev?.expectedSalary ?? '未填报',
+      resumeStatus: dto.careerDev?.resumeStatus ?? '未完善',
+      projectExperiences: dto.careerDev?.projectExperiences ?? [],
       militaryNote: dto.careerDev?.militaryNote,
     },
     mentalGrowth: {

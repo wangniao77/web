@@ -31,6 +31,13 @@ export interface PersonalInfoVM {
   growthTrend?: 'positive' | 'negative' | 'stable'
   thesisAdvisor?: string
   thesisStatus?: string
+  /** 四六级分数（学情护航/档案展示） */
+  cet4Score?: number
+  cet6Score?: number
+  /** 近期伴随式动态（旷课/获奖/晚归等） */
+  recentDynamics?: Array<{ time: string; text: string; kind: 'award' | 'warn' | 'info' }>
+  /** 班干部职务（班长/团支书等），用于姓名旁展示 */
+  classCadreRole?: string
   familySituation?: string
   familyMembers?: string[]
   difficultyDetail?: string
@@ -108,6 +115,8 @@ export interface AcademicDevVM {
   yearlyGoals: Array<{ year: string; goal: string; percent: number }>
   currentCourses: Array<{ name: string; credit: number; type: string }>
   failedElective: FailedCourseVM[]
+  /** 学业帮扶 / 谈心谈话记录（预警干预台账） */
+  supportRecords?: Array<{ date: string; person: string; content: string }>
 }
 
 export interface CompetitionVM {
@@ -117,11 +126,25 @@ export interface CompetitionVM {
   highlights: Array<{ label: string; detail?: string }>
 }
 
+export interface DisciplineRecordVM {
+  id: string
+  /** 处分日期 */
+  date: string
+  /** 处分类型：警告 / 严重警告 / 记过 / 留校察看 等 */
+  type: string
+  /** 事由简述 */
+  reason: string
+  /** 在册 / 已解除 */
+  status?: string
+}
+
 export interface QualityVM {
   cadreRoles: string[]
   volunteerHours: number
   socialPractices: number
   softSkills: Array<{ name: string; score: number }>
+  /** 纪律惩戒 / 处分记录（综合素养荣誉与纪律台账） */
+  disciplineRecords: DisciplineRecordVM[]
 }
 
 export interface InternshipVM {
@@ -140,6 +163,25 @@ export interface HealthVM {
     frequency: number
     calories: number
   }
+}
+
+/** 就业去向类型（取消「待确认 / 发展中」） */
+export type EmploymentDestinationType =
+  | '考研备考'
+  | '考公备考'
+  | '企业就业'
+  | '自主创业'
+  | '暂缓就业'
+  | '待实习'
+  | '在岗实习'
+
+export interface JobMatchVM {
+  role: string
+  match: number
+  city?: string
+  salary?: string
+  requirements?: string
+  reason?: string
 }
 
 export interface EmploymentVM {
@@ -168,6 +210,10 @@ export interface CreditProgressVM {
   secondClassroomRequired: number
   earnedPercent: number
   secondPercent: number
+  /** 必修 / 选修 / 通识学分分桶（学情护航三段进度条） */
+  buckets?: Array<{ label: string; earned: number; required: number }>
+  /** 第二课堂七项进度 0–100 */
+  secondClassroomItems?: Array<{ label: string; percent: number }>
 }
 
 export interface FailedCourseVM {
@@ -186,14 +232,25 @@ export interface TimelineTermVM {
 export interface AiPortraitVM {
   summary: string
   portraitTags: string[]
+  /** 优势 / 关注标签（智能育航全景研判用） */
+  strengthTags?: string[]
+  focusTags?: string[]
   pushes: Array<{ time: string; text: string; type: 'warn' | 'info' | 'success' }>
-  jobMatches: Array<{ role: string; match: number }>
+  jobMatches: JobMatchVM[]
+  opportunities?: Array<{ time: string; text: string; action?: string }>
+  coachingTasks?: Array<{ title: string; detail: string; priority: string; status?: string }>
 }
 
 export interface CareerDevVM {
   practiceBases: string[]
   internshipBases: string[]
+  /** @deprecated 使用 employmentDestination */
   employmentIntention: string
+  employmentDestination: EmploymentDestinationType
+  targetCity?: string
+  expectedSalary?: string
+  resumeStatus?: string
+  projectExperiences?: string[]
   militaryNote?: string
 }
 

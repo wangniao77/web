@@ -59,7 +59,7 @@ export const mockStudentDashboard: StudentDashboardDTO = {
     totalCourses: 0,
   },
   competition: { awardCount: 0, researchCount: 0, innovationCount: 0, highlights: [] },
-  quality: { cadreRoles: [], volunteerHours: 0, socialPractices: 0, softSkills: [] },
+  quality: { cadreRoles: [], volunteerHours: 0, socialPractices: 0, softSkills: [], disciplineRecords: [] },
   internship: { internshipCount: 0, projectCount: 0, certificateCount: 0, items: [] },
   health: {
     healthScore: 70,

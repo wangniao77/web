@@ -37,20 +37,20 @@ defineProps<{
 
         <div class="stu-mod-career__intent">
           <div class="stu-mod-career__tag">
-            <label>就业意向</label>
-            <strong>{{ careerDev.employmentIntention || '—' }}</strong>
+            <label>就业去向类型</label>
+            <strong>{{ careerDev.employmentDestination || careerDev.employmentIntention || '待实习' }}</strong>
           </div>
           <div class="stu-mod-career__tag">
-            <label>征兵情况</label>
-            <strong>{{ careerDev.militaryNote || '无' }}</strong>
+            <label>意向城市</label>
+            <strong>{{ careerDev.targetCity || '未填报' }}</strong>
           </div>
           <div class="stu-mod-career__tag">
-            <label>实习经历</label>
-            <strong>{{ internship.internshipCount }} 段</strong>
+            <label>期望薪资</label>
+            <strong>{{ careerDev.expectedSalary || '未填报' }}</strong>
           </div>
           <div class="stu-mod-career__tag">
-            <label>就业准备度</label>
-            <strong>{{ employment.jobReadiness }}%</strong>
+            <label>简历状态</label>
+            <strong>{{ careerDev.resumeStatus || '未完善' }}</strong>
           </div>
         </div>
 
@@ -71,6 +71,11 @@ defineProps<{
               <span>{{ job.role }}</span>
               <div class="bar"><i :style="{ width: `${job.match}%` }" /></div>
               <strong>{{ job.match }}%</strong>
+              <small v-if="job.city || job.salary || job.requirements">
+                <em v-if="job.city">{{ job.city }}</em>
+                <em v-if="job.salary">{{ job.salary }}</em>
+                <em v-if="job.requirements">{{ job.requirements }}</em>
+              </small>
             </div>
           </div>
         </div>
@@ -209,7 +214,7 @@ defineProps<{
 .match {
   display: grid;
   grid-template-columns: 1fr 1.2fr auto;
-  gap: 8px;
+  gap: 4px 8px;
   align-items: center;
   font-size: var(--fs-meta);
 
@@ -233,6 +238,17 @@ defineProps<{
     font-family: var(--student-font-number);
     min-width: 36px;
     text-align: right;
+  }
+
+  small {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    color: #9ecae8;
+    font-size: 12px;
+
+    em { font-style: normal; }
   }
 }
 </style>

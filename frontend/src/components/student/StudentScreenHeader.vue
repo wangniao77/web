@@ -3,10 +3,15 @@ import { RouterLink } from 'vue-router'
 import { useClock } from '@/composables/useClock'
 import { ROUTES } from '@/constants/routes'
 import DashIcon from '@/components/college/DashIcon.vue'
+import StuHint from '@/components/student/template/StuHint.vue'
 import collegeLogo from '@/assets/college-logo.png'
 
-/** 对齐学院驾驶舱标题下原则条，学生侧工作导向 */
-const principles = ['看画像', '抓短板', '强实践', '促就业', '护成长']
+/** 领导审定导向条 */
+const principles = [
+  { label: '看画像', tip: '先看学生整体画像与关键指标。' },
+  { label: '深析短板', tip: '再定位学业、素养或就业短板。' },
+  { label: '智育成才', tip: '结合 AI 建议开展精准育人。' },
+]
 const { dateStr, timeStr } = useClock()
 </script>
 
@@ -25,7 +30,9 @@ const { dateStr, timeStr } = useClock()
       <div class="school-name">
         <span class="school-name__title">广东财经大学</span>
         <span class="school-name__school">大数据与人工智能学院</span>
-        <span class="school-name__motto">厚德　励学　笃行　拓新</span>
+        <StuHint tip="学院院训：韧性成长，志臻卓越。">
+          <span class="school-name__motto">韧　性　成　长，志　臻　卓　越</span>
+        </StuHint>
       </div>
     </div>
 
@@ -35,10 +42,13 @@ const { dateStr, timeStr } = useClock()
         <span />
         <span />
       </div>
-      <h1>学生个人档案智能驾驶舱</h1>
+      <StuHint tip="学生个人驾驶舱：数智透视学情，呈现学子全息画像。">
+        <h1>——数智透视·学子全息——</h1>
+      </StuHint>
       <nav class="cockpit-header__tabs" aria-label="学生工作导向">
-        <span v-for="(tab, index) in principles" :key="tab">
-          {{ tab }}<b v-if="index < principles.length - 1">|</b>
+        <span v-for="(tab, index) in principles" :key="tab.label">
+          <StuHint :tip="tab.tip">{{ tab.label }}</StuHint>
+          <b v-if="index < principles.length - 1">｜</b>
         </span>
       </nav>
     </div>
@@ -52,11 +62,13 @@ const { dateStr, timeStr } = useClock()
         <DashIcon kind="clock" :size="16" />
         <span>{{ timeStr }}</span>
       </div>
-      <div class="meta-card meta-card--live">
-        <DashIcon kind="status" :size="16" />
-        <span>学生视图</span>
-        <i class="meta-card__pulse" aria-hidden="true" />
-      </div>
+      <StuHint tip="当前为学生个人驾驶舱视角。">
+        <div class="meta-card meta-card--live">
+          <DashIcon kind="status" :size="16" />
+          <span>学生视图</span>
+          <i class="meta-card__pulse" aria-hidden="true" />
+        </div>
+      </StuHint>
     </div>
   </header>
 </template>
@@ -134,7 +146,7 @@ const { dateStr, timeStr } = useClock()
 }
 
 .school-name__title {
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
   font-weight: 800;
   color: #f7fbff;
@@ -143,7 +155,7 @@ const { dateStr, timeStr } = useClock()
 }
 
 .school-name__school {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   color: #7aefff;
   letter-spacing: 0.1em;
@@ -151,10 +163,21 @@ const { dateStr, timeStr } = useClock()
 }
 
 .school-name__motto {
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(200, 220, 240, 0.62);
-  letter-spacing: 0.28em;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #e8c878 !important;
+  letter-spacing: 0.22em;
+  text-shadow: 0 0 10px rgba(232, 200, 120, 0.35);
+}
+
+:deep(.cockpit-header__title h1) {
+  font-size: clamp(28px, 2.1vw, 36px);
+  letter-spacing: 0.12em;
+}
+
+:deep(.cockpit-header__tabs) {
+  font-size: 15px;
+  letter-spacing: 0.12em;
 }
 
 .school-emblem__img {

@@ -31,6 +31,10 @@ export interface StudentProfileDTO {
   growthTrend?: 'positive' | 'negative' | 'stable'
   thesisAdvisor?: string
   thesisStatus?: string
+  cet4Score?: number
+  cet6Score?: number
+  recentDynamics?: Array<{ time: string; text: string; kind: 'award' | 'warn' | 'info' }>
+  classCadreRole?: string
   familySituation?: string
   familyMembers?: string[]
   difficultyDetail?: string
@@ -43,6 +47,8 @@ export interface CreditProgressDTO {
   required: number
   secondClassroomEarned: number
   secondClassroomRequired: number
+  buckets?: Array<{ label: string; earned: number; required: number }>
+  secondClassroomItems?: Array<{ label: string; percent: number }>
 }
 
 export interface FailedCourseDTO {
@@ -61,8 +67,19 @@ export interface TimelineTermDTO {
 export interface AiPortraitDTO {
   summary: string
   portraitTags: string[]
+  strengthTags?: string[]
+  focusTags?: string[]
   pushes: Array<{ time: string; text: string; type?: 'warn' | 'info' | 'success' }>
-  jobMatches: Array<{ role: string; match: number }>
+  jobMatches: Array<{
+    role: string
+    match: number
+    city?: string
+    salary?: string
+    requirements?: string
+    reason?: string
+  }>
+  opportunities?: Array<{ time: string; text: string; action?: string }>
+  coachingTasks?: Array<{ title: string; detail: string; priority: string; status?: string }>
 }
 
 export interface GrowthPortraitDTO {
@@ -132,6 +149,7 @@ export interface AcademicDevDTO {
   yearlyGoals?: Array<{ year: string; goal: string; percent: number }>
   currentCourses?: Array<{ name: string; credit: number; type: string }>
   failedElective?: FailedCourseDTO[]
+  supportRecords?: Array<{ date: string; person: string; content: string }>
 }
 
 export interface CompetitionDTO {
@@ -141,11 +159,20 @@ export interface CompetitionDTO {
   highlights: Array<{ label: string; detail?: string }>
 }
 
+export interface DisciplineRecordDTO {
+  id: string
+  date: string
+  type: string
+  reason: string
+  status?: string
+}
+
 export interface QualityDTO {
   cadreRoles: string[]
   volunteerHours: number
   socialPractices: number
   softSkills: Array<{ name: string; score: number }>
+  disciplineRecords?: DisciplineRecordDTO[]
 }
 
 export interface InternshipDTO {
@@ -208,7 +235,20 @@ export interface StudentDashboardDTO {
   careerDev?: {
     practiceBases: string[]
     internshipBases: string[]
+    /** @deprecated 使用 employmentDestination */
     employmentIntention: string
+    employmentDestination?:
+      | '考研备考'
+      | '考公备考'
+      | '企业就业'
+      | '自主创业'
+      | '暂缓就业'
+      | '待实习'
+      | '在岗实习'
+    targetCity?: string
+    expectedSalary?: string
+    resumeStatus?: string
+    projectExperiences?: string[]
     militaryNote?: string
   }
   mentalGrowth?: {

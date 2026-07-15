@@ -35,6 +35,9 @@ function closeDetail() {
         :profile="dashboard.profile"
         :attention="dashboard.attention"
         :career-dev="dashboard.careerDev"
+        :academic="dashboard.academic"
+        :highlights="dashboard.highlights"
+        :cadre-roles="dashboard.quality.cadreRoles"
         @open="openDetail"
       />
       <StudentScoreCard
@@ -43,6 +46,12 @@ function closeDetail() {
         :academic="dashboard.academic"
         :health="dashboard.health"
         :employment="dashboard.employment"
+        :profile="dashboard.profile"
+        :credit="dashboard.creditProgress"
+        :competition="dashboard.competition"
+        :internship="dashboard.internship"
+        :quality="dashboard.quality"
+        :scholarships="dashboard.scholarships"
       />
       <StudentAiAdviceCard
         :assistant="dashboard.aiAssistant"

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import gsap from 'gsap'
-import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import StudentTplCard from './StudentTplCard.vue'
+import StuHint from './StuHint.vue'
 import type { AiAssistantVM, AiPortraitVM, EmploymentVM } from '@/types/student/view'
 
 const props = defineProps<{
@@ -13,35 +12,115 @@ const props = defineProps<{
 
 const emit = defineEmits<{ open: [id: string] }>()
 
-const carouselRef = ref<HTMLElement | null>(null)
-const currentPage = ref(0)
-const AUTOPLAY_INTERVAL = 6500
+type TabId = 'panorama' | 'risk' | 'coach' | 'chance' | 'path'
+
+const tabs: Array<{ id: TabId; label: string; tip: string }> = [
+  { id: 'panorama', label: '全景研判', tip: '一句话总评 + 岗位匹配与优劣势标签，先看整体画像。' },
+  { id: 'risk', label: '风险雷达', tip: '需优先跟进的风险与预警事项。角标数字=待处理条数。' },
+  { id: 'coach', label: '育人智策', tip: '辅导员本周/本月可执行的育人任务，可标记暂缓或完成。' },
+  { id: 'chance', label: '机会雷达', tip: '竞赛、实习、活动等近期可把握的机会。' },
+  { id: 'path', label: '成长路径', tip: '本学期→一年→毕业前的分阶段目标与行动清单。' },
+]
+
+const activeTab = ref<TabId>('panorama')
+const AUTOPLAY_INTERVAL = 9000
 let autoplayTimer: ReturnType<typeof setInterval> | null = null
 
-const directionMatch = computed(() => {
-  return props.portrait.jobMatches[0]?.match ?? props.employment.jobReadiness
+const riskItems = computed(() =>
+  props.portrait.pushes.filter((p) => p.type === 'warn' || /预警|风险|不足|挂科|学分/.test(p.text)),
+)
+
+const riskCount = computed(() => Math.max(riskItems.value.length, props.portrait.focusTags?.length ? 1 : 0))
+const coachCount = computed(() => props.assistant.shortTermSuggestions.length + props.assistant.longTermSuggestions.length)
+const chanceCount = computed(() => props.portrait.opportunities?.length || props.portrait.pushes.filter((p) => p.type === 'success' || p.type === 'info').length)
+
+const tabBadges = computed<Record<TabId, number | null>>(() => ({
+  panorama: null,
+  risk: riskCount.value || null,
+  coach: coachCount.value || null,
+  chance: chanceCount.value || null,
+  path: null,
+}))
+
+const strengthTags = computed(() =>
+  props.portrait.strengthTags?.length
+    ? props.portrait.strengthTags
+    : props.portrait.portraitTags.filter((t) => /高潜|优势|稳定|正向/.test(t)).slice(0, 3).concat(
+      props.portrait.portraitTags.filter((t) => !/高潜|优势|稳定|正向|待|不足/.test(t)).slice(0, 1),
+    ).slice(0, 3),
+)
+
+const focusTags = computed(() =>
+  props.portrait.focusTags?.length
+    ? props.portrait.focusTags
+    : props.portrait.portraitTags.filter((t) => /待|不足|短板|关注/.test(t)).concat(['实践经历不足']).slice(0, 3),
+)
+
+const jobMatches = computed(() => props.portrait.jobMatches.slice(0, 2))
+
+const summaryText = computed(() => {
+  const text = props.portrait.summary || ''
+  return text.length > 96 ? `${text.slice(0, 96)}…` : text
 })
 
-/** 首页只展示一句摘要，完整研判进二级页 */
-const summaryBrief = computed(() => {
-  const text = props.portrait.summary.trim()
-  const cut = text.split(/[；。]/)[0] ?? text
-  return cut.length > 42 ? `${cut.slice(0, 42)}…` : `${cut}。`
+const opportunities = computed(() => {
+  if (props.portrait.opportunities?.length) return props.portrait.opportunities
+  return props.portrait.pushes
+    .filter((p) => p.type !== 'warn')
+    .slice(0, 4)
+    .map((p) => ({ time: p.time, text: p.text, action: '参考资料' }))
 })
 
-const timeline = computed(() => [
-  { stage: '本学期', title: '补齐关键短板', icon: 'task' as IconKind },
-  { stage: '未来一年', title: '强化项目实践', icon: 'practice' as IconKind },
-  { stage: '毕业前', title: '完成方向定型', icon: 'employment' as IconKind },
+const pathNodes = computed(() => [
+  {
+    stage: '本学期',
+    anchor: '专业项目 / 学科竞赛',
+    items: props.assistant.shortTermSuggestions.slice(0, 3).concat(['完成职业能力测评']).slice(0, 4),
+  },
+  {
+    stage: '未来一年',
+    anchor: '企业实习 / 技能证书',
+    items: ['完成1段专业对口实习', '获得1项专业技能证书', '建立项目作品集', '提升团队协作和表达能力'],
+  },
+  {
+    stage: '毕业前',
+    anchor: '就业/升学 / 毕业审核',
+    items: [props.employment.developmentPath.long, '完善简历、作品集或升学材料', '达成就业或升学目标'].filter(Boolean),
+  },
 ])
 
-const latestPush = computed(() => props.portrait.pushes[0] ?? null)
-const pushCount = computed(() => props.portrait.pushes.length)
+const coachTasks = ref([
+  { key: 'week', title: '本周优先', badge: '待办', detail: '', status: 'todo' as 'todo' | 'hold' | 'done' },
+  { key: 'month', title: '本月重点', badge: '跟进', detail: '', status: 'todo' as 'todo' | 'hold' | 'done' },
+])
 
-function openDetail() {
-  emit('open', 'ai')
-  // 点击进二级后仍恢复轮播，避免焦点停在卡片上导致停转
-  startAutoplay()
+watch(
+  () => [props.assistant.shortTermSuggestions[0], props.assistant.longTermSuggestions[0], props.portrait.coachingTasks],
+  () => {
+    const tasks = props.portrait.coachingTasks
+    coachTasks.value = [
+      {
+        key: 'week',
+        title: tasks?.[0]?.title || '本周优先：开展毕业学分核查',
+        badge: tasks?.[0]?.priority || '待办',
+        detail: tasks?.[0]?.detail || props.assistant.shortTermSuggestions[0] || '建议辅导员与学生核对培养方案',
+        status: 'todo',
+      },
+      {
+        key: 'month',
+        title: tasks?.[1]?.title || '本月重点：补充专业实践成果',
+        badge: tasks?.[1]?.priority || '跟进',
+        detail: tasks?.[1]?.detail || props.assistant.longTermSuggestions[0] || '建议参加1项竞赛或创新项目',
+        status: 'todo',
+      },
+    ]
+  },
+  { immediate: true },
+)
+
+function setCoachStatus(key: string, status: 'hold' | 'done') {
+  const hit = coachTasks.value.find((t) => t.key === key)
+  if (hit) hit.status = status
 }
 
 function stopAutoplay() {
@@ -52,574 +131,466 @@ function stopAutoplay() {
 function startAutoplay() {
   stopAutoplay()
   autoplayTimer = setInterval(() => {
-    currentPage.value = currentPage.value === 0 ? 1 : 0
+    const idx = tabs.findIndex((t) => t.id === activeTab.value)
+    activeTab.value = tabs[(idx + 1) % tabs.length].id
   }, AUTOPLAY_INTERVAL)
 }
 
-function previousPage() {
-  currentPage.value = currentPage.value === 0 ? 1 : 0
+function selectTab(id: TabId) {
+  activeTab.value = id
   startAutoplay()
 }
 
-function nextPage() {
-  currentPage.value = currentPage.value === 1 ? 0 : 1
-  startAutoplay()
-}
+watch(
+  () => riskCount.value,
+  (n) => {
+    if (n > 0 && activeTab.value === 'panorama') activeTab.value = 'risk'
+  },
+  { immediate: true },
+)
 
-function selectPage(page: number) {
-  currentPage.value = page
-  startAutoplay()
-}
-
-function animateVisibleCards() {
-  const root = carouselRef.value
-  if (!root) return
-  const cards = root.querySelectorAll(`.aip-slide:nth-child(${currentPage.value + 1}) .aip-card`)
-  gsap.fromTo(
-    cards,
-    { y: 16, autoAlpha: 0.55, scale: 0.98 },
-    {
-      y: 0,
-      autoAlpha: 1,
-      scale: 1,
-      duration: 0.42,
-      stagger: 0.06,
-      ease: 'power2.out',
-      overwrite: true,
-      clearProps: 'transform',
-    },
-  )
-}
-
-watch(currentPage, async () => {
-  await nextTick()
-  animateVisibleCards()
-})
-
-onMounted(() => {
-  startAutoplay()
-  animateVisibleCards()
-})
+onMounted(startAutoplay)
 onBeforeUnmount(stopAutoplay)
 </script>
 
 <template>
-  <StudentTplCard icon="innovation" title="AI 画像与建议" class="stu-tpl__ai">
-    <div
-      ref="carouselRef"
-      class="aip-carousel"
-      @mouseenter="stopAutoplay"
-      @mouseleave="startAutoplay"
-    >
-      <button type="button" class="aip-nav aip-nav--left" aria-label="上一组" @click="previousPage">‹</button>
-      <button type="button" class="aip-nav aip-nav--right" aria-label="下一组" @click="nextPage">›</button>
-
-      <div class="aip-viewport">
-        <div class="aip-track" :style="{ transform: `translateX(-${currentPage * 100}%)` }">
-          <!-- 第 1 页：研判总览 + 优先行动 -->
-          <div class="aip-slide" :aria-hidden="currentPage !== 0">
-            <article
-              class="aip-card aip-card--judge"
-              role="button"
-              tabindex="0"
-              @click="openDetail"
-              @keydown.enter.prevent="openDetail"
-              @keydown.space.prevent="openDetail"
-            >
-              <header class="aip-card__head">
-                <span class="aip-card__icon" aria-hidden="true">
-                  <DashIcon kind="influence" :size="18" />
-                </span>
-                <h4>综合研判</h4>
-                <span class="aip-status aip-status--live">AI</span>
-              </header>
-
-              <div class="aip-hero">
-                <div class="aip-hero__score">
-                  <span>方向匹配度</span>
-                  <strong>{{ directionMatch }}<i>%</i></strong>
-                </div>
-                <div class="aip-hero__dir">
-                  <span>推荐方向</span>
-                  <strong>{{ assistant.recommendedDirection }}</strong>
-                </div>
-              </div>
-
-              <p class="aip-brief">{{ summaryBrief }}</p>
-
-              <div class="aip-tags">
-                <span v-for="tag in portrait.portraitTags.slice(0, 3)" :key="tag">{{ tag }}</span>
-              </div>
-            </article>
-
-            <article
-              class="aip-card aip-card--action"
-              role="button"
-              tabindex="0"
-              @click="openDetail"
-              @keydown.enter.prevent="openDetail"
-              @keydown.space.prevent="openDetail"
-            >
-              <header class="aip-card__head">
-                <span class="aip-card__icon" aria-hidden="true">
-                  <DashIcon kind="task" :size="18" stroke="#e8c878" />
-                </span>
-                <h4>行动建议</h4>
-                <span class="aip-status aip-status--warn">优先</span>
-              </header>
-
-              <div class="aip-focus">
-                <span>本周优先</span>
-                <strong>{{ assistant.shortTermSuggestions[0] }}</strong>
-              </div>
-            </article>
-          </div>
-
-          <!-- 第 2 页：路线节点 + 最新推送（明细进二级） -->
-          <div class="aip-slide" :aria-hidden="currentPage !== 1">
-            <article
-              class="aip-card aip-card--path"
-              role="button"
-              tabindex="0"
-              @click="openDetail"
-              @keydown.enter.prevent="openDetail"
-              @keydown.space.prevent="openDetail"
-            >
-              <header class="aip-card__head">
-                <span class="aip-card__icon" aria-hidden="true">
-                  <DashIcon kind="guide" :size="18" stroke="#7eb8ff" />
-                </span>
-                <h4>阶段成长路线</h4>
-                <span class="aip-status aip-status--blue">3 阶段</span>
-              </header>
-
-              <div class="aip-path-list">
-                <div v-for="item in timeline" :key="item.stage" class="aip-path-item">
-                  <span class="aip-path-item__icon" aria-hidden="true">
-                    <DashIcon :kind="item.icon" :size="16" />
-                  </span>
-                  <div>
-                    <em>{{ item.stage }}</em>
-                    <strong>{{ item.title }}</strong>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article
-              class="aip-card aip-card--push"
-              role="button"
-              tabindex="0"
-              @click="openDetail"
-              @keydown.enter.prevent="openDetail"
-              @keydown.space.prevent="openDetail"
-            >
-              <header class="aip-card__head">
-                <span class="aip-card__icon" aria-hidden="true">
-                  <DashIcon kind="notify" :size="18" stroke="#55e995" />
-                </span>
-                <h4>智能推送</h4>
-                <span class="aip-status aip-status--ok">{{ pushCount }} 条</span>
-              </header>
-
-              <div v-if="latestPush" class="aip-latest" :class="`aip-latest--${latestPush.type}`">
-                <em>{{ latestPush.time }}</em>
-                <p>{{ latestPush.text }}</p>
-              </div>
-            </article>
-          </div>
-        </div>
+  <StudentTplCard
+    icon="innovation"
+    title="智能育航"
+    tip="AI 综合学业与画像，给出研判、风险、机会与成长建议，用于精准育人。"
+    class="stu-tpl__ai"
+  >
+    <div class="navi" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
+      <div class="navi__tabs" role="tablist" aria-label="智能育航功能">
+        <StuHint v-for="tab in tabs" :key="tab.id" :tip="tab.tip">
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === tab.id"
+            :class="{ active: activeTab === tab.id }"
+            @click="selectTab(tab.id)"
+          >
+            {{ tab.label }}
+            <i
+              v-if="tabBadges[tab.id]"
+              :title="'该页待处理条数，不是评分'"
+            >{{ tabBadges[tab.id] }}</i>
+          </button>
+        </StuHint>
       </div>
 
-      <div class="aip-pagination" aria-label="AI 画像分页">
-        <button
-          v-for="page in 2"
-          :key="page"
-          type="button"
-          :class="{ active: currentPage === page - 1 }"
-          :aria-label="`第 ${page} 组`"
-          @click="selectPage(page - 1)"
-        />
-        <span>{{ currentPage + 1 }} / 2</span>
+      <div class="navi__panel">
+        <!-- 全景研判 -->
+        <section v-if="activeTab === 'panorama'" class="navi-card">
+          <StuHint tip="基于学业、素养与就业画像生成的综合研判摘要。" block>
+            <p class="navi-card__summary" :title="portrait.summary">{{ summaryText }}</p>
+          </StuHint>
+          <div class="navi-jobs">
+            <StuHint
+              v-for="job in jobMatches"
+              :key="job.role"
+              block
+              :tip="`岗位匹配度 ${job.match}%（越高越对口）。${[job.city, job.salary, job.requirements].filter(Boolean).join(' · ') || '点击可在详情页查看完整岗位要求。'}`"
+            >
+              <div class="navi-job">
+                <div class="navi-job__head">
+                  <strong>{{ job.role }}</strong>
+                  <b>{{ job.match }}%</b>
+                </div>
+                <i><em :style="{ width: `${job.match}%` }" /></i>
+              </div>
+            </StuHint>
+          </div>
+          <div class="navi-tags">
+            <div>
+              <StuHint tip="相对突出的能力或表现标签。"><em>优势</em></StuHint>
+              <span v-for="tag in strengthTags.slice(0, 3)" :key="tag" class="tag tag--good">{{ tag }}</span>
+            </div>
+            <div>
+              <StuHint tip="短板或需补强的关注点。"><em>关注</em></StuHint>
+              <span v-for="tag in focusTags.slice(0, 3)" :key="tag" class="tag tag--warn">{{ tag }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 风险雷达 -->
+        <section v-else-if="activeTab === 'risk'" class="navi-card">
+          <article v-for="(item, idx) in riskItems.slice(0, 2)" :key="idx" class="navi-risk">
+            <header>
+              <strong>{{ item.time }}</strong>
+              <StuHint :tip="item.type === 'warn' ? '优先：建议尽快处理。' : '提醒：需关注，可择机跟进。'">
+                <span>{{ item.type === 'warn' ? '优先' : '提醒' }}</span>
+              </StuHint>
+            </header>
+            <p>{{ item.text }}</p>
+          </article>
+          <p v-if="!riskItems.length" class="navi-empty">当前无明显风险事项。</p>
+        </section>
+
+        <!-- 育人智策 -->
+        <section v-else-if="activeTab === 'coach'" class="navi-card">
+          <article v-for="task in coachTasks" :key="task.key" class="navi-task" :class="`is-${task.status}`">
+            <header><strong>{{ task.title }}</strong><span>{{ task.status === 'done' ? '已完成' : task.status === 'hold' ? '已暂缓' : task.badge }}</span></header>
+            <p>{{ task.detail }}</p>
+            <div class="navi-task__actions">
+              <StuHint tip="标记为暂缓跟进（当前仅前端暂存，未写入教务库）。">
+                <button type="button" @click="setCoachStatus(task.key, 'hold')">暂缓</button>
+              </StuHint>
+              <StuHint tip="标记为已完成（当前仅前端暂存，未写入教务库）。">
+                <button type="button" class="is-ok" @click="setCoachStatus(task.key, 'done')">完成</button>
+              </StuHint>
+            </div>
+          </article>
+        </section>
+
+        <!-- 机会雷达 -->
+        <section v-else-if="activeTab === 'chance'" class="navi-card">
+          <div class="navi-timeline">
+            <StuHint
+              v-for="(item, idx) in opportunities.slice(0, 3)"
+              :key="idx"
+              block
+              tip="近期可关注的竞赛、实习或活动机会。"
+            >
+              <div class="navi-timeline__item">
+                <em>{{ item.time }}</em>
+                <p>{{ item.text }}</p>
+              </div>
+            </StuHint>
+          </div>
+        </section>
+
+        <!-- 成长路径 -->
+        <section v-else class="navi-card">
+          <div class="navi-path-track" aria-hidden="true">
+            <div v-for="(node, idx) in pathNodes" :key="node.stage" class="navi-path-track__node" :class="{ active: idx === 0 }">
+              <i />
+              <strong>{{ node.stage }}</strong>
+              <b v-if="idx < pathNodes.length - 1" />
+            </div>
+          </div>
+          <div class="navi-path-cols">
+            <StuHint
+              v-for="node in pathNodes"
+              :key="node.stage"
+              block
+              :tip="`${node.stage}阶段行动清单（${node.anchor}）。可点「完整方案」查看全文。`"
+            >
+              <div>
+                <strong>{{ node.stage }}</strong>
+                <ul>
+                  <li v-for="item in node.items.slice(0, 2)" :key="item">{{ item }}</li>
+                </ul>
+              </div>
+            </StuHint>
+          </div>
+          <StuHint tip="打开智能育航完整方案与更多建议。" block>
+            <button type="button" class="navi-more" @click="emit('open', 'ai')">完整方案 ›</button>
+          </StuHint>
+        </section>
       </div>
     </div>
   </StudentTplCard>
 </template>
 
 <style scoped lang="scss">
-.aip-carousel {
-  position: relative;
+/* 统一字阶：正文 16 / 辅文 15 / 标签 14，避免忽大忽小 */
+.navi {
+  --fs: 16px;
+  --fs-sm: 15px;
+  --fs-label: 14px;
   height: 100%;
-  min-height: 0;
-  padding: 4px 36px 24px;
-}
-
-.aip-viewport {
-  height: 100%;
-  overflow: hidden;
-}
-
-.aip-track {
-  display: flex;
-  height: 100%;
-  transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
-}
-
-.aip-slide {
-  flex: 0 0 100%;
-  min-width: 0;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.aip-card {
-  --card-accent: #1ed6ff;
-  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--card-accent) 34%, transparent);
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 10%, transparent), transparent 42%),
-    linear-gradient(160deg, rgba(6, 40, 78, 0.9), rgba(0, 16, 38, 0.94));
-  box-shadow:
-    inset 0 0 24px rgba(0, 90, 160, 0.12),
-    inset 0 1px 0 rgba(180, 230, 255, 0.1);
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--card-accent) 55%, transparent);
-    box-shadow:
-      inset 0 0 28px rgba(0, 100, 180, 0.16),
-      0 0 18px color-mix(in srgb, var(--card-accent) 14%, transparent);
-    transform: translateY(-1px);
-  }
-
-  &:focus-visible {
-    outline: 2px solid #65e9ff;
-    outline-offset: 2px;
-  }
-
-  &--action { --card-accent: #e8c878; }
-  &--path { --card-accent: #7eb8ff; }
-  &--push { --card-accent: #55e995; }
-}
-
-.aip-card__head {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  align-items: center;
   gap: 10px;
-  flex-shrink: 0;
-
-  h4 {
-    margin: 0;
-    color: #eef9ff;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-  }
+  padding: 2px 6px 6px;
+  font-size: var(--fs);
+  line-height: 1.5;
+  color: #d8eeff;
 }
 
-.aip-card__icon {
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--card-accent) 40%, transparent);
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--card-accent) 12%, transparent);
-}
-
-.aip-status {
-  padding: 3px 8px;
-  border: 1px solid;
-  border-radius: 2px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-
-  &--live {
-    border-color: rgba(45, 206, 255, 0.4);
-    background: rgba(45, 206, 255, 0.12);
-    color: #65dfff;
-  }
-  &--ok {
-    border-color: rgba(74, 222, 128, 0.34);
-    background: rgba(74, 222, 128, 0.1);
-    color: #55e995;
-  }
-  &--blue {
-    border-color: rgba(126, 184, 255, 0.4);
-    background: rgba(126, 184, 255, 0.12);
-    color: #9bc8ff;
-  }
-  &--warn {
-    border-color: rgba(232, 200, 120, 0.42);
-    background: rgba(232, 200, 120, 0.12);
-    color: #e8c878;
-  }
-}
-
-.aip-hero {
-  display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.aip-hero__score,
-.aip-hero__dir {
-  min-width: 0;
-  padding: 14px 12px;
-  border: 1px solid rgba(120, 200, 255, 0.16);
-  border-radius: 2px;
-  background: rgba(0, 36, 72, 0.4);
-
-  span {
-    display: block;
-    color: #7eb8d8;
-    font-size: 12px;
-    font-weight: 600;
-  }
-  strong {
-    display: block;
-    margin-top: 8px;
-    color: #eef9ff;
-    font-weight: 700;
-  }
-}
-
-.aip-hero__score strong {
-  color: #55e5ff;
-  font-family: var(--student-font-number);
-  font-size: 34px;
-  line-height: 1;
-  text-shadow: 0 0 14px rgba(0, 204, 255, 0.4);
-
-  i {
-    margin-left: 2px;
-    font-size: 14px;
-    font-style: normal;
-  }
-}
-
-.aip-hero__dir strong {
-  font-size: 16px;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.aip-brief {
-  margin: 0;
-  flex: 1 1 auto;
-  min-height: 0;
-  color: #d5ebff;
-  font-size: 14px;
-  line-height: 1.7;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-}
-
-.aip-tags {
+.navi__tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  flex-shrink: 0;
-
-  span {
-    padding: 5px 11px;
-    border: 1px solid rgba(107, 123, 255, 0.28);
-    border-radius: 2px;
-    color: #c0cbff;
-    font-size: 12px;
-    font-weight: 600;
-    background: rgba(70, 80, 180, 0.14);
-  }
-}
-
-.aip-focus {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 14px;
-  padding: 22px 18px;
-  border: 1px solid rgba(232, 200, 120, 0.28);
-  border-radius: 2px;
-  background: linear-gradient(160deg, rgba(120, 90, 20, 0.22), rgba(0, 30, 60, 0.4));
-
-  span {
-    align-self: flex-start;
-    padding: 4px 9px;
-    border-radius: 2px;
-    background: rgba(255, 183, 77, 0.16);
-    color: #ffd166;
-    font-size: 12px;
-    font-weight: 700;
-  }
-  strong {
-    color: #f5ecd0;
-    font-size: 17px;
-    font-weight: 600;
-    line-height: 1.6;
-  }
-}
-
-.aip-path-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.aip-path-item {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
-  padding: 14px 14px;
-  border: 1px solid rgba(120, 200, 255, 0.14);
-  border-radius: 2px;
-  background: rgba(0, 32, 64, 0.42);
-  flex: 1 1 0;
-
-  &__icon {
-    width: 36px;
-    height: 36px;
-    display: grid;
-    place-items: center;
-    border: 1px solid rgba(126, 184, 255, 0.35);
-    border-radius: 2px;
-    background: rgba(70, 120, 200, 0.18);
-  }
-
-  em {
-    display: block;
-    color: #67dfff;
-    font-size: 12px;
-    font-style: normal;
-    font-weight: 700;
-  }
-  strong {
-    display: block;
-    margin-top: 4px;
-    color: #f0f8ff;
-    font-size: 16px;
-    font-weight: 700;
-  }
-}
-
-.aip-latest {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  padding: 18px 16px;
-  border: 1px solid rgba(120, 200, 255, 0.16);
-  border-radius: 2px;
-  background: rgba(0, 32, 64, 0.42);
-
-  em {
-    color: #67dfff;
-    font-size: 13px;
-    font-style: normal;
-    font-weight: 700;
-  }
-  p {
-    margin: 0;
-    color: #d5ebff;
-    font-size: 14px;
-    line-height: 1.6;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 5;
-    overflow: hidden;
-  }
-
-  &--warn {
-    border-color: rgba(255, 183, 77, 0.3);
-    em { color: #ffd166; }
-  }
-  &--success {
-    border-color: rgba(85, 233, 149, 0.3);
-    em { color: #55e995; }
-  }
-}
-
-.aip-nav {
-  position: absolute;
-  top: 46%;
-  z-index: 2;
-  width: 28px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: translateY(-50%);
-  border: 1px solid rgba(0, 199, 255, 0.34);
-  border-radius: 4px;
-  background: rgba(0, 30, 64, 0.86);
-  color: #62ddff;
-  font-size: 22px;
-  cursor: pointer;
-
-  &--left { left: 0; }
-  &--right { right: 0; }
-}
-
-.aip-pagination {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  display: flex;
-  align-items: center;
   gap: 6px;
-  transform: translateX(-50%);
+
+  :deep(.stu-hint) {
+    display: inline-flex;
+  }
 
   button {
-    width: 18px;
-    height: 4px;
-    padding: 0;
-    border: 0;
-    border-radius: 99px;
-    background: rgba(105, 164, 200, 0.35);
+    padding: 7px 11px;
+    border: 1px solid rgba(120, 200, 255, 0.22);
+    border-radius: 4px;
+    background: rgba(0, 40, 80, 0.35);
+    color: #9ec9e6;
+    font-size: var(--fs-sm);
+    font-weight: 700;
     cursor: pointer;
 
     &.active {
-      width: 30px;
-      background: #28d6ff;
-      box-shadow: 0 0 8px rgba(40, 214, 255, 0.55);
+      border-color: rgba(0, 220, 255, 0.55);
+      background: rgba(0, 90, 150, 0.45);
+      color: #e8f7ff;
     }
-  }
 
-  span {
-    margin-left: 2px;
-    color: #6f9ec2;
-    font-size: 11px;
+    i {
+      margin-left: 4px;
+      padding: 0 5px;
+      border-radius: 8px;
+      background: rgba(255, 120, 80, 0.25);
+      color: #ffb4a0;
+      font-style: normal;
+      font-size: var(--fs-label);
+    }
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .aip-track { transition: none; }
+.navi__panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.navi-card__summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  margin: 0 0 10px;
+  overflow: hidden;
+  color: #d8eeff;
+  font-size: var(--fs);
+  line-height: 1.55;
+}
+
+.navi-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.navi-job {
+  padding: 9px 11px;
+  border: 1px solid rgba(0, 180, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(0, 40, 78, 0.35);
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: var(--fs);
+
+    strong { color: #eaf6ff; font-weight: 700; }
+    b { color: #7ff6ff; font-weight: 700; }
+  }
+
+  i {
+    display: block;
+    height: 6px;
+    margin-top: 8px;
+    overflow: hidden;
+    border-radius: 99px;
+    background: rgba(80, 120, 160, 0.35);
+
+    em {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #1ed6ff, #43e7af);
+    }
+  }
+}
+
+.navi-tags {
+  display: grid;
+  gap: 8px;
+
+  em {
+    display: block;
+    margin-bottom: 4px;
+    color: #8eb8d8;
+    font-size: var(--fs-label);
+    font-style: normal;
+    font-weight: 700;
+  }
+}
+
+.tag {
+  display: inline-block;
+  margin: 0 6px 4px 0;
+  padding: 4px 9px;
+  border-radius: 3px;
+  font-size: var(--fs-label);
+  font-weight: 700;
+
+  &--good {
+    border: 1px solid rgba(55, 233, 145, 0.35);
+    background: rgba(20, 100, 70, 0.25);
+    color: #67e8a3;
+  }
+
+  &--warn {
+    border: 1px solid rgba(250, 204, 21, 0.35);
+    background: rgba(120, 90, 10, 0.25);
+    color: #facc15;
+  }
+}
+
+.navi-risk,
+.navi-task {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 180, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(0, 40, 78, 0.35);
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: var(--fs);
+
+    strong { color: #eaf6ff; }
+    span { color: #f0b27a; font-size: var(--fs-label); font-weight: 700; }
+  }
+
+  p {
+    margin: 0;
+    color: #cfe6f8;
+    font-size: var(--fs);
+    line-height: 1.5;
+  }
+}
+
+.navi-task__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+
+  :deep(.stu-hint) {
+    display: inline-flex;
+  }
+
+  :deep(button),
+  button {
+    padding: 5px 12px;
+    border: 1px solid rgba(120, 200, 255, 0.25);
+    border-radius: 4px;
+    background: rgba(0, 50, 90, 0.4);
+    color: #9ec9e6;
+    font-size: var(--fs-label);
+    cursor: pointer;
+
+    &.is-ok {
+      border-color: rgba(55, 233, 145, 0.35);
+      color: #67e8a3;
+    }
+  }
+}
+
+.navi-task.is-done { opacity: 0.72; border-color: rgba(55, 233, 145, 0.35); }
+.navi-task.is-hold { opacity: 0.78; border-color: rgba(250, 204, 21, 0.3); }
+
+.navi-timeline__item {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(30, 214, 255, 0.45);
+  background: rgba(0, 40, 78, 0.3);
+  font-size: var(--fs);
+
+  em { color: #7ff6ff; font-style: normal; font-weight: 700; }
+  p { margin: 0; color: #d8eeff; }
+}
+
+.navi-path-track {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+
+  &__node {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+
+    i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid rgba(100, 200, 255, 0.45);
+      background: rgba(0, 40, 80, 0.8);
+    }
+
+    strong { color: #7ff6ff; font-size: var(--fs-sm); }
+
+    b {
+      position: absolute;
+      top: 4px;
+      left: calc(50% + 8px);
+      width: calc(100% - 10px);
+      height: 2px;
+      background: linear-gradient(90deg, rgba(100, 200, 255, 0.55), rgba(100, 200, 255, 0.12));
+    }
+
+    &.active i {
+      border-color: #62dfff;
+      background: #62dfff;
+    }
+  }
+}
+
+.navi-path-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+
+  :deep(.stu-hint--block) {
+    min-width: 0;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #a8e8ff;
+    font-size: var(--fs-sm);
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 16px;
+    color: #cfe6f8;
+    font-size: var(--fs-label);
+    line-height: 1.45;
+  }
+}
+
+.navi-more {
+  margin-top: 10px;
+  width: 100%;
+  padding: 9px;
+  border: 1px solid rgba(120, 210, 255, 0.28);
+  border-radius: 4px;
+  background: rgba(0, 70, 120, 0.35);
+  color: #8ee9ff;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.navi-empty {
+  margin: 16px 0;
+  text-align: center;
+  color: #7aa4c0;
+  font-size: var(--fs);
 }
 </style>

@@ -284,7 +284,96 @@ def recommend_direction(record: Any) -> tuple[str, int, list[dict[str, Any]]]:
     if major_avg >= 85:
         adj += 4
 
-    matches = [{"role": role, "match": int(max(45, min(95, score + adj)))} for role, score in jobs[:3]]
+    catalog = {
+        "AI 应用开发工程师": {
+            "city": "深圳 / 广州",
+            "salary": "12-20K",
+            "requirements": "Python/深度学习基础；有项目作品优先",
+            "reason": "专业与竞赛关键词匹配 AI 方向",
+        },
+        "算法工程师（初级）": {
+            "city": "深圳 / 杭州",
+            "salary": "15-25K",
+            "requirements": "算法与数学基础；刷题/竞赛经历加分",
+            "reason": "人工智能专业方向匹配",
+        },
+        "数据分析师": {
+            "city": "广州 / 深圳",
+            "salary": "10-18K",
+            "requirements": "SQL/Python；业务分析与可视化",
+            "reason": "数据类课程与竞赛经历匹配",
+        },
+        "数据治理专员": {
+            "city": "广州 / 深圳",
+            "salary": "9-15K",
+            "requirements": "数据标准/质量意识；沟通协作",
+            "reason": "数据专业路径备选",
+        },
+        "软件开发工程师": {
+            "city": "深圳 / 广州 / 珠海",
+            "salary": "10-18K",
+            "requirements": "Java/前端或全栈；工程化实践",
+            "reason": "软件/程序类能力画像匹配",
+        },
+        "实施与运维工程师": {
+            "city": "广州 / 深圳",
+            "salary": "8-14K",
+            "requirements": "Linux/部署运维基础；抗压沟通",
+            "reason": "工程落地岗位备选",
+        },
+        "电商运营专员": {
+            "city": "广州",
+            "salary": "7-12K",
+            "requirements": "运营思维；数据分析与内容策划",
+            "reason": "电商/商务相关背景匹配",
+        },
+        "商务分析助理": {
+            "city": "广州 / 深圳",
+            "salary": "8-13K",
+            "requirements": "Excel/SQL；业务报表能力",
+            "reason": "数据分析向商务场景迁移",
+        },
+        "专业技术岗": {
+            "city": "粤港澳大湾区",
+            "salary": "8-15K",
+            "requirements": "专业课程扎实；可展示项目",
+            "reason": "通用专业技术方向",
+        },
+        "职能支持岗": {
+            "city": "粤港澳大湾区",
+            "salary": "6-10K",
+            "requirements": "沟通协作；办公软件熟练",
+            "reason": "综合能力备选路径",
+        },
+        "继续学业深造": {
+            "city": "国内重点高校 / 境外",
+            "salary": "—",
+            "requirements": "GPA与英语达标；科研/竞赛亮点",
+            "reason": "学业表现支持深造路径",
+        },
+    }
+
+    matches = []
+    for role, score in jobs[:3]:
+        meta = catalog.get(
+            role,
+            {
+                "city": "粤港澳大湾区",
+                "salary": "面议",
+                "requirements": "待补充岗位画像",
+                "reason": "规则推荐参考岗位",
+            },
+        )
+        matches.append(
+            {
+                "role": role,
+                "match": int(max(45, min(95, score + adj))),
+                "city": meta["city"],
+                "salary": meta["salary"],
+                "requirements": meta["requirements"],
+                "reason": meta["reason"],
+            }
+        )
     matches.sort(key=lambda x: -x["match"])
     top = matches[0]
     return top["role"], int(top["match"]), matches
@@ -314,7 +403,10 @@ def build_template_copy(
         summary += f"存在不及格学分 {failed:.1f}，建议优先完成补考/重修闭环。"
     else:
         summary += f"学业风险等级为「{ {'low':'低','medium':'中','high':'高'}[risk] }」。"
-    summary += f"规则匹配建议优先关注「{direction}」（匹配度约 {match}%）。实习与就业意向数据尚未接入，岗位结论仅供参考。"
+    summary += (
+        f"规则匹配建议优先关注「{direction}」（匹配度约 {match}%）。"
+        "当前就业去向类型记为「待实习」，意向城市/期望薪资/简历状态待学生填报后完善岗位匹配。"
+    )
 
     short = (
         f"优先处理不及格学分闭环（当前 {failed:.1f}）。" if failed > 0 else "保持当前学业节奏，巩固核心专业课。"
@@ -603,6 +695,7 @@ def derive_student_dashboard(
             "volunteerHours": 0,
             "socialPractices": 0,
             "softSkills": [],
+            "disciplineRecords": [],
         },
         "internship": {"internshipCount": 0, "projectCount": 0, "certificateCount": 0, "items": []},
         "health": {
@@ -635,6 +728,17 @@ def derive_student_dashboard(
         "aiPortrait": {
             "summary": copy["summary"],
             "portraitTags": portrait_tags,
+            "strengthTags": [
+                *(["学业基础扎实"] if gpa >= 3.2 else []),
+                *([f"竞赛获奖 {awards_n} 项"] if awards_n > 0 else []),
+                f"方向潜能：{direction}",
+            ][:4],
+            "focusTags": [
+                *([f"不及格学分 {failed:.1f}"] if failed > 0 else []),
+                *(["GPA 偏低"] if 0 < gpa < 2.5 else []),
+                "就业填报待完善",
+                "项目经历待补充",
+            ][:4],
             "pushes": copy["pushes"],
             "jobMatches": job_matches,
         },
@@ -643,7 +747,12 @@ def derive_student_dashboard(
         "careerDev": {
             "practiceBases": [],
             "internshipBases": [],
-            "employmentIntention": "待确认（就业数据未接入）",
+            "employmentIntention": "待实习",
+            "employmentDestination": "待实习",
+            "targetCity": "未填报",
+            "expectedSalary": "未填报",
+            "resumeStatus": "未完善",
+            "projectExperiences": [],
             "militaryNote": "无",
         },
         "mentalGrowth": {

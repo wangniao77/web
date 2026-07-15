@@ -1,4 +1,4 @@
-﻿import { createService } from '@/api/createService'
+import { createService } from '@/api/createService'
 import { adaptStudentDashboard } from '@/api/student/adapters'
 import { studentApi } from '@/api/student'
 import { fetchDerivedMockDashboard, loadAcademicCorpus } from '@/services/student'

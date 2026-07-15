@@ -1,8 +1,16 @@
 import type { TrendInfo } from '@/types/common'
 import type { KpiKey } from '@/types/college/api'
 import type { IconKind } from '@/components/college/DashIcon.vue'
+import type { ScoreTone } from '@/utils/scoreTone'
 
 export type CoreOrbitPosition = 'tl' | 'ml' | 'bl' | 'tr' | 'mr' | 'br'
+
+export interface OverviewHubKpiDetailVM {
+  label: string
+  value: string
+  /** 悬停说明（新手友好） */
+  tip?: string
+}
 
 export interface OverviewHubKpiVM {
   key?: KpiKey
@@ -11,6 +19,14 @@ export interface OverviewHubKpiVM {
   trend?: TrendInfo
   icon?: IconKind
   position?: CoreOrbitPosition
+  /** 学生舱：指标下方细节（GPA、证书等） */
+  details?: OverviewHubKpiDetailVM[]
+  /** 等级文案（如身心状态不用分数时） */
+  levelText?: string
+  /** 分数/等级配色：risk 红 / warn 黄 / good 蓝 */
+  scoreTone?: ScoreTone
+  /** 模块悬停说明（新手友好） */
+  tip?: string
 }
 
 export interface OverviewHubVM {
@@ -18,6 +34,8 @@ export interface OverviewHubVM {
   maxScore: number
   starLevel: number
   kpis: OverviewHubKpiVM[]
+  /** 综合发展指数环比说明，如「较上学期 ↑1.8」 */
+  centerDelta?: string
 }
 
 export interface KeyTaskVM {
