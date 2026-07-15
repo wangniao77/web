@@ -1,0 +1,80 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import StudentIdentityCard from '@/components/student/template/StudentIdentityCard.vue'
+import StudentScoreCard from '@/components/student/template/StudentScoreCard.vue'
+import StudentKanbanCarousel from '@/components/student/template/StudentKanbanCarousel.vue'
+import StudentAiAdviceCard from '@/components/student/template/StudentAiAdviceCard.vue'
+import StudentDetailModal from '@/components/student/template/StudentDetailModal.vue'
+import type { StudentDashboardVM } from '@/types/student/view'
+
+defineProps<{
+  dashboard: StudentDashboardVM
+  loading?: boolean
+  error?: string | null
+}>()
+
+defineEmits<{ retry: [] }>()
+
+const detailOpen = ref(false)
+const detailSection = ref<string | null>(null)
+
+function openDetail(id: string) {
+  detailSection.value = id
+  detailOpen.value = true
+}
+
+function closeDetail() {
+  detailOpen.value = false
+}
+</script>
+
+<template>
+  <div class="stu-tpl">
+    <div class="stu-tpl__top">
+      <StudentIdentityCard
+        :profile="dashboard.profile"
+        :attention="dashboard.attention"
+        :career-dev="dashboard.careerDev"
+        @open="openDetail"
+      />
+      <StudentScoreCard
+        :growth-overview="dashboard.growthOverview"
+        :growth-portrait="dashboard.growthPortrait"
+        :academic="dashboard.academic"
+        :health="dashboard.health"
+        :employment="dashboard.employment"
+      />
+      <StudentAiAdviceCard
+        :assistant="dashboard.aiAssistant"
+        :portrait="dashboard.aiPortrait"
+        :employment="dashboard.employment"
+        @open="openDetail"
+      />
+    </div>
+
+    <div class="stu-tpl__kanban">
+      <StudentKanbanCarousel
+        :academic="dashboard.academic"
+        :credit="dashboard.creditProgress"
+        :failed-critical="dashboard.failedCritical"
+        :growth-overview="dashboard.growthOverview"
+        :competition="dashboard.competition"
+        :quality="dashboard.quality"
+        :scholarships="dashboard.scholarships"
+        :career-dev="dashboard.careerDev"
+        :internship="dashboard.internship"
+        :employment="dashboard.employment"
+        :ai-portrait="dashboard.aiPortrait"
+        :profile="dashboard.profile"
+        @open="openDetail"
+      />
+    </div>
+
+    <StudentDetailModal
+      :open="detailOpen"
+      :section="detailSection"
+      :dashboard="dashboard"
+      @close="closeDetail"
+    />
+  </div>
+</template>

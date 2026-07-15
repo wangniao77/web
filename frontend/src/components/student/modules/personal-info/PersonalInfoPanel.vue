@@ -1,12 +1,15 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import CollegePanelCard from '@/components/college/CollegePanelCard.vue'
 import StudentPanelBorder from '@/components/student/StudentPanelBorder.vue'
-import type { PersonalInfoVM, QualityVM } from '@/types/student/view'
+import type { PersonalInfoVM, QualityVM, GrowthOverviewVM } from '@/types/student/view'
 
 const props = defineProps<{
   data: PersonalInfoVM
   quality: QualityVM
+  growthOverview?: GrowthOverviewVM
+  scholarships?: Array<{ name: string; year: string }>
+  compact?: boolean
   loading?: boolean
   error?: string | null
 }>()
@@ -72,15 +75,32 @@ watch(
 
 onBeforeUnmount(stopCarousel)
 
-const infoRows = computed(() => [
-  { label: '学号', value: props.data.studentId, icon: 'icon-qr' },
-  { label: '学院', value: props.data.college, icon: 'icon-education' },
-  { label: '专业', value: props.data.major, icon: 'icon-research' },
-  { label: '年级', value: props.data.grade, icon: 'icon-people' },
-  { label: '班主任', value: props.data.mentor, icon: 'icon-partnership' },
-  { label: '辅导员', value: props.data.counselor, icon: 'icon-people' },
-  { label: '宿舍', value: props.data.dormitory, icon: 'icon-platform' },
-])
+const infoRows = computed(() => {
+  const full = [
+    { label: '学号', value: props.data.studentId, icon: 'icon-qr' },
+    { label: '学院', value: props.data.college, icon: 'icon-education' },
+    { label: '专业', value: props.data.major, icon: 'icon-research' },
+    { label: '年级', value: props.data.grade, icon: 'icon-people' },
+    { label: '政治面貌', value: props.data.politicalStatus || '—', icon: 'icon-star' },
+    { label: '在校状态', value: props.data.onCampusStatus || '在校', icon: 'icon-status' },
+    { label: '班主任', value: props.data.mentor, icon: 'icon-partnership' },
+    { label: '辅导员', value: props.data.counselor, icon: 'icon-people' },
+    { label: '论文导师', value: props.data.thesisAdvisor || '—', icon: 'icon-research' },
+    { label: '论文进度', value: props.data.thesisStatus || '—', icon: 'icon-platform' },
+    { label: '联系电话', value: props.data.phone || '—', icon: 'icon-qr' },
+    { label: '宿舍', value: props.data.dormitory, icon: 'icon-platform' },
+  ]
+  if (props.compact) {
+    return full.filter((r) => !['论文导师', '论文进度', '联系电话'].includes(r.label))
+  }
+  return full
+})
+
+const trendLabel = {
+  positive: '正向成长',
+  negative: '负向下滑',
+  stable: '平稳发展',
+} as const
 
 function onAvatarError() {
   avatarError.value = true
@@ -91,7 +111,7 @@ function onAvatarError() {
   <StudentPanelBorder variant="8">
     <CollegePanelCard
       :index="1"
-      title="个人信息卡"
+      title="个人成长档案"
       :loading="loading"
       :error="error"
       @retry="$emit('retry')"
@@ -111,11 +131,30 @@ function onAvatarError() {
                 <span>{{ data.name.slice(0, 1) }}</span>
               </div>
             </div>
+            <div v-if="growthOverview" class="growth-index">
+              <span>成长指数</span>
+              <strong>{{ growthOverview.growthIndex }}</strong>
+              <em>{{ growthOverview.growthLevel }}</em>
+            </div>
           </div>
 
           <div class="info-col">
             <header class="info-header">
               <h4 class="name">{{ data.name }}</h4>
+              <div class="status-badges">
+                <span v-if="data.politicalStatus" class="status-badge">{{ data.politicalStatus }}</span>
+                <span class="status-badge status-badge--cyan">
+                  {{ trendLabel[data.growthTrend || 'stable'] }}
+                </span>
+                <span
+                  v-if="data.mentalLevel"
+                  class="status-badge"
+                  :class="data.mentalLevelCode === 'high' ? 'status-badge--warn' : 'status-badge--amber'"
+                >
+                  心理{{ data.mentalLevel }}
+                </span>
+                <span v-if="data.economicHardship" class="status-badge status-badge--warn">经济困难</span>
+              </div>
               <div v-if="quality.cadreRoles.length" class="roles">
                 <span v-for="role in quality.cadreRoles" :key="role" class="role-tag">{{ role }}</span>
               </div>
@@ -133,7 +172,19 @@ function onAvatarError() {
           </div>
         </div>
 
-        <section v-if="currentAward" class="awards">
+        <section v-if="scholarships?.length && !compact" class="scholarships">
+          <header class="scholarships__head">
+            <span class="scholarships__title">奖学金记录</span>
+          </header>
+          <ul class="scholarships__list">
+            <li v-for="s in scholarships" :key="`${s.name}-${s.year}`">
+              <strong>{{ s.name }}</strong>
+              <em>{{ s.year }}</em>
+            </li>
+          </ul>
+        </section>
+
+        <section v-if="currentAward && !compact" class="awards">
           <header class="awards__head">
             <span class="awards__title">
               <svg class="awards__icon" aria-hidden="true"><use href="/icons.svg#icon-star" /></svg>
@@ -165,6 +216,11 @@ function onAvatarError() {
             </Transition>
           </div>
         </section>
+
+        <footer v-if="data.motto" class="pi-motto">
+          <q>{{ data.motto }}</q>
+          <span v-if="data.mottoSub">{{ data.mottoSub }}</span>
+        </footer>
       </div>
     </CollegePanelCard>
   </StudentPanelBorder>
@@ -190,8 +246,91 @@ function onAvatarError() {
 .photo-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-height: 0;
+}
+
+.growth-index {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 60, 120, 0.32);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+
+  span {
+    display: block;
+    font-size: var(--fs-meta);
+    color: #8ec8e8;
+  }
+
+  strong {
+    display: block;
+    font-family: var(--student-font-number);
+    font-size: var(--fs-highlight);
+    color: #7ff6ff;
+    line-height: 1.1;
+    text-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+  }
+
+  em {
+    font-style: normal;
+    font-size: var(--fs-meta);
+    color: #63ffe1;
+    font-weight: 700;
+  }
+}
+
+.status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.status-badge {
+  font-size: var(--fs-meta);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #c8e8ff;
+  background: rgba(0, 80, 160, 0.28);
+  border: 1px solid rgba(0, 180, 255, 0.22);
+
+  &--cyan { color: #63ffe1; border-color: rgba(46, 230, 168, 0.35); }
+  &--amber { color: #ffd166; border-color: rgba(255, 209, 102, 0.35); }
+  &--warn { color: #ff8a8a; border-color: rgba(255, 90, 90, 0.35); }
+}
+
+.scholarships {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: rgba(0, 70, 140, 0.14);
+  border: 1px solid rgba(0, 200, 255, 0.12);
+}
+
+.scholarships__title {
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  color: #7fe9ff;
+}
+
+.scholarships__list {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--fs-meta);
+    color: #d0e8ff;
+
+    em { font-style: normal; color: #7a9eb8; }
+  }
 }
 
 .photo-frame {
@@ -496,5 +635,30 @@ function onAvatarError() {
 .award-swap-leave-active {
   position: absolute;
   inset: 0;
+}
+
+.pi-motto {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(0, 90, 180, 0.18), rgba(124, 58, 237, 0.08));
+  border: 1px solid rgba(0, 200, 255, 0.14);
+
+  q {
+    display: block;
+    margin: 0;
+    font-size: var(--fs-meta);
+    font-style: italic;
+    color: rgba(200, 230, 255, 0.88);
+    line-height: 1.45;
+    quotes: none;
+  }
+
+  span {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--fs-micro);
+    color: rgba(174, 198, 230, 0.55);
+  }
 }
 </style>

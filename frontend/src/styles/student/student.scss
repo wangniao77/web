@@ -7,82 +7,77 @@
   --student-font-number: "DIN Alternate", "Bahnschrift", "Roboto Condensed", "Arial Narrow", var(--student-font-body);
 
   // 展厅大屏：整体放大字号阶梯，保证远距离可读
-  --fs-display:  44px;  // 主标题
-  --fs-hero:     36px;  // 核心指标 / KPI
-  --fs-highlight:30px;  // 次级大数 / 时钟
-  --fs-title:    22px;  // 面板标题
-  --fs-body:     20px;  // 正文 / 列表
-  --fs-label:    17px;  // 标签 / 图表小标题
-  --fs-meta:     15px;  // 辅助 / 日期 / 状态
-  --fs-chart:    17px;  // 坐标轴 / 图例
-  --fs-micro:    14px;  // 极小标记（尽量少用）
+  --fs-display:  48px;
+  --fs-hero:     40px;
+  --fs-highlight:34px;
+  --fs-title:    24px;
+  --fs-body:     21px;
+  --fs-label:    18px;
+  --fs-meta:     16px;
+  --fs-chart:    18px;
+  --fs-micro:    15px;
+
+  // 高级质感色板
+  --stu-bg-deep: #020814;
+  --stu-bg-mid: #041428;
+  --stu-cyan: #5cefff;
+  --stu-cyan-soft: rgba(92, 239, 255, 0.55);
+  --stu-gold: #e8c878;
+  --stu-panel-edge: rgba(120, 210, 255, 0.38);
+  --stu-panel-fill: linear-gradient(
+    155deg,
+    rgba(8, 42, 78, 0.92) 0%,
+    rgba(3, 18, 42, 0.94) 48%,
+    rgba(2, 12, 32, 0.96) 100%
+  );
 
   background:
-    radial-gradient(circle at 50% 32%, rgba(0, 200, 255, 0.22) 0, transparent 34%),
-    radial-gradient(circle at 12% 18%, rgba(0, 118, 255, 0.2) 0, transparent 28%),
-    radial-gradient(circle at 88% 72%, rgba(57, 230, 255, 0.16) 0, transparent 30%),
-    linear-gradient(180deg, #051025 0%, #06142a 48%, #030816 100%),
-    $color-bg-screen;
-  color: #eaf3ff;
+    radial-gradient(ellipse at 50% 0%, rgba(0, 160, 255, 0.16) 0, transparent 42%),
+    radial-gradient(circle at 18% 78%, rgba(40, 80, 200, 0.1) 0, transparent 28%),
+    radial-gradient(circle at 86% 62%, rgba(0, 180, 220, 0.08) 0, transparent 26%),
+    linear-gradient(rgba(70, 160, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(70, 160, 255, 0.035) 1px, transparent 1px),
+    var(--stu-bg-deep);
+  background-size: auto, auto, auto, 48px 48px, 48px 48px, auto;
+  color: #eef6ff;
   font-family: var(--student-font-body);
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 
   .screen-scale {
     overflow: hidden;
     background:
-      linear-gradient(115deg, rgba(8, 33, 69, 0.68) 0%, rgba(2, 8, 22, 0.12) 38%, rgba(18, 33, 66, 0.22) 100%),
-      linear-gradient(180deg, rgba(2, 18, 42, 0.92) 0%, rgba(2, 10, 28, 0.96) 100%),
-      $color-bg-screen;
+      radial-gradient(ellipse at 50% 18%, rgba(0, 150, 255, 0.12), transparent 40%),
+      linear-gradient(180deg, #041830 0%, #020b18 55%, #01060f 100%);
     box-shadow:
-      inset 0 0 0 1px rgba(82, 191, 255, 0.16),
-      inset 0 24px 90px rgba(57, 144, 255, 0.08),
-      inset 0 -36px 120px rgba(0, 0, 0, 0.52);
+      inset 0 0 0 1px rgba(110, 200, 255, 0.22),
+      inset 0 0 0 2px rgba(0, 40, 80, 0.35),
+      inset 0 40px 120px rgba(30, 100, 200, 0.08),
+      inset 0 -48px 140px rgba(0, 0, 0, 0.55),
+      0 0 80px rgba(0, 80, 160, 0.18);
 
     &::after {
       content: '';
       position: absolute;
-      inset: 88px 0 0;
+      inset: 100px 0 0;
       pointer-events: none;
       z-index: 0;
       background-image:
-        linear-gradient(rgba(92, 190, 255, 0.07) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(92, 190, 255, 0.06) 1px, transparent 1px),
-        linear-gradient(115deg, transparent 0%, rgba(0, 229, 255, 0.08) 48%, transparent 49%);
-      background-size: 46px 46px, 46px 46px, 360px 360px;
-      mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 82%, transparent 100%);
-      animation: studentGridDrift 26s linear infinite;
+        linear-gradient(rgba(100, 190, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 190, 255, 0.028) 1px, transparent 1px);
+      background-size: 52px 52px, 52px 52px;
+      mask-image: linear-gradient(180deg, transparent 0%, #000 10%, #000 88%, transparent 100%);
+      opacity: 0.55;
     }
 
-    // 漂浮粒子 + 顶部斜向光束
     &::before {
-      content: '';
-      position: absolute;
-      inset: $header-height 0 0;
-      pointer-events: none;
-      z-index: 0;
-      background-image:
-        radial-gradient(circle, rgba(57, 230, 255, 0.9) 0 1px, transparent 1.6px),
-        radial-gradient(circle, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.6px);
-      background-position: 30px 80px, 180px 140px;
-      background-size: 200px 170px, 280px 230px;
-      opacity: 0.4;
-      animation: studentParticleDrift 20s ease-in-out infinite alternate;
+      display: none;
     }
   }
 
-  // 扫描光束
+  // 扫描光束 — 模板页关闭，避免干扰
   .screen-main::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 2px;
-    z-index: 4;
-    pointer-events: none;
-    background: linear-gradient(90deg, transparent, rgba(57, 230, 255, 0.5), transparent);
-    box-shadow: 0 0 18px rgba(57, 230, 255, 0.6);
-    opacity: 0.4;
-    animation: studentScanBeam 9s linear infinite;
+    display: none;
   }
 
   .screen-main {
@@ -115,7 +110,7 @@
   .panel-num    { font-size: var(--fs-meta); }
   .panel-title  { font-size: var(--fs-title); }
   .panel-more   { font-size: var(--fs-label); }
-  .panel-body   { padding: 14px 15px; }
+  .panel-body   { padding: 14px 15px; font-size: var(--fs-body); }
 
   .chart-box .chart-container {
     flex: 1;
@@ -171,3 +166,8 @@
     animation: none;
   }
 }
+
+@import './student-v2.scss';
+@import './student-template.scss';
+@import '../college/cockpit/core-hero-gauge.scss';
+@import './student-score-hero.scss';

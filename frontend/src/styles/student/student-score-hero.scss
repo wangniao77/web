@@ -1,0 +1,129 @@
+// 学生综合画像得分：复用学院 core-hero-gauge 样式，仅保留布局覆盖（紧凑版）
+
+.student-screen .stu-tpl__score.ref-panel {
+  overflow: visible;
+  clip-path: none;
+}
+
+.stu-tpl__score .ref-panel__body {
+  padding: 0;
+  overflow: visible;
+  min-height: 260px;
+}
+
+.stu-tpl__score .cockpit-hero,
+.stu-tpl__score .stu-score-hero {
+  display: grid;
+  min-height: 260px;
+  height: 100%;
+  padding: 0;
+  overflow: visible;
+  background: radial-gradient(ellipse at 50% 55%, rgba(0, 180, 255, 0.12) 0, transparent 58%);
+}
+
+.stu-tpl__score .core-hero-stage {
+  min-height: 260px;
+  width: 100%;
+  overflow: visible;
+}
+
+.student-screen .stu-tpl__score {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+
+  .core-hero-core {
+    width: 100%;
+    max-width: 300px;
+    overflow: visible;
+  }
+
+  .core-gauge-square {
+    width: 252px;
+    height: 252px;
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  .core-gauge.core-gauge--hero {
+    overflow: visible;
+  }
+
+  .core-hero-platform {
+    width: 252px;
+    margin-top: -12px;
+    transform: scale(0.92);
+    transform-origin: center top;
+  }
+
+  .core-hero-stage__glow {
+    width: min(92%, 460px);
+    height: min(88%, 420px);
+  }
+
+  .core-hero-stage::before {
+    width: min(98%, 520px);
+    height: min(92%, 480px);
+  }
+
+  .core-hero-stage::after {
+    width: min(108%, 580px);
+    height: min(102%, 520px);
+  }
+
+  .core-orbit-metric {
+    width: 158px;
+    padding: 6px 9px;
+  }
+
+  .core-orbit-metric__label {
+    font-size: 12px;
+  }
+
+  .core-orbit-metric__value {
+    font-size: 20px;
+  }
+
+  .core-orbit--tl {
+    top: 5%;
+    left: 1%;
+  }
+
+  .core-orbit--tr {
+    top: 5%;
+    right: 1%;
+  }
+
+  .core-orbit--bl {
+    bottom: 9%;
+    left: 1%;
+  }
+
+  .core-orbit--br {
+    bottom: 9%;
+    right: 1%;
+  }
+
+  .core-gauge--hero .core-gauge__content {
+    width: 47%;
+    height: 47%;
+
+    span {
+      font-size: 12px;
+    }
+
+    strong {
+      font-family: var(--student-font-number);
+      font-size: 42px;
+    }
+
+    small {
+      font-size: 10px;
+    }
+
+    b {
+      font-size: 14px;
+      letter-spacing: 3px;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-﻿import type { StudentDashboardDTO } from '@/types/student/api'
+import type { StudentDashboardDTO } from '@/types/student/api'
 import type {
   AttentionItemVM,
   StudentDashboardVM,
@@ -11,8 +11,16 @@ const levelLabels = {
 } as const
 
 function formatPercent(rank: number, total: number): string {
+  if (!total || !rank) return '—'
   const pct = ((rank / total) * 100).toFixed(1)
   return `Top ${pct}%`
+}
+
+const emptyHealth = {
+  healthScore: 70,
+  mentalHealth: 70,
+  exerciseHabit: '数据未接入',
+  summary30d: { totalMinutes: 0, frequency: 0, calories: 0 },
 }
 
 export function adaptAttentionItem(item: StudentDashboardDTO['attention'][0]): AttentionItemVM {
@@ -72,12 +80,50 @@ export function adaptStudentDashboard(dto: StudentDashboardDTO): StudentDashboar
       courseCompletionRate: dto.academic.courseCompletionRate,
       excellentCourses: dto.academic.excellentCourses,
       totalCourses: dto.academic.totalCourses,
+      yearlyGoals: dto.academic.yearlyGoals ?? [],
+      currentCourses: dto.academic.currentCourses ?? [],
+      failedElective: dto.academic.failedElective ?? [],
     },
     competition: { ...dto.competition },
     quality: { ...dto.quality },
     internship: { ...dto.internship },
-    health: { ...dto.health },
+    health: { ...emptyHealth, ...(dto.health ?? {}) },
     employment: { ...dto.employment },
     footer: { ...dto.footer },
+    creditProgress: {
+      earned: dto.creditProgress?.earned ?? 0,
+      required: dto.creditProgress?.required ?? 160,
+      secondClassroomEarned: dto.creditProgress?.secondClassroomEarned ?? 0,
+      secondClassroomRequired: dto.creditProgress?.secondClassroomRequired ?? 10,
+      earnedPercent: dto.creditProgress
+        ? Math.round((dto.creditProgress.earned / dto.creditProgress.required) * 100)
+        : 0,
+      secondPercent: dto.creditProgress
+        ? Math.round((dto.creditProgress.secondClassroomEarned / dto.creditProgress.secondClassroomRequired) * 100)
+        : 0,
+    },
+    failedCritical: dto.failedCritical ?? [],
+    timeline: dto.timeline ?? [],
+    aiPortrait: {
+      summary: dto.aiPortrait?.summary ?? '',
+      portraitTags: dto.aiPortrait?.portraitTags ?? [],
+      pushes: (dto.aiPortrait?.pushes ?? []).map((p) => ({
+        ...p,
+        type: p.type ?? 'info',
+      })),
+      jobMatches: dto.aiPortrait?.jobMatches ?? [],
+    },
+    scholarships: dto.scholarships ?? [],
+    annualAssessments: dto.annualAssessments ?? [],
+    careerDev: {
+      practiceBases: dto.careerDev?.practiceBases ?? [],
+      internshipBases: dto.careerDev?.internshipBases ?? [],
+      employmentIntention: dto.careerDev?.employmentIntention ?? '',
+      militaryNote: dto.careerDev?.militaryNote,
+    },
+    mentalGrowth: {
+      supportStatus: dto.mentalGrowth?.supportStatus ?? '',
+      records: dto.mentalGrowth?.records ?? [],
+    },
   }
 }

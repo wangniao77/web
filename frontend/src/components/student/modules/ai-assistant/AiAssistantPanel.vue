@@ -1,8 +1,10 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
 import CollegePanelCard from '@/components/college/CollegePanelCard.vue'
+import StudentPanelBorder from '@/components/student/StudentPanelBorder.vue'
 import type {
   AiAssistantVM,
+  AiPortraitVM,
   AttentionItemVM,
   EmploymentVM,
   HighlightItemVM,
@@ -15,6 +17,7 @@ const props = defineProps<{
   highlights: HighlightItemVM[]
   attention: AttentionItemVM[]
   employment: EmploymentVM
+  portrait?: AiPortraitVM
   loading?: boolean
   error?: string | null
 }>()
@@ -51,13 +54,14 @@ function highlightTag(label: string) {
 </script>
 
 <template>
-  <CollegePanelCard
-    :index="3"
-    :title="data.title"
-    :loading="loading"
-    :error="error"
-    @retry="$emit('retry')"
-  >
+  <StudentPanelBorder variant="13">
+    <CollegePanelCard
+      :index="3"
+      :title="data.title"
+      :loading="loading"
+      :error="error"
+      @retry="$emit('retry')"
+    >
     <div class="ai-assistant">
       <!-- Hero -->
       <header class="ai-hero">
@@ -97,6 +101,29 @@ function highlightTag(label: string) {
           </div>
         </div>
       </header>
+
+      <section v-if="portrait?.summary" class="ai-portrait">
+        <h4 class="ai-portrait__title">AI 画像结论</h4>
+        <p class="ai-portrait__summary">{{ portrait.summary }}</p>
+        <div v-if="portrait.portraitTags.length" class="ai-portrait__tags">
+          <span v-for="tag in portrait.portraitTags" :key="tag" class="ai-portrait__tag">{{ tag }}</span>
+        </div>
+      </section>
+
+      <section v-if="portrait?.pushes?.length" class="ai-pushes">
+        <h4 class="ai-pushes__title">智能推送</h4>
+        <ul class="ai-pushes__list">
+          <li
+            v-for="(push, i) in portrait.pushes"
+            :key="i"
+            class="ai-pushes__item"
+            :class="`ai-pushes__item--${push.type}`"
+          >
+            <time>{{ push.time }}</time>
+            <p>{{ push.text }}</p>
+          </li>
+        </ul>
+      </section>
 
       <!-- Insight dual panels -->
       <div class="ai-insight">
@@ -195,6 +222,17 @@ function highlightTag(label: string) {
         </div>
       </section>
 
+      <section v-if="portrait?.jobMatches?.length" class="ai-jobs">
+        <h4 class="ai-jobs__title">岗位匹配推荐</h4>
+        <ul class="ai-jobs__list">
+          <li v-for="job in portrait.jobMatches" :key="job.role">
+            <span>{{ job.role }}</span>
+            <div class="ai-jobs__bar"><i :style="{ width: `${job.match}%` }" /></div>
+            <strong>{{ job.match }}%</strong>
+          </li>
+        </ul>
+      </section>
+
       <!-- Growth path -->
       <section class="path-track">
         <h4 class="path-track__title">成长路径</h4>
@@ -246,6 +284,7 @@ function highlightTag(label: string) {
       </div>
     </div>
   </CollegePanelCard>
+  </StudentPanelBorder>
 </template>
 
 <style scoped lang="scss">
@@ -254,7 +293,118 @@ function highlightTag(label: string) {
   display: flex;
   flex-direction: column;
   gap: 7px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ai-portrait {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.22);
+}
+
+.ai-portrait__title,
+.ai-pushes__title,
+.ai-jobs__title {
+  margin: 0 0 6px;
+  font-size: var(--fs-meta);
+  font-weight: 800;
+  color: #b8ecff;
+  letter-spacing: 0.06em;
+}
+
+.ai-portrait__summary {
+  margin: 0;
+  font-size: var(--fs-label);
+  line-height: 1.5;
+  color: #e0f0ff;
+}
+
+.ai-portrait__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.ai-portrait__tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--fs-meta);
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, 0.18);
+  border: 1px solid rgba(167, 139, 250, 0.28);
+}
+
+.ai-pushes {
+  flex-shrink: 0;
+}
+
+.ai-pushes__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 88px;
+  overflow-y: auto;
+}
+
+.ai-pushes__item {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border-left: 3px solid #39e6ff;
+  background: rgba(0, 60, 120, 0.18);
+
+  time { font-size: var(--fs-micro); color: #7a9eb8; }
+  p { margin: 2px 0 0; font-size: var(--fs-meta); color: #e0f0ff; line-height: 1.35; }
+
+  &--warn { border-left-color: #ff6b4a; background: rgba(80, 30, 20, 0.22); }
+  &--success { border-left-color: #63ffe1; }
+}
+
+.ai-jobs {
+  flex-shrink: 0;
+}
+
+.ai-jobs__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ai-jobs__list li {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-meta);
+  color: #d0e8ff;
+
+  strong {
+    font-family: var(--student-font-number);
+    color: #7ff6ff;
+  }
+}
+
+.ai-jobs__bar {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(0, 60, 120, 0.45);
   overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #a78bfa, #06b6d4);
+  }
 }
 
 // ── Hero ───────────────────────────────────────────────────

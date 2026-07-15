@@ -1,13 +1,15 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue'
 import CollegePanelCard from '@/components/college/CollegePanelCard.vue'
+import StudentPanelBorder from '@/components/student/StudentPanelBorder.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import { AXIS_LABEL, CHART_COLORS, CHART_FONT, CHART_GRID } from '@/styles/echarts-theme'
-import type { AcademicDevVM } from '@/types/student/view'
+import type { AcademicDevVM, FailedCourseVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
 
 const props = defineProps<{
   data: AcademicDevVM
+  failedCritical?: FailedCourseVM[]
   loading?: boolean
   error?: string | null
 }>()
@@ -139,13 +141,13 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
 </script>
 
 <template>
-  <CollegePanelCard
-    :index="4"
-    title="成长概览 · 学业发展"
-    :loading="loading"
-    :error="error"
-    @retry="$emit('retry')"
-  >
+  <StudentPanelBorder>
+    <CollegePanelCard
+      title="成长概览 · 学业发展"
+      :loading="loading"
+      :error="error"
+      @retry="$emit('retry')"
+    >
     <div class="academic-growth">
       <div class="kpi-row">
         <div class="kpi-card primary">
@@ -178,6 +180,14 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
       </div>
 
       <div class="course-summary">
+        <p v-if="failedCritical?.length" class="course-line critical">
+          <span class="line-label">关键挂科：</span>
+          <span class="line-text">
+            <template v-for="(c, i) in failedCritical" :key="c.name">
+              {{ c.name }}({{ c.score }}分·影响毕业)<template v-if="i < failedCritical.length - 1">、</template>
+            </template>
+          </span>
+        </p>
         <p class="course-line advantage">
           <span class="line-label">优势课程：</span>
           <span class="line-text">{{ advantageText }}</span>
@@ -189,6 +199,7 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
       </div>
     </div>
   </CollegePanelCard>
+  </StudentPanelBorder>
 </template>
 
 <style scoped lang="scss">
@@ -296,6 +307,14 @@ const warningText = computed(() => formatCourseList(warningCourses.value))
 .line-text {
   color: rgba(224, 238, 255, 0.94);
   word-break: break-all;
+}
+
+.course-line.critical .line-label {
+  color: #ff8a6a;
+}
+
+.course-line.critical .line-text {
+  color: rgba(255, 200, 180, 0.95);
 }
 
 .course-line.advantage .line-label {

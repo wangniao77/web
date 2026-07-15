@@ -1,187 +1,251 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import { useClock } from '@/composables/useClock'
-import { useScope } from '@/composables/useScope'
+import { ROUTES } from '@/constants/routes'
+import DashIcon from '@/components/college/DashIcon.vue'
+import collegeLogo from '@/assets/college-logo.png'
 
-const { dateStr, timeStr, weekStr } = useClock()
-const { termLabel } = useScope()
+/** 对齐学院驾驶舱标题下原则条，学生侧工作导向 */
+const principles = ['看画像', '抓短板', '强实践', '促就业', '护成长']
+const { dateStr, timeStr } = useClock()
 </script>
 
 <template>
-  <header class="header">
-    <div class="header-line" />
+  <header class="cockpit-header stu-screen-header">
+    <div class="cockpit-header__grid" aria-hidden="true" />
+    <div class="cockpit-header__beam cockpit-header__beam--left" aria-hidden="true" />
+    <div class="cockpit-header__beam cockpit-header__beam--right" aria-hidden="true" />
 
-    <div class="header-left">
-      <div class="logo">
-        <svg viewBox="0 0 40 40" class="logo-svg">
-          <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0, 212, 255, 0.15)" stroke-width="1.2" />
-          <circle cx="20" cy="20" r="14" fill="none" stroke="rgba(0, 184, 255, 0.3)" stroke-width="0.8" />
-          <circle cx="20" cy="8" r="1.5" fill="rgba(0, 212, 255, 0.5)" />
-          <circle cx="20" cy="32" r="1.5" fill="rgba(0, 212, 255, 0.5)" />
-          <circle cx="8" cy="20" r="1.5" fill="rgba(0, 212, 255, 0.5)" />
-          <circle cx="32" cy="20" r="1.5" fill="rgba(0, 212, 255, 0.5)" />
-          <text x="20" y="25" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="12" font-weight="700">广财</text>
-        </svg>
+    <div class="cockpit-header__brand">
+      <RouterLink :to="ROUTES.portal" class="stu-screen-header__back" title="返回统一门户">← 门户</RouterLink>
+      <div class="school-emblem">
+        <span class="school-emblem__halo" aria-hidden="true" />
+        <img :src="collegeLogo" class="school-emblem__img" alt="广东财经大学校徽" />
       </div>
-      <div class="school">
-        <span class="school-name">广东财经大学</span>
-        <span class="school-sub">大数据与人工智能学院</span>
+      <div class="school-name">
+        <span class="school-name__title">广东财经大学</span>
+        <span class="school-name__school">大数据与人工智能学院</span>
+        <span class="school-name__motto">厚德　励学　笃行　拓新</span>
       </div>
     </div>
 
-    <div class="header-center">
-      <h1 class="title">
-        <span class="title-text">学生个人成长档案</span>
-      </h1>
+    <div class="cockpit-header__title">
+      <div class="cockpit-header__title-wings" aria-hidden="true" />
+      <div class="cockpit-header__title-halo" aria-hidden="true">
+        <span />
+        <span />
+      </div>
+      <h1>学生个人档案智能驾驶舱</h1>
+      <nav class="cockpit-header__tabs" aria-label="学生工作导向">
+        <span v-for="(tab, index) in principles" :key="tab">
+          {{ tab }}<b v-if="index < principles.length - 1">|</b>
+        </span>
+      </nav>
     </div>
 
-    <div class="header-right">
-      <div class="meta-line date-line">{{ dateStr }} &nbsp; {{ weekStr }}</div>
-      <div class="meta-line semester">{{ termLabel }}</div>
-      <div class="meta-line time-row">
-        <span class="time">{{ timeStr }}</span>
-        <span class="weather">22°C 阴</span>
+    <div class="cockpit-header__meta">
+      <div class="meta-card">
+        <DashIcon kind="calendar" :size="16" />
+        <span>{{ dateStr }}</span>
+      </div>
+      <div class="meta-card">
+        <DashIcon kind="clock" :size="16" />
+        <span>{{ timeStr }}</span>
+      </div>
+      <div class="meta-card meta-card--live">
+        <DashIcon kind="status" :size="16" />
+        <span>学生视图</span>
+        <i class="meta-card__pulse" aria-hidden="true" />
       </div>
     </div>
   </header>
 </template>
 
 <style scoped lang="scss">
-.header {
-  height: 88px;
-  display: grid;
-  grid-template-columns: 320px 1fr 260px;
-  align-items: center;
-  padding: 0 30px;
+.stu-screen-header {
   position: relative;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(8, 22, 50, 0.92) 0%, rgba(3, 11, 31, 0.62) 100%),
-    $color-bg-header;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(93, 198, 255, 0.14);
-  box-shadow: inset 0 -22px 44px rgba(0, 184, 255, 0.035);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 22%;
-    right: 22%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(240, 192, 64, 0.42), rgba(0, 229, 255, 0.56), transparent);
-  }
+  overflow: visible;
 }
 
-.header-line {
+.stu-screen-header__back {
+  display: none;
+}
+
+.cockpit-header__grid {
   position: absolute;
-  bottom: 0;
-  left: 5%;
-  right: 5%;
-  height: 1px;
-  z-index: 2;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(0, 184, 255, 0.06) 15%,
-    rgba(0, 229, 255, 0.78) 50%,
-    rgba(240, 192, 64, 0.12) 76%,
-    transparent 100%
-  );
-  animation: line-pulse 4s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(0, 184, 255, 0.35), 0 0 24px rgba(0, 184, 255, 0.1);
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.04), transparent),
+    repeating-linear-gradient(90deg, rgba(57, 230, 255, 0.04) 0 1px, transparent 1px 28px);
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  opacity: 0.7;
 }
 
-@keyframes line-pulse {
-  0%, 100% { opacity: 0.5; }
-  50%      { opacity: 1; }
+.cockpit-header__beam {
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(140, 220, 255, 0.55), transparent);
+  box-shadow: 0 0 10px rgba(90, 190, 255, 0.28);
+  animation: stuHeaderBeamPulse 5s ease-in-out infinite;
+
+  &--left { left: 27%; }
+  &--right { right: 27%; animation-delay: 1.6s; }
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.cockpit-header__brand {
   position: relative;
   z-index: 1;
+  padding-left: 18px;
 }
 
-.logo {
-  width: 46px;
-  height: 46px;
+.school-emblem {
+  position: relative;
+  isolation: isolate;
+  width: 92px;
+  height: 92px;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
+}
+
+.school-emblem__halo {
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
   border-radius: 50%;
-  background: linear-gradient(145deg, rgba(0, 229, 255, 0.2), rgba(5, 14, 34, 0.28));
-  box-shadow: inset 0 0 20px rgba(0, 184, 255, 0.3), 0 0 20px rgba(0, 184, 255, 0.22);
-  animation: student-logo-glow 4.5s ease-in-out infinite;
+  border: 1px solid rgba(140, 220, 255, 0.28);
+  background:
+    conic-gradient(from 40deg, transparent, rgba(140, 220, 255, 0.22), transparent 38%, rgba(200, 170, 110, 0.18), transparent 62% 100%),
+    radial-gradient(circle, rgba(0, 160, 220, 0.12), transparent 72%);
+  animation: stuEmblemSpin 16s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(90, 190, 255, 0.22));
 }
 
-@keyframes student-logo-glow {
-  0%, 100% { box-shadow: inset 0 0 18px rgba(0, 184, 255, 0.24), 0 0 16px rgba(0, 184, 255, 0.16); }
-  50%      { box-shadow: inset 0 0 24px rgba(0, 184, 255, 0.38), 0 0 26px rgba(0, 184, 255, 0.3); }
-}
-
-.logo-svg { width: 42px; height: 42px; display: block; }
-
-.school { display: flex; flex-direction: column; gap: 2px; }
-.school-name { font-size: var(--fs-body); font-weight: 700; color: #f4f8ff; }
-.school-sub  { font-size: var(--fs-label); color: rgba(174, 198, 230, 0.62); }
-
-.header-center { text-align: center; position: relative; z-index: 1; }
-
-.title { margin: 0; line-height: 1.08; }
-
-.title-text {
-  font-family: var(--student-font-body, inherit);
-  font-size: $college-fs-display;
-  font-weight: 900;
-  color: #ffffff;
-  text-shadow: 0 0 14px rgba(255, 255, 255, 0.55), 0 0 28px rgba(57, 230, 255, 0.55);
-  letter-spacing: 0.02em;
-  animation: student-title-glow 4s ease-in-out infinite;
-}
-
-@keyframes student-title-glow {
-  0%, 100% { text-shadow: 0 0 14px rgba(255, 255, 255, 0.5), 0 0 22px rgba(57, 230, 255, 0.45); }
-  50%      { text-shadow: 0 0 18px rgba(255, 255, 255, 0.72), 0 0 36px rgba(57, 230, 255, 0.72); }
-}
-
-.header-right {
+.school-name {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.school-name__title {
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 800;
+  color: #f7fbff;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 3px rgba(0, 12, 30, 0.65);
+}
+
+.school-name__school {
+  font-size: 15px;
+  font-weight: 700;
+  color: #7aefff;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px rgba(0, 180, 220, 0.28);
+}
+
+.school-name__motto {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(200, 220, 240, 0.62);
+  letter-spacing: 0.28em;
+}
+
+.school-emblem__img {
+  width: 92px;
+  height: 92px;
+  display: block;
+  object-fit: contain;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 12px rgba(90, 190, 255, 0.32));
+}
+
+.cockpit-header__title {
   position: relative;
   z-index: 1;
 }
 
-.meta-line {
-  font-size: var(--fs-label);
-  line-height: 1.2;
-  color: $color-text-secondary;
-  white-space: nowrap;
+.cockpit-header__title-halo {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: min(92%, 620px);
+  height: 54px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 
-  &.semester { font-size: var(--fs-meta); color: $color-text-muted; }
-}
-
-.time-row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  line-height: 1.1;
-
-  .time {
-    font-family: var(--student-font-number, inherit);
-    font-size: var(--fs-highlight);
-    font-weight: 700;
-    line-height: 1.1;
-    color: $color-text-primary;
-    text-shadow: 0 0 10px rgba(0, 184, 255, 0.28);
+  span {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: radial-gradient(ellipse at center, rgba(90, 190, 255, 0.2), transparent 70%);
+    filter: blur(10px);
+    animation: stuTitleHalo 5.5s ease-in-out infinite;
   }
 
-  .weather {
-    font-size: var(--fs-label);
-    color: $color-accent-cyan;
+  span:last-child {
+    inset: 8px 12%;
+    opacity: 0.55;
+    animation-delay: 1.4s;
+  }
+}
+
+.meta-card {
+  position: relative;
+  overflow: hidden;
+
+  :deep(svg) {
+    width: 14px;
+    height: 14px;
+    color: #55dfff;
+  }
+}
+
+.meta-card--live {
+  border-color: rgba(0, 230, 160, 0.35);
+}
+
+.meta-card__pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3dffb0;
+  box-shadow: 0 0 10px rgba(61, 255, 176, 0.8);
+  animation: stuLivePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes stuHeaderBeamPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+@keyframes stuEmblemSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes stuTitleHalo {
+  0%, 100% { opacity: 0.45; transform: scaleX(0.92); }
+  50% { opacity: 0.95; transform: scaleX(1.04); }
+}
+
+@keyframes stuLivePulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .school-emblem__halo,
+  .cockpit-header__beam,
+  .cockpit-header__title-halo span,
+  .meta-card__pulse {
+    animation: none;
   }
 }
 </style>

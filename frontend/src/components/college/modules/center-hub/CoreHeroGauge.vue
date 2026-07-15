@@ -1,10 +1,13 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue'
 import CockpitCoreMetric from '@/components/college/CockpitCoreMetric.vue'
 import { kpiLayout } from '@/constants/college/college-kpi'
-import type { OverviewHubVM } from '@/types/college/view'
+import type { OverviewHubKpiVM, OverviewHubVM } from '@/types/college/view'
 
-const props = defineProps<{ data: OverviewHubVM }>()
+const props = defineProps<{
+  data: OverviewHubVM
+  centerLabel?: string
+}>()
 
 const gaugeDeg = computed(() => {
   const value = props.data.developmentIndex
@@ -13,6 +16,20 @@ const gaugeDeg = computed(() => {
 })
 
 const stars = computed(() => '★'.repeat(props.data.starLevel))
+
+const centerTitle = computed(() => props.centerLabel ?? '学院综合发展指数')
+
+function kpiIcon(kpi: OverviewHubKpiVM) {
+  if (kpi.icon) return kpi.icon
+  if (kpi.key) return kpiLayout[kpi.key].icon
+  return 'academic'
+}
+
+function kpiPosition(kpi: OverviewHubKpiVM) {
+  if (kpi.position) return kpi.position
+  if (kpi.key) return kpiLayout[kpi.key].position
+  return 'tl'
+}
 </script>
 
 <template>
@@ -21,12 +38,12 @@ const stars = computed(() => '★'.repeat(props.data.starLevel))
 
     <CockpitCoreMetric
       v-for="kpi in data.kpis"
-      :key="kpi.key"
+      :key="kpi.key ?? kpi.label"
       :label="kpi.label"
       :value="kpi.value"
       :trend="kpi.trend"
-      :icon="kpiLayout[kpi.key].icon"
-      :position="kpiLayout[kpi.key].position"
+      :icon="kpiIcon(kpi)"
+      :position="kpiPosition(kpi)"
     />
 
     <div class="core-hero-core">
@@ -43,7 +60,7 @@ const stars = computed(() => '★'.repeat(props.data.starLevel))
           <div class="core-gauge__ring core-gauge__ring--outer" />
           <div class="core-gauge__ring core-gauge__ring--inner" />
           <div class="core-gauge__content">
-            <span>学院综合发展指数</span>
+            <span>{{ centerTitle }}</span>
             <strong>{{ data.developmentIndex }}</strong>
             <small>（满分{{ data.maxScore }}）</small>
             <b>{{ stars }}</b>

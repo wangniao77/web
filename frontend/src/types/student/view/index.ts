@@ -6,6 +6,7 @@ export interface StudentAwardVM {
 
 export interface PersonalInfoVM {
   name: string
+  gender?: string
   studentId: string
   college: string
   major: string
@@ -18,6 +19,23 @@ export interface PersonalInfoVM {
   mottoSub?: string
   avatarUrl?: string
   awards: StudentAwardVM[]
+  politicalStatus?: string
+  phone?: string
+  address?: string
+  onCampusStatus?: string
+  /** 高潜类型标签，如：学术高潜、竞赛高潜、干部奉献高潜 等 */
+  highPotentialTags?: string[]
+  economicHardship?: boolean
+  mentalLevel?: string
+  mentalLevelCode?: 'low' | 'medium' | 'high'
+  growthTrend?: 'positive' | 'negative' | 'stable'
+  thesisAdvisor?: string
+  thesisStatus?: string
+  familySituation?: string
+  familyMembers?: string[]
+  difficultyDetail?: string
+  guardianName?: string
+  guardianPhone?: string
 }
 
 export interface GrowthPortraitVM {
@@ -87,6 +105,9 @@ export interface AcademicDevVM {
   courseCompletionRate: number
   excellentCourses: number
   totalCourses: number
+  yearlyGoals: Array<{ year: string; goal: string; percent: number }>
+  currentCourses: Array<{ name: string; credit: number; type: string }>
+  failedElective: FailedCourseVM[]
 }
 
 export interface CompetitionVM {
@@ -140,6 +161,53 @@ export interface StudentFooterVM {
   totalAwards: number
 }
 
+export interface CreditProgressVM {
+  earned: number
+  required: number
+  secondClassroomEarned: number
+  secondClassroomRequired: number
+  earnedPercent: number
+  secondPercent: number
+}
+
+export interface FailedCourseVM {
+  name: string
+  score: number
+  required: boolean
+}
+
+export interface TimelineTermVM {
+  term: string
+  label: string
+  wuyu: { de: number; zhi: number; ti: number; mei: number; lao: number }
+  milestone?: string
+}
+
+export interface AiPortraitVM {
+  summary: string
+  portraitTags: string[]
+  pushes: Array<{ time: string; text: string; type: 'warn' | 'info' | 'success' }>
+  jobMatches: Array<{ role: string; match: number }>
+}
+
+export interface CareerDevVM {
+  practiceBases: string[]
+  internshipBases: string[]
+  employmentIntention: string
+  militaryNote?: string
+}
+
+export interface MentalGrowthVM {
+  supportStatus: string
+  records: Array<{ date: string; person: string; content: string; level: string }>
+}
+
+export interface AnnualAssessmentVM {
+  year: string
+  score: number
+  level: string
+}
+
 export interface StudentDashboardVM {
   profile: PersonalInfoVM
   growthPortrait: GrowthPortraitVM
@@ -154,4 +222,12 @@ export interface StudentDashboardVM {
   health: HealthVM
   employment: EmploymentVM
   footer: StudentFooterVM
+  creditProgress: CreditProgressVM
+  failedCritical: FailedCourseVM[]
+  timeline: TimelineTermVM[]
+  aiPortrait: AiPortraitVM
+  scholarships: Array<{ name: string; year: string }>
+  annualAssessments: AnnualAssessmentVM[]
+  careerDev: CareerDevVM
+  mentalGrowth: MentalGrowthVM
 }

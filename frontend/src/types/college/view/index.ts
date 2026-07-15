@@ -1,16 +1,23 @@
 import type { TrendInfo } from '@/types/common'
 import type { KpiKey } from '@/types/college/api'
+import type { IconKind } from '@/components/college/DashIcon.vue'
+
+export type CoreOrbitPosition = 'tl' | 'ml' | 'bl' | 'tr' | 'mr' | 'br'
+
+export interface OverviewHubKpiVM {
+  key?: KpiKey
+  label: string
+  value: string
+  trend?: TrendInfo
+  icon?: IconKind
+  position?: CoreOrbitPosition
+}
 
 export interface OverviewHubVM {
   developmentIndex: number
   maxScore: number
   starLevel: number
-  kpis: Array<{
-    key: KpiKey
-    label: string
-    value: string
-    trend?: TrendInfo
-  }>
+  kpis: OverviewHubKpiVM[]
 }
 
 export interface KeyTaskVM {
