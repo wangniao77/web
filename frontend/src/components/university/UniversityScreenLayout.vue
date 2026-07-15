@@ -9,11 +9,11 @@ defineProps<{
   meta?: DashboardMetaVM | null
 }>()
 
-const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
+const { scaleStyle, canvasStyle, wrapperStyle } = useScreenScale({ mode: 'fluid' })
 </script>
 
 <template>
-  <div class="screen-wrapper university-screen">
+  <div class="screen-wrapper university-screen" :style="wrapperStyle">
     <div class="screen-scale" :style="{ ...canvasStyle, ...scaleStyle }">
       <StarfieldBackdrop />
       <ParticleRainBackground :count="96" />
@@ -24,23 +24,3 @@ const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
     </div>
   </div>
 </template>
-
-<style scoped lang="scss">
-.university-screen {
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.screen-scale {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  transform-origin: center center;
-}
-</style>

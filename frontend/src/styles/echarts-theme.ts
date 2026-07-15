@@ -4,45 +4,45 @@ export const COCKPIT_THEME = {
   textStyle: {
     color: '#889ec2',
     fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif',
-    fontSize: 14,
+    fontSize: 18,
   },
   title: {
-    textStyle: { color: '#e2edff', fontSize: 16, fontWeight: 600 },
+    textStyle: { color: '#e2edff', fontSize: 20, fontWeight: 600 },
   },
   legend: {
-    textStyle: { color: '#889ec2', fontSize: 14 },
+    textStyle: { color: '#889ec2', fontSize: 18 },
     icon: 'roundRect',
-    itemWidth: 14,
-    itemHeight: 8,
+    itemWidth: 16,
+    itemHeight: 10,
   },
   tooltip: {
     backgroundColor: 'rgba(6, 17, 52, 0.95)',
     borderColor: 'rgba(0, 212, 255, 0.2)',
-    textStyle: { color: '#e2edff', fontSize: 13 },
+    textStyle: { color: '#e2edff', fontSize: 17 },
   },
   categoryAxis: {
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
-    axisLabel: { color: '#889ec2', fontSize: 15 },
+    axisLabel: { color: '#889ec2', fontSize: 19 },
     axisTick: { show: false },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.04)' } },
   },
   valueAxis: {
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
-    axisLabel: { color: '#889ec2', fontSize: 15 },
+    axisLabel: { color: '#889ec2', fontSize: 19 },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.04)' } },
   },
 }
 
 /** 学院大屏图表字号（与 SCSS $college-fs-chart 保持一致） */
 export const CHART_FONT = {
-  axis: 15,
-  legend: 15,
-  label: 15,
-  tooltip: 14,
+  axis: 19,
+  legend: 18,
+  label: 19,
+  tooltip: 17,
   /** 中央 Hub 大仪表盘 */
-  gauge: 30,
+  gauge: 38,
   /** 窄列小仪表盘（综合评价左侧） */
-  gaugeCompact: 22,
+  gaugeCompact: 28,
 } as const
 
 /**
@@ -50,9 +50,9 @@ export const CHART_FONT = {
  * 字号调大后必须用 containLabel，避免标签被裁切
  */
 export const CHART_GRID = {
-  line: { left: 6, right: 10, top: 10, bottom: 6, containLabel: true },
-  lineLegend: { left: 6, right: 10, top: 38, bottom: 6, containLabel: true },
-  barH: { left: 6, right: 44, top: 6, bottom: 6, containLabel: true },
+  line: { left: 8, right: 12, top: 12, bottom: 8, containLabel: true },
+  lineLegend: { left: 8, right: 12, top: 42, bottom: 8, containLabel: true },
+  barH: { left: 8, right: 52, top: 8, bottom: 8, containLabel: true },
 } as const
 
 /** 轴标签通用样式 */

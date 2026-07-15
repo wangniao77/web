@@ -2,7 +2,7 @@
   color: #f2fbff;
   background: #020b1f;
   font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 20px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -150,7 +150,7 @@ body {
 }
 
 .school-name__title {
-  font-size: 30px;
+  font-size: 44px;
   font-weight: 800;
   line-height: 1.1;
   color: #ffffff;
@@ -159,7 +159,7 @@ body {
 }
 
 .school-name__motto {
-  font-size: 15px;
+  font-size: $college-fs-label;
   font-weight: 400;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.92);
@@ -236,7 +236,7 @@ body {
 
   h1 {
     margin: 0;
-    font-size: 40px;
+    font-size: 44px;
     line-height: 1.12;
     font-weight: 900;
     color: #ffffff;
@@ -246,7 +246,7 @@ body {
 
   p {
     margin: 5px 0 6px;
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 600;
     color: #eef9ff;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
@@ -256,10 +256,7 @@ body {
     display: flex;
     justify-content: center;
     gap: 10px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #4de8ff;
-    text-shadow: 0 1px 2px rgba(0, 10, 30, 0.8);
+    font-size: $college-fs-label;
 
     b {
       margin-left: 10px;
@@ -322,7 +319,7 @@ body {
 .status-card__label {
   overflow: hidden;
   color: #e4f6ff;
-  font-size: 14px;
+  font-size: $college-fs-label;
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
   white-space: nowrap;
@@ -331,7 +328,7 @@ body {
 
 .status-card strong {
   color: #f2fbff;
-  font-size: 13px;
+  font-size: $college-fs-label;
   white-space: nowrap;
 }
 
@@ -411,10 +408,10 @@ body {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 34px;
+  min-height: 52px;
   height: auto;
-  padding: 4px 12px;
-  gap: 8px;
+  padding: 10px 16px;
+  gap: 12px;
   border-bottom: 1px solid rgba(57, 230, 255, 0.24);
   background: linear-gradient(90deg, rgba(0, 131, 255, 0.34), rgba(2, 16, 45, 0.3));
   color: #f4fbff;
@@ -433,10 +430,37 @@ body {
   flex: 1;
 }
 
+.panel__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.panel__action-link {
+  padding: 4px 10px;
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 4px;
+  background: rgba(0, 70, 130, 0.35);
+  color: #9fe8ff;
+  font-size: $college-fs-meta;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+
+  &:hover {
+    color: #fff;
+    border-color: rgba(0, 242, 255, 0.6);
+    background: rgba(0, 100, 180, 0.45);
+  }
+}
+
 .panel__icon {
   display: grid;
-  width: 23px;
-  height: 23px;
+  width: 28px;
+  height: 28px;
   place-items: center;
   border-radius: 4px;
   background: rgba(0, 171, 255, 0.16);
@@ -447,7 +471,7 @@ body {
   flex-shrink: 0;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: $college-fs-meta;
   font-weight: 800;
   letter-spacing: 0.06em;
   line-height: 1.3;
@@ -463,7 +487,7 @@ body {
 
   &--sm {
     padding: 2px 7px;
-    font-size: 10px;
+    font-size: $college-fs-meta;
     letter-spacing: 0.04em;
     animation: none;
   }
@@ -487,9 +511,9 @@ body {
 
 .panel__body {
   position: relative;
-  height: calc(100% - 31px);
+  height: calc(100% - 52px);
   min-height: 0;
-  padding: 8px;
+  padding: 12px 14px 14px;
 }
 
 .chart-frame {
@@ -504,16 +528,16 @@ body {
 }
 
 .chart-frame__title {
-  height: 24px;
+  height: 28px;
   padding: 4px 8px 0;
   color: #f0fbff;
-  font-size: 14px;
+  font-size: $college-fs-label;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.8);
 }
 
 .chart-frame__body {
-  height: calc(100% - 24px);
+  height: calc(100% - 28px);
   min-height: 0;
 }
 
@@ -565,7 +589,7 @@ body {
 .metric-card__label {
   overflow: hidden;
   color: #e4f6ff;
-  font-size: 13px;
+  font-size: $college-fs-label;
   font-weight: 700;
   text-shadow: $glow-text-soft;
   white-space: nowrap;
@@ -575,7 +599,7 @@ body {
 .metric-card__value {
   overflow: hidden;
   color: #5cecff;
-  font-size: 25px;
+  font-size: 34px;
   line-height: 1.05;
   font-weight: 900;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 8px rgba(57, 230, 255, 0.4);
@@ -600,7 +624,7 @@ body {
   }
 
   .metric-card__value {
-    font-size: 21px;
+    font-size: 28px;
   }
 }
 
@@ -614,11 +638,11 @@ body {
   }
 
   .metric-card__label {
-    font-size: 13px;
+    font-size: $college-fs-label;
   }
 
   .metric-card__value {
-    font-size: 32px;
+    font-size: 40px;
   }
 }
 
@@ -653,11 +677,11 @@ body {
 
 .metric-card--balance.metric-card--sm {
   .metric-card__label {
-    font-size: 12px;
+    font-size: $college-fs-meta;
   }
 
   .metric-card__value {
-    font-size: 17px;
+    font-size: 24px;
   }
 }
 
@@ -713,7 +737,7 @@ body {
     align-self: flex-end;
     margin-bottom: 17px;
     color: #e4f6ff;
-    font-size: 14px;
+    font-size: $college-fs-label;
     font-weight: 600;
     white-space: nowrap;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
@@ -826,7 +850,7 @@ body {
 
 .core-metric-card__label {
   color: #e4f6ff;
-  font-size: 13px;
+  font-size: $college-fs-label;
   font-weight: 700;
   text-shadow: $glow-text-soft;
   text-align: center;
@@ -835,7 +859,7 @@ body {
 
 .core-metric-card__value {
   color: #5cecff;
-  font-size: 31px;
+  font-size: 40px;
   line-height: 1.05;
   font-weight: 900;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 8px rgba(57, 230, 255, 0.4);
@@ -985,7 +1009,7 @@ body {
 
   span {
     color: #f2fbff;
-    font-size: 17px;
+    font-size: $college-fs-label;
     font-weight: 800;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
   }
@@ -1001,7 +1025,7 @@ body {
 
   small {
     color: #eef9ff;
-    font-size: 14px;
+    font-size: $college-fs-label;
     font-weight: 600;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.8);
   }
@@ -1009,7 +1033,7 @@ body {
   b {
     margin-top: 6px;
     color: #ffc22d;
-    font-size: 21px;
+    font-size: $college-fs-body;
     text-shadow: 0 0 10px rgba(255, 193, 45, 0.8);
   }
 }
@@ -1044,11 +1068,11 @@ body {
   .metric-card__icon {
     width: 22px;
     height: 22px;
-    font-size: 12px;
+    font-size: $college-fs-label;
   }
 
   .metric-card__value {
-    font-size: 17px;
+    font-size: $college-fs-body;
     font-weight: 900;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85), 0 0 6px rgba(57, 230, 255, 0.35);
   }
@@ -1084,13 +1108,13 @@ body {
   display: grid;
   gap: 6px;
   color: #eef9ff;
-  font-size: 13px;
+  font-size: $college-fs-label;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
 
   span {
     margin-bottom: 2px;
     color: #d8efff;
-    font-size: 14px;
+    font-size: $college-fs-label;
     font-weight: 700;
   }
 
@@ -1242,7 +1266,7 @@ body {
 
   b {
     color: #f2fbff;
-    font-size: 14px;
+    font-size: $college-fs-label;
     font-weight: 600;
     white-space: nowrap;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
@@ -1250,7 +1274,7 @@ body {
 
   strong {
     color: #5cecff;
-    font-size: 17px;
+    font-size: $college-fs-body;
     font-weight: 800;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 6px rgba(57, 230, 255, 0.45);
     white-space: nowrap;
@@ -1318,7 +1342,7 @@ body {
 
 .risk-row__title {
   color: #f2fbff;
-  font-size: 14px;
+  font-size: $college-fs-label;
   font-weight: 800;
   line-height: 1.35;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
@@ -1366,7 +1390,7 @@ body {
 .footer-stat__label {
   overflow: hidden;
   color: #e4f6ff;
-  font-size: 14px;
+  font-size: $college-fs-label;
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
   font-weight: 700;
@@ -1376,7 +1400,7 @@ body {
 
 .footer-stat__value {
   color: #5cecff;
-  font-size: 20px;
+  font-size: $college-fs-body;
   font-weight: 900;
   white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 6px rgba(57, 230, 255, 0.35);
@@ -1396,7 +1420,7 @@ body {
   min-width: 0;
   padding: 5px 10px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: $college-fs-label;
   font-weight: 800;
 
   span {

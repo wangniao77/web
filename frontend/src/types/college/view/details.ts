@@ -10,6 +10,18 @@ export interface KeyTaskDetailVM {
   deadline: string
   description: string
   milestones: Array<{ label: string; done: boolean }>
+  category?: 'research' | 'teaching'
+  categoryLabel?: string
+  taskType?: string
+  projectLevel?: string
+  majorDirection?: string
+  target?: string
+  actual?: string
+  unit?: string
+  milestone?: string
+  materials?: string[]
+  riskReason?: string
+  handleStatus?: string
 }
 
 export interface KeyTasksDetailVM {
@@ -18,8 +30,19 @@ export interface KeyTasksDetailVM {
     completed: number
     ongoing: number
     delayed: number
+    completionRate: number
   }
+  year: string
   tasks: KeyTaskDetailVM[]
+  filterOptions: {
+    years: string[]
+    domains: string[]
+    taskTypes: string[]
+    owners: string[]
+    projectLevels: string[]
+    majorDirections: string[]
+    statuses: string[]
+  }
 }
 
 export interface WarningRecordVM {

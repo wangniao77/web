@@ -45,6 +45,9 @@ const badgeHint = computed(() => props.simulatedHint || COLLEGE_SIMULATED_DATA_H
           模拟数据
         </span>
       </div>
+      <div v-if="$slots.actions" class="panel__actions">
+        <slot name="actions" />
+      </div>
     </div>
     <div class="panel__body">
       <slot />

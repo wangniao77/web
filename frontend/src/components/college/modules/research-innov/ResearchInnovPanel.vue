@@ -20,7 +20,7 @@ const barOption = computed<EChartsOption>(() => {
       type: 'category',
       inverse: true,
       data: props.data.platforms.map((d) => d.name),
-      axisLabel: { ...AXIS_LABEL_ALT, color: '#e8f7ff', fontSize: 14, fontWeight: 500, align: 'left', margin: GRID_LEFT - 6 },
+      axisLabel: { ...AXIS_LABEL_ALT, color: '#e8f7ff', fontSize: 20, fontWeight: 500, align: 'left', margin: GRID_LEFT - 6 },
       axisLine: { show: true, lineStyle: { color: 'rgba(57,230,255,0.45)', width: 1 } },
       axisTick: { show: false },
     },
@@ -101,7 +101,7 @@ function openDetail() {
 }
 
 .research-kpi__trend {
-  font-size: 13px;
+  font-size: 24px;
   font-style: normal;
 
   &--up { color: #34d399; }

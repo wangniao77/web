@@ -12,12 +12,14 @@ export const mockOverviewHub: OverviewHubDTO = {
   maxScore: 100,
   starLevel: 5,
   kpis: [
-    { key: 'students', label: '在校学生数', value: 5680, unit: '人', trend: { direction: 'up', value: 2.4, unit: '%' } },
-    { key: 'faculty', label: '教职工数', value: 268, unit: '人', trend: { direction: 'up', value: 1.8, unit: '%' } },
-    { key: 'funding', label: '高潜人数变化', value: '+186', unit: '人', trend: { direction: 'up', value: 12.4, unit: '%' } },
-    { key: 'ranking', label: '学科排名', value: '3/18', trend: { direction: 'up', value: 2, unit: '位' } },
-    { key: 'satisfaction', label: '师生满意度', value: 92.3, unit: '%', trend: { direction: 'up', value: 3.1, unit: '%' } },
-    { key: 'influence', label: '竞赛覆盖率', value: 68.5, unit: '%', trend: { direction: 'up', value: 5.8, unit: '%' } },
+    { key: 'teachers', label: '教师人数', value: 186, unit: '人', trend: { direction: 'up', value: 3.2, unit: '%' } },
+    { key: 'studentRatio', label: '生师比', value: '18.2:1', trend: { direction: 'down', value: 0.6 } },
+    { key: 'courses', label: '本学期课程门数', value: 186, unit: '门', trend: { direction: 'up', value: 8 } },
+    { key: 'topPapers', label: '近五年顶刊论文', value: 48, unit: '篇', trend: { direction: 'up', value: 12 } },
+    { key: 'projects', label: '项目', value: 126, unit: '项', trend: { direction: 'up', value: 9.4, unit: '%' } },
+    { key: 'patents', label: '专利', value: 64, unit: '项', trend: { direction: 'up', value: 7 } },
+    { key: 'platforms', label: '省级平台', value: 8, unit: '个', trend: { direction: 'up', value: 2 } },
+    { key: 'teams', label: '团队', value: 15, unit: '个', trend: { direction: 'up', value: 3 } },
   ],
 }
 

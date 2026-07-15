@@ -36,14 +36,41 @@ export function adaptHighPotentialOverview(dto: HighPotentialOverviewDTO): HighP
 }
 
 export function adaptKeyTasksDetail(dto: KeyTasksDetailDTO): KeyTasksDetailVM {
+  const owners = dto.tasks.map((t) => t.leadDept)
+  const defaults = {
+    years: dto.year ? [dto.year] : ['2025'],
+    domains: ['全部', '科研', '教学'],
+    taskTypes: ['全部'],
+    owners: ['全部', ...Array.from(new Set(owners))],
+    projectLevels: ['全部'],
+    majorDirections: ['全部'],
+    statuses: ['全部', '已完成', '推进中', '需关注'],
+  }
+
   return {
-    summary: dto.summary,
+    summary: {
+      ...dto.summary,
+      completionRate:
+        dto.summary.completionRate ??
+        (dto.summary.total
+          ? Math.round((dto.summary.completed / dto.summary.total) * 100)
+          : 0),
+    },
+    year: dto.year ?? '2025',
+    filterOptions: dto.filterOptions ?? defaults,
     tasks: dto.tasks.map((task) => {
       const status = resolveTaskStatus(task.status)
       return {
         ...task,
-        statusLabel: status.label,
+        statusLabel:
+          task.status === 'delayed'
+            ? '需关注'
+            : task.status === 'completed'
+              ? '已完成'
+              : '推进中',
         statusClass: status.class,
+        categoryLabel:
+          task.category === 'research' ? '科研' : task.category === 'teaching' ? '教学' : undefined,
       }
     }),
   }

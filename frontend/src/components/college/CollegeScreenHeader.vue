@@ -4,7 +4,7 @@ import { useScope } from '@/composables/useScope'
 import DashIcon from '@/components/college/DashIcon.vue'
 import collegeLogo from '@/assets/college-logo.png'
 
-const principles = ['看全局', '抓重点', '强治理', '促发展', '提效能']
+const principles = ['掌态势', '精施策', '拓新局']
 const { dateStr, timeStr } = useClock()
 const { termLabel } = useScope()
 </script>
@@ -31,7 +31,7 @@ const { termLabel } = useScope()
         <span />
         <span />
       </div>
-      <h1>大数据与人工智能学院发展与治理驾驶舱</h1>
+      <h1>数智洞察视界</h1>
       <nav class="cockpit-header__tabs">
         <span v-for="(tab, index) in principles" :key="tab">
           {{ tab }}<b v-if="index < principles.length - 1">|</b>

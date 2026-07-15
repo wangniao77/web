@@ -9,6 +9,17 @@ export interface KeyTaskDetailDTO {
   deadline: string
   description: string
   milestones: Array<{ label: string; done: boolean }>
+  category?: 'research' | 'teaching'
+  taskType?: string
+  projectLevel?: string
+  majorDirection?: string
+  target?: string
+  actual?: string
+  unit?: string
+  milestone?: string
+  materials?: string[]
+  riskReason?: string
+  handleStatus?: string
 }
 
 export interface KeyTasksDetailDTO {
@@ -17,8 +28,19 @@ export interface KeyTasksDetailDTO {
     completed: number
     ongoing: number
     delayed: number
+    completionRate?: number
   }
+  year?: string
   tasks: KeyTaskDetailDTO[]
+  filterOptions?: {
+    years: string[]
+    domains: string[]
+    taskTypes: string[]
+    owners: string[]
+    projectLevels: string[]
+    majorDirections: string[]
+    statuses: string[]
+  }
 }
 
 export interface WarningRecordDTO {

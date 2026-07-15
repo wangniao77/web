@@ -2,15 +2,19 @@
 import { onMounted, ref } from 'vue'
 import CockpitPanel from '@/components/college/CockpitPanel.vue'
 import CoreHeroGauge from '@/components/college/modules/center-hub/CoreHeroGauge.vue'
-import KeyTasksCarouselPanel from '@/components/college/modules/key-tasks/KeyTasksCarouselPanel.vue'
-import StudentDevQualityPanel from '@/components/college/modules/student-dev/StudentDevQualityPanel.vue'
-import TeachingQualityPanel from '@/components/college/modules/teaching-quality/TeachingQualityPanel.vue'
-import ResearchInnovPanel from '@/components/college/modules/research-innov/ResearchInnovPanel.vue'
-import WarningRiskPanel from '@/components/college/modules/warning-risk/WarningRiskPanel.vue'
-import StudentEmploymentPanel from '@/components/college/modules/student-dev/StudentEmploymentPanel.vue'
+import KeyPlanProgressPanel from '@/components/college/modules/key-tasks/KeyPlanProgressPanel.vue'
+import TalentOverviewCarouselPanel from '@/components/college/modules/talent-overview/TalentOverviewCarouselPanel.vue'
+import BenchmarkAchievementsPanel from '@/components/college/modules/benchmark/BenchmarkAchievementsPanel.vue'
+import ProfessionalSupportPanel from '@/components/college/modules/professional-support/ProfessionalSupportPanel.vue'
+import FacultyAtlasPanel from '@/components/college/modules/faculty-atlas/FacultyAtlasPanel.vue'
 import CollegeDetailModal from '@/components/college/modules/detail-modal/CollegeDetailModal.vue'
+import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
 import { collegeService } from '@/api/college/services'
-import { collegeDetailService } from '@/api/college/services/details'
+import { studentDevService } from '@/api/college/services/student-dev'
+import { benchmarkService } from '@/api/college/services/benchmark'
+import { teacherService } from '@/api/college/services/teacher'
+import { disciplineService } from '@/api/college/services/discipline'
+import { enrollmentEmploymentService } from '@/api/college/services/enrollment-employment'
 import { isMockMode } from '@/api/createService'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
 import { useScope } from '@/composables/useScope'
@@ -18,12 +22,11 @@ import { useScope } from '@/composables/useScope'
 const { collegeScope } = useScope()
 
 const hub = ref<Awaited<ReturnType<typeof collegeService.fetchOverviewHub>> | null>(null)
-const tasks = ref<Awaited<ReturnType<typeof collegeService.fetchKeyTasks>>>([])
-const highPotential = ref<Awaited<ReturnType<typeof collegeDetailService.fetchHighPotentialOverview>> | null>(null)
-const teaching = ref<Awaited<ReturnType<typeof collegeService.fetchTeachingOverview>> | null>(null)
-const research = ref<Awaited<ReturnType<typeof collegeService.fetchResearchOverview>> | null>(null)
-const warning = ref<Awaited<ReturnType<typeof collegeService.fetchWarningOverview>> | null>(null)
-const student = ref<Awaited<ReturnType<typeof collegeService.fetchStudentOverview>> | null>(null)
+const devQuality = ref<Awaited<ReturnType<typeof studentDevService.fetchStudentDevQuality>> | null>(null)
+const benchmark = ref<Awaited<ReturnType<typeof benchmarkService.fetchBenchmarkAchievements>> | null>(null)
+const teacherAnalytics = ref<Awaited<ReturnType<typeof teacherService.fetchTeacherAnalytics>> | null>(null)
+const discipline = ref<Awaited<ReturnType<typeof disciplineService.fetchDisciplineOverview>> | null>(null)
+const enrollmentEmployment = ref<Awaited<ReturnType<typeof enrollmentEmploymentService.fetchEnrollmentEmploymentOverview>> | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -39,20 +42,18 @@ async function loadAll() {
   const scope = collegeScope.value
   const [
     hubRes,
-    tasksRes,
-    highPotentialRes,
-    teachingRes,
-    researchRes,
-    warningRes,
-    studentRes,
+    devQualityRes,
+    benchmarkRes,
+    teacherRes,
+    disciplineRes,
+    enrollmentRes,
   ] = await Promise.allSettled([
     collegeService.fetchOverviewHub(scope),
-    collegeService.fetchKeyTasks(scope),
-    collegeDetailService.fetchHighPotentialOverview(scope),
-    collegeService.fetchTeachingOverview(scope),
-    collegeService.fetchResearchOverview(scope),
-    collegeService.fetchWarningOverview(scope),
-    collegeService.fetchStudentOverview(scope),
+    studentDevService.fetchStudentDevQuality({ ...scope, dimension: 'major' }),
+    benchmarkService.fetchBenchmarkAchievements(scope),
+    teacherService.fetchTeacherAnalytics(scope),
+    disciplineService.fetchDisciplineOverview(scope),
+    enrollmentEmploymentService.fetchEnrollmentEmploymentOverview(scope),
   ])
 
   const failures: string[] = []
@@ -63,40 +64,34 @@ async function loadAll() {
     console.error('[college] hub 加载失败', hubRes.reason)
   }
 
-  if (tasksRes.status === 'fulfilled') tasks.value = tasksRes.value
+  if (devQualityRes.status === 'fulfilled') devQuality.value = devQualityRes.value
   else {
-    failures.push(`tasks: ${formatError(tasksRes.reason)}`)
-    console.error('[college] tasks 加载失败', tasksRes.reason)
+    failures.push(`devQuality: ${formatError(devQualityRes.reason)}`)
+    console.error('[college] devQuality 加载失败', devQualityRes.reason)
   }
 
-  if (highPotentialRes.status === 'fulfilled') highPotential.value = highPotentialRes.value
+  if (benchmarkRes.status === 'fulfilled') benchmark.value = benchmarkRes.value
   else {
-    failures.push(`highPotential: ${formatError(highPotentialRes.reason)}`)
-    console.error('[college] highPotential 加载失败', highPotentialRes.reason)
+    failures.push(`benchmark: ${formatError(benchmarkRes.reason)}`)
+    console.error('[college] benchmark 加载失败', benchmarkRes.reason)
   }
 
-  if (teachingRes.status === 'fulfilled') teaching.value = teachingRes.value
+  if (teacherRes.status === 'fulfilled') teacherAnalytics.value = teacherRes.value
   else {
-    failures.push(`teaching: ${formatError(teachingRes.reason)}`)
-    console.error('[college] teaching 加载失败', teachingRes.reason)
+    failures.push(`teacherAnalytics: ${formatError(teacherRes.reason)}`)
+    console.error('[college] teacherAnalytics 加载失败', teacherRes.reason)
   }
 
-  if (researchRes.status === 'fulfilled') research.value = researchRes.value
+  if (disciplineRes.status === 'fulfilled') discipline.value = disciplineRes.value
   else {
-    failures.push(`research: ${formatError(researchRes.reason)}`)
-    console.error('[college] research 加载失败', researchRes.reason)
+    failures.push(`discipline: ${formatError(disciplineRes.reason)}`)
+    console.error('[college] discipline 加载失败', disciplineRes.reason)
   }
 
-  if (warningRes.status === 'fulfilled') warning.value = warningRes.value
+  if (enrollmentRes.status === 'fulfilled') enrollmentEmployment.value = enrollmentRes.value
   else {
-    failures.push(`warning: ${formatError(warningRes.reason)}`)
-    console.error('[college] warning 加载失败', warningRes.reason)
-  }
-
-  if (studentRes.status === 'fulfilled') student.value = studentRes.value
-  else {
-    failures.push(`student: ${formatError(studentRes.reason)}`)
-    console.error('[college] student 加载失败', studentRes.reason)
+    failures.push(`enrollmentEmployment: ${formatError(enrollmentRes.reason)}`)
+    console.error('[college] enrollmentEmployment 加载失败', enrollmentRes.reason)
   }
 
   if (!hub.value && failures.length > 0) {
@@ -124,28 +119,34 @@ useAutoRefresh(loadAll)
     <main class="cockpit-main">
       <div class="cockpit-column cockpit-column--left">
         <CockpitPanel
-          title="年度重点任务推进"
+          title="年度重点规划进展"
           icon="task"
           panel-class="panel--key-tasks"
           module-id="key-tasks"
           :simulated="true"
         >
-          <KeyTasksCarouselPanel :tasks="tasks" :loading="loading" @retry="loadAll" />
+          <template #actions>
+            <button
+              type="button"
+              class="panel__action-link"
+              @click="openCollegeDetail({ kind: 'key-tasks' })"
+            >
+              详情 →
+            </button>
+          </template>
+          <KeyPlanProgressPanel />
         </CockpitPanel>
         <CockpitPanel
-          title="学生发展与质量"
+          title="人才培养纵览"
           icon="students"
-          panel-class="panel--student-dev-quality"
-          module-id="student-dev-quality"
+          panel-class="panel--talent-overview"
+          module-id="talent-overview"
           :simulated="true"
         >
-          <StudentDevQualityPanel
-            v-if="student && highPotential && warning"
-            :student="student"
-            :high-potential="highPotential"
-            :warning="warning"
+          <TalentOverviewCarouselPanel
+            :dev-quality="devQuality"
+            :enrollment="enrollmentEmployment"
           />
-          <div v-else class="cockpit-panel-empty">学生发展数据暂不可用</div>
         </CockpitPanel>
       </div>
 
@@ -154,24 +155,64 @@ useAutoRefresh(loadAll)
           <CoreHeroGauge v-if="hub" :data="hub" />
           <div v-else class="cockpit-panel-empty">核心指标暂不可用</div>
         </div>
-        <CockpitPanel title="预警与风险监测" icon="warning" panel-class="panel--warning">
-          <WarningRiskPanel v-if="warning" :data="warning" />
-          <div v-else class="cockpit-panel-empty">预警数据暂不可用</div>
+        <CockpitPanel
+          title="专业发展全景"
+          icon="support"
+          panel-class="panel--professional-support"
+          module-id="professional-support"
+          :simulated="true"
+        >
+          <template #actions>
+            <button
+              type="button"
+              class="panel__action-link"
+              @click="openCollegeDetail({ kind: 'discipline-detail' })"
+            >
+              详情 →
+            </button>
+          </template>
+          <ProfessionalSupportPanel :discipline="discipline" />
         </CockpitPanel>
       </div>
 
       <div class="cockpit-column cockpit-column--right">
-        <CockpitPanel title="教学质量与运行" icon="academic" module-id="teaching" :simulated="true">
-          <TeachingQualityPanel v-if="teaching" :data="teaching" />
-          <div v-else class="cockpit-panel-empty">教学数据暂不可用</div>
+        <CockpitPanel
+          title="精品成果集萃"
+          icon="trophy"
+          panel-class="panel--benchmark"
+          module-id="benchmark-achievements"
+          :simulated="true"
+        >
+          <template #actions>
+            <button
+              type="button"
+              class="panel__action-link"
+              @click="openCollegeDetail({ kind: 'benchmark-detail' })"
+            >
+              查看成果专题 →
+            </button>
+          </template>
+          <BenchmarkAchievementsPanel v-if="benchmark" :data="benchmark" />
+          <div v-else class="cockpit-panel-empty">精品成果数据暂不可用</div>
         </CockpitPanel>
-        <CockpitPanel title="科研创新与团队平台" icon="research">
-          <ResearchInnovPanel v-if="research" :data="research" />
-          <div v-else class="cockpit-panel-empty">科研数据暂不可用</div>
-        </CockpitPanel>
-        <CockpitPanel title="学生就业与前景" icon="students" module-id="employment" :simulated="true">
-          <StudentEmploymentPanel v-if="student" :data="student" />
-          <div v-else class="cockpit-panel-empty">学生数据暂不可用</div>
+        <CockpitPanel
+          title="师资建设图谱"
+          icon="support"
+          panel-class="panel--faculty-atlas"
+          module-id="faculty-atlas"
+          :simulated="true"
+        >
+          <template #actions>
+            <button
+              type="button"
+              class="panel__action-link"
+              @click="openCollegeDetail({ kind: 'teacher-detail' })"
+            >
+              详情 →
+            </button>
+          </template>
+          <FacultyAtlasPanel v-if="teacherAnalytics" :data="teacherAnalytics" />
+          <div v-else class="cockpit-panel-empty">师资建设数据暂不可用</div>
         </CockpitPanel>
       </div>
     </main>
@@ -186,7 +227,7 @@ useAutoRefresh(loadAll)
   place-items: center;
   gap: 12px;
   color: rgba(174, 198, 230, 0.72);
-  font-size: 16px;
+  font-size: 24px;
   padding: 24px;
   text-align: center;
 }
@@ -196,7 +237,7 @@ useAutoRefresh(loadAll)
 }
 
 .cockpit-loading__title {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 600;
 }
 
@@ -222,6 +263,6 @@ useAutoRefresh(loadAll)
   place-items: center;
   min-height: 120px;
   color: rgba(174, 198, 230, 0.55);
-  font-size: 14px;
+  font-size: 24px;
 }
 </style>

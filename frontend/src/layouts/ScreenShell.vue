@@ -11,11 +11,11 @@ withDefaults(
   },
 )
 
-const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'contain' })
+const { scaleStyle, canvasStyle, wrapperStyle } = useScreenScale({ mode: 'fluid' })
 </script>
 
 <template>
-  <div class="screen-wrapper college-screen">
+  <div class="screen-wrapper college-screen" :style="wrapperStyle">
     <div class="screen-scale dashboard cockpit" :style="{ ...canvasStyle, ...scaleStyle }">
       <div v-if="showHud" class="dashboard-scanline" aria-hidden="true" />
       <div v-if="showHud" class="cockpit-hud" aria-hidden="true">
@@ -32,33 +32,3 @@ const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'contain' })
     </div>
   </div>
 </template>
-
-<style scoped lang="scss">
-.college-screen {
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.screen-scale {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  transform-origin: center center;
-  overflow: hidden;
-}
-
-.screen-main {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-}
-</style>
