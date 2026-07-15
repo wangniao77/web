@@ -1,0 +1,173 @@
+// ============================================================
+// Student screen local theme
+// ============================================================
+
+.student-screen {
+  --student-font-body: "HarmonyOS Sans SC", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+  --student-font-number: "DIN Alternate", "Bahnschrift", "Roboto Condensed", "Arial Narrow", var(--student-font-body);
+
+  // 展厅大屏：整体放大字号阶梯，保证远距离可读
+  --fs-display:  54px;
+  --fs-hero:     46px;
+  --fs-highlight:38px;
+  --fs-title:    28px;
+  --fs-body:     24px;
+  --fs-label:    20px;
+  --fs-meta:     18px;
+  --fs-chart:    20px;
+  --fs-micro:    17px;
+
+  // 高级质感色板
+  --stu-bg-deep: #020814;
+  --stu-bg-mid: #041428;
+  --stu-cyan: #5cefff;
+  --stu-cyan-soft: rgba(92, 239, 255, 0.55);
+  --stu-gold: #e8c878;
+  --stu-panel-edge: rgba(120, 210, 255, 0.38);
+  --stu-panel-fill: linear-gradient(
+    155deg,
+    rgba(8, 42, 78, 0.92) 0%,
+    rgba(3, 18, 42, 0.94) 48%,
+    rgba(2, 12, 32, 0.96) 100%
+  );
+
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0, 160, 255, 0.16) 0, transparent 42%),
+    radial-gradient(circle at 18% 78%, rgba(40, 80, 200, 0.1) 0, transparent 28%),
+    radial-gradient(circle at 86% 62%, rgba(0, 180, 220, 0.08) 0, transparent 26%),
+    linear-gradient(rgba(70, 160, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(70, 160, 255, 0.035) 1px, transparent 1px),
+    var(--stu-bg-deep);
+  background-size: auto, auto, auto, 48px 48px, 48px 48px, auto;
+  color: #eef6ff;
+  font-family: var(--student-font-body);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+
+  .screen-scale {
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 18%, rgba(0, 150, 255, 0.12), transparent 40%),
+      linear-gradient(180deg, #041830 0%, #020b18 55%, #01060f 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(110, 200, 255, 0.22),
+      inset 0 0 0 2px rgba(0, 40, 80, 0.35),
+      inset 0 40px 120px rgba(30, 100, 200, 0.08),
+      inset 0 -48px 140px rgba(0, 0, 0, 0.55),
+      0 0 80px rgba(0, 80, 160, 0.18);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 100px 0 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(100, 190, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 190, 255, 0.028) 1px, transparent 1px);
+      background-size: 52px 52px, 52px 52px;
+      mask-image: linear-gradient(180deg, transparent 0%, #000 10%, #000 88%, transparent 100%);
+      opacity: 0.55;
+    }
+
+    &::before {
+      display: none;
+    }
+  }
+
+  // 扫描光束 — 模板页关闭，避免干扰
+  .screen-main::after {
+    display: none;
+  }
+
+  .screen-main {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 8px 10px 10px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  // 关键数字辉光（对齐学院驾驶舱高亮质感）
+  .metric-value,
+  .kpi-value,
+  .stat-num,
+  .pair-stat-num,
+  .footer-stat__value {
+    text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 8px rgba(57, 230, 255, 0.42);
+  }
+
+  .metric-value,
+  .kpi-value,
+  .stat-num {
+    font-family: var(--student-font-number);
+  }
+
+  .panel-header { height: 48px; }
+  .panel-num    { font-size: var(--fs-meta); }
+  .panel-title  { font-size: var(--fs-title); }
+  .panel-more   { font-size: var(--fs-label); }
+  .panel-body   { padding: 14px 15px; font-size: var(--fs-body); }
+
+  .chart-box .chart-container {
+    flex: 1;
+    min-height: 0;
+  }
+
+  // DataV 组件主题微调
+  .dv-border-box-8,
+  .dv-border-box-13 {
+    .border-box-content {
+      padding: 2px;
+    }
+  }
+
+  .dv-scroll-board {
+    .header {
+      display: none;
+    }
+
+    .rows .row-item {
+      font-family: var(--student-font-body);
+    }
+  }
+
+  .dv-digital-flop {
+    canvas {
+      filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.35));
+    }
+  }
+}
+
+@keyframes studentGridDrift {
+  0%   { background-position: 0 0, 0 0, 0 0; }
+  100% { background-position: 46px 46px, 46px 46px, 0 0; }
+}
+
+@keyframes studentParticleDrift {
+  0%   { background-position: 30px 80px, 180px 140px; opacity: 0.3; }
+  100% { background-position: 90px 140px, 240px 60px; opacity: 0.5; }
+}
+
+@keyframes studentScanBeam {
+  0%   { top: -4%; opacity: 0; }
+  8%   { opacity: 0.45; }
+  92%  { opacity: 0.45; }
+  100% { top: 104%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-screen .screen-scale::after,
+  .student-screen .screen-scale::before,
+  .student-screen .screen-main::after {
+    animation: none;
+  }
+}
+
+@import './student-v2.scss';
+@import './student-template.scss';
+@import '../college/cockpit/core-hero-gauge.scss';
+@import './student-score-hero.scss';

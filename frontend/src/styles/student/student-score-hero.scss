@@ -1,0 +1,214 @@
+// 学生综合画像得分：四角卡片上下铺满宽度，字号可读，避开中心表盘
+
+.student-screen .stu-tpl__score.ref-panel {
+  overflow: hidden;
+  clip-path: none;
+}
+
+.stu-tpl__score .ref-panel__body {
+  padding: 0;
+  overflow: hidden;
+  min-height: 260px;
+}
+
+.stu-tpl__score .cockpit-hero,
+.stu-tpl__score .stu-score-hero {
+  display: grid;
+  min-height: 260px;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 55%, rgba(0, 180, 255, 0.12) 0, transparent 58%);
+}
+
+.stu-tpl__score .core-hero-stage {
+  position: relative;
+  min-height: 260px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.student-screen .stu-tpl__score {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+
+  .core-hero-core {
+    width: 100%;
+    max-width: 228px;
+    overflow: visible;
+  }
+
+  .core-gauge-square {
+    width: 210px;
+    height: 210px;
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  .core-gauge.core-gauge--hero {
+    overflow: visible;
+  }
+
+  .core-hero-platform {
+    width: 210px;
+    margin-top: -10px;
+    transform: scale(0.88);
+    transform-origin: center top;
+  }
+
+  .core-hero-stage__glow {
+    width: min(84%, 380px);
+    height: min(80%, 360px);
+  }
+
+  .core-hero-stage::before {
+    width: min(90%, 440px);
+    height: min(84%, 400px);
+  }
+
+  .core-hero-stage::after {
+    width: min(96%, 480px);
+    height: min(90%, 440px);
+  }
+
+  /* 加宽卡片：头行占图标+标题，明细通栏铺满，把右侧空白用起来 */
+  .core-orbit-metric {
+    box-sizing: border-box;
+    width: 168px;
+    max-width: 41%;
+    padding: 8px 9px;
+    gap: 7px;
+    overflow: hidden;
+
+    &.core-orbit-metric--has-tip:hover {
+      overflow: visible;
+      z-index: 12;
+    }
+  }
+
+  .core-orbit-metric--rich {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .core-orbit-metric__head {
+    gap: 8px;
+  }
+
+  .core-orbit-metric__icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .core-orbit-metric__label {
+    font-size: 13px;
+  }
+
+  .core-orbit-metric__value {
+    font-size: 22px;
+  }
+
+  .core-orbit-metric__value--level {
+    font-size: 16px !important;
+  }
+
+  .core-orbit-metric__details {
+    margin-top: 0;
+    padding: 7px 8px;
+    overflow: visible;
+
+    p {
+      gap: 8px;
+      margin: 0 0 4px;
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    span {
+      flex: 1 1 auto;
+      min-width: 0;
+      color: #9ec9e6;
+    }
+
+    b {
+      flex: 0 0 auto;
+      max-width: none;
+      overflow: visible;
+      color: #e8f7ff;
+      font-weight: 700;
+    }
+  }
+
+  .core-orbit-metric--left::before {
+    right: -12px;
+    width: 12px;
+  }
+
+  .core-orbit-metric--right::before {
+    left: -12px;
+    width: 12px;
+  }
+
+  .core-orbit--tl {
+    top: 2%;
+    left: 0;
+  }
+
+  .core-orbit--tr {
+    top: 2%;
+    right: 0;
+  }
+
+  .core-orbit--bl {
+    bottom: 5%;
+    left: 0;
+  }
+
+  .core-orbit--br {
+    bottom: 5%;
+    right: 0;
+  }
+
+  .core-gauge--hero .core-gauge__content {
+    width: 54%;
+    height: 54%;
+    padding: 6px 8px;
+    gap: 2px;
+    justify-content: center;
+
+    span {
+      font-size: 12px;
+      line-height: 1.1;
+    }
+
+    strong {
+      font-family: var(--student-font-number);
+      font-size: 38px;
+      line-height: 1;
+      margin: 2px 0 0;
+    }
+
+    small {
+      margin-top: 4px;
+      font-size: 11px;
+      opacity: 0.88;
+    }
+
+    b {
+      margin-top: 2px;
+      font-size: 13px;
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+
+    .core-gauge__delta {
+      display: none;
+    }
+  }
+
+  .core-gauge__delta {
+    font-size: 11px;
+  }
+}
