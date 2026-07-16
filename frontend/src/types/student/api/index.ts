@@ -99,6 +99,13 @@ export interface AiAssistantDTO {
   longTermSuggestions: string[]
 }
 
+export interface RankNeighborDTO {
+  name: string
+  gpa: number
+  rank: number
+  studentId?: string
+}
+
 export interface GrowthOverviewDTO {
   growthIndex: number
   growthLevel: string
@@ -108,6 +115,10 @@ export interface GrowthOverviewDTO {
   academicTotal: number
   qualityScore: number
   qualityLevel: string
+  gpaDelta?: number
+  gradeRankDelta?: number
+  neighborsAhead?: RankNeighborDTO[]
+  neighborsBehind?: RankNeighborDTO[]
 }
 
 export interface HighlightItemDTO {
@@ -250,6 +261,8 @@ export interface StudentDashboardDTO {
     resumeStatus?: string
     projectExperiences?: string[]
     militaryNote?: string
+    targetUniversities?: string[]
+    targetCompanies?: string[]
   }
   mentalGrowth?: {
     supportStatus: string

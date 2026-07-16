@@ -131,10 +131,97 @@ function buildHighPotentialTags(record: StudentAcademicRow, majorRank: RankResul
   const highLevel = parsed.some((p) => p.level === '国家级' || p.level === '省部级')
   if (awards >= 1 && (highLevel || /国家级|省部级|省级/.test(detail))) tags.push('竞赛高潜')
   else if (awards >= 2) tags.push('竞赛高潜')
+  if (
+    /大创|科研|论文|专利|软著|创新创业/.test(detail) ||
+    (gpa >= 3.2 && awards >= 1 && /项目|研究/.test(detail))
+  ) {
+    tags.push('科研高潜')
+  }
   if (extractCadreRoles(detail).length || /优干|优秀学生干部|班干部/.test(detail)) {
     tags.push('干部奉献高潜')
   }
   return tags
+}
+
+function buildGradeNeighbors(studentId: string, peers: StudentAcademicRow[], windowSize = 3) {
+  const scored = peers
+    .map((p) => ({
+      id: String(p.student_id || ''),
+      name: String(p.name || '').trim() || '同学',
+      gpa: num(p.average_credit_gpa),
+    }))
+    .filter((p) => p.id)
+  if (!scored.length) return { ahead: [] as Array<{ name: string; gpa: number; rank: number; studentId: string }>, behind: [] as Array<{ name: string; gpa: number; rank: number; studentId: string }> }
+
+  scored.sort((a, b) => b.gpa - a.gpa || a.id.localeCompare(b.id))
+  const ranked: Array<{ name: string; gpa: number; rank: number; studentId: string }> = []
+  let prev: number | null = null
+  let current = 0
+  scored.forEach((row, index) => {
+    if (prev === null || row.gpa !== prev) {
+      current = index + 1
+      prev = row.gpa
+    }
+    ranked.push({ name: row.name, gpa: Math.round(row.gpa * 100) / 100, rank: current, studentId: row.id })
+  })
+
+  const idx = ranked.findIndex((r) => r.studentId === String(studentId))
+  if (idx < 0) return { ahead: [], behind: [] }
+  return {
+    ahead: ranked.slice(Math.max(0, idx - windowSize), idx),
+    behind: ranked.slice(idx + 1, idx + 1 + windowSize),
+  }
+}
+
+function buildCareerBenchmarks(opts: {
+  gpa: number
+  awards: number
+  tags: string[]
+  direction: string
+}) {
+  const { gpa, awards, tags, direction } = opts
+  const academicStar = tags.includes('学业高潜') || gpa >= 3.5
+  const contestStar = tags.includes('竞赛高潜') || awards >= 2
+  const researchStar = tags.includes('科研高潜')
+
+  if (academicStar || researchStar) {
+    return {
+      employmentDestination: (gpa >= 3.55 ? '考研备考' : '企业就业') as
+        | '考研备考'
+        | '企业就业',
+      targetUniversities: ['中山大学', '华南理工大学', '暨南大学'],
+      targetCompanies: contestStar || researchStar
+        ? ['腾讯', '华为', '字节跳动']
+        : ['华为', '招商银行', '网易'],
+      targetCity: '广州 / 深圳',
+      expectedSalary: gpa >= 3.5 ? '12-20K' : '10-16K',
+    }
+  }
+  if (contestStar) {
+    return {
+      employmentDestination: '企业就业' as const,
+      targetUniversities: ['华南师范大学', '广东工业大学', '深圳大学'],
+      targetCompanies: ['腾讯云', '中兴', '顺丰科技'],
+      targetCity: '广州 / 深圳',
+      expectedSalary: '10-16K',
+    }
+  }
+  if (/考研|升学|深造/.test(direction)) {
+    return {
+      employmentDestination: '考研备考' as const,
+      targetUniversities: ['广东财经大学（保研/考研）', '华南师范大学', '广东工业大学'],
+      targetCompanies: ['银行科技岗', '政务信息化', '本地国企'],
+      targetCity: '广州',
+      expectedSalary: '未填报',
+    }
+  }
+  return {
+    employmentDestination: '待实习' as const,
+    targetUniversities: ['待明确升学目标'],
+    targetCompanies: ['待明确就业目标'],
+    targetCity: '未填报',
+    expectedSalary: '未填报',
+  }
 }
 
 function competitionPercentile(record: StudentAcademicRow, peers: StudentAcademicRow[]) {
@@ -376,6 +463,15 @@ export function deriveStudentDashboard(
   const growthLevel = growthIndex >= 88 ? '优秀' : growthIndex >= 75 ? '良好' : growthIndex >= 60 ? '中等' : '待提升'
 
   const { direction, match, jobMatches } = recommendDirection(record)
+  const benchmarks = buildCareerBenchmarks({ gpa, awards: awardsN, tags, direction })
+  const neighbors = buildGradeNeighbors(sid, opts.gradePeers.length ? opts.gradePeers : [record], 3)
+  const gpaDelta =
+    gpaTrendValues.length >= 2
+      ? Math.round((gpaTrendValues[gpaTrendValues.length - 1] - gpaTrendValues[gpaTrendValues.length - 2]) * 100) / 100
+      : 0
+  /** 用 GPA 变化近似名次趋势：GPA↑ → 名次变好（delta 记为负） */
+  const gradeRankDelta = gpaDelta > 0.02 ? -1 : gpaDelta < -0.02 ? 1 : 0
+  const researchCount = parsedAwards.filter((a) => /大创|科研|论文|专利|软著|创新/.test(a.name)).length
   const riskLabel = { low: '低', medium: '中', high: '高' }[risk]
   const tagText = tags.length ? tags.join('、') : '暂无高潜标签'
   const name = record.name || '该生'
@@ -511,6 +607,10 @@ export function deriveStudentDashboard(
       academicTotal: majorRank.total,
       qualityScore,
       qualityLevel: qualityScore >= 80 ? '良好+' : qualityScore >= 70 ? '良好' : '中等',
+      gpaDelta,
+      gradeRankDelta,
+      neighborsAhead: neighbors.ahead,
+      neighborsBehind: neighbors.behind,
     },
     highlights,
     attention,
@@ -548,8 +648,8 @@ export function deriveStudentDashboard(
     },
     competition: {
       awardCount: awardsN,
-      researchCount: 0,
-      innovationCount: 0,
+      researchCount,
+      innovationCount: researchCount,
       highlights: parsedAwards.length
         ? parsedAwards.slice(0, 5).map((a) => ({
             label: a.name.slice(0, 40),
@@ -643,13 +743,15 @@ export function deriveStudentDashboard(
     careerDev: {
       practiceBases: [],
       internshipBases: [],
-      employmentIntention: '待实习',
-      employmentDestination: '待实习',
-      targetCity: '未填报',
-      expectedSalary: '未填报',
+      employmentIntention: benchmarks.employmentDestination,
+      employmentDestination: benchmarks.employmentDestination,
+      targetCity: benchmarks.targetCity,
+      expectedSalary: benchmarks.expectedSalary,
       resumeStatus: '未完善',
       projectExperiences: [],
       militaryNote: '无',
+      targetUniversities: benchmarks.targetUniversities,
+      targetCompanies: benchmarks.targetCompanies,
     },
     mentalGrowth: {
       supportStatus: '心理分级未接入',

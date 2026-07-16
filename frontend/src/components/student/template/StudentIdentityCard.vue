@@ -92,29 +92,6 @@ const growthTrendText = computed(() => ({
   stable: '总体平稳',
 }[props.profile.growthTrend ?? 'stable']))
 
-const sparkPoints = computed(() => {
-  const values = props.academic?.gpaValues?.length
-    ? props.academic.gpaValues
-    : (() => {
-        const g = props.academic?.gpa ?? 3
-        return props.profile.growthTrend === 'positive'
-          ? [g - 0.2, g - 0.1, g - 0.04, g]
-          : props.profile.growthTrend === 'negative'
-            ? [g + 0.15, g + 0.08, g + 0.03, g]
-            : [g - 0.05, g + 0.02, g - 0.02, g]
-      })()
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const span = Math.max(0.05, max - min)
-  return values
-    .map((v, i) => {
-      const x = (i / Math.max(1, values.length - 1)) * 84
-      const y = 22 - ((v - min) / span) * 18
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
-})
-
 const sparkTitle = computed(() => {
   const values = props.academic?.gpaValues ?? []
   if (values.length >= 2) {
@@ -185,6 +162,48 @@ const highPotentialTags = computed(() => {
     .filter((label) => /高潜/.test(label))
 })
 
+const linkedTeachers = computed(() => [
+  { label: '班主任', value: props.profile.mentor?.trim() || '—' },
+  { label: '辅导员', value: props.profile.counselor?.trim() || '—' },
+  { label: '毕设导师', value: props.profile.thesisAdvisor?.trim() || props.profile.mentor?.trim() || '—' },
+])
+
+const potentialMining = computed(() => {
+  const gpa = props.academic?.gpa
+  const majorRank = props.academic?.majorRank
+  const majorTotal = props.academic?.majorTotal
+  const awards = props.highlights?.length ?? 0
+  return [
+    {
+      label: '尖子生成绩',
+      value: gpa != null ? `GPA ${gpa.toFixed(2)}` : '—',
+      tip: majorTotal
+        ? `专业排名 ${majorRank}/${majorTotal}，用于识别学业尖子生。`
+        : 'GPA 与专业排名用于识别学业尖子生。',
+    },
+    {
+      label: '竞赛潜力',
+      value: awards ? `${awards}项动态` : (highPotentialTags.value.some((t) => /竞赛/.test(t)) ? '竞赛高潜' : '待挖掘'),
+      tip: '竞赛获奖与高潜标签，反映竞赛与创新实践潜力。',
+    },
+    {
+      label: '科研潜力',
+      value: highPotentialTags.value.some((t) => /科研/.test(t)) ? '科研高潜' : '待挖掘',
+      tip: '大创/论文/专利等科研相关信号；接入科研系统后可细化。',
+    },
+  ]
+})
+
+const futureBenchmarks = computed(() => {
+  const unis = props.careerDev.targetUniversities?.filter(Boolean) ?? []
+  const cos = props.careerDev.targetCompanies?.filter(Boolean) ?? []
+  return {
+    universities: unis.length ? unis.slice(0, 3).join(' · ') : '待明确升学目标',
+    companies: cos.length ? cos.slice(0, 3).join(' · ') : '待明确就业目标',
+    destination: props.careerDev.employmentDestination || props.careerDev.employmentIntention || '待实习',
+  }
+})
+
 /** 姓名旁职务标签：仅班干部显示，不再展示「在校」（学籍状态区已有） */
 const cadreTitle = computed(() => {
   const roles = (props.cadreRoles ?? []).map((r) => r.trim()).filter(Boolean)
@@ -251,7 +270,8 @@ function selectPeer(studentId: string) {
     class="stu-tpl__identity"
   >
     <div class="sid">
-      <div class="sid__profile">
+      <div class="sid__upper">
+        <div class="sid__profile">
         <StuHint tip="照片边框颜色取三类预警中的最高等级：绿正常、黄需关注、红高危。" block class="sid__avatar-hint">
           <div class="sid__avatar" :class="`sid__avatar--${avatarRisk}`">
             <img
@@ -325,17 +345,63 @@ function selectPeer(studentId: string) {
             </StuHint>
           </dl>
         </div>
+        </div>
+
+        <div class="sid__context">
+          <section class="sid__teachers" aria-label="关联老师">
+        <StuHint tip="班主任、辅导员与毕设导师，方便快速联络育人责任人。">
+          <strong class="sid__section-label">关联老师</strong>
+        </StuHint>
+        <div class="sid__teachers-grid">
+          <StuHint
+            v-for="item in linkedTeachers"
+            :key="item.label"
+            block
+            :tip="`${item.label}：${item.value}`"
+          >
+            <div class="sid__teacher-item">
+              <span>{{ item.label }}</span>
+              <em>{{ item.value }}</em>
+            </div>
+          </StuHint>
+        </div>
+          </section>
+
+          <section class="sid__mining" aria-label="挖掘性数据">
+        <StuHint tip="尖子生成绩、竞赛与科研潜力挖掘，用于重点培养识别。">
+          <strong class="sid__section-label">潜力挖掘</strong>
+        </StuHint>
+        <div class="sid__mining-grid">
+          <StuHint
+            v-for="item in potentialMining"
+            :key="item.label"
+            block
+            :tip="item.tip"
+          >
+            <div class="sid__mining-item">
+              <span>{{ item.label }}</span>
+              <strong>{{ item.value }}</strong>
+            </div>
+          </StuHint>
+        </div>
+          </section>
+
+          <section class="sid__benchmark" aria-label="对标未来规划">
+        <StuHint tip="对标升学高校与就业大厂（系统挖掘推荐，填报后可覆盖）。">
+          <strong class="sid__section-label">对标规划 · {{ futureBenchmarks.destination }}</strong>
+        </StuHint>
+        <div class="sid__benchmark-lines">
+          <p><em>升学高校</em><span>{{ futureBenchmarks.universities }}</span></p>
+          <p><em>就业大厂</em><span>{{ futureBenchmarks.companies }}</span></p>
+        </div>
+          </section>
+        </div>
       </div>
 
       <section class="sid__management" aria-label="管理与帮扶状态">
         <div class="sid__management-head">
           <StuHint tip="学工侧关键状态总览，用于快速判断帮扶优先级。">
             <strong>管理与帮扶状态</strong>
-          </StuHint>
-          <StuHint :tip="sparkTitle">
-            <svg class="sid__spark" viewBox="0 0 88 24" role="img" aria-label="成长趋势迷你图">
-              <polyline :points="sparkPoints" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
           </StuHint>
         </div>
         <div class="sid__management-grid">
@@ -356,20 +422,22 @@ function selectPeer(studentId: string) {
         </div>
       </section>
 
-      <StuHint tip="伴随式采集的最新事件（获奖、预警或信息变更）。" block>
-        <div class="sid__recent" :class="`sid__recent--${recentDynamic.kind}`" :title="recentDynamic.text">
-          <em>近期动态</em>
-          <strong>{{ recentDynamic.time }} · {{ recentDynamic.text }}</strong>
-        </div>
-      </StuHint>
+      <div class="sid__utility-row">
+        <StuHint tip="伴随式采集的最新事件（获奖、预警或信息变更）。" block>
+          <div class="sid__recent" :class="`sid__recent--${recentDynamic.kind}`" :title="recentDynamic.text">
+            <em>近期动态</em>
+            <strong>{{ recentDynamic.time }} · {{ recentDynamic.text }}</strong>
+          </div>
+        </StuHint>
 
-      <div class="sid__archive-actions">
-        <StuHint tip="打开本学期课表详情。">
-          <button type="button" @click="emit('open', 'timetable')">本学期课表 ›</button>
-        </StuHint>
-        <StuHint tip="打开更完整的学籍与基础档案。">
-          <button type="button" class="sid__archive-btn" @click="emit('open', 'basic')">基础信息台账 ›</button>
-        </StuHint>
+        <div class="sid__archive-actions">
+          <StuHint tip="打开本学期课表详情。">
+            <button type="button" @click="emit('open', 'timetable')">本学期课表 ›</button>
+          </StuHint>
+          <StuHint tip="打开更完整的学籍与基础档案。">
+            <button type="button" class="sid__archive-btn" @click="emit('open', 'basic')">基础信息台账 ›</button>
+          </StuHint>
+        </div>
       </div>
 
       <div class="sid__warnings" aria-label="学生预警状态">
@@ -412,27 +480,148 @@ function selectPeer(studentId: string) {
 .sid {
   height: 100%;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto auto;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.sid__upper {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(250px, 0.8fr);
+  gap: 8px;
+  overflow: hidden;
+}
+
+.sid__context {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 5px;
   overflow: hidden;
 }
 
 .sid__profile {
-  flex: 0 1 auto;
   min-height: 0;
   display: flex;
-  gap: 14px;
+  gap: 10px;
+  overflow: hidden;
 
   :deep(.sid__avatar-hint) {
-    flex: 0 0 118px;
+    flex: 0 0 96px;
+  }
+}
+
+.sid__section-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #9ed8f5;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.sid__teachers,
+.sid__mining,
+.sid__benchmark {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.sid__teachers-grid,
+.sid__mining-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.sid__context .sid__section-label {
+  margin-bottom: 2px;
+  font-size: 11px;
+}
+
+.sid__context .sid__teachers-grid,
+.sid__context .sid__mining-grid {
+  gap: 4px;
+}
+
+.sid__context .sid__teacher-item,
+.sid__context .sid__mining-item {
+  padding: 4px 5px;
+}
+
+.sid__teacher-item,
+.sid__mining-item {
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid rgba(120, 200, 255, 0.16);
+  border-radius: 3px;
+  background: rgba(0, 36, 72, 0.4);
+
+  span {
+    display: block;
+    color: #8eb8d8;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  em,
+  strong {
+    display: block;
+    margin-top: 2px;
+    overflow: hidden;
+    color: #e8f7ff;
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.sid__mining-item strong {
+  color: #e8c878;
+}
+
+.sid__benchmark-lines {
+  display: grid;
+  gap: 3px;
+
+  p {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
+    align-items: baseline;
+    padding: 4px 8px;
+    border: 1px solid rgba(232, 200, 120, 0.16);
+    border-radius: 3px;
+    background: rgba(40, 32, 12, 0.28);
+  }
+
+  em {
+    color: #e8c878;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  span {
+    overflow: hidden;
+    color: #dceef8;
+    font-size: 12px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
 .sid__avatar {
-  flex: 0 0 118px;
-  width: 118px;
-  height: 118px;
+  flex: 0 0 96px;
+  width: 96px;
+  height: 96px;
   padding: 3px;
   border-radius: 50%;
   transition: background 0.25s ease, box-shadow 0.25s ease;
@@ -479,10 +668,10 @@ function selectPeer(studentId: string) {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 
   strong {
-    font-size: 28px;
+    font-size: 24px;
     line-height: 1;
     color: #f7fbff;
     letter-spacing: 0.08em;
@@ -525,18 +714,18 @@ function selectPeer(studentId: string) {
 
 .sid__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
   margin: 0;
 
   :deep(.stu-hint--block),
   div {
     min-width: 0;
     display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    align-items: start;
-    font-size: 16px;
-    line-height: 1.45;
+    grid-template-columns: 58px minmax(0, 1fr);
+    align-items: center;
+    font-size: 14px;
+    line-height: 1.25;
   }
 
   :deep(.stu-hint--block > div) {
@@ -546,14 +735,14 @@ function selectPeer(studentId: string) {
   dt {
     padding-top: 1px;
     color: #7eb4d8;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
   }
 
   dd {
     margin: 0;
     color: #e8f4ff;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
     word-break: break-all;
   }
@@ -591,12 +780,13 @@ function selectPeer(studentId: string) {
 .sid__management {
   flex: 0 1 auto;
   min-height: 0;
-  padding: 4px 8px;
+  padding: 3px 7px;
   border: 1px solid rgba(120, 200, 255, 0.2);
   border-radius: 2px;
   background:
     linear-gradient(135deg, rgba(0, 80, 140, 0.2), transparent 55%),
     rgba(0, 28, 58, 0.42);
+  overflow: hidden;
 }
 
 .sid__management-head {
@@ -604,21 +794,15 @@ function selectPeer(studentId: string) {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 3px;
+  margin-bottom: 1px;
 
-  strong { color: #a8e8ff; font-size: 15px; font-weight: 700; }
-}
-
-.sid__spark {
-  width: 88px;
-  height: 24px;
-  color: #55e995;
+  strong { color: #a8e8ff; font-size: 13px; font-weight: 700; }
 }
 
 .sid__management-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 7px;
+  gap: 5px;
 
   :deep(.stu-hint--block) {
     min-width: 0;
@@ -632,7 +816,7 @@ function selectPeer(studentId: string) {
 
 .sid__management-item {
   min-width: 0;
-  padding: 5px 6px;
+  padding: 3px 5px;
   border-left: 2px solid currentColor;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.56);
@@ -645,8 +829,8 @@ function selectPeer(studentId: string) {
     white-space: nowrap;
   }
 
-  span { color: #7eb4d8; font-size: 12px; font-weight: 600; }
-  strong { margin-top: 3px; color: currentColor; font-size: 16px; font-weight: 700; }
+  span { color: #7eb4d8; font-size: 11px; font-weight: 600; }
+  strong { margin-top: 1px; color: currentColor; font-size: 14px; font-weight: 700; }
 
   &--safe { color: #55e995; }
   &--warn { color: #facc15; }
@@ -660,7 +844,7 @@ function selectPeer(studentId: string) {
   grid-template-columns: auto 1fr;
   gap: 10px;
   align-items: center;
-  padding: 6px 10px;
+  padding: 3px 8px;
   border: 1px solid rgba(120, 200, 255, 0.2);
   border-radius: 2px;
   background: rgba(0, 40, 78, 0.4);
@@ -698,8 +882,18 @@ function selectPeer(studentId: string) {
   }
 }
 
+.sid__utility-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr);
+  gap: 6px;
+
+  > :deep(.stu-hint--block) {
+    min-width: 0;
+  }
+}
+
 .sid__archive-actions {
-  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 1.35fr;
   gap: 8px;
@@ -712,7 +906,7 @@ function selectPeer(studentId: string) {
   :deep(button),
   button {
     width: 100%;
-    min-height: 34px;
+    min-height: 30px;
     padding: 0 12px;
     border: 1px solid rgba(120, 210, 255, 0.28);
     border-radius: 2px;
@@ -720,6 +914,7 @@ function selectPeer(studentId: string) {
     color: #8ee9ff;
     font-size: 15px;
     font-weight: 600;
+    white-space: nowrap;
     cursor: pointer;
   }
 }
@@ -750,12 +945,12 @@ function selectPeer(studentId: string) {
 
 .sid__warning {
   min-width: 0;
-  min-height: 48px;
+  min-height: 44px;
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 5px 9px;
   border: 1px solid;
   border-radius: 2px;
   text-align: left;

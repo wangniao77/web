@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
-import gsap from 'gsap'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import DashIcon from '@/components/college/DashIcon.vue'
 import StudentTplCard from './StudentTplCard.vue'
 import StuHint from './StuHint.vue'
@@ -34,12 +33,14 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ open: [id: string] }>()
-const carouselRef = ref<HTMLElement | null>(null)
 const currentPage = ref(0)
+const trackIndex = ref(0)
+const trackResetting = ref(false)
 const paused = ref(false)
 const progressKey = ref(0)
 const AUTOPLAY_INTERVAL = 12000
 let autoplayTimer: ReturnType<typeof setInterval> | null = null
+let resetTimer: ReturnType<typeof setTimeout> | null = null
 
 const overviewGroups = [
   {
@@ -56,14 +57,33 @@ const overviewGroups = [
   {
     page: 1,
     eyebrow: '出口通道',
-    title: '出口 · 毕业',
-    hint: '点此查看出口与毕业审核',
+    title: '素养 · 出口',
+    hint: '点此查看实习、就业与升学发展',
     accent: 'mint',
     modules: [
+      { id: 'quality', label: '综合素养' },
       { id: 'career', label: '出口发展' },
-      { id: 'graduation', label: '毕业审核' },
     ],
   },
+  {
+    page: 2,
+    eyebrow: '循环衔接',
+    title: '出口 · 学情',
+    hint: '继续查看出口发展与学情轨迹',
+    accent: 'cyan',
+    modules: [
+      { id: 'career', label: '出口发展' },
+      { id: 'academic', label: '学情轨迹' },
+    ],
+  },
+] as const
+
+const carouselCards = [
+  { id: 'academic', type: 'academic' },
+  { id: 'quality', type: 'quality' },
+  { id: 'career', type: 'career' },
+  { id: 'academic-loop', type: 'academic' },
+  { id: 'quality-loop', type: 'quality' },
 ] as const
 
 function bumpProgress() {
@@ -75,11 +95,30 @@ function stopAutoplay() {
   autoplayTimer = null
 }
 
+function advanceCarousel() {
+  if (currentPage.value < overviewGroups.length - 1) {
+    currentPage.value += 1
+    trackIndex.value += 1
+    return
+  }
+
+  currentPage.value = 0
+  trackIndex.value = 3
+  if (resetTimer) clearTimeout(resetTimer)
+  resetTimer = setTimeout(() => {
+    trackResetting.value = true
+    trackIndex.value = 0
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      trackResetting.value = false
+    }))
+  }, 680)
+}
+
 function startAutoplay() {
   stopAutoplay()
   bumpProgress()
   autoplayTimer = setInterval(() => {
-    currentPage.value = currentPage.value === 1 ? 0 : 1
+    advanceCarousel()
     bumpProgress()
   }, AUTOPLAY_INTERVAL)
 }
@@ -91,6 +130,7 @@ function selectPage(page: number) {
     return
   }
   currentPage.value = page
+  trackIndex.value = page
   startAutoplay()
 }
 
@@ -103,13 +143,6 @@ function onCarouselLeave() {
   paused.value = false
   startAutoplay()
 }
-
-const secondClassGap = computed(() => {
-  const earned = props.credit.secondClassroomEarned
-  const required = props.credit.secondClassroomRequired || 10
-  const gap = Math.max(0, Math.round((required - earned) * 10) / 10)
-  return { earned, required, gap, percent: props.credit.secondPercent || 0 }
-})
 
 const creditBuckets = computed(() => {
   if (props.credit.buckets?.length) return props.credit.buckets
@@ -155,13 +188,6 @@ const thesisIndex = computed(() => {
   return idx
 })
 
-const cetLine = computed(() => {
-  const cet4 = props.profile.cet4Score
-  const cet6 = props.profile.cet6Score
-  if (!cet4 && !cet6) return '四六级成绩待接入'
-  return `四级 ${cet4 ?? '—'} · 六级 ${cet6 ?? '—'}`
-})
-
 const graduationRisk = computed(() => {
   if (failCount.value >= 3) {
     return { label: '高风险', level: 'high', tip: '挂科较多，毕业延期风险较高，需尽快闭环未完成项。' }
@@ -177,23 +203,8 @@ const thesisStage = computed(() => {
   return props.profile.thesisStatus || '未开始'
 })
 
-const otherGroup = computed(() => overviewGroups[currentPage.value === 0 ? 1 : 0])
-
-function togglePage() {
-  selectPage(currentPage.value === 0 ? 1 : 0)
-}
-
-const advisorName = computed(
-  () => props.profile.thesisAdvisor || props.profile.mentor || '—',
-)
-
 const jobMatches = computed(() => props.aiPortrait.jobMatches.slice(0, 2))
 
-const academicTrend = computed(() => {
-  const delta = gpaDelta.value
-  const direction = delta >= 0 ? '↑' : '↓'
-  return `GPA ${direction}${Math.abs(delta).toFixed(2)} · ${failCount.value ? `挂科${failCount.value}门` : '无挂科'} · ${cetLine.value} · 二课${secondClassGap.value.percent}%`
-})
 const scholarshipCount = computed(() => props.scholarships.length)
 const disciplineRecords = computed(() => props.quality.disciplineRecords ?? [])
 const disciplineCount = computed(() => disciplineRecords.value.length)
@@ -237,66 +248,20 @@ const employmentDestination = computed(
   () => props.careerDev.employmentDestination || props.careerDev.employmentIntention || '待实习',
 )
 
-/** 毕业卡只谈审核/论文/任务；去向仅作路径任务分支，不重复展示「待实习」状态 */
-const graduationTasks = computed(() => {
-  const creditOk = props.credit.earnedPercent >= 100
-  const failOk = failCount.value === 0
-  const thesisOk = thesisIndex.value >= 2
-  const dest = employmentDestination.value
-  const pathLabel = /考研|升学|留学/.test(dest)
-    ? '升学材料'
-    : /考公/.test(dest)
-      ? '公职备考材料'
-      : '出口材料（简历/作品集）'
-
-  return [
-    { label: '培养方案学分', done: creditOk, detail: `${props.credit.earned}/${props.credit.required}` },
-    { label: '挂科闭环', done: failOk, detail: failOk ? '已清零' : `${failCount.value} 门待处理` },
-    { label: '毕业论文', done: thesisOk, detail: thesisStage.value },
-    { label: pathLabel, done: false, detail: '待完善' },
-  ]
-})
-
-const graduationInsight = computed(() => {
-  const pending = graduationTasks.value.filter((t) => !t.done).map((t) => t.label)
-  const riskText = graduationRisk.value.label === '正常'
-    ? '毕业审核进度总体正常'
-    : '毕业审核存在延期风险，需优先闭环未完成项'
-  if (!pending.length) return `${riskText}，当前无未完成硬性任务。`
-  return `${riskText}；待跟进：${pending.join('、')}。考研/就业/考公等去向见左侧「出口发展」。`
-})
-
-function animateVisibleCards() {
-  const root = carouselRef.value
-  if (!root) return
-  const cards = root.querySelectorAll('.development-slide.is-active .development-card')
-  gsap.fromTo(cards, { y: 10, autoAlpha: 0.7 }, {
-    y: 0,
-    autoAlpha: 1,
-    duration: 0.36,
-    stagger: 0.05,
-    ease: 'power2.out',
-    overwrite: true,
-  })
-}
-
-watch(currentPage, async () => {
-  await nextTick()
-  animateVisibleCards()
-})
-
 onMounted(() => {
   startAutoplay()
-  animateVisibleCards()
 })
-onBeforeUnmount(stopAutoplay)
+onBeforeUnmount(() => {
+  stopAutoplay()
+  if (resetTimer) clearTimeout(resetTimer)
+})
 </script>
 
 <template>
   <StudentTplCard
     icon="map"
     title="学生发展概览"
-    tip="两个页面轮换：学情·素养 / 出口·毕业。顶部点切换，内容淡入淡出；悬停暂停自动轮换。"
+    tip="三个模块循环滚动，每次移动一张卡；悬停可暂停自动轮换。"
     class="stu-kanban-wrap"
   >
     <div
@@ -331,19 +296,16 @@ onBeforeUnmount(stopAutoplay)
             aria-hidden="true"
           />
         </button>
-        <button type="button" class="dev-switch__jump" @click="togglePage">
-          切到 {{ otherGroup.title }}
-          <span aria-hidden="true">›</span>
-        </button>
       </nav>
 
-      <div ref="carouselRef" class="development-viewport">
+      <div class="development-viewport">
         <div
-          class="development-slide"
-          :class="{ 'is-active': currentPage === 0 }"
-          :aria-hidden="currentPage !== 0"
+          class="development-track"
+          :class="{ 'is-resetting': trackResetting }"
+          :style="{ transform: `translateX(calc(${trackIndex} * (-50% - 8px)))` }"
         >
-            <article class="development-card development-card--academic">
+          <template v-for="card in carouselCards" :key="card.id">
+            <article v-if="card.type === 'academic'" class="development-card development-card--academic">
               <header class="development-card__head">
                 <span class="development-card__icon" aria-hidden="true">
                   <DashIcon kind="academic" :size="20" />
@@ -433,14 +395,17 @@ onBeforeUnmount(stopAutoplay)
                   </StuHint>
                 </div>
 
-                <StuHint :tip="`学情摘要：${academicTrend}`" block class="academic-note-wrap">
-                  <p class="academic-hero__note">
-                    <em>{{ cetLine }}</em>
-                    <em>二课 {{ secondClassGap.earned }}/{{ secondClassGap.required }}（{{ secondClassGap.percent }}%）</em>
-                    <em v-if="failNames">待补：{{ failNames }}</em>
-                    <em v-else>无挂科待补</em>
-                  </p>
-                </StuHint>
+                <div class="academic-graduation-brief">
+                  <StuHint :tip="graduationRisk.tip">
+                    <span>毕业审核</span>
+                    <strong :class="`is-${graduationRisk.level}`">{{ graduationRisk.label }}</strong>
+                  </StuHint>
+                  <StuHint tip="一级页面仅展示当前毕设阶段，论文节点与审核任务进入二级页面查看。">
+                    <span>毕设阶段</span>
+                    <strong>{{ thesisStage }}</strong>
+                  </StuHint>
+                  <button type="button" @click="emit('open', 'graduation')">查看审核 ›</button>
+                </div>
               </div>
 
               <button type="button" class="development-card__action" @click="emit('open', 'academic')">
@@ -448,7 +413,7 @@ onBeforeUnmount(stopAutoplay)
               </button>
             </article>
 
-            <article class="development-card development-card--quality">
+            <article v-else-if="card.type === 'quality'" class="development-card development-card--quality">
               <header class="development-card__head">
                 <span class="development-card__icon" aria-hidden="true">
                   <DashIcon kind="trophy" :size="20" stroke="#e8c878" />
@@ -505,7 +470,7 @@ onBeforeUnmount(stopAutoplay)
 
                 <div class="quality-panels">
                   <div class="quality-panel">
-                    <span>荣誉亮点</span>
+                    <span>荣誉成果</span>
                     <ul>
                       <li v-for="(item, idx) in visibleQualityHighlights" :key="`${idx}-${item}`" :title="item">{{ item }}</li>
                       <li v-if="!qualityHighlights.length">暂无奖学金 / 竞赛 / 表彰记录</li>
@@ -515,7 +480,7 @@ onBeforeUnmount(stopAutoplay)
                     </p>
                   </div>
                   <div class="quality-panel" :class="{ 'is-alert': disciplineCount > 0 }">
-                    <span>纪律与行为</span>
+                    <span>纪律处分</span>
                     <ul v-if="disciplineCount">
                       <li v-for="row in disciplineRecords.slice(0, 2)" :key="row.id">
                         {{ row.date }} · {{ row.type }} · {{ row.reason }}
@@ -538,14 +503,8 @@ onBeforeUnmount(stopAutoplay)
                 查看台账详情 <span aria-hidden="true">›</span>
               </button>
             </article>
-          </div>
 
-          <div
-            class="development-slide"
-            :class="{ 'is-active': currentPage === 1 }"
-            :aria-hidden="currentPage !== 1"
-          >
-            <article class="development-card development-card--career">
+            <article v-else class="development-card development-card--career">
               <header class="development-card__head">
                 <span class="development-card__icon" aria-hidden="true">
                   <DashIcon kind="employment" :size="20" stroke="#43e7af" />
@@ -564,11 +523,17 @@ onBeforeUnmount(stopAutoplay)
                 <StuHint tip="毕业出口意向（就业/考研/考公等）。" block>
                   <div><span>去向类型</span><strong class="is-text">{{ employmentDestination }}</strong></div>
                 </StuHint>
-                <StuHint tip="期望就业或求学城市。" block>
-                  <div><span>意向城市</span><strong class="is-text">{{ careerDev.targetCity || '未填报' }}</strong></div>
+                <StuHint tip="对标升学高校（系统挖掘推荐）。" block>
+                  <div>
+                    <span>升学高校</span>
+                    <strong class="is-text">{{ (careerDev.targetUniversities && careerDev.targetUniversities[0]) || '待明确' }}</strong>
+                  </div>
                 </StuHint>
-                <StuHint tip="期望薪资区间（来自学生填报）。" block>
-                  <div><span>期望薪资</span><strong class="is-text">{{ careerDev.expectedSalary || '未填报' }}</strong></div>
+                <StuHint tip="对标就业大厂 / 名企（系统挖掘推荐）。" block>
+                  <div>
+                    <span>就业大厂</span>
+                    <strong class="is-text">{{ (careerDev.targetCompanies && careerDev.targetCompanies[0]) || '待明确' }}</strong>
+                  </div>
                 </StuHint>
                 <StuHint tip="简历完善进度，影响岗位推荐与面试准备。" block>
                   <div><span>简历状态</span><strong class="is-text">{{ careerDev.resumeStatus || '未完善' }}</strong></div>
@@ -576,6 +541,12 @@ onBeforeUnmount(stopAutoplay)
               </div>
 
               <div class="career-matches">
+                <template v-if="(careerDev.targetUniversities?.length || 0) + (careerDev.targetCompanies?.length || 0)">
+                  <div class="career-benchmark-block">
+                    <p><em>升学对标</em><span>{{ (careerDev.targetUniversities || []).slice(0, 3).join(' · ') || '—' }}</span></p>
+                    <p><em>就业对标</em><span>{{ (careerDev.targetCompanies || []).slice(0, 3).join(' · ') || '—' }}</span></p>
+                  </div>
+                </template>
                 <template v-if="jobMatches.length">
                   <StuHint
                     v-for="job in jobMatches"
@@ -596,7 +567,9 @@ onBeforeUnmount(stopAutoplay)
                     </div>
                   </StuHint>
                 </template>
-                <p v-else class="career-matches__empty">暂无岗位匹配推荐，完善简历后可生成</p>
+                <p v-else-if="!(careerDev.targetUniversities?.length || careerDev.targetCompanies?.length)" class="career-matches__empty">
+                  暂无岗位匹配推荐，完善简历后可生成
+                </p>
               </div>
 
               <StuHint tip="已登记的代表性项目经历。" block>
@@ -616,73 +589,7 @@ onBeforeUnmount(stopAutoplay)
                 查看发展建议 <span aria-hidden="true">›</span>
               </button>
             </article>
-
-            <article class="development-card development-card--graduation">
-              <header class="development-card__head">
-                <span class="development-card__icon" aria-hidden="true">
-                  <DashIcon kind="research" :size="20" stroke="#7eb8ff" />
-                </span>
-                <div>
-                  <StuHint tip="学分、论文与出口材料等毕业硬性节点审核。">
-                    <h4>毕业审核与论文</h4>
-                  </StuHint>
-                </div>
-                <StuHint :tip="graduationRisk.tip">
-                  <span class="development-status" :class="`development-status--${graduationRisk.level}`">
-                    {{ graduationRisk.label }}
-                  </span>
-                </StuHint>
-              </header>
-
-              <div class="development-metrics development-metrics--pair">
-                <StuHint tip="已修学分占毕业要求的比例。" block>
-                  <div>
-                    <span>学分完成</span>
-                    <strong>{{ credit.earnedPercent }}<small>%</small></strong>
-                  </div>
-                </StuHint>
-                <StuHint tip="当前论文进度阶段：选题→开题→初稿→答辩。" block>
-                  <div><span>毕业论文</span><strong class="is-text">{{ thesisStage }}</strong></div>
-                </StuHint>
-                <StuHint tip="毕业论文指导教师；缺省时显示学业导师。" block>
-                  <div><span>指导教师</span><strong class="is-text">{{ advisorName }}</strong></div>
-                </StuHint>
-                <StuHint :tip="graduationRisk.tip" block>
-                  <div>
-                    <span>延期风险</span>
-                    <strong class="graduation-progress" :class="`graduation-progress--${graduationRisk.level}`">
-                      <i aria-hidden="true" />{{ graduationRisk.label }}
-                    </strong>
-                  </div>
-                </StuHint>
-              </div>
-
-              <div class="graduation-tasks">
-                <StuHint
-                  v-for="task in graduationTasks"
-                  :key="task.label"
-                  block
-                  :tip="`${task.label}：${task.detail}`"
-                >
-                  <div :class="{ done: task.done }">
-                    <i aria-hidden="true" />
-                    <span>{{ task.label }}</span>
-                    <em>{{ task.detail }}</em>
-                  </div>
-                </StuHint>
-              </div>
-
-              <StuHint tip="毕业审核结论与待跟进任务摘要。" block>
-                <div class="development-insight">
-                  <span>判断</span>
-                  <p>{{ graduationInsight }}</p>
-                </div>
-              </StuHint>
-
-              <button type="button" class="development-card__action" @click="emit('open', 'graduation')">
-                查看毕业规划 <span aria-hidden="true">›</span>
-              </button>
-            </article>
+          </template>
           </div>
       </div>
     </div>
@@ -703,7 +610,7 @@ onBeforeUnmount(stopAutoplay)
 .dev-switch {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-items: stretch;
   padding: 4px;
@@ -843,22 +750,16 @@ onBeforeUnmount(stopAutoplay)
   overflow: hidden;
 }
 
-.development-slide {
-  position: absolute;
-  inset: 0;
+.development-track {
+  height: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(5, calc((100% - 16px) / 2));
   gap: 16px;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.45s ease, visibility 0.45s ease;
+  transition: transform 0.65s cubic-bezier(0.22, 0.78, 0.22, 1);
+  will-change: transform;
 
-  &.is-active {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    z-index: 1;
+  &.is-resetting {
+    transition: none;
   }
 }
 
@@ -902,13 +803,13 @@ onBeforeUnmount(stopAutoplay)
 }
 
 .development-card--career {
-  grid-template-rows: auto 88px minmax(60px, 1fr) 34px 34px;
-  gap: 6px;
+  grid-template-rows: auto 82px minmax(56px, 1fr) 32px 32px;
+  gap: 5px;
 }
 
 .development-card--graduation {
-  grid-template-rows: auto 88px minmax(60px, 1fr) 34px 34px;
-  gap: 6px;
+  grid-template-rows: auto 82px minmax(56px, 1fr) 32px 32px;
+  gap: 5px;
 }
 
 .development-card__head {
@@ -1082,7 +983,7 @@ onBeforeUnmount(stopAutoplay)
 }
 
 .development-card--career .development-metrics.development-metrics--pair {
-  height: 88px;
+  height: 82px;
   max-height: none;
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 5px 8px;
@@ -1097,7 +998,7 @@ onBeforeUnmount(stopAutoplay)
 }
 
 .development-card--graduation .development-metrics.development-metrics--pair {
-  height: 88px;
+  height: 82px;
   max-height: none;
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 5px 8px;
@@ -1280,6 +1181,60 @@ onBeforeUnmount(stopAutoplay)
   overflow: hidden;
 }
 
+.academic-graduation-brief {
+  grid-column: 1 / -1;
+  min-width: 0;
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 6px;
+
+  :deep(.stu-hint) {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 9px;
+    border: 1px solid rgba(126, 184, 255, 0.2);
+    border-radius: 3px;
+    background: rgba(16, 48, 88, 0.42);
+  }
+
+  span {
+    color: #9ecae8;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  strong {
+    overflow: hidden;
+    color: #dff4ff;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.is-low { color: #55e995; }
+    &.is-medium { color: #facc15; }
+    &.is-high { color: #ff7474; }
+  }
+
+  button {
+    min-width: 98px;
+    padding: 0 12px;
+    border: 1px solid rgba(126, 184, 255, 0.34);
+    border-radius: 3px;
+    background: linear-gradient(180deg, rgba(44, 112, 180, 0.34), rgba(16, 54, 102, 0.38));
+    color: #a8dcff;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+}
+
 .academic-hero__note {
   margin: 0;
   min-height: 34px;
@@ -1440,6 +1395,36 @@ onBeforeUnmount(stopAutoplay)
 
   :deep(.stu-hint:only-child) {
     grid-column: 1 / -1;
+  }
+}
+
+.career-benchmark-block {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+
+  p {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
+    align-items: baseline;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  em {
+    color: #43e7af;
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  span {
+    overflow: hidden;
+    color: #c5e4f6;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

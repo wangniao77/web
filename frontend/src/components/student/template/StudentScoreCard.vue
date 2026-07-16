@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { IconKind } from '@/components/college/DashIcon.vue'
 import CoreHeroGauge from '@/components/college/modules/center-hub/CoreHeroGauge.vue'
 import StudentTplCard from './StudentTplCard.vue'
+import StuHint from './StuHint.vue'
 import type {
   AcademicDevVM,
   CompetitionVM,
@@ -43,8 +44,55 @@ const passRate = computed(() => {
   return `${Math.max(0, Math.round(((total - failedHint) / total) * 100))}%`
 })
 
+const gpaDelta = computed(() => props.growthOverview.gpaDelta ?? 0)
+const gradeRankDelta = computed(() => props.growthOverview.gradeRankDelta ?? 0)
+
+const gpaTrendArrow = computed(() => {
+  if (gpaDelta.value > 0.02) return { symbol: '↑', text: `+${gpaDelta.value.toFixed(2)}`, tone: 'up' as const }
+  if (gpaDelta.value < -0.02) return { symbol: '↓', text: gpaDelta.value.toFixed(2), tone: 'down' as const }
+  return { symbol: '→', text: '持平', tone: 'flat' as const }
+})
+
+const gpaSpark = computed(() => {
+  const values = props.academic.gpaValues?.length ? props.academic.gpaValues : [props.academic.gpa]
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const span = Math.max(0.05, max - min)
+  return values.map((value, index) => ({
+    value,
+    x: 8 + (index / Math.max(1, values.length - 1)) * 204,
+    y: 52 - ((value - min) / span) * 40,
+  }))
+})
+
+const gpaSparkPoints = computed(() => gpaSpark.value.map((point) => `${point.x},${point.y}`).join(' '))
+const gpaSparkSummary = computed(() => {
+  const values = props.academic.gpaValues?.length ? props.academic.gpaValues : [props.academic.gpa]
+  return `${values[0].toFixed(2)} → ${values[values.length - 1].toFixed(2)}`
+})
+const gpaSparkSemesters = computed(() => {
+  const labels = props.academic.semesters?.length
+    ? props.academic.semesters
+    : ['大一', '大二上', '大二下', '近学期'].slice(-gpaSpark.value.length)
+  return labels.slice(-gpaSpark.value.length)
+})
+
+const rankTrendArrow = computed(() => {
+  // gradeRankDelta < 0 means rank number improved (moved up)
+  if (gradeRankDelta.value < 0) return { symbol: '↑', text: '名次前进', tone: 'up' as const }
+  if (gradeRankDelta.value > 0) return { symbol: '↓', text: '名次后退', tone: 'down' as const }
+  return { symbol: '→', text: '名次持平', tone: 'flat' as const }
+})
+
+const neighborsAhead = computed(() => props.growthOverview.neighborsAhead ?? [])
+const neighborsBehind = computed(() => props.growthOverview.neighborsBehind ?? [])
+
+function formatNeighbor(n: { name: string; gpa: number; rank: number }) {
+  return `${n.name} ${n.gpa.toFixed(2)}`
+}
+
 const centerTip =
-  '综合发展指数综合反映学业、素养、身心与生涯四维表现。配色：60分以下偏弱（红）、60–79中等（黄）、80及以上较好（蓝）。星级由指数换算；学期环比待数据接入。'
+  '综合发展指数综合反映学业、素养、身心与生涯四维表现。配色：60分以下偏弱（红）、60–79中等（黄）、80及以上较好（蓝）。下方展示同年级 GPA 排名与邻域同学。'
 
 const hub = computed<OverviewHubVM>(() => {
   const academicScore = props.growthPortrait.personal[0] ?? 0
@@ -55,7 +103,6 @@ const hub = computed<OverviewHubVM>(() => {
     developmentIndex: score.value,
     maxScore: 100,
     starLevel: starCount.value,
-    /** 环比占位不再塞进表盘，以免挤在圆里折行；说明放在悬停 tip */
     centerDelta: undefined,
     kpis: [
       {
@@ -72,9 +119,11 @@ const hub = computed<OverviewHubVM>(() => {
             tip: '平均学分绩点，反映课程学习质量。一般 3.0 以上较稳，过低需重点关注。',
           },
           {
-            label: '及格率',
-            value: passRate.value,
-            tip: '已修课程中及格课程占比。挂科会拉低这项，并可能影响毕业与奖学金。',
+            label: '年级排名',
+            value: props.growthOverview.overallTotal
+              ? `${props.growthOverview.overallRank}/${props.growthOverview.overallTotal}`
+              : '—',
+            tip: '同年级 GPA 排名。分子是名次，分母是年级人数，名次越小越好。',
           },
           {
             label: '学分完成率',
@@ -139,6 +188,11 @@ const hub = computed<OverviewHubVM>(() => {
             value: mentalLevel.value,
             tip: '心理工作关注分级。正常/低关注较安全；中高关注需辅导员跟进。',
           },
+          {
+            label: '及格率',
+            value: passRate.value,
+            tip: '已修课程中及格课程占比。',
+          },
         ],
       },
       {
@@ -179,6 +233,66 @@ const hub = computed<OverviewHubVM>(() => {
         center-label="综合发展指数"
         :center-tip="centerTip"
       />
+
+      <div class="stu-rank-band">
+        <div class="stu-rank-band__main">
+          <StuHint tip="同年级按 GPA 的 dense rank；箭头表示 GPA 与名次近期变化。" block>
+            <div class="stu-rank-band__head">
+              <span>年级排名</span>
+              <strong>
+                {{ growthOverview.overallRank }}
+                <small>/ {{ growthOverview.overallTotal || '—' }}</small>
+              </strong>
+              <em class="stu-rank-band__trend" :class="`is-${gpaTrendArrow.tone}`">
+                GPA {{ gpaTrendArrow.symbol }}{{ gpaTrendArrow.text }}
+              </em>
+              <em class="stu-rank-band__trend" :class="`is-${rankTrendArrow.tone}`">
+                {{ rankTrendArrow.symbol }}{{ rankTrendArrow.text }}
+              </em>
+            </div>
+          </StuHint>
+
+          <div class="stu-rank-band__rows">
+            <StuHint tip="成绩更好、排在该生前面的同学（最多 3 人）。" block>
+              <p>
+                <em>前三名</em>
+                <span v-if="neighborsAhead.length">{{ neighborsAhead.map(formatNeighbor).join(' · ') }}</span>
+                <span v-else>暂无（已接近年级前列）</span>
+              </p>
+            </StuHint>
+            <StuHint tip="成绩稍弱、排在该生后面的同学（最多 3 人）。" block>
+              <p>
+                <em>后三名</em>
+                <span v-if="neighborsBehind.length">{{ neighborsBehind.map(formatNeighbor).join(' · ') }}</span>
+                <span v-else>暂无（已接近年级末位）</span>
+              </p>
+            </StuHint>
+          </div>
+        </div>
+
+        <StuHint :tip="`GPA 近学期趋势：${academic.gpaValues.join(' → ') || academic.gpa.toFixed(2)}`" block class="stu-rank-band__spark-wrap">
+          <div class="stu-rank-band__spark-card">
+            <div class="stu-rank-band__spark-head">
+              <span>近{{ gpaSpark.length }}学期 GPA</span>
+              <strong :class="`is-${gpaTrendArrow.tone}`">{{ gpaSparkSummary }}</strong>
+            </div>
+            <svg class="stu-rank-band__spark" viewBox="0 0 220 60" preserveAspectRatio="none" role="img" aria-label="近学期 GPA 趋势">
+              <path d="M8 52H212" class="stu-rank-band__spark-axis" />
+              <polyline :points="gpaSparkPoints" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+              <circle
+                v-for="point in gpaSpark"
+                :key="`${point.x}-${point.value}`"
+                :cx="point.x"
+                :cy="point.y"
+                r="3.2"
+              />
+            </svg>
+            <div class="stu-rank-band__spark-labels" :style="{ gridTemplateColumns: `repeat(${gpaSparkSemesters.length || 1}, minmax(0, 1fr))` }">
+              <span v-for="(label, idx) in gpaSparkSemesters" :key="`${label}-${idx}`">{{ label }}</span>
+            </div>
+          </div>
+        </StuHint>
+      </div>
     </div>
   </StudentTplCard>
 </template>

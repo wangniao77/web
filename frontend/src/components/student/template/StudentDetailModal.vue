@@ -14,9 +14,9 @@ const titleMap: Record<string, string> = {
   basic: '学生基础信息台账',
   timetable: '本学期课表',
   academic: '学情轨迹护航详情',
-  quality: '综合素养荣誉与纪律台账',
+  quality: '综合素养台账（荣誉成果 · 纪律处分）',
   career: '出口发展详情（实习·就业·升学）',
-  graduation: '毕业审核与论文',
+  graduation: '毕业审核与毕设进度',
   mental: '心理与成长详情',
   warning: '预警与记录',
   credit: '发展与学分建议',
@@ -50,6 +50,9 @@ function onBackdrop(e: MouseEvent) {
               <p><span>政治面貌</span><strong>{{ dashboard.profile.politicalStatus }}</strong></p>
               <p><span>辅导员</span><strong>{{ dashboard.profile.counselor }}</strong></p>
               <p><span>班主任</span><strong>{{ dashboard.profile.mentor }}</strong></p>
+              <p><span>毕设导师</span><strong>{{ dashboard.profile.thesisAdvisor || dashboard.profile.mentor || '—' }}</strong></p>
+              <p><span>升学对标</span><strong>{{ (dashboard.careerDev.targetUniversities || []).join('、') || '待明确' }}</strong></p>
+              <p><span>就业对标</span><strong>{{ (dashboard.careerDev.targetCompanies || []).join('、') || '待明确' }}</strong></p>
               <p><span>联系电话</span><strong>{{ dashboard.profile.phone || '—' }}</strong></p>
               <p><span>家庭住址</span><strong>{{ dashboard.profile.address }}</strong></p>
               <p><span>家长姓名</span><strong>{{ dashboard.profile.guardianName }}</strong></p>
@@ -98,8 +101,24 @@ function onBackdrop(e: MouseEvent) {
           </template>
           <template v-else-if="section === 'quality'">
             <p>综合测评排名：<strong>{{ dashboard.growthOverview.overallRank }}/{{ dashboard.growthOverview.overallTotal }}</strong></p>
+            <p>
+              年级邻域前三：
+              {{
+                (dashboard.growthOverview.neighborsAhead || [])
+                  .map((n) => `${n.name} ${n.gpa.toFixed(2)}`)
+                  .join(' · ') || '暂无'
+              }}
+            </p>
+            <p>
+              年级邻域后三：
+              {{
+                (dashboard.growthOverview.neighborsBehind || [])
+                  .map((n) => `${n.name} ${n.gpa.toFixed(2)}`)
+                  .join(' · ') || '暂无'
+              }}
+            </p>
             <p>行为记录台账：志愿服务 {{ dashboard.quality.volunteerHours }} 小时 · 社会实践 {{ dashboard.quality.socialPractices }} 次</p>
-            <h3>荣誉成果全景</h3>
+            <h3>荣誉成果</h3>
             <ul>
               <li v-for="item in dashboard.scholarships" :key="`${item.year}-${item.name}`">{{ item.year }} · {{ item.name }}</li>
               <li v-for="award in dashboard.profile.awards" :key="`${award.name}-${award.date}`">{{ award.name }} · {{ award.level }}</li>
@@ -109,7 +128,7 @@ function onBackdrop(e: MouseEvent) {
               <li v-for="skill in dashboard.quality.softSkills" :key="skill.name">{{ skill.name }}：{{ skill.score }} 分</li>
               <li v-if="!dashboard.quality.softSkills.length">暂无软技能评分记录</li>
             </ul>
-            <h3>纪律惩戒记录</h3>
+            <h3>纪律处分</h3>
             <ul>
               <li
                 v-for="row in dashboard.quality.disciplineRecords"
@@ -130,6 +149,8 @@ function onBackdrop(e: MouseEvent) {
             <p>求职意向城市：{{ dashboard.careerDev.targetCity || '未填报' }}</p>
             <p>期望薪资：{{ dashboard.careerDev.expectedSalary || '未填报' }}</p>
             <p>简历完成状态：{{ dashboard.careerDev.resumeStatus || '未完善' }}</p>
+            <p>升学高校对标：{{ (dashboard.careerDev.targetUniversities || []).join('、') || '待明确' }}</p>
+            <p>就业大厂对标：{{ (dashboard.careerDev.targetCompanies || []).join('、') || '待明确' }}</p>
             <p>实习单位：{{ dashboard.careerDev.internshipBases.join('、') || '暂无' }}</p>
             <h3>推荐岗位明细</h3>
             <ul>
@@ -157,7 +178,7 @@ function onBackdrop(e: MouseEvent) {
           </template>
           <template v-else-if="section === 'graduation'">
             <p>学分完成：{{ dashboard.creditProgress.earned }}/{{ dashboard.creditProgress.required }}（{{ dashboard.creditProgress.earnedPercent }}%）</p>
-            <p>毕业论文：{{ dashboard.profile.thesisStatus || '未开始' }} · 指导教师 {{ dashboard.profile.thesisAdvisor || dashboard.profile.mentor }}</p>
+            <p>毕设进度：{{ dashboard.profile.thesisStatus || '未开始' }} · 指导教师 {{ dashboard.profile.thesisAdvisor || dashboard.profile.mentor }}</p>
             <p>挂科课程：{{ dashboard.failedCritical.length }} 门</p>
             <p class="detail-note">考研/就业/考公等出口去向与岗位匹配见「出口发展」模块；本页只跟进能否顺利毕业（学分、挂科、论文）。</p>
             <h3>分阶段行动建议</h3>

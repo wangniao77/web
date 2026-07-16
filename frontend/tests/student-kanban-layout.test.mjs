@@ -38,23 +38,42 @@ test('quality metrics use one stable row so the full ledger fits above its actio
   assert.match(source, /<li[^>]+:title="item"[^>]*>\{\{ item \}\}<\/li>/)
 })
 
-test('career and graduation cards reserve one explicit row for every content block', () => {
-  for (const selector of ['.development-card--career', '.development-card--graduation']) {
-    assert.match(
-      styleBlock(selector),
-      /grid-template-rows:\s*auto 88px minmax\(60px, 1fr\) 34px 34px;/,
-    )
-  }
+test('career card reserves one explicit row for every content block', () => {
+  assert.match(
+    styleBlock('.development-card--career'),
+    /grid-template-rows:\s*auto 82px minmax\(56px, 1fr\) 32px 32px;/,
+  )
   assert.match(
     styleBlock('.development-card--career .development-metrics.development-metrics--pair'),
-    /height:\s*88px;/,
+    /height:\s*82px;/,
   )
-  assert.match(styleBlock('.career-matches'), /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/)
-  assert.match(styleBlock('.graduation-tasks'), /grid-template-rows:\s*repeat\(2, minmax\(0, 1fr\)\);/)
+})
+
+test('graduation overview is summarized inside academic card and details stay secondary', () => {
+  assert.doesNotMatch(source, /development-card development-card--graduation/)
+  assert.match(source, /class="academic-graduation-brief"/)
+  assert.match(source, /毕业审核/)
+  assert.match(source, /@click="emit\('open', 'graduation'\)"/)
+})
+
+test('three cards move on one track while two cards remain visible', () => {
+  assert.match(source, /class="development-track"/)
+  assert.match(source, /const carouselCards = \[/)
+  assert.match(source, /\{ id: 'academic-loop', type: 'academic' \}/)
+  assert.match(source, /\{ id: 'quality-loop', type: 'quality' \}/)
+  assert.match(source, /function advanceCarousel\(\)/)
+  assert.match(source, /translateX\(calc\(\$\{trackIndex\} \* \(-50% - 8px\)\)\)/)
   assert.match(
-    styleBlock('.development-card--graduation .development-insight p'),
-    /white-space:\s*nowrap;/,
+    styleBlock('.development-track'),
+    /grid-template-columns:\s*repeat\(5, calc\(\(100% - 16px\) \/ 2\)\);/,
   )
+  assert.match(styleBlock('.development-track'), /transition:\s*transform 0\.65s/)
+  assert.doesNotMatch(source, /development-slide--single/)
+})
+
+test('carousel state tabs share the switcher width equally', () => {
+  assert.match(styleBlock('.dev-switch'), /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/)
+  assert.doesNotMatch(source, /class="dev-switch__jump"/)
 })
 
 test('academic overview uses its available space for the primary GPA visual', () => {

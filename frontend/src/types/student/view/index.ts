@@ -60,9 +60,18 @@ export interface AiAssistantVM {
   longTermSuggestions: string[]
 }
 
+/** 同年级 GPA 排名邻域（前 N / 后 N） */
+export interface RankNeighborVM {
+  name: string
+  gpa: number
+  rank: number
+  studentId?: string
+}
+
 export interface GrowthOverviewVM {
   growthIndex: number
   growthLevel: string
+  /** 年级 GPA 排名（dense rank） */
   overallRank: number
   overallTotal: number
   overallPercent: string
@@ -71,6 +80,14 @@ export interface GrowthOverviewVM {
   academicPercent: string
   qualityScore: number
   qualityLevel: string
+  /** GPA 环比变化（正=上升） */
+  gpaDelta?: number
+  /** 年级名次变化：负=名次前进（变好） */
+  gradeRankDelta?: number
+  /** 该生之前（成绩更好）的同学 */
+  neighborsAhead?: RankNeighborVM[]
+  /** 该生之后（成绩稍弱）的同学 */
+  neighborsBehind?: RankNeighborVM[]
 }
 
 export interface HighlightItemVM {
@@ -252,6 +269,10 @@ export interface CareerDevVM {
   resumeStatus?: string
   projectExperiences?: string[]
   militaryNote?: string
+  /** 对标升学高校（挖掘推荐，待填报覆盖） */
+  targetUniversities?: string[]
+  /** 对标就业大厂 / 名企 */
+  targetCompanies?: string[]
 }
 
 export interface MentalGrowthVM {
