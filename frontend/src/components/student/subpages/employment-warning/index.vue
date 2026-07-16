@@ -54,6 +54,7 @@ const employmentLevel = computed(() => {
 })
 
 const jobMatches = computed(() => dashboard.value?.aiPortrait.jobMatches ?? [])
+const selectedJob = ref<number>(0)
 
 const weaknesses = computed(() => {
   const d = dashboard.value
@@ -129,25 +130,47 @@ onMounted(load)
 
       <!-- 人岗匹配 -->
       <section class="warn-section">
-        <h3 class="warn-section__title">人岗匹配推荐</h3>
-        <div class="job-grid">
-          <div v-for="(job, idx) in jobMatches.slice(0, 3)" :key="idx" class="job-card">
-            <div class="job-card__header">
-              <span class="job-card__rank">TOP {{ idx + 1 }}</span>
-              <span class="job-card__match" :style="{ color: job.match >= 80 ? '#55e995' : job.match >= 60 ? '#facc15' : '#ff7474' }">{{ job.match }}% 匹配</span>
+        <h3 class="warn-section__title">人岗匹配推荐 <i class="mock-tag">模拟数据</i></h3>
+        <div v-if="jobMatches.length" class="job-match-layout">
+          <!-- 左侧：可选岗位列表 -->
+          <div class="job-match-list">
+            <div
+              v-for="(job, idx) in jobMatches.slice(0, 8)"
+              :key="idx"
+              class="job-match-item"
+              :class="{ 'is-active': selectedJob === idx }"
+              @click="selectedJob = idx"
+            >
+              <span class="job-match-item__rank">TOP {{ idx + 1 }}</span>
+              <span class="job-match-item__role">{{ job.role }}</span>
+              <div class="job-match-item__bar">
+                <div
+                  class="job-match-item__bar-inner"
+                  :style="{ width: `${job.match}%`, background: job.match >= 80 ? '#55e995' : job.match >= 60 ? '#facc15' : '#ff7474' }"
+                />
+              </div>
+              <strong class="job-match-item__match" :style="{ color: job.match >= 80 ? '#55e995' : job.match >= 60 ? '#facc15' : '#ff7474' }">{{ job.match }}%</strong>
             </div>
-            <div class="job-card__role">{{ job.role }}</div>
-            <div class="job-card__meta">
-              <span>城市：{{ job.city }}</span>
-              <span>薪资：{{ job.salary }}</span>
+          </div>
+          <!-- 右侧：选中岗位详情 -->
+          <div class="job-match-detail">
+            <div class="job-match-detail__role">{{ jobMatches[selectedJob].role }}</div>
+            <div class="job-match-detail__meta">
+              <div class="job-match-detail__kv"><label>匹配度</label><strong :style="{ color: jobMatches[selectedJob].match >= 80 ? '#55e995' : jobMatches[selectedJob].match >= 60 ? '#facc15' : '#ff7474' }">{{ jobMatches[selectedJob].match }}%</strong></div>
+              <div class="job-match-detail__kv"><label>城市</label><span>{{ jobMatches[selectedJob].city }}</span></div>
+              <div class="job-match-detail__kv"><label>薪资</label><span>{{ jobMatches[selectedJob].salary }}</span></div>
             </div>
-            <div class="job-card__bar">
-              <div class="job-card__bar-inner" :style="{ width: `${job.match}%`, background: job.match >= 80 ? '#55e995' : job.match >= 60 ? '#facc15' : '#ff7474' }" />
+            <div class="job-match-detail__section">
+              <label>推荐理由</label>
+              <p>{{ jobMatches[selectedJob].reason }}</p>
             </div>
-            <div class="job-card__reason">{{ job.reason }}</div>
-            <div class="job-card__req">要求：{{ job.requirements }}</div>
+            <div class="job-match-detail__section">
+              <label>岗位要求</label>
+              <p>{{ jobMatches[selectedJob].requirements }}</p>
+            </div>
           </div>
         </div>
+        <div v-else class="empty-cell">暂无人岗匹配数据</div>
       </section>
 
       <!-- 能力短板 -->
@@ -288,24 +311,37 @@ onMounted(load)
   }
 }
 
-/* Job cards */
-.job-grid {
+/* Job match layout: left list + right detail */
+.job-match-layout {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 10px;
+  min-height: 200px;
 }
 
-.job-card {
-  padding: 10px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.35);
-  border: 1px solid rgba(102, 217, 255, 0.08);
+.job-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
+.job-match-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 4px;
+  background: rgba(0, 38, 73, 0.3);
+  border: 1px solid rgba(102, 217, 255, 0.06);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+
+  &:hover { background: rgba(0, 56, 100, 0.45); }
+  &.is-active {
+    border-color: rgba(0, 184, 255, 0.45);
+    background: rgba(0, 74, 130, 0.4);
+    box-shadow: 0 0 10px rgba(0, 184, 255, 0.12);
   }
 
   &__rank {
@@ -315,35 +351,20 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.12);
     color: #8ef6ff;
     font-weight: 700;
-  }
-
-  &__match {
-    font-size: 13px;
-    font-weight: 900;
+    white-space: nowrap;
   }
 
   &__role {
-    font-size: 14px;
-    font-weight: 800;
-    color: #f6fbff;
-    margin-bottom: 6px;
-  }
-
-  &__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: 11px;
-    color: #9ecae8;
-    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #d0e8f8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__bar {
-    height: 6px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.06);
-    overflow: hidden;
-    margin-bottom: 8px;
+    display: none;
   }
 
   &__bar-inner {
@@ -351,17 +372,78 @@ onMounted(load)
     border-radius: 3px;
   }
 
-  &__reason {
-    font-size: 11px;
-    color: #9ecae8;
-    line-height: 1.4;
-    margin-bottom: 4px;
+  &__match {
+    font-size: 13px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+}
+
+.job-match-detail {
+  padding: 12px 14px;
+  border-radius: 5px;
+  background: rgba(0, 38, 73, 0.4);
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__role {
+    font-size: 16px;
+    font-weight: 800;
+    color: #f6fbff;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(102, 217, 255, 0.1);
   }
 
-  &__req {
-    font-size: 11px;
-    color: #7eb4d8;
-    line-height: 1.4;
+  &__meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  &__kv {
+    padding: 6px 8px;
+    border-radius: 3px;
+    background: rgba(0, 56, 100, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    label {
+      font-size: 11px;
+      color: #7eb4d8;
+      font-weight: 600;
+    }
+
+    strong {
+      font-size: 16px;
+      font-weight: 900;
+      color: #f6fbff;
+    }
+
+    span {
+      font-size: 13px;
+      font-weight: 700;
+      color: #d0e8f8;
+    }
+  }
+
+  &__section {
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #7eb4d8;
+      margin-bottom: 4px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 12px;
+      color: #c8dff0;
+      line-height: 1.5;
+    }
   }
 }
 
@@ -434,13 +516,15 @@ onMounted(load)
   }
 
   &__tag {
-    font-size: 10px;
-    padding: 1px 6px;
+    font-size: 13px;
+    padding: 2px 8px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.12);
     color: #8ef6ff;
     font-weight: 700;
     flex-shrink: 0;
+    min-width: 56px;
+    text-align: center;
   }
 }
 
@@ -495,10 +579,13 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 10px;
-  padding: 1px 6px;
+  font-size: 13px;
+  padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
+  display: inline-block;
+  min-width: 56px;
+  text-align: center;
 
   &--low { background: rgba(74, 222, 128, 0.12); color: #55e995; }
   &--medium { background: rgba(250, 204, 21, 0.12); color: #facc15; }
@@ -602,7 +689,7 @@ onMounted(load)
 
 @media (max-width: 1280px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-  .job-grid { grid-template-columns: 1fr; }
+  .job-match-layout { grid-template-columns: 1fr; }
   .info-grid { grid-template-columns: repeat(2, 1fr); }
   .weakness-item { grid-template-columns: 12px 80px 48px 1fr; }
 }

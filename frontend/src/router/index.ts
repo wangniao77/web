@@ -169,6 +169,12 @@ const router = createRouter({
       component: () => import('@/components/student/subpages/employment-warning/index.vue'),
       meta: { title: '就业预警详情', isStudentSubpage: true },
     },
+    {
+      path: ROUTES.student.comprehensiveLedger,
+      name: 'student-comprehensive-ledger',
+      component: () => import('@/components/student/subpages/comprehensive-ledger/index.vue'),
+      meta: { title: '综合素养台账详情', isStudentSubpage: true },
+    },
   ],
 })
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { StudentDashboardVM } from '@/types/student/view'
 
 const props = defineProps<{
@@ -23,6 +23,7 @@ const titleMap: Record<string, string> = {
 }
 
 const title = computed(() => (props.section ? titleMap[props.section] ?? '详情' : '详情'))
+const selectedJobIdx = ref(0)
 
 function onBackdrop(e: MouseEvent) {
   if (e.target === e.currentTarget) emit('close')
@@ -109,15 +110,30 @@ function onBackdrop(e: MouseEvent) {
             <p>期望薪资：{{ dashboard.careerDev.expectedSalary || '未填报' }}</p>
             <p>简历完成状态：{{ dashboard.careerDev.resumeStatus || '未完善' }}</p>
             <p>实习单位：{{ dashboard.careerDev.internshipBases.join('、') || '暂无' }}</p>
-            <h3>推荐岗位明细</h3>
-            <ul>
-              <li v-for="job in dashboard.aiPortrait.jobMatches" :key="job.role">
-                {{ job.role }} · 匹配度 {{ job.match }}%
-                <span v-if="job.city"> · 城市 {{ job.city }}</span>
-                <span v-if="job.salary"> · 薪资 {{ job.salary }}</span>
-                <span v-if="job.requirements"> · 要求 {{ job.requirements }}</span>
-              </li>
-            </ul>
+            <h3>推荐岗位明细 <i class="mock-tag">模拟数据</i></h3>
+            <div v-if="dashboard.aiPortrait.jobMatches.length" class="modal-job-split">
+              <div class="modal-job-split__list">
+                <div
+                  v-for="(job, idx) in dashboard.aiPortrait.jobMatches.slice(0, 8)"
+                  :key="job.role"
+                  class="modal-job-split__item"
+                  :class="{ 'is-active': selectedJobIdx === idx }"
+                  @click="selectedJobIdx = idx"
+                >
+                  <span>{{ job.role }}</span>
+                  <strong>{{ job.match }}%</strong>
+                </div>
+              </div>
+              <div class="modal-job-split__detail">
+                <strong>{{ dashboard.aiPortrait.jobMatches[selectedJobIdx].role }}</strong>
+                <div class="modal-job-split__meta">
+                  <div><label>匹配度</label><b>{{ dashboard.aiPortrait.jobMatches[selectedJobIdx].match }}%</b></div>
+                  <div><label>城市</label><span>{{ dashboard.aiPortrait.jobMatches[selectedJobIdx].city }}</span></div>
+                  <div><label>薪资</label><span>{{ dashboard.aiPortrait.jobMatches[selectedJobIdx].salary }}</span></div>
+                </div>
+                <div><label>岗位要求</label><p>{{ dashboard.aiPortrait.jobMatches[selectedJobIdx].requirements }}</p></div>
+              </div>
+            </div>
             <h3>项目经历清单</h3>
             <ul>
               <li
@@ -155,11 +171,21 @@ function onBackdrop(e: MouseEvent) {
             </ul>
           </template>
           <template v-else-if="section === 'warning'">
-            <ul>
-              <li v-for="a in dashboard.attention" :key="a.id">
-                [{{ a.category }}] {{ a.label }}
-              </li>
-            </ul>
+            <div v-if="dashboard.attention.length" class="modal-warn-grid">
+              <div
+                v-for="a in dashboard.attention"
+                :key="a.id"
+                class="modal-warn-card"
+                :class="`modal-warn-card--${a.level}`"
+              >
+                <div class="modal-warn-card__head">
+                  <span class="modal-warn-card__cat">{{ a.category }}</span>
+                  <span class="modal-warn-card__level" :class="`level--${a.level}`">{{ a.levelLabel }}</span>
+                </div>
+                <p class="modal-warn-card__label">{{ a.label }}</p>
+              </div>
+            </div>
+            <p v-else class="detail-empty">暂无预警记录</p>
           </template>
           <template v-else-if="section === 'ai'">
             <p class="detail-note">{{ dashboard.aiPortrait.summary }}</p>
@@ -308,4 +334,176 @@ function onBackdrop(e: MouseEvent) {
   border-radius: 5px;
   background: rgba(0, 45, 84, 0.24);
 }
+
+.modal-job-split {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 10px;
+  min-height: 140px;
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: rgba(0, 38, 73, 0.3);
+    border: 1px solid rgba(0, 180, 255, 0.08);
+    cursor: pointer;
+    font-size: var(--fs-meta);
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover { background: rgba(0, 55, 110, 0.4); }
+    &.is-active {
+      border-color: rgba(0, 180, 255, 0.4);
+      background: rgba(0, 60, 120, 0.4);
+    }
+
+    span {
+      color: #d0e8f8;
+      font-weight: 600;
+    }
+
+    strong {
+      color: #7ff6ff;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+  }
+
+  &__detail {
+    padding: 10px 12px;
+    border-radius: 5px;
+    background: rgba(0, 38, 73, 0.25);
+    border: 1px solid rgba(0, 180, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    > strong {
+      font-size: 15px;
+      font-weight: 800;
+      color: #eef9ff;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(0, 180, 255, 0.1);
+    }
+  }
+
+  &__meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+
+    div {
+      padding: 6px 8px;
+      border-radius: 3px;
+      background: rgba(0, 56, 100, 0.3);
+
+      label {
+        display: block;
+        font-size: 11px;
+        color: #7eb4d8;
+        font-weight: 600;
+      }
+
+      span {
+        font-size: 13px;
+        font-weight: 700;
+        color: #d0e8f8;
+      }
+
+      b {
+        font-size: 15px;
+        font-weight: 900;
+        color: #7ff6ff;
+      }
+    }
+  }
+
+  &__detail > div > label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #7eb4d8;
+    margin-bottom: 4px;
+  }
+
+  &__detail p {
+    margin: 0;
+    font-size: 12px;
+    color: #c8dff0;
+    line-height: 1.5;
+  }
+}
+
+.modal-warn-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.modal-warn-card {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(0, 45, 84, 0.28);
+  border: 1px solid rgba(0, 180, 255, 0.12);
+
+  &--low { border-left: 3px solid rgba(74, 222, 128, 0.7); }
+  &--medium { border-left: 3px solid rgba(250, 204, 21, 0.7); }
+  &--high { border-left: 3px solid rgba(248, 91, 91, 0.7); }
+}
+
+.modal-warn-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.modal-warn-card__cat {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 184, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  color: #8ef6ff;
+}
+
+.modal-warn-card__level {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 700;
+
+  &.level--low { background: rgba(74, 222, 128, 0.12); color: #55e995; }
+  &.level--medium { background: rgba(250, 204, 21, 0.12); color: #facc15; }
+  &.level--high { background: rgba(248, 91, 91, 0.12); color: #ff7474; }
+}
+
+.modal-warn-card__label {
+  margin: 0;
+  font-size: var(--fs-meta);
+  color: #d8eeff;
+  line-height: 1.45;
+}
+
+.detail-empty {
+  padding: 16px;
+  text-align: center;
+  color: #5a7d96;
+  font-size: var(--fs-meta);
+}
+
+@media (max-width: 600px) {
+  .modal-warn-grid { grid-template-columns: 1fr; }
+}
+
 </style>

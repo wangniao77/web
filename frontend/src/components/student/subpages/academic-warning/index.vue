@@ -132,55 +132,56 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 学分进度 -->
-      <section class="warn-section">
-        <h3 class="warn-section__title">培养方案学分进度</h3>
-        <div class="credit-progress">
-          <div class="credit-progress__head">
-            <span>已修 {{ dashboard.creditProgress.earned.toFixed(1) }} / 要求 {{ dashboard.creditProgress.required }} 学分</span>
-            <span :class="progressPercent < 60 ? 'text-risk' : progressPercent < 80 ? 'text-warn' : 'text-safe'">{{ progressPercent }}%</span>
-          </div>
-          <div class="credit-progress__bar">
-            <div class="credit-progress__bar-inner" :style="{ width: `${Math.min(100, progressPercent)}%`, background: progressPercent < 60 ? '#ff7474' : progressPercent < 80 ? '#facc15' : '#55e995' }" />
-          </div>
-        </div>
-        <div class="bucket-grid">
-          <div v-for="b in dashboard.creditProgress.buckets" :key="b.label" class="bucket-card">
-            <span class="bucket-card__label">{{ b.label }}</span>
-            <span class="bucket-card__value">{{ b.earned }}/{{ b.required }}</span>
-            <div class="bucket-card__bar">
-              <div class="bucket-card__bar-inner" :style="{ width: `${Math.min(100, (b.earned / b.required) * 100)}%` }" />
+      <!-- 学分进度 + 挂科课程 并排 -->
+      <div class="credit-fail-row">
+        <section class="warn-section">
+          <h3 class="warn-section__title">培养方案学分进度</h3>
+          <div class="credit-progress">
+            <div class="credit-progress__head">
+              <span>已修 {{ dashboard.creditProgress.earned.toFixed(1) }} / 要求 {{ dashboard.creditProgress.required }} 学分</span>
+              <span :class="progressPercent < 60 ? 'text-risk' : progressPercent < 80 ? 'text-warn' : 'text-safe'">{{ progressPercent }}%</span>
+            </div>
+            <div class="credit-progress__bar">
+              <div class="credit-progress__bar-inner" :style="{ width: `${Math.min(100, progressPercent)}%`, background: progressPercent < 60 ? '#ff7474' : progressPercent < 80 ? '#facc15' : '#55e995' }" />
             </div>
           </div>
-        </div>
-      </section>
+          <div class="bucket-grid">
+            <div v-for="b in dashboard.creditProgress.buckets" :key="b.label" class="bucket-card">
+              <span class="bucket-card__label">{{ b.label }}</span>
+              <span class="bucket-card__value">{{ b.earned }}/{{ b.required }}</span>
+              <div class="bucket-card__bar">
+                <div class="bucket-card__bar-inner" :style="{ width: `${Math.min(100, (b.earned / b.required) * 100)}%` }" />
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <!-- 挂科课程 -->
-      <section class="warn-section">
-        <h3 class="warn-section__title">挂科 / 补考 / 重修课程</h3>
-        <div v-if="failedCourses.length" class="course-list">
-          <div v-for="(c, idx) in failedCourses" :key="idx" class="course-item course-item--warn">
-            <span class="course-item__dot" />
-            <span class="course-item__name">{{ c }}</span>
-            <span class="course-item__tag">待补考/重修</span>
+        <section class="warn-section">
+          <h3 class="warn-section__title">挂科 / 补考 / 重修课程</h3>
+          <div v-if="failedCourses.length" class="course-list">
+            <div v-for="(c, idx) in failedCourses" :key="idx" class="course-item course-item--warn">
+              <span class="course-item__dot" />
+              <span class="course-item__name">{{ c }}</span>
+              <span class="course-item__tag">待补考/重修</span>
+            </div>
           </div>
-        </div>
-        <div v-else-if="dashboard.failedCritical.length" class="course-list">
-          <div class="course-item course-item--warn">
-            <span class="course-item__dot" />
-            <span class="course-item__name">{{ dashboard.failedCritical[0].name }}</span>
-            <span class="course-item__tag">关注</span>
+          <div v-else-if="dashboard.failedCritical.length" class="course-list">
+            <div class="course-item course-item--warn">
+              <span class="course-item__dot" />
+              <span class="course-item__name">{{ dashboard.failedCritical[0].name }}</span>
+              <span class="course-item__tag">关注</span>
+            </div>
           </div>
-        </div>
-        <div v-else class="empty-cell">当前无挂科记录</div>
-        <div class="section-actions">
-          <button class="section-actions__btn" @click="goFail">查看挂科详情</button>
-          <button class="section-actions__btn" @click="goGpa">查看 GPA 详情</button>
-        </div>
-      </section>
+          <div v-else class="empty-cell">当前无挂科记录</div>
+          <div class="section-actions">
+            <button class="section-actions__btn" @click="goFail">查看挂科详情</button>
+            <button class="section-actions__btn" @click="goGpa">查看 GPA 详情</button>
+          </div>
+        </section>
+      </div>
 
       <!-- 预警台账 -->
-      <section class="warn-section">
+      <section class="warn-section" style="grid-column: 1 / -1;">
         <h3 class="warn-section__title">学业预警台账</h3>
         <div class="warn-table-wrap">
           <table class="warn-table">
@@ -197,26 +198,27 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 帮扶记录 -->
-      <section class="warn-section">
-        <h3 class="warn-section__title">学业帮扶记录</h3>
-        <div v-if="dashboard.academic.supportRecords.length" class="support-list">
-          <div v-for="(r, idx) in dashboard.academic.supportRecords" :key="idx" class="support-item">
-            <span class="support-item__time">{{ r.date }}</span>
-            <span class="support-item__person">{{ r.person }}</span>
-            <span class="support-item__content">{{ r.content }}</span>
+      <!-- 帮扶记录 + 建议 并排 -->
+      <div class="support-suggestion-row">
+        <section class="warn-section">
+          <h3 class="warn-section__title">学业帮扶记录</h3>
+          <div v-if="dashboard.academic.supportRecords.length" class="support-list">
+            <div v-for="(r, idx) in dashboard.academic.supportRecords" :key="idx" class="support-item">
+              <span class="support-item__time">{{ r.date }}</span>
+              <span class="support-item__person">{{ r.person }}</span>
+              <span class="support-item__content">{{ r.content }}</span>
+            </div>
           </div>
-        </div>
-        <div v-else class="empty-cell">暂无帮扶记录</div>
-      </section>
+          <div v-else class="empty-cell">暂无帮扶记录</div>
+        </section>
 
-      <!-- 建议 -->
-      <section class="warn-section">
-        <h3 class="warn-section__title">学业提升建议</h3>
-        <ul class="suggestion-list">
-          <li v-for="(s, idx) in suggestions" :key="idx">{{ s }}</li>
-        </ul>
-      </section>
+        <section class="warn-section">
+          <h3 class="warn-section__title">学业提升建议</h3>
+          <ul class="suggestion-list">
+            <li v-for="(s, idx) in suggestions" :key="idx">{{ s }}</li>
+          </ul>
+        </section>
+      </div>
 
       <div class="footer-actions">
         <button type="button" class="footer-actions__btn" @click="goLedger">返回基础信息台账</button>
@@ -227,8 +229,8 @@ onMounted(load)
 
 <style scoped lang="scss">
 .academic-warning {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -264,9 +266,10 @@ onMounted(load)
 /* KPI */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
+
 
 .kpi-card {
   display: flex;
@@ -490,6 +493,14 @@ onMounted(load)
   font-size: 12px;
 }
 
+/* Support + Suggestion row */
+.support-suggestion-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+
 /* Support */
 .support-list {
   display: flex;
@@ -587,7 +598,11 @@ onMounted(load)
 }
 
 @media (max-width: 1280px) {
+  .academic-warning { grid-template-columns: 1fr; }
+  .credit-fail-row { grid-template-columns: 1fr; }
+  .support-suggestion-row { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .bucket-grid { grid-template-columns: 1fr; }
 }
+
 </style>

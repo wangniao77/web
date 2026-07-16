@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, ref, defineAsyncComponent } from 'vue'
 import CollegePanelCard from '@/components/college/CollegePanelCard.vue'
 import StudentPanelBorder from '@/components/student/StudentPanelBorder.vue'
 import type { AiAssistantVM, AiPortraitVM, EmploymentVM } from '@/types/student/view'
@@ -20,6 +20,8 @@ function ringDash(pct: number, r = 30) {
   const c = 2 * Math.PI * r
   return `${(pct / 100) * c} ${c}`
 }
+
+const selectedJobIdx = ref(0)
 </script>
 
 <template>
@@ -100,14 +102,30 @@ function ringDash(pct: number, r = 30) {
         </div>
 
         <section v-if="portrait.jobMatches.length" class="stu-ai-plan__jobs">
-          <span class="stu-ai-plan__label">岗位匹配</span>
-          <ul>
-            <li v-for="job in portrait.jobMatches" :key="job.role">
-              <span>{{ job.role }}</span>
-              <div class="stu-ai-plan__bar"><i :style="{ width: `${job.match}%` }" /></div>
-              <strong>{{ job.match }}%</strong>
-            </li>
-          </ul>
+          <span class="stu-ai-plan__label">岗位匹配 <i class="mock-tag">模拟数据</i></span>
+          <div class="stu-ai-plan__job-split">
+            <div class="stu-ai-plan__job-list">
+              <div
+                v-for="(job, idx) in portrait.jobMatches.slice(0, 8)"
+                :key="job.role"
+                class="stu-ai-plan__job-item"
+                :class="{ 'is-active': selectedJobIdx === idx }"
+                @click="selectedJobIdx = idx"
+              >
+                <span>{{ job.role }}</span>
+                <strong>{{ job.match }}%</strong>
+              </div>
+            </div>
+            <div class="stu-ai-plan__job-detail">
+              <strong>{{ portrait.jobMatches[selectedJobIdx].role }}</strong>
+              <div class="stu-ai-plan__job-meta">
+                <div><label>城市</label><span>{{ portrait.jobMatches[selectedJobIdx].city }}</span></div>
+                <div><label>薪资</label><span>{{ portrait.jobMatches[selectedJobIdx].salary }}</span></div>
+                <div><label>匹配度</label><strong class="stu-ai-plan__job-match">{{ portrait.jobMatches[selectedJobIdx].match }}%</strong></div>
+              </div>
+              <p class="stu-ai-plan__job-req">{{ portrait.jobMatches[selectedJobIdx].requirements }}</p>
+            </div>
+          </div>
         </section>
       </div>
     </CollegePanelCard>
@@ -271,36 +289,108 @@ function ringDash(pct: number, r = 30) {
   gap: 8px;
 }
 
-.stu-ai-plan__jobs ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
+.stu-ai-plan__jobs {
+  .stu-ai-plan__job-split {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 8px;
+    min-height: 120px;
+  }
 
-.stu-ai-plan__jobs li {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--fs-meta);
-  color: #d0e8ff;
+  .stu-ai-plan__job-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
 
-  strong { color: #7ff6ff; font-family: var(--student-font-number); }
-}
+  .stu-ai-plan__job-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: rgba(0, 38, 73, 0.25);
+    border: 1px solid rgba(167, 139, 250, 0.08);
+    cursor: pointer;
+    font-size: var(--fs-meta);
+    transition: background 0.15s, border-color 0.15s;
 
-.stu-ai-plan__bar {
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(0, 60, 120, 0.45);
-  overflow: hidden;
+    &:hover { background: rgba(0, 50, 100, 0.35); }
+    &.is-active {
+      border-color: rgba(167, 139, 250, 0.4);
+      background: rgba(80, 50, 140, 0.3);
+    }
 
-  i {
-    display: block;
-    height: 100%;
-    background: linear-gradient(90deg, #a78bfa, #06b6d4);
+    span {
+      color: #d0e8ff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    strong {
+      color: #7ff6ff;
+      font-family: var(--student-font-number);
+      white-space: nowrap;
+    }
+  }
+
+  .stu-ai-plan__job-detail {
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(0, 38, 73, 0.25);
+    border: 1px solid rgba(167, 139, 250, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    > strong {
+      font-size: var(--fs-label);
+      font-weight: 800;
+      color: #eef9ff;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(167, 139, 250, 0.12);
+    }
+  }
+
+  .stu-ai-plan__job-meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+
+    div {
+      padding: 4px 6px;
+      border-radius: 3px;
+      background: rgba(0, 56, 100, 0.3);
+
+      label {
+        display: block;
+        font-size: 10px;
+        color: #7eb4d8;
+        font-weight: 600;
+      }
+
+      span {
+        font-size: 12px;
+        font-weight: 700;
+        color: #d0e8f8;
+      }
+    }
+  }
+
+  .stu-ai-plan__job-match {
+    font-size: 14px;
+    font-weight: 900;
+    color: #7ff6ff;
+    font-family: var(--student-font-number);
+  }
+
+  .stu-ai-plan__job-req {
+    margin: 0;
+    font-size: 11px;
+    color: #c8dff0;
+    line-height: 1.4;
   }
 }
 </style>

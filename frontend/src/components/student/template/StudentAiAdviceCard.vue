@@ -56,7 +56,8 @@ const focusTags = computed(() =>
     : props.portrait.portraitTags.filter((t) => /待|不足|短板|关注/.test(t)).concat(['实践经历不足']).slice(0, 3),
 )
 
-const jobMatches = computed(() => props.portrait.jobMatches.slice(0, 2))
+const jobMatches = computed(() => props.portrait.jobMatches.slice(0, 8))
+const selectedJobIdx = ref(0)
 
 const summaryText = computed(() => {
   const text = props.portrait.summary || ''
@@ -185,21 +186,29 @@ onBeforeUnmount(stopAutoplay)
           <StuHint tip="基于学业、素养与就业画像生成的综合研判摘要。" block>
             <p class="navi-card__summary" :title="portrait.summary">{{ summaryText }}</p>
           </StuHint>
-          <div class="navi-jobs">
-            <StuHint
-              v-for="job in jobMatches"
-              :key="job.role"
-              block
-              :tip="`岗位匹配度 ${job.match}%（越高越对口）。${[job.city, job.salary, job.requirements].filter(Boolean).join(' · ') || '点击可在详情页查看完整岗位要求。'}`"
-            >
-              <div class="navi-job">
-                <div class="navi-job__head">
-                  <strong>{{ job.role }}</strong>
-                  <b>{{ job.match }}%</b>
-                </div>
-                <i><em :style="{ width: `${job.match}%` }" /></i>
+          <div v-if="jobMatches.length" class="navi-jobs">
+            <div class="navi-jobs__label">岗位匹配推荐 <i class="mock-tag">模拟数据</i></div>
+            <div class="navi-jobs__picks">
+              <div
+                v-for="(job, idx) in jobMatches"
+                :key="job.role"
+                class="navi-jobs__pick"
+                :class="{ 'is-active': selectedJobIdx === idx }"
+                @click="selectedJobIdx = idx"
+              >
+                <strong>{{ job.role }}</strong>
+                <b>{{ job.match }}%</b>
               </div>
-            </StuHint>
+            </div>
+            <div class="navi-jobs__detail">
+              <strong>{{ jobMatches[selectedJobIdx].role }}</strong>
+              <div class="navi-jobs__detail-meta">
+                <div><label>城市</label><span>{{ jobMatches[selectedJobIdx].city }}</span></div>
+                <div><label>薪资</label><span>{{ jobMatches[selectedJobIdx].salary }}</span></div>
+                <div><label>匹配度</label><b>{{ jobMatches[selectedJobIdx].match }}%</b></div>
+              </div>
+              <p>{{ jobMatches[selectedJobIdx].requirements }}</p>
+            </div>
           </div>
           <div class="navi-tags">
             <div>
@@ -365,41 +374,113 @@ onBeforeUnmount(stopAutoplay)
 }
 
 .navi-jobs {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
   gap: 8px;
   margin-bottom: 10px;
-}
+  min-height: 100px;
 
-.navi-job {
-  padding: 9px 11px;
-  border: 1px solid rgba(0, 180, 255, 0.14);
-  border-radius: 6px;
-  background: rgba(0, 40, 78, 0.35);
-
-  &__head {
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: var(--fs);
-
-    strong { color: #eaf6ff; font-weight: 700; }
-    b { color: #7ff6ff; font-weight: 700; }
+  &__label {
+    grid-column: 1 / -1;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: #b8ecff;
+    margin-bottom: 2px;
   }
 
-  i {
-    display: block;
-    height: 6px;
-    margin-top: 8px;
-    overflow: hidden;
-    border-radius: 99px;
-    background: rgba(80, 120, 160, 0.35);
+  &__picks {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
 
-    em {
-      display: block;
-      height: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, #1ed6ff, #43e7af);
+  &__pick {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: rgba(0, 40, 78, 0.25);
+    border: 1px solid rgba(0, 180, 255, 0.06);
+    cursor: pointer;
+    font-size: var(--fs);
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover { background: rgba(0, 55, 110, 0.35); }
+    &.is-active {
+      border-color: rgba(0, 180, 255, 0.4);
+      background: rgba(0, 60, 120, 0.35);
+    }
+
+    strong {
+      color: #eaf6ff;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    b {
+      color: #7ff6ff;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+  }
+
+  &__detail {
+    padding: 8px 10px;
+    border: 1px solid rgba(0, 180, 255, 0.14);
+    border-radius: 6px;
+    background: rgba(0, 40, 78, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    > strong {
+      font-size: var(--fs);
+      font-weight: 800;
+      color: #eef9ff;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(0, 180, 255, 0.1);
+    }
+
+    &-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+
+      div {
+        padding: 4px 6px;
+        border-radius: 3px;
+        background: rgba(0, 56, 100, 0.3);
+
+        label {
+          display: block;
+          font-size: 10px;
+          color: #7eb4d8;
+          font-weight: 600;
+        }
+
+        span {
+          font-size: 12px;
+          font-weight: 700;
+          color: #d0e8f8;
+        }
+      }
+
+      b {
+        font-size: 14px;
+        font-weight: 900;
+        color: #7ff6ff;
+      }
+    }
+
+    > p {
+      margin: 0;
+      font-size: var(--fs-label);
+      color: #c8dff0;
+      line-height: 1.4;
     }
   }
 }

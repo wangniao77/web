@@ -160,12 +160,28 @@ function recommendDirection(record: StudentAcademicRow) {
   if (/电商|商务|营销/.test(blob)) jobs.push(['电商运营专员', 70 + Math.min(8, awards * 2)])
 
   let fallback: Array<[string, number]>
-  if (/软件|计算机/.test(major)) fallback = [['软件开发工程师', 68], ['数据分析师', 62], ['实施与运维工程师', 58]]
-  else if (/人工智能/.test(major)) fallback = [['AI 应用开发工程师', 70], ['算法工程师（初级）', 64], ['数据分析师', 60]]
-  else if (/数据/.test(major)) fallback = [['数据分析师', 70], ['数据治理专员', 64], ['商务分析助理', 58]]
-  else fallback = [['专业技术岗', 60], ['职能支持岗', 55], ['继续学业深造', 58]]
+  if (/软件|计算机/.test(major)) fallback = [
+    ['软件开发工程师', 68], ['前端开发工程师', 66], ['数据分析师', 62],
+    ['运维开发工程师', 58], ['测试工程师', 55], ['实施与运维工程师', 54],
+    ['产品助理', 52], ['继续学业深造', 56],
+  ]
+  else if (/人工智能/.test(major)) fallback = [
+    ['AI 应用开发工程师', 70], ['算法工程师（初级）', 64], ['数据分析师', 60],
+    ['机器学习工程师', 58], ['软件开发工程师', 56], ['数据标注分析师', 52],
+    ['项目实施顾问', 50], ['继续学业深造', 55],
+  ]
+  else if (/数据/.test(major)) fallback = [
+    ['数据分析师', 70], ['数据治理专员', 64], ['商务分析助理', 58],
+    ['商业智能分析师', 60], ['数据产品运营', 55], ['数据库运维', 54],
+    ['电商运营专员', 52], ['继续学业深造', 56],
+  ]
+  else fallback = [
+    ['专业技术岗', 60], ['职能支持岗', 55], ['继续学业深造', 58],
+    ['行政综合岗', 52], ['市场运营岗', 50], ['客户服务岗', 48],
+    ['创业/自主就业', 46], ['灵活就业/基层项目', 44],
+  ]
 
-  const base = (jobs.length ? jobs : fallback).slice(0, 3)
+  const base = (jobs.length ? jobs : fallback).slice(0, 8)
   let adj = 0
   if (gpa >= 3.5) adj += 6
   else if (gpa >= 3.0) adj += 3
@@ -237,6 +253,96 @@ function recommendDirection(record: StudentAcademicRow) {
       salary: '—',
       requirements: 'GPA与英语达标；科研/竞赛亮点',
       reason: '学业表现支持深造路径',
+    },
+    前端开发工程师: {
+      city: '深圳 / 广州',
+      salary: '10-18K',
+      requirements: 'HTML/CSS/JavaScript/React/Vue',
+      reason: '软件/前端方向能力匹配',
+    },
+    运维开发工程师: {
+      city: '广州 / 深圳',
+      salary: '9-15K',
+      requirements: 'Linux/Docker/CICD；Shell脚本',
+      reason: '运维开发工程方向备选',
+    },
+    测试工程师: {
+      city: '广州 / 深圳',
+      salary: '8-14K',
+      requirements: '测试理论/自动化；细致与逻辑',
+      reason: '质量保障方向通用岗位',
+    },
+    产品助理: {
+      city: '广州 / 深圳',
+      salary: '8-14K',
+      requirements: '需求分析/原型设计；沟通与逻辑',
+      reason: '产品岗为技术背景通用路径',
+    },
+    机器学习工程师: {
+      city: '深圳 / 杭州',
+      salary: '15-28K',
+      requirements: '机器学习/深度学习框架；项目经验',
+      reason: '人工智能方向高阶匹配',
+    },
+    数据标注分析师: {
+      city: '广州 / 深圳',
+      salary: '6-10K',
+      requirements: '细心/标注工具；数据敏感度',
+      reason: 'AI数据标注方向入门岗位',
+    },
+    项目实施顾问: {
+      city: '粤港澳大湾区',
+      salary: '8-14K',
+      requirements: '沟通/项目管理；技术理解力',
+      reason: 'AI落地项目方向通用岗位',
+    },
+    商业智能分析师: {
+      city: '广州 / 深圳',
+      salary: '10-18K',
+      requirements: 'BI工具/可视化；业务分析能力',
+      reason: '数据方向企业级BI岗位',
+    },
+    数据产品运营: {
+      city: '广州',
+      salary: '9-15K',
+      requirements: '数据分析/运营策略；产品思维',
+      reason: '数据驱动产品运营方向',
+    },
+    数据库运维: {
+      city: '广州 / 深圳',
+      salary: '9-16K',
+      requirements: 'MySQL/Oracle；备份调优',
+      reason: '数据库运维专项岗位',
+    },
+    行政综合岗: {
+      city: '粤港澳大湾区',
+      salary: '6-10K',
+      requirements: '办公软件/公文写作；沟通协调',
+      reason: '通用支持性岗位推荐',
+    },
+    市场运营岗: {
+      city: '广州 / 深圳',
+      salary: '7-12K',
+      requirements: '市场营销/新媒体运营；创意策划',
+      reason: '市场方向通用岗位备选',
+    },
+    客户服务岗: {
+      city: '粤港澳大湾区',
+      salary: '6-10K',
+      requirements: '服务意识/沟通技巧；CRM操作',
+      reason: '客服方向基础岗位备选',
+    },
+    '创业/自主就业': {
+      city: '粤港澳大湾区',
+      salary: '面议',
+      requirements: '创新思维/项目经验；资源整合',
+      reason: '创业方向灵活就业路径',
+    },
+    '灵活就业/基层项目': {
+      city: '广东省',
+      salary: '面议',
+      requirements: '适应能力/基层服务意愿',
+      reason: '三支一扶/西部计划等基层项目',
     },
   }
 

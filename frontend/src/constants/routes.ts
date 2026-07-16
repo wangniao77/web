@@ -31,5 +31,6 @@ export const ROUTES = {
     psyWarning: '/student/psy-warning',
     academicWarning: '/student/academic-warning',
     employmentWarning: '/student/employment-warning',
+    comprehensiveLedger: '/student/comprehensive-ledger',
   },
 } as const

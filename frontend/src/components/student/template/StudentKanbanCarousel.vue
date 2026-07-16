@@ -185,7 +185,8 @@ const advisorName = computed(
   () => props.profile.thesisAdvisor || props.profile.mentor || '—',
 )
 
-const jobMatches = computed(() => props.aiPortrait.jobMatches.slice(0, 2))
+const jobMatches = computed(() => props.aiPortrait.jobMatches.slice(0, 8))
+const selectedJobIdx = ref(0)
 
 function goGpaDetail() {
   router.push(ROUTES.student.gpaDetail)
@@ -544,7 +545,7 @@ onBeforeUnmount(stopAutoplay)
                 </StuHint>
               </div>
 
-              <button type="button" class="development-card__action" @click="emit('open', 'quality')">
+              <button type="button" class="development-card__action" @click="router.push({ name: 'student-comprehensive-ledger', query: { studentId: profile.studentId } })">
                 查看台账详情 <span aria-hidden="true">›</span>
               </button>
             </article>
@@ -586,29 +587,31 @@ onBeforeUnmount(stopAutoplay)
                   </StuHint>
                 </div>
 
-                <div class="career-matches">
-                  <template v-if="jobMatches.length">
-                    <StuHint
-                      v-for="job in jobMatches"
+                <div v-if="jobMatches.length" class="career-matches">
+                  <div class="career-matches__label">岗位匹配推荐 <i class="mock-tag">模拟数据</i></div>
+                  <div class="career-matches__picks">
+                    <div
+                      v-for="(job, idx) in jobMatches"
                       :key="job.role"
-                      block
-                      :tip="`AI 岗位匹配度 ${job.match}%，越高越契合当前画像。`"
+                      class="career-matches__pick"
+                      :class="{ 'is-active': selectedJobIdx === idx }"
+                      @click="selectedJobIdx = idx"
                     >
-                      <div class="career-match-rich">
-                        <div class="career-match-rich__head">
-                          <span>{{ job.role }}</span>
-                          <strong>{{ job.match }}%</strong>
-                        </div>
-                        <i><b :style="{ width: `${job.match}%` }" /></i>
-                        <small>
-                          <em v-if="job.city">{{ job.city }}</em>
-                          <em v-if="job.salary">{{ job.salary }}</em>
-                        </small>
-                      </div>
-                    </StuHint>
-                  </template>
-                  <p v-else class="career-matches__empty">暂无岗位匹配推荐，完善简历后可生成</p>
+                      <span>{{ job.role }}</span>
+                      <strong>{{ job.match }}%</strong>
+                    </div>
+                  </div>
+                  <div class="career-matches__detail">
+                    <strong>{{ jobMatches[selectedJobIdx].role }}</strong>
+                    <div class="career-matches__detail-meta">
+                      <div><label>城市</label><span>{{ jobMatches[selectedJobIdx].city }}</span></div>
+                      <div><label>薪资</label><span>{{ jobMatches[selectedJobIdx].salary }}</span></div>
+                      <div><label>匹配度</label><b>{{ jobMatches[selectedJobIdx].match }}%</b></div>
+                    </div>
+                    <p>{{ jobMatches[selectedJobIdx].requirements }}</p>
+                  </div>
                 </div>
+                <p v-else class="career-matches__empty">暂无岗位匹配推荐，完善简历后可生成</p>
 
                 <StuHint tip="已登记的代表性项目经历。" block>
                   <div class="development-insight">
@@ -1410,19 +1413,28 @@ onBeforeUnmount(stopAutoplay)
 
 .career-matches {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: center;
-  gap: 10px;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 8px;
   min-height: 0;
-  padding: 6px 10px;
+  padding: 6px 8px;
   overflow: hidden;
   border: 1px solid rgba(67, 231, 175, 0.12);
   border-radius: 5px;
   background: rgba(0, 50, 69, 0.25);
 
+  &__label {
+    grid-column: 1 / -1;
+    font-size: 15px;
+    font-weight: 700;
+    color: #b8ecff;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+  }
+
   &__empty {
     grid-column: 1 / -1;
     margin: 0;
+    padding: 10px;
     color: #8fb7cd;
     font-size: 13px;
     font-weight: 600;
@@ -1430,12 +1442,103 @@ onBeforeUnmount(stopAutoplay)
     line-height: 1.4;
   }
 
-  :deep(.stu-hint) {
-    min-width: 0;
+  &__picks {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
 
-  :deep(.stu-hint:only-child) {
-    grid-column: 1 / -1;
+  &__pick {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: rgba(0, 38, 73, 0.25);
+    border: 1px solid rgba(67, 231, 175, 0.06);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover { background: rgba(0, 50, 100, 0.35); }
+    &.is-active {
+      border-color: rgba(67, 231, 175, 0.4);
+      background: rgba(0, 60, 100, 0.35);
+    }
+
+    span {
+      overflow: hidden;
+      color: #c5e4f6;
+      font-size: 15px;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    strong {
+      color: #5ce8bd;
+      font-family: var(--student-font-number);
+      font-size: 15px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+  }
+
+  &__detail {
+    padding: 6px 8px;
+    border-radius: 5px;
+    background: rgba(0, 38, 73, 0.2);
+    border: 1px solid rgba(67, 231, 175, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    > strong {
+      font-size: 15px;
+      font-weight: 800;
+      color: #eef9ff;
+      padding-bottom: 3px;
+      border-bottom: 1px solid rgba(67, 231, 175, 0.1);
+    }
+
+    &-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+
+      div {
+        padding: 3px 6px;
+        border-radius: 3px;
+        background: rgba(0, 56, 100, 0.3);
+
+        label {
+          display: block;
+          font-size: 10px;
+          color: #7eb4d8;
+          font-weight: 600;
+        }
+
+        span {
+          font-size: 12px;
+          font-weight: 700;
+          color: #d0e8f8;
+        }
+      }
+
+      b {
+        font-size: 14px;
+        font-weight: 900;
+        color: #5ce8bd;
+        font-family: var(--student-font-number);
+      }
+    }
+
+    p {
+      margin: 0;
+      font-size: 11px;
+      color: #8fb7cd;
+      line-height: 1.4;
+    }
   }
 }
 
@@ -1475,57 +1578,6 @@ onBeforeUnmount(stopAutoplay)
 
 
 
-.career-match-rich {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  &__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-
-    span {
-      overflow: hidden;
-      color: #c5e4f6;
-      font-size: 15px;
-      font-weight: 600;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    strong {
-      color: #5ce8bd;
-      font-family: var(--student-font-number);
-      font-size: 15px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-  }
-
-  > i {
-    height: 6px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgba(0, 69, 91, 0.68);
-
-    b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #20c997, #52e8bf); }
-  }
-
-  small {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 10px;
-    color: #8fb7cd;
-    font-size: 13px;
-
-    em {
-      font-style: normal;
-      padding: 1px 0;
-    }
-  }
-}
 
 .graduation-progress {
   display: flex !important;

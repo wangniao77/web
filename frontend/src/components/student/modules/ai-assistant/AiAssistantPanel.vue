@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, ref, defineAsyncComponent } from 'vue'
 import CollegePanelCard from '@/components/college/CollegePanelCard.vue'
 import StudentPanelBorder from '@/components/student/StudentPanelBorder.vue'
 import type {
@@ -33,6 +33,8 @@ const growthHighlights = computed(() =>
 const matchScore = computed(() =>
   Math.round((props.employment.jobReadiness + props.employment.certificateReadiness) / 2),
 )
+
+const selectedJobIdx = ref(0)
 
 const pathSteps = computed(() => [
   { key: 'short', label: '短期', text: props.employment.developmentPath.short, tone: 'cyan' },
@@ -223,14 +225,30 @@ function highlightTag(label: string) {
       </section>
 
       <section v-if="portrait?.jobMatches?.length" class="ai-jobs">
-        <h4 class="ai-jobs__title">岗位匹配推荐</h4>
-        <ul class="ai-jobs__list">
-          <li v-for="job in portrait.jobMatches" :key="job.role">
-            <span>{{ job.role }}</span>
-            <div class="ai-jobs__bar"><i :style="{ width: `${job.match}%` }" /></div>
-            <strong>{{ job.match }}%</strong>
-          </li>
-        </ul>
+        <h4 class="ai-jobs__title">岗位匹配推荐 <i class="mock-tag">模拟数据</i></h4>
+        <div class="ai-jobs__split">
+          <div class="ai-jobs__list-col">
+            <div
+              v-for="(job, idx) in portrait!.jobMatches.slice(0, 8)"
+              :key="job.role"
+              class="ai-jobs__pick"
+              :class="{ 'is-active': selectedJobIdx === idx }"
+              @click="selectedJobIdx = idx"
+            >
+              <span>{{ job.role }}</span>
+              <strong>{{ job.match }}%</strong>
+            </div>
+          </div>
+          <div class="ai-jobs__detail">
+            <strong>{{ portrait!.jobMatches[selectedJobIdx].role }}</strong>
+            <div class="ai-jobs__detail-meta">
+              <div><label>城市</label><span>{{ portrait!.jobMatches[selectedJobIdx].city }}</span></div>
+              <div><label>薪资</label><span>{{ portrait!.jobMatches[selectedJobIdx].salary }}</span></div>
+              <div><label>匹配度</label><b>{{ portrait!.jobMatches[selectedJobIdx].match }}%</b></div>
+            </div>
+            <p class="ai-jobs__detail-req">{{ portrait!.jobMatches[selectedJobIdx].requirements }}</p>
+          </div>
+        </div>
       </section>
 
       <!-- Growth path -->
@@ -369,41 +387,110 @@ function highlightTag(label: string) {
 
 .ai-jobs {
   flex-shrink: 0;
+
+  &__title { margin: 0 0 6px; font-size: var(--fs-meta); font-weight: 800; color: #b8ecff; letter-spacing: 0.06em; }
 }
 
-.ai-jobs__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.ai-jobs__split {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+  min-height: 100px;
+}
+
+.ai-jobs__list-col {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 3px;
 }
 
-.ai-jobs__list li {
-  display: grid;
-  grid-template-columns: 1fr 1.1fr auto;
+.ai-jobs__pick {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(0, 38, 73, 0.25);
+  border: 1px solid rgba(167, 139, 250, 0.06);
+  cursor: pointer;
   font-size: var(--fs-meta);
-  color: #d0e8ff;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover { background: rgba(0, 50, 100, 0.35); }
+  &.is-active {
+    border-color: rgba(167, 139, 250, 0.4);
+    background: rgba(80, 50, 140, 0.3);
+  }
+
+  span {
+    color: #d0e8ff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   strong {
     font-family: var(--student-font-number);
     color: #7ff6ff;
+    white-space: nowrap;
   }
 }
 
-.ai-jobs__bar {
-  height: 7px;
-  border-radius: 999px;
-  background: rgba(0, 60, 120, 0.45);
-  overflow: hidden;
+.ai-jobs__detail {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(0, 38, 73, 0.25);
+  border: 1px solid rgba(167, 139, 250, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 
-  i {
-    display: block;
-    height: 100%;
-    background: linear-gradient(90deg, #a78bfa, #06b6d4);
+  > strong {
+    font-size: var(--fs-label);
+    font-weight: 800;
+    color: #eef9ff;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(167, 139, 250, 0.12);
+  }
+
+  &-meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+
+    div {
+      padding: 4px 6px;
+      border-radius: 3px;
+      background: rgba(0, 56, 100, 0.3);
+
+      label {
+        display: block;
+        font-size: 10px;
+        color: #7eb4d8;
+        font-weight: 600;
+      }
+
+      span {
+        font-size: 12px;
+        font-weight: 700;
+        color: #d0e8f8;
+      }
+    }
+
+    b {
+      font-size: 14px;
+      font-weight: 900;
+      color: #7ff6ff;
+      font-family: var(--student-font-number);
+    }
+  }
+
+  &-req {
+    margin: 0;
+    font-size: 11px;
+    color: #c8dff0;
+    line-height: 1.4;
   }
 }
 

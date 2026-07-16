@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import CollegePanelCard from '@/components/college/CollegePanelCard.vue'
 import StudentPanelBorder from '@/components/student/StudentPanelBorder.vue'
 import type {
@@ -14,6 +15,8 @@ defineProps<{
   employment: EmploymentVM
   aiPortrait: AiPortraitVM
 }>()
+
+const selectedJobIdx = ref(0)
 </script>
 
 <template>
@@ -65,17 +68,34 @@ defineProps<{
         </div>
 
         <div class="stu-mod-career__jobs">
-          <h4>技能岗位推荐 <small>（基于课程与能力画像）</small></h4>
-          <div class="stu-mod-career__matches">
-            <div v-for="job in aiPortrait.jobMatches" :key="job.role" class="match">
-              <span>{{ job.role }}</span>
-              <div class="bar"><i :style="{ width: `${job.match}%` }" /></div>
-              <strong>{{ job.match }}%</strong>
-              <small v-if="job.city || job.salary || job.requirements">
-                <em v-if="job.city">{{ job.city }}</em>
-                <em v-if="job.salary">{{ job.salary }}</em>
-                <em v-if="job.requirements">{{ job.requirements }}</em>
-              </small>
+          <h4>技能岗位推荐 <small>（基于课程与能力画像）</small><small class="mock-badge">模拟数据</small></h4>
+          <div v-if="aiPortrait.jobMatches.length" class="job-split">
+            <div class="job-split__list">
+              <div
+                v-for="(job, idx) in aiPortrait.jobMatches.slice(0, 8)"
+                :key="job.role"
+                class="job-split__item"
+                :class="{ 'is-active': selectedJobIdx === idx }"
+                @click="selectedJobIdx = idx"
+              >
+                <span>{{ job.role }}</span>
+                <strong>{{ job.match }}%</strong>
+              </div>
+            </div>
+            <div class="job-split__detail">
+              <div class="job-split__detail-role">{{ aiPortrait.jobMatches[selectedJobIdx].role }}</div>
+              <div class="job-split__kv">
+                <div><label>匹配度</label><strong>{{ aiPortrait.jobMatches[selectedJobIdx].match }}%</strong></div>
+                <div><label>城市</label><span>{{ aiPortrait.jobMatches[selectedJobIdx].city }}</span></div>
+                <div><label>薪资</label><span>{{ aiPortrait.jobMatches[selectedJobIdx].salary }}</span></div>
+              </div>
+              <div class="job-split__bar-wrap">
+                <div class="job-split__bar"><i :style="{ width: `${aiPortrait.jobMatches[selectedJobIdx].match}%` }" /></div>
+              </div>
+              <div class="job-split__info">
+                <label>岗位要求</label>
+                <p>{{ aiPortrait.jobMatches[selectedJobIdx].requirements }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -211,19 +231,110 @@ defineProps<{
   gap: 8px;
 }
 
-.match {
+.job-split {
   display: grid;
-  grid-template-columns: 1fr 1.2fr auto;
-  gap: 4px 8px;
-  align-items: center;
-  font-size: var(--fs-meta);
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+  min-height: 160px;
 
-  span { color: #d8eeff; }
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
 
-  .bar {
-    height: 6px;
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: rgba(0, 38, 73, 0.25);
+    border: 1px solid rgba(52, 211, 153, 0.08);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover { background: rgba(0, 50, 100, 0.4); }
+    &.is-active {
+      border-color: rgba(52, 211, 153, 0.4);
+      background: rgba(0, 60, 100, 0.4);
+    }
+
+    span {
+      font-size: var(--fs-meta);
+      color: #d8eeff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    strong {
+      font-size: var(--fs-meta);
+      color: #6ee7b7;
+      font-family: var(--student-font-number);
+      white-space: nowrap;
+    }
+  }
+
+  &__detail {
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(0, 38, 73, 0.25);
+    border: 1px solid rgba(52, 211, 153, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &-role {
+      font-size: var(--fs-label);
+      font-weight: 800;
+      color: #eef9ff;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(52, 211, 153, 0.12);
+    }
+  }
+
+  &__kv {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+
+    div {
+      padding: 4px 6px;
+      border-radius: 3px;
+      background: rgba(0, 56, 100, 0.3);
+
+      label {
+        display: block;
+        font-size: 10px;
+        color: #7eb4d8;
+        font-weight: 600;
+      }
+
+      strong {
+        font-size: 14px;
+        font-weight: 900;
+        color: #6ee7b7;
+        font-family: var(--student-font-number);
+      }
+
+      span {
+        font-size: 12px;
+        font-weight: 700;
+        color: #d0e8f8;
+      }
+    }
+  }
+
+  &__bar-wrap {
+    padding: 2px 0;
+  }
+
+  &__bar {
+    height: 4px;
     border-radius: 999px;
-    background: rgba(0, 60, 120, 0.5);
+    background: rgba(0, 60, 120, 0.4);
     overflow: hidden;
 
     i {
@@ -233,22 +344,21 @@ defineProps<{
     }
   }
 
-  strong {
-    color: #6ee7b7;
-    font-family: var(--student-font-number);
-    min-width: 36px;
-    text-align: right;
-  }
+  &__info {
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #7eb4d8;
+      margin-bottom: 2px;
+    }
 
-  small {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 10px;
-    color: #9ecae8;
-    font-size: 12px;
-
-    em { font-style: normal; }
+    p {
+      margin: 0;
+      font-size: 11px;
+      color: #c8dff0;
+      line-height: 1.4;
+    }
   }
 }
 </style>
