@@ -1,0 +1,14 @@
+.screen-wrapper {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $color-bg-root;
+}
+
+.screen-scale {
+  transform-origin: center center;
+}

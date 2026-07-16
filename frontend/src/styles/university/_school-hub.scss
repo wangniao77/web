@@ -1,0 +1,189 @@
+.university-screen {
+  .core-hero-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .core-hero-stage__glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 72%;
+    height: 72%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 200, 255, 0.18) 0, transparent 70%);
+    pointer-events: none;
+  }
+
+  .core-hero-core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    width: min(58%, 220px);
+    height: min(58%, 220px);
+  }
+
+  .core-gauge-square {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .core-gauge.core-gauge--hero {
+    position: absolute;
+    inset: 0;
+  }
+
+  .core-gauge__track,
+  .core-gauge__progress {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    -webkit-mask: radial-gradient(circle, transparent 0 48%, #000 49% 86%, transparent 87% 100%);
+    mask: radial-gradient(circle, transparent 0 48%, #000 49% 86%, transparent 87% 100%);
+  }
+
+  .core-gauge__track {
+    background: rgba(0, 80, 140, 0.35);
+  }
+
+  .core-gauge__progress {
+    background: conic-gradient(
+      from -90deg,
+      #63ffe1 0deg,
+      #00f2ff calc(var(--gauge-deg) * 0.65),
+      #0d71ff var(--gauge-deg),
+      transparent var(--gauge-deg)
+    );
+    filter: drop-shadow(0 0 12px rgba(0, 242, 255, 0.8));
+  }
+
+  .core-gauge__scan-ring {
+    position: absolute;
+    inset: -2%;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: rgba(0, 242, 255, 0.85);
+    animation: uni-gauge-scan 3s linear infinite;
+    pointer-events: none;
+  }
+
+  .core-gauge__content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 5;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 52%;
+    height: 52%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(3, 26, 54, 0.94), rgba(1, 8, 25, 0.96));
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    text-align: center;
+    padding: 4px;
+  }
+
+  .hub-level {
+    font-size: 12px;
+    color: #37ffb1;
+    font-weight: 700;
+  }
+
+  .hub-delta {
+    font-size: 11px;
+    color: #37ffb1;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .hub-flop-wrap {
+    width: 100%;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .core-orbit-metric {
+    position: absolute;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 148px;
+    padding: 6px 8px;
+    border: 1px solid rgba(0, 242, 255, 0.35);
+    border-radius: 4px;
+    background: linear-gradient(135deg, rgba(0, 100, 200, 0.28), rgba(2, 14, 40, 0.92));
+    box-shadow: 0 0 16px rgba(0, 200, 255, 0.2);
+  }
+
+  .core-orbit--tl { top: 6%; left: 8%; }
+  .core-orbit--ml { top: 42%; left: 4%; transform: translateY(-50%); }
+  .core-orbit--bl { bottom: 8%; left: 8%; }
+  .core-orbit--tr { top: 6%; right: 8%; }
+  .core-orbit--mr { top: 42%; right: 4%; transform: translateY(-50%); }
+  .core-orbit--br { bottom: 8%; right: 8%; }
+
+  .core-orbit-metric__icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    background: rgba(0, 60, 120, 0.2);
+    flex-shrink: 0;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      color: #55dfff;
+    }
+  }
+
+  .core-orbit-metric__body {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .core-orbit-metric__label {
+    font-size: 10px;
+    color: #c8e8ff;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .core-orbit-metric__value {
+    font-size: 18px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    font-family: var(--university-font-number);
+  }
+
+  .core-orbit-metric__trend {
+    font-size: 10px;
+    font-style: normal;
+    color: #37ffb1;
+    font-weight: 700;
+  }
+}
+
+@keyframes uni-gauge-scan {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
