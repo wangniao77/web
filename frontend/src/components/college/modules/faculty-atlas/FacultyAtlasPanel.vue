@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { useRouter } from 'vue-router'
 import MarqueeText from '@/components/college/modules/benchmark/MarqueeText.vue'
+import { ROUTES } from '@/constants/routes'
 import type { FacultyHealthLevel, FacultyMetricTone } from '@/types/college/api/teacher-analytics'
 import type { TeacherAnalyticsVM } from '@/types/college/view/teacher-analytics'
 
@@ -9,8 +10,10 @@ const props = defineProps<{
   data: TeacherAnalyticsVM
 }>()
 
+const router = useRouter()
+
 function openTeacherDetail() {
-  openCollegeDetail({ kind: 'teacher-detail' })
+  router.push(ROUTES.college.teacherResourceBase)
 }
 
 const health = computed(() => props.data.health)

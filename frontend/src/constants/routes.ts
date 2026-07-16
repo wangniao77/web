@@ -8,6 +8,7 @@ export const ROUTES = {
     teachingCourses: '/college/teaching/courses',
     researchPlatforms: '/college/research/platforms',
     studentEmployment: '/college/student/employment',
+    teacherResourceBase: '/college/teacher/resource-base',
   },
   university: {
     root: '/university',

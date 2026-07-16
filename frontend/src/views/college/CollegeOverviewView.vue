@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import CockpitPanel from '@/components/college/CockpitPanel.vue'
 import CoreHeroGauge from '@/components/college/modules/center-hub/CoreHeroGauge.vue'
 import KeyPlanProgressPanel from '@/components/college/modules/key-tasks/KeyPlanProgressPanel.vue'
@@ -18,6 +19,9 @@ import { enrollmentEmploymentService } from '@/api/college/services/enrollment-e
 import { isMockMode } from '@/api/createService'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
 import { useScope } from '@/composables/useScope'
+import { ROUTES } from '@/constants/routes'
+
+const router = useRouter()
 
 const { collegeScope } = useScope()
 
@@ -206,7 +210,7 @@ useAutoRefresh(loadAll)
             <button
               type="button"
               class="panel__action-link"
-              @click="openCollegeDetail({ kind: 'teacher-detail' })"
+              @click="router.push(ROUTES.college.teacherResourceBase)"
             >
               详情 →
             </button>
