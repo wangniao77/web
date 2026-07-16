@@ -1,0 +1,139 @@
+@import './tokens';
+
+.university-screen {
+  position: relative;
+  background:
+    radial-gradient(120% 90% at 50% -25%, rgba(51, 217, 255, 0.1), transparent 55%),
+    radial-gradient(46% 120% at 0% 42%, rgba(51, 217, 255, 0.05), transparent 60%),
+    radial-gradient(46% 120% at 100% 42%, rgba(124, 139, 255, 0.05), transparent 60%),
+    radial-gradient(90% 70% at 15% 110%, rgba(75, 141, 255, 0.08), transparent 60%),
+    radial-gradient(90% 70% at 88% 108%, rgba(124, 139, 255, 0.07), transparent 60%),
+    linear-gradient(180deg, var(--uni-bg-primary) 0%, var(--uni-bg-deep) 100%);
+  color: var(--uni-text-primary);
+  font-family: var(--uni-font-body);
+  font-variant-numeric: tabular-nums;
+
+  // Faint technical grid overlay
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(90, 170, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(90, 170, 255, 0.04) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(120% 90% at 50% 40%, #000 40%, transparent 78%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .screen-scale {
+    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .screen-main {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    min-height: 0;
+    padding: 0 var(--uni-gap-page) var(--uni-gap-page);
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.university-grid {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uni-gap-module);
+}
+
+.university-row {
+  display: grid;
+  gap: var(--uni-gap-module);
+  min-height: 0;
+
+  &--top {
+    // central態勢 core widened ~10%; research / employment recede accordingly
+    grid-template-columns: 3.32fr 5.3fr 3.32fr;
+    flex: 1.1;
+  }
+
+  &--bottom {
+    // key-tasks stays dominant; disciplines & events slightly narrower
+    grid-template-columns: 5.3fr 3.1fr 3.35fr;
+    // second row is deliberately shorter than the top row
+    flex: 0.9;
+  }
+
+  > * {
+    min-height: 0;
+    min-width: 0;
+  }
+}
+
+// The central態勢 module is the visual core — slightly taller emphasis on row1
+.university-row--top .cell-goal {
+  z-index: 3;
+}
+
+// Side modules recede so the central態勢 core is the absolute focal point.
+// (Global rules deliberately outrank FuturisticPanel's scoped styles.)
+.university-grid .fp {
+  opacity: 0.86;
+  transition: opacity 0.3s ease;
+}
+
+.university-grid .fp:hover {
+  opacity: 1;
+}
+
+.university-grid .fp .fp__clip {
+  background: linear-gradient(
+    150deg,
+    rgba(90, 170, 255, 0.13),
+    rgba(90, 170, 255, 0.03) 45%,
+    rgba(51, 217, 255, 0.08)
+  );
+}
+
+.university-grid .fp .fp__corner--tl,
+.university-grid .fp .fp__corner--br {
+  border-color: rgba(51, 217, 255, 0.4);
+  filter: drop-shadow(0 0 2px rgba(51, 217, 255, 0.18));
+}
+
+.university-loading {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--uni-text-secondary);
+  font-size: var(--uni-fs-body);
+
+  button {
+    color: var(--uni-accent-cyan);
+    cursor: pointer;
+  }
+}
+
+@container screen (max-width: 1700px) {
+  .university-row--top,
+  .university-row--bottom {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cell-goal {
+    grid-column: 1 / -1;
+  }
+}
+
+@container screen (max-width: 1200px) {
+  .university-row--top,
+  .university-row--bottom {
+    grid-template-columns: 1fr;
+  }
+}
