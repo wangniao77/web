@@ -52,6 +52,7 @@ onMounted(load)
     title="学生 GPA 详情"
     subtitle="学业总览 · 课程分布 · 擅长 / 潜力分析"
     back-text="← 返回学生档案"
+    mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载 GPA 数据...

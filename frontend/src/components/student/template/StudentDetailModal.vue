@@ -11,7 +11,6 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>()
 
 const titleMap: Record<string, string> = {
-  basic: '学生基础信息台账',
   timetable: '本学期课表',
   academic: '学情轨迹护航详情',
   quality: '综合素养荣誉与纪律台账',
@@ -39,28 +38,7 @@ function onBackdrop(e: MouseEvent) {
           <button type="button" aria-label="关闭" @click="emit('close')">×</button>
         </header>
         <div class="stu-detail-modal__body">
-          <template v-if="section === 'basic'">
-            <div class="detail-grid">
-              <p><span>姓名</span><strong>{{ dashboard.profile.name }}</strong></p>
-              <p><span>性别</span><strong>{{ dashboard.profile.gender || '男' }}</strong></p>
-              <p><span>学号</span><strong>{{ dashboard.profile.studentId }}</strong></p>
-              <p><span>班级</span><strong>{{ dashboard.profile.className }}</strong></p>
-              <p><span>学籍状态</span><strong>{{ dashboard.profile.onCampusStatus }}</strong></p>
-              <p><span>高潜标签</span><strong>{{ dashboard.profile.highPotentialTags?.join('、') || '无' }}</strong></p>
-              <p><span>政治面貌</span><strong>{{ dashboard.profile.politicalStatus }}</strong></p>
-              <p><span>辅导员</span><strong>{{ dashboard.profile.counselor }}</strong></p>
-              <p><span>班主任</span><strong>{{ dashboard.profile.mentor }}</strong></p>
-              <p><span>联系电话</span><strong>{{ dashboard.profile.phone || '—' }}</strong></p>
-              <p><span>家庭住址</span><strong>{{ dashboard.profile.address }}</strong></p>
-              <p><span>家长姓名</span><strong>{{ dashboard.profile.guardianName }}</strong></p>
-              <p><span>家长联系方式</span><strong>{{ dashboard.profile.guardianPhone }}</strong></p>
-              <p><span>家庭成员</span><strong>{{ dashboard.profile.familyMembers?.join('、') || '暂无记录' }}</strong></p>
-              <p><span>家庭经济情况</span><strong>{{ dashboard.profile.economicHardship ? '困难认定' : '一般' }}</strong></p>
-            </div>
-            <p class="detail-note">家庭情况：{{ dashboard.profile.familySituation || '暂无详细记录' }}</p>
-            <p class="detail-note">详细困难情况：{{ dashboard.profile.difficultyDetail || '暂无详细记录' }}</p>
-          </template>
-          <template v-else-if="section === 'timetable'">
+          <template v-if="section === 'timetable'">
             <p>本学期共 {{ dashboard.academic.currentCourses.length }} 门在修课程</p>
             <ul>
               <li v-for="course in dashboard.academic.currentCourses" :key="course.name">

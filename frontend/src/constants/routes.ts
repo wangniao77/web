@@ -27,5 +27,9 @@ export const ROUTES = {
     gpaSemester: '/student/gpa-semester',
     creditProgress: '/student/credit-progress',
     failDetail: '/student/fail-detail',
+    basicLedger: '/student/basic-ledger',
+    psyWarning: '/student/psy-warning',
+    academicWarning: '/student/academic-warning',
+    employmentWarning: '/student/employment-warning',
   },
 } as const

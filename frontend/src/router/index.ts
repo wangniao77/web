@@ -145,6 +145,30 @@ const router = createRouter({
       component: () => import('@/components/student/subpages/fail-detail/index.vue'),
       meta: { title: '挂科详情', isStudentSubpage: true },
     },
+    {
+      path: ROUTES.student.basicLedger,
+      name: 'student-basic-ledger',
+      component: () => import('@/components/student/subpages/basic-ledger/index.vue'),
+      meta: { title: '学生基础信息台账', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.psyWarning,
+      name: 'student-psy-warning',
+      component: () => import('@/components/student/subpages/psy-warning/index.vue'),
+      meta: { title: '心理预警详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.academicWarning,
+      name: 'student-academic-warning',
+      component: () => import('@/components/student/subpages/academic-warning/index.vue'),
+      meta: { title: '学业预警详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.employmentWarning,
+      name: 'student-employment-warning',
+      component: () => import('@/components/student/subpages/employment-warning/index.vue'),
+      meta: { title: '就业预警详情', isStudentSubpage: true },
+    },
   ],
 })
 

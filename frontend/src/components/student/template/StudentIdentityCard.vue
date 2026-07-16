@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ROUTES } from '@/constants/routes'
 import StudentTplCard from './StudentTplCard.vue'
 import StuHint from './StuHint.vue'
 import StudentPeerRosterModal from './StudentPeerRosterModal.vue'
@@ -241,6 +242,22 @@ function selectPeer(studentId: string) {
   peerOpen.value = false
   router.push({ path: '/student', query: { studentId } })
 }
+
+function goBasicLedger() {
+  router.push({ path: ROUTES.student.basicLedger, query: { studentId: props.profile.studentId } })
+}
+
+function goWarningDetail(label: string) {
+  const map: Record<string, string> = {
+    '心理预警': 'student-psy-warning',
+    '学业预警': 'student-academic-warning',
+    '就业预警': 'student-employment-warning',
+  }
+  const name = map[label]
+  if (name) {
+    router.push({ name, query: { studentId: props.profile.studentId } })
+  }
+}
 </script>
 
 <template>
@@ -368,7 +385,7 @@ function selectPeer(studentId: string) {
           <button type="button" @click="emit('open', 'timetable')">本学期课表 ›</button>
         </StuHint>
         <StuHint tip="打开更完整的学籍与基础档案。">
-          <button type="button" class="sid__archive-btn" @click="emit('open', 'basic')">基础信息台账 ›</button>
+          <button type="button" class="sid__archive-btn" @click="goBasicLedger">基础信息台账 ›</button>
         </StuHint>
       </div>
 
@@ -383,7 +400,7 @@ function selectPeer(studentId: string) {
             type="button"
             class="sid__warning"
             :class="`sid__warning--${item.level}`"
-            @click="emit('open', 'warning')"
+            @click="goWarningDetail(item.label)"
           >
             <span class="sid__warning-dot" aria-hidden="true" />
             <span class="sid__warning-main">

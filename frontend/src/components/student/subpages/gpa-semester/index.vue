@@ -38,6 +38,7 @@ onMounted(load)
     subtitle="完整课程列表 · 按学期切换 · 支持成绩 / 学分 / 名称排序"
     back-text="← 返回 GPA 总览"
     :back-to="{ name: 'student-gpa-detail' }"
+    mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载课程明细...

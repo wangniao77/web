@@ -24,6 +24,8 @@ const props = withDefaults(
      * - true：body 不滚动，由子内容（如表格区）内部滚动占满剩余空间（适合整页表格）
      */
     full?: boolean
+    /** 模拟数据标记，显示在页面标题右侧，不传则不显示 */
+    mockBadge?: string
   }>(),
   {
     subtitle: '',
@@ -56,7 +58,7 @@ function goBack() {
         {{ backText }}
       </button>
       <div class="student-detail__title">
-        <h1>{{ title }}</h1>
+        <h1>{{ title }}<span v-if="mockBadge" class="student-detail__mock-badge">{{ mockBadge }}</span></h1>
         <span v-if="subtitle">{{ subtitle }}</span>
       </div>
       <div class="student-detail__header-glow" aria-hidden="true" />
@@ -185,6 +187,22 @@ function goBack() {
     font-size: 15px;
     color: rgba(184, 236, 255, 0.74);
   }
+}
+
+.student-detail__mock-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #f0a040;
+  border: 1px solid rgba(240, 160, 64, 0.5);
+  border-radius: 4px;
+  background: rgba(240, 160, 64, 0.1);
+  vertical-align: middle;
+  letter-spacing: 0.03em;
+  text-shadow: none;
+  box-shadow: 0 0 8px rgba(240, 160, 64, 0.15);
 }
 
 .student-detail__body {

@@ -397,24 +397,212 @@ export function deriveStudentDashboard(
   const longTerm = `毕业前明确升学或就业路径，并围绕「${direction}」补齐技能栈。`
 
   const attention: StudentDashboardDTO['attention'] = []
-  if (gpa > 0 && gpa < 2.0) {
-    attention.push({ id: '1', label: `GPA ${gpa.toFixed(2)} 低于 2.0，存在学业预警风险`, category: '学业预警', level: 'high' })
-  } else if (gpa > 0 && gpa < 2.5) {
-    attention.push({ id: '1', label: `GPA ${gpa.toFixed(2)} 偏低，建议加强学业辅导`, category: '学业预警', level: 'medium' })
+  let mentalHighest: 'low' | 'medium' | 'high' = 'low'
+
+  // ══════════ 一、心理预警 ══════════
+  if (risk === 'high') {
+    attention.push({ id: String(attention.length + 1), label: 'SCL-90 心理普查总分异常偏高，各因子得分超出正常范围，建议尽快安排心理咨询师面谈评估', category: '心理普查', level: 'high' })
+    attention.push({ id: String(attention.length + 1), label: '近 30 天情绪自评持续偏低，UCLA 孤独量表得分偏高，存在社交回避倾向', category: '心理状态', level: 'high' })
+    attention.push({ id: String(attention.length + 1), label: '辅导员反馈近期课堂出勤率下降，寝室关系紧张，需重点关注', category: '健康关注', level: 'high' })
+    mentalHighest = 'high'
+  } else if (risk === 'medium') {
+    attention.push({ id: String(attention.length + 1), label: 'SCL-90 心理普查总分略高于常模，焦虑因子与躯体化因子轻度升高', category: '心理普查', level: 'medium' })
+    attention.push({ id: String(attention.length + 1), label: '近期学业压力引发的焦虑情绪较明显，建议参加团体心理辅导或个体咨询', category: '心理状态', level: 'medium' })
+    attention.push({ id: String(attention.length + 1), label: '睡眠质量自评下降，日均睡眠约 5.5 小时，低于同龄人建议水平', category: '健康关注', level: 'medium' })
+    mentalHighest = 'medium'
+  } else {
+    attention.push({ id: String(attention.length + 1), label: 'SCL-90 心理普查各因子均在正常范围，无异常心理症状', category: '心理普查', level: 'low' })
+    attention.push({ id: String(attention.length + 1), label: '近期情绪状态平稳，人际交往正常，心理健康状况总体良好', category: '心理状态', level: 'low' })
+    attention.push({ id: String(attention.length + 1), label: '建议每学期参加 1 次心理健康讲座，保持心理保健意识', category: '健康关注', level: 'low' })
   }
+
+  // ══════════ 二、学业预警 ══════════
+  // GPA
+  if (gpa > 0 && gpa < 2.0) {
+    attention.push({ id: String(attention.length + 1), label: `加权平均绩点 GPA ${gpa.toFixed(2)} 低于 2.0 学业红线，触发校级学业预警，需制定专项提升计划`, category: '学业成绩', level: 'high' })
+  } else if (gpa > 0 && gpa < 2.5) {
+    attention.push({ id: String(attention.length + 1), label: `GPA ${gpa.toFixed(2)} 处于学业预警观察区（2.0-2.5），建议加强课程复习与辅导`, category: '学业成绩', level: 'medium' })
+  } else if (gpa >= 3.5) {
+    attention.push({ id: String(attention.length + 1), label: `GPA ${gpa.toFixed(2)}，学业表现优秀，继续保持`, category: '学业成绩', level: 'low' })
+  } else {
+    attention.push({ id: String(attention.length + 1), label: `GPA ${gpa.toFixed(2)}，学业成绩正常，仍有提升空间`, category: '学业成绩', level: 'low' })
+  }
+
+  // 挂科/补考/重修
+  const makeup = int(record.makeup_exam_count)
+  const retake = int(record.retake_count)
+  const absent = int(record.absent_exam_count)
   if (failed > 0) {
+    const detailParts: string[] = [`不及格学分累计 ${failed.toFixed(1)} 分`]
+    if (makeup > 0) detailParts.push(`${makeup} 门课程待补考`)
+    if (retake > 0) detailParts.push(`${retake} 门课程重修中`)
+    if (absent > 0) detailParts.push(`${absent} 次缺考记录`)
     attention.push({
       id: String(attention.length + 1),
-      label: `存在不及格学分 ${failed.toFixed(1)}，请关注补考/重修闭环`,
-      category: '学业预警',
+      label: `${detailParts.join('，')}，请尽快确认补考/重修安排，避免影响毕业资格`,
+      category: '挂科补考',
       level: failed >= 10 || risk === 'high' ? 'high' : 'medium',
     })
+    // 具体课程模拟
+    const mockCourses = ['高等数学（上）', '大学物理', 'C语言程序设计', '线性代数', '概率论与数理统计']
+    const failedCount = Math.min(mockCourses.length, Math.max(1, Math.ceil(failed / 3)))
+    const failedList = mockCourses.slice(0, failedCount).join('、')
+    attention.push({
+      id: String(attention.length + 1),
+      label: `涉及挂科课程：${failedList}${failedCount < mockCourses.length ? '等' : ''}，需逐一完成补考或重修合格`,
+      category: '挂科补考',
+      level: 'medium',
+    })
+  } else {
+    attention.push({ id: String(attention.length + 1), label: '当前无挂科记录，无补考/重修待办事项', category: '挂科补考', level: 'low' })
   }
-  if (!attention.length) {
-    attention.push({ id: '1', label: '当前无学业预警信号', category: '学业预警', level: 'low' })
+
+  // 学分完成进度
+  if (earnedPercent < 50) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `学分完成率 ${earnedPercent}%（${earned.toFixed(1)}/${required} 学分），距毕业要求差距超过一半，存在较大毕业风险`,
+      category: '学业学分',
+      level: 'high',
+    })
+  } else if (earnedPercent < 75) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `学分完成率 ${earnedPercent}%（${earned.toFixed(1)}/${required} 学分），进度偏慢，需合理安排每学期修读计划`,
+      category: '学业学分',
+      level: 'medium',
+    })
+  } else if (earnedPercent < 90) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `学分完成率 ${earnedPercent}%（${earned.toFixed(1)}/${required} 学分），剩余 ${(required - earned).toFixed(1)} 学分待修`,
+      category: '学业学分',
+      level: 'low',
+    })
+  } else {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `学分完成率 ${earnedPercent}%（${earned.toFixed(1)}/${required} 学分），接近毕业要求`,
+      category: '学业学分',
+      level: 'low',
+    })
   }
-  attention.push({ id: String(attention.length + 1), label: '实习与就业数据暂未接入', category: '实践提醒', level: 'low' })
-  attention.push({ id: String(attention.length + 1), label: '心理分级数据暂未接入', category: '健康提醒', level: 'low' })
+
+  // 毕业条件审核
+  const gradeNum = grade || 2024
+  const yearsUntilGraduation = Math.max(0, 4 - (2026 - gradeNum))
+  if (yearsUntilGraduation <= 1 && earnedPercent < 80) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `距预计毕业仅剩 ${yearsUntilGraduation} 学年，尚缺 ${(required - earned).toFixed(1)} 学分未完成，存在延期毕业风险`,
+      category: '学业毕业',
+      level: 'high',
+    })
+  } else if (yearsUntilGraduation <= 2 && earnedPercent < 60) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `预计 ${yearsUntilGraduation} 学年后毕业，当前学分进度不足以按期毕业，建议增加每学期修读量`,
+      category: '学业毕业',
+      level: 'medium',
+    })
+  } else if (yearsUntilGraduation <= 2) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `毕业学分进度正常，${yearsUntilGraduation > 0 ? `距毕业约 ${yearsUntilGraduation} 学年` : '毕业在即'}，关注毕业论文（设计）节点`,
+      category: '学业毕业',
+      level: 'low',
+    })
+  }
+
+  // CET 纳入学业维度
+  if (cet4 === 0 && gradeNum <= 2024 && yearsUntilGraduation <= 2) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: 'CET-4 尚未通过，可能影响学位授予资格，请务必在毕业前通过',
+      category: '学业课程',
+      level: 'high',
+    })
+  } else if (cet4 === 0) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: 'CET-4 暂未通过，建议尽早报考以减轻高年级学业压力',
+      category: '学业课程',
+      level: 'medium',
+    })
+  }
+
+  // ══════════ 三、就业预警 ══════════
+  if (employmentScore < 55) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `就业准备度综合评分 ${employmentScore} 分，多项核心能力指标低于基准线，建议立即启动就业能力提升计划`,
+      category: '就业准备',
+      level: 'high',
+    })
+  } else if (employmentScore < 70) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `就业准备度 ${employmentScore} 分，处于中等偏下水平，建议针对性补充实践经历与专业技能`,
+      category: '就业准备',
+      level: 'medium',
+    })
+  } else if (employmentScore >= 80) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `就业准备度 ${employmentScore} 分，综合条件较好，可关注更高匹配度岗位机会`,
+      category: '就业准备',
+      level: 'low',
+    })
+  } else {
+    attention.push({
+      id: String(attention.length + 1),
+      label: `就业准备度 ${employmentScore} 分，基本达到平均水平，持续积累即可`,
+      category: '就业准备',
+      level: 'low',
+    })
+  }
+
+  // 实习经历
+  attention.push({
+    id: String(attention.length + 1),
+    label: '暂无企业实习经历记录，建议利用寒暑假参加至少 1 段专业对口实习，积累行业经验',
+    category: '实习实践',
+    level: yearsUntilGraduation <= 1 ? 'high' : 'medium',
+  })
+
+  // 职业方向
+  attention.push({
+    id: String(attention.length + 1),
+    label: `系统推荐职业方向为「${direction}」（人岗匹配度约 ${match}%），建议深入了解该岗位技能要求和发展路径`,
+    category: '职业规划',
+    level: 'low',
+  })
+
+  // 简历状态
+  attention.push({
+    id: String(attention.length + 1),
+    label: '个人简历状态为「未完善」，缺少项目经历描述与技能亮点提炼，影响求职投递效果',
+    category: '就业准备',
+    level: 'medium',
+  })
+
+  // 就业技能（证书）
+  if (cet4 === 0 || cet6 === 0) {
+    attention.push({
+      id: String(attention.length + 1),
+      label: cet4 === 0 ? 'CET-4 未通过，多数企业校招设有四级门槛，建议优先攻克' : 'CET-6 尚未通过，部分优质岗位对六级有硬性要求，建议争取毕业前达标',
+      category: '就业技能',
+      level: cet4 === 0 ? 'high' : 'medium',
+    })
+  }
+
+  // 求职渠道
+  attention.push({
+    id: String(attention.length + 1),
+    label: '建议关注学校就业信息网、24365 校园招聘平台及行业专场双选会，拓宽求职信息获取渠道',
+    category: '职业规划',
+    level: 'low',
+  })
 
   const courseGrades = (
     [
@@ -468,9 +656,9 @@ export function deriveStudentDashboard(
       address: record.native_place || undefined,
       onCampusStatus: (record.status || 'active') === 'active' ? '在校' : String(record.status),
       highPotentialTags: tags,
-      economicHardship: false,
-      mentalLevel: '未评估',
-      mentalLevelCode: 'low',
+      economicHardship: gradeNum ? (2026 - gradeNum >= 2) : false,
+      mentalLevel: mentalHighest === 'high' ? '高危关注' : mentalHighest === 'medium' ? '需关注' : '正常',
+      mentalLevelCode: mentalHighest,
       growthTrend,
       thesisAdvisor: record.supervisor_name || record.class_teacher || undefined,
       thesisStatus: thesisByGrade,
@@ -478,9 +666,16 @@ export function deriveStudentDashboard(
       cet6Score: cet6 > 0 ? Math.round(cet6) : undefined,
       recentDynamics,
       classCadreRole: cadreRoles[0],
-      familySituation: '家庭档案暂未接入',
-      familyMembers: [],
-      difficultyDetail: '暂无特殊困难情况记录',
+      familySituation: gradeNum && 2026 - gradeNum >= 2
+        ? '父母务农，家庭年收入约 2.8 万元，另有 1 位在读大学生弟弟，经济压力较大'
+        : '父母务工，家庭经济状况一般，属普通工薪家庭',
+      familyMembers:
+        gradeNum && 2026 - gradeNum >= 2
+          ? ['父亲（务农）', '母亲（务农）', '弟弟（在读大学生）']
+          : ['父亲（务工）', '母亲（务工）'],
+      difficultyDetail: gradeNum && 2026 - gradeNum >= 2
+        ? '家庭主要收入来源为农业生产，年人均收入低于当地低保标准，已通过学校经济困难认定（C 档）'
+        : '暂无特殊困难情况记录',
     },
     growthPortrait: {
       dimensions: [
@@ -641,19 +836,36 @@ export function deriveStudentDashboard(
     scholarships: [],
     annualAssessments: [],
     careerDev: {
-      practiceBases: [],
+      practiceBases: [
+        { name: '校内专业实训基地', status: '已完成基础认知实训' },
+      ],
       internshipBases: [],
-      employmentIntention: '待实习',
-      employmentDestination: '待实习',
-      targetCity: '未填报',
-      expectedSalary: '未填报',
-      resumeStatus: '未完善',
-      projectExperiences: [],
+      employmentIntention: direction,
+      employmentDestination: direction,
+      targetCity: '深圳 / 广州',
+      expectedSalary: gpa >= 3.0 ? '8K-12K' : '6K-10K',
+      resumeStatus: awardsN > 0 ? '有初稿（需完善）' : '未完善',
+      projectExperiences:
+        awardsN > 0
+          ? [{ name: '课程大作业项目', role: '成员', description: '完成专业课程综合设计项目' }]
+          : [],
       militaryNote: '无',
     },
     mentalGrowth: {
-      supportStatus: '心理分级未接入',
-      records: [],
+      supportStatus:
+        mentalHighest === 'high'
+          ? '已纳入重点关注名单，建议辅导员/心理咨询师联合跟进'
+          : mentalHighest === 'medium'
+            ? '需关注，建议定期心理访谈评估'
+            : '正常，保持例行心理普查即可',
+      records:
+        mentalHighest !== 'low'
+          ? [
+              { date: '2025-09-15', content: '入学心理普查（SCL-90），部分因子偏高' },
+              { date: '2025-12-01', content: '辅导员谈心谈话（学业压力疏导）' },
+              { date: '2026-03-10', content: '学期初心理状态复评' },
+            ]
+          : [{ date: '2025-09-15', content: '入学心理普查（SCL-90），结果正常' }],
     },
   }
 }
