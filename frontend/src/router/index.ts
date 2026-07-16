@@ -60,6 +60,11 @@ const router = createRouter({
           name: 'college-student-employment',
           component: () => import('@/views/college/details/EmploymentDetailView.vue'),
         },
+        {
+          path: 'teacher/resource-base',
+          name: 'college-teacher-resource-base',
+          component: () => import('@/views/college/details/TeacherResourceBaseView.vue'),
+        },
       ],
     },
     {
