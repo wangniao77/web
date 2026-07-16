@@ -5,9 +5,9 @@ const DESIGN_WIDTH = 1920
 const DESIGN_HEIGHT = 1080
 
 /** fluid 模式下画布最大拉宽比例（相对 1920） */
-const FLUID_MAX_WIDTH_RATIO = 1.08
-/** 宽屏额外横向空间被吸收的比例（0~1，越小变化越平缓） */
-const FLUID_STRETCH_ABSORB = 0.22
+const FLUID_MAX_WIDTH_RATIO = 2.0
+/** 宽屏额外横向空间被吸收的比例（1.0 = 完全吸收，画布宽度随屏幕宽度变化） */
+const FLUID_STRETCH_ABSORB = 1.0
 
 export type ScreenScaleMode = 'contain' | 'cover' | 'adapt' | 'fluid'
 
