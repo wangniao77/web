@@ -1,3 +1,8 @@
+@use './student-v2.scss' as *;
+@use './student-template.scss' as *;
+@use '../college/cockpit/core-hero-gauge.scss' as *;
+@use './student-score-hero.scss' as *;
+
 // ============================================================
 // Student screen local theme
 // ============================================================
@@ -167,7 +172,3 @@
   }
 }
 
-@import './student-v2.scss';
-@import './student-template.scss';
-@import '../college/cockpit/core-hero-gauge.scss';
-@import './student-score-hero.scss';

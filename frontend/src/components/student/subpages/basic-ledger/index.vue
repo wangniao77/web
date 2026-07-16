@@ -118,6 +118,7 @@ onMounted(load)
     title="学生基础信息台账"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId} · ${dashboard.profile.className}` : ''"
     back-text="← 返回学生档案"
+    :back-to="{ name: 'student', query: { studentId: activeStudentId } }"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">

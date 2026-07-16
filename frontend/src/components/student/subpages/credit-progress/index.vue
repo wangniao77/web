@@ -44,6 +44,7 @@ onMounted(load)
     title="学分进度与培养方案"
     subtitle="面向老师：必修 / 选修 / 通识学分达成情况 · 缺口提醒 · 个人培养方案进度"
     back-text="← 返回学生档案"
+    :back-to="{ name: 'student' }"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">

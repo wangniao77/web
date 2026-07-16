@@ -93,6 +93,7 @@ onMounted(load)
     title="挂科课程详情"
     subtitle="挂科明细 · 班均对比 · 归因分析"
     back-text="← 返回学生档案"
+    :back-to="{ name: 'student' }"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">
