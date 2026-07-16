@@ -32,7 +32,7 @@ const trendOption = computed<EChartsOption>(() => {
       trigger: 'axis',
       backgroundColor: 'rgba(2, 14, 38, 0.94)',
       borderColor: 'rgba(0, 242, 255, 0.65)',
-      textStyle: { color: '#f4fbff', fontSize: 13 },
+      textStyle: { color: '#f4fbff', fontSize: 20 },
       formatter: '{b}<br />高潜人数：{c}人',
       confine: true,
     },

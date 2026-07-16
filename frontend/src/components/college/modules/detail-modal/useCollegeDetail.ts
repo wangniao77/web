@@ -13,6 +13,13 @@ export type CollegeDetailKind =
   | 'teaching'
   | 'research'
   | 'employment'
+  | 'student-flow'
+  | 'student-evaluation'
+  | 'student-dev-detail'
+  | 'benchmark-detail'
+  | 'teacher-detail'
+  | 'discipline-detail'
+  | 'enrollment-employment'
 
 export interface CollegeDetailPayload {
   kind: CollegeDetailKind

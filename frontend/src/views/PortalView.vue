@@ -6,7 +6,7 @@ import { ROUTES } from '@/constants/routes'
 
 const router = useRouter()
 const appStore = useAppStore()
-const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
+const { scaleStyle, canvasStyle, wrapperStyle } = useScreenScale({ mode: 'fluid' })
 
 type PortalEntry = {
   mode: ViewMode
@@ -19,7 +19,7 @@ const entries: PortalEntry[] = [
   {
     mode: 'college',
     title: '学院大屏',
-    desc: '大数据与人工智能学院发展与治理驾驶舱',
+    desc: '数智洞察视界',
     route: ROUTES.college.root,
   },
   {
@@ -43,7 +43,7 @@ function enter(entry: PortalEntry) {
 </script>
 
 <template>
-  <div class="screen-wrapper portal-screen">
+  <div class="screen-wrapper portal-screen" :style="wrapperStyle">
     <div class="screen-scale portal" :style="{ ...canvasStyle, ...scaleStyle }">
       <div class="portal-bg" />
       <div class="portal-content">
@@ -68,24 +68,12 @@ function enter(entry: PortalEntry) {
 
 <style scoped lang="scss">
 .portal-screen {
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: $color-bg-root;
 }
 
 .screen-scale.portal {
-  position: relative;
-  display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  transform-origin: center center;
-  overflow: hidden;
   background: $color-bg-root;
 }
 
@@ -101,10 +89,12 @@ function enter(entry: PortalEntry) {
   position: relative;
   text-align: center;
   z-index: 1;
+  width: min(92%, 1200px);
+  padding: 0 24px;
 }
 
 .portal-title {
-  font-size: $college-fs-display;
+  font-size: clamp(28px, 3.2vw, $college-fs-display);
   font-weight: 600;
   letter-spacing: 4px;
   background: linear-gradient(90deg, #fff, #00e5ff);
@@ -116,24 +106,27 @@ function enter(entry: PortalEntry) {
 
 .portal-sub {
   color: $color-text-muted;
-  font-size: $college-fs-body;
-  margin-bottom: 48px;
+  font-size: clamp(13px, 1.2vw, $college-fs-body);
+  margin-bottom: clamp(24px, 4vh, 48px);
 }
 
 .portal-cards {
   display: flex;
-  gap: 32px;
+  flex-wrap: wrap;
+  gap: clamp(16px, 2vw, 32px);
   justify-content: center;
 }
 
 .portal-card {
-  width: 240px;
-  height: 160px;
+  flex: 1 1 clamp(200px, 28%, 280px);
+  max-width: 280px;
+  min-height: clamp(130px, 16vh, 160px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  padding: 16px;
   background: $color-bg-card;
   border: 1px solid $color-border-accent;
   border-radius: $panel-radius;
@@ -149,15 +142,15 @@ function enter(entry: PortalEntry) {
 }
 
 .card-title {
-  font-size: $college-fs-title;
+  font-size: clamp(15px, 1.4vw, $college-fs-title);
   font-weight: 600;
   color: $color-accent-cyan;
 }
 
 .card-desc {
-  font-size: $college-fs-label;
+  font-size: clamp(12px, 1.1vw, $college-fs-label);
   color: $color-text-muted;
-  padding: 0 16px;
+  padding: 0 8px;
   line-height: 1.5;
 }
 </style>

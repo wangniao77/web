@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import * as echarts from 'echarts/core'
-import { BarChart, GaugeChart, LineChart, PieChart, RadarChart } from 'echarts/charts'
+import { BarChart, GaugeChart, LineChart, PieChart, RadarChart, SankeyChart } from 'echarts/charts'
 import {
   GridComponent,
   LegendComponent,
@@ -19,6 +19,7 @@ echarts.use([
   LineChart,
   PieChart,
   RadarChart,
+  SankeyChart,
   GridComponent,
   LegendComponent,
   RadarComponent,

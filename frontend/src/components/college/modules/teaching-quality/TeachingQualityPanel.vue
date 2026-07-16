@@ -27,7 +27,7 @@ const barOption = computed<EChartsOption>(() => {
       type: 'category',
       inverse: true,
       data: props.data.courseConstruction.map((d) => d.name),
-      axisLabel: { ...AXIS_LABEL_ALT, color: '#e8f7ff', fontSize: 12, fontWeight: 500, align: 'left', margin: GRID_LEFT - 6 },
+      axisLabel: { ...AXIS_LABEL_ALT, color: '#e8f7ff', fontSize: 20, fontWeight: 500, align: 'left', margin: GRID_LEFT - 6 },
       axisLine: { show: true, lineStyle: { color: 'rgba(57,230,255,0.45)', width: 1 } },
       axisTick: { show: false },
     },
@@ -35,7 +35,7 @@ const barOption = computed<EChartsOption>(() => {
       type: 'bar',
       data: props.data.courseConstruction.map((d) => d.value),
       barWidth: 8,
-      label: { show: true, position: 'right', distance: 6, color: '#f4fbff', fontSize: 12, fontWeight: 700, formatter: '{c}门' },
+      label: { show: true, position: 'right', distance: 6, color: '#f4fbff', fontSize: 20, fontWeight: 700, formatter: '{c}门' },
       itemStyle: {
         color: {
           type: 'linear', x: 0, y: 0, x2: 0, y2: 1,

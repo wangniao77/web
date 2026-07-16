@@ -1,16 +1,41 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
+import type { EChartsOption } from 'echarts'
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
+import StudentFlowSankeyChart from '@/components/college/modules/student-dev/StudentFlowSankeyChart.vue'
+import StudentDevDetailContent from '@/components/college/modules/student-dev/StudentDevDetailContent.vue'
+import BenchmarkDetailContent from '@/components/college/modules/benchmark/BenchmarkDetailContent.vue'
+import TeacherDetailContent from '@/components/college/modules/teacher/TeacherDetailContent.vue'
+import DisciplineDetailContent from '@/components/college/modules/discipline/DisciplineDetailContent.vue'
+import EnrollmentEmploymentDetailContent from '@/components/college/modules/enrollment-employment/EnrollmentEmploymentDetailContent.vue'
+import ChartContainer from '@/components/charts/ChartContainer.vue'
 import {
   COLLEGE_SIMULATED_DATA_HINT,
-  isCollegeSimulatedModule,
+  isCollegeSimulatedDetailKind,
   isCollegeSimulatedWarning,
 } from '@/constants/college/simulated-modules'
 import { collegeDetailService } from '@/api/college/services/details'
+import { studentDevService } from '@/api/college/services/student-dev'
+import { benchmarkService } from '@/api/college/services/benchmark'
+import { teacherService } from '@/api/college/services/teacher'
+import { disciplineService } from '@/api/college/services/discipline'
+import { enrollmentEmploymentService } from '@/api/college/services/enrollment-employment'
+import { ROUTES } from '@/constants/routes'
 import type { EmploymentRosterDTO, RosterStudentDTO } from '@/api/college/details'
 import { useCollegeDetail } from './useCollegeDetail'
 import { useScope } from '@/composables/useScope'
 import type { HighPotentialModuleId, WarningCategoryType } from '@/types/college/api/high-potential'
+import type { EvaluationIndicatorKey } from '@/types/college/api/student-dev-quality'
+import type {
+  StudentDevDetailVM,
+  StudentEvaluationDetailVM,
+  StudentFlowSankeyVM,
+} from '@/types/college/view/student-dev-quality'
+import type { BenchmarkAchievementsDetailVM } from '@/types/college/view/benchmark-achievements'
+import type { TeacherAnalyticsDetailVM } from '@/types/college/view/teacher-analytics'
+import type { DisciplineOverviewDetailVM } from '@/types/college/view/discipline-overview'
+import type { EnrollmentEmploymentDetailVM } from '@/types/college/view/enrollment-employment'
 import type {
   EmploymentDetailVM,
   HighPotentialModuleVM,
@@ -23,6 +48,7 @@ import type {
 
 const { state, closeCollegeDetail } = useCollegeDetail()
 const { collegeScope } = useScope()
+const router = useRouter()
 
 const loading = ref(false)
 const keyTasks = ref<KeyTasksDetailVM | null>(null)
@@ -34,6 +60,13 @@ const employment = ref<EmploymentDetailVM | null>(null)
 const hpRoster = ref<RosterStudentDTO[]>([])
 const warningRoster = ref<RosterStudentDTO[]>([])
 const empRoster = ref<EmploymentRosterDTO[]>([])
+const flowSankey = ref<StudentFlowSankeyVM | null>(null)
+const evaluationDetail = ref<StudentEvaluationDetailVM | null>(null)
+const studentDevDetail = ref<StudentDevDetailVM | null>(null)
+const benchmarkDetail = ref<BenchmarkAchievementsDetailVM | null>(null)
+const teacherDetail = ref<TeacherAnalyticsDetailVM | null>(null)
+const disciplineDetail = ref<DisciplineOverviewDetailVM | null>(null)
+const enrollmentEmploymentDetail = ref<EnrollmentEmploymentDetailVM | null>(null)
 
 const hpModule = computed<HighPotentialModuleVM | null>(() => {
   if (state.kind !== 'high-potential' || !hpOverview.value) return null
@@ -50,13 +83,20 @@ const moduleIcon: Record<string, IconKind> = {
 }
 
 const titleMap: Record<string, { icon: IconKind; title: string }> = {
-  'key-tasks': { icon: 'task', title: '年度重点任务推进' },
-  'high-potential': { icon: 'potential', title: '高潜学生发展画像' },
-  'high-potential-overview': { icon: 'potential', title: '高潜学生发展画像' },
+  'key-tasks': { icon: 'task', title: '年度重点规划进展' },
+  'high-potential': { icon: 'potential', title: '人才培养画像 · 高潜' },
+  'high-potential-overview': { icon: 'potential', title: '人才培养画像 · 高潜' },
   warning: { icon: 'warning', title: '预警与风险监测' },
   teaching: { icon: 'academic', title: '教学质量与运行' },
   research: { icon: 'research', title: '科研创新与团队平台' },
   employment: { icon: 'students', title: '学生就业与前景' },
+  'student-flow': { icon: 'students', title: '学生入口 · 出口流向' },
+  'student-evaluation': { icon: 'academic', title: '学生评价指标' },
+  'student-dev-detail': { icon: 'students', title: '人才培养画像' },
+  'benchmark-detail': { icon: 'trophy', title: '精品成果集萃' },
+  'teacher-detail': { icon: 'faculty', title: '师资支撑详情' },
+  'discipline-detail': { icon: 'ranking', title: '专业发展详情' },
+  'enrollment-employment': { icon: 'employment', title: '生源与就业质量' },
 }
 
 const headerIcon = computed<IconKind>(() => (state.kind ? titleMap[state.kind]?.icon ?? 'status' : 'status'))
@@ -64,7 +104,7 @@ const headerTitle = computed(() => (state.kind ? titleMap[state.kind]?.title ?? 
 const headerSubtitle = computed(() => {
   switch (state.kind) {
     case 'key-tasks':
-      return '全部重点任务推进明细'
+      return '总体概况 · 任务过程 · 风险预警 · 分析维度'
     case 'high-potential':
       return hpModule.value ? `${hpModule.value.title} · 学生名单与画像` : '维度详情'
     case 'high-potential-overview':
@@ -77,6 +117,20 @@ const headerSubtitle = computed(() => {
       return '科研平台与团队明细'
     case 'employment':
       return '毕业去向与就业质量分析'
+    case 'student-flow':
+      return '高考生源录取与应届毕业去向桑基分析'
+    case 'student-evaluation':
+      return evaluationDetail.value?.label ?? '教评指标详情'
+    case 'student-dev-detail':
+      return '毕业去向 · 薪资 · 高考 · 高潜与预警细分'
+    case 'benchmark-detail':
+      return '精品成果专题 · 平台 / 师资 / 教学科研与竞赛'
+    case 'teacher-detail':
+      return '教师专题分析 · 考核指标与师资对比'
+    case 'discipline-detail':
+      return '专业发展全景 · 基础概况 / 师资 / 成果 / 生源育人 / 对标研判'
+    case 'enrollment-employment':
+      return '招生入口与毕业出口专题分析'
     default:
       return ''
   }
@@ -87,6 +141,44 @@ function warningLevelClass(level: string) {
   if (level.includes('橙')) return 'lv-orange'
   if (level.includes('黄')) return 'lv-yellow'
   return 'lv-blue'
+}
+
+// ===== 年度重点规划分析筛选 =====
+const planFilterYear = ref('全部')
+const planFilterDomain = ref('全部')
+const planFilterType = ref('全部')
+const planFilterOwner = ref('全部')
+const planFilterLevel = ref('全部')
+const planFilterMajor = ref('全部')
+const planFilterStatus = ref('全部')
+
+const filteredPlanTasks = computed(() => {
+  if (!keyTasks.value) return []
+  return keyTasks.value.tasks.filter((t) => {
+    if (planFilterYear.value !== '全部' && keyTasks.value?.year !== planFilterYear.value) return false
+    if (planFilterDomain.value === '科研' && t.category !== 'research') return false
+    if (planFilterDomain.value === '教学' && t.category !== 'teaching') return false
+    if (planFilterType.value !== '全部' && t.taskType !== planFilterType.value) return false
+    if (planFilterOwner.value !== '全部' && t.leadDept !== planFilterOwner.value) return false
+    if (planFilterLevel.value !== '全部' && t.projectLevel !== planFilterLevel.value) return false
+    if (planFilterMajor.value !== '全部' && t.majorDirection !== planFilterMajor.value) return false
+    if (planFilterStatus.value !== '全部' && t.statusLabel !== planFilterStatus.value) return false
+    return true
+  })
+})
+
+const planRiskTasks = computed(() =>
+  filteredPlanTasks.value.filter((t) => t.statusClass === 'status-delayed' || t.riskReason),
+)
+
+function resetPlanFilters() {
+  planFilterYear.value = '全部'
+  planFilterDomain.value = '全部'
+  planFilterType.value = '全部'
+  planFilterOwner.value = '全部'
+  planFilterLevel.value = '全部'
+  planFilterMajor.value = '全部'
+  planFilterStatus.value = '全部'
 }
 
 // ===== 学生名单（花名册）筛选 =====
@@ -184,6 +276,7 @@ function resetFilters() {
   empFilterDirection.value = ''
   empFilterRegion.value = ''
   empFilterClass.value = ''
+  resetPlanFilters()
 }
 
 async function load() {
@@ -226,6 +319,30 @@ async function load() {
         employment.value = await collegeDetailService.fetchEmploymentDetail(scope)
         empRoster.value = await collegeDetailService.fetchEmploymentRoster(scope)
         break
+      case 'student-flow':
+        flowSankey.value = await studentDevService.fetchStudentFlowSankey(scope)
+        break
+      case 'student-evaluation':
+        evaluationDetail.value = await studentDevService.fetchStudentEvaluationDetail(
+          (state.id ?? 'academic') as EvaluationIndicatorKey,
+          scope,
+        )
+        break
+      case 'student-dev-detail':
+        studentDevDetail.value = await studentDevService.fetchStudentDevDetail(scope)
+        break
+      case 'benchmark-detail':
+        benchmarkDetail.value = await benchmarkService.fetchBenchmarkDetail(scope)
+        break
+      case 'teacher-detail':
+        teacherDetail.value = await teacherService.fetchTeacherDetail(scope)
+        break
+      case 'discipline-detail':
+        disciplineDetail.value = await disciplineService.fetchDisciplineDetail(scope)
+        break
+      case 'enrollment-employment':
+        enrollmentEmploymentDetail.value = await enrollmentEmploymentService.fetchEnrollmentEmploymentDetail(scope)
+        break
     }
   } finally {
     loading.value = false
@@ -246,6 +363,43 @@ watch(
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && state.visible) closeCollegeDetail()
 }
+
+const evaluationTrendOption = computed<EChartsOption>(() => {
+  if (!evaluationDetail.value) return {}
+  return {
+    grid: { left: 8, right: 12, top: 16, bottom: 8, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(2, 14, 38, 0.94)',
+      borderColor: 'rgba(0, 242, 255, 0.65)',
+      textStyle: { color: '#f4fbff', fontSize: 20 },
+    },
+    xAxis: {
+      type: 'category' as const,
+      boundaryGap: false,
+      data: evaluationDetail.value.trend.months,
+      axisLabel: { color: '#c6e6ff', fontSize: 20 },
+    },
+    yAxis: {
+      type: 'value' as const,
+      axisLabel: { color: '#c6e6ff', fontSize: 20 },
+      splitLine: { lineStyle: { color: 'rgba(57,230,255,0.08)' } },
+    },
+    series: [{
+      type: 'line' as const,
+      smooth: true,
+      data: evaluationDetail.value.trend.values,
+      lineStyle: { width: 3, color: '#39e6ff' },
+      areaStyle: { color: 'rgba(57,230,255,0.12)' },
+    }],
+  }
+})
+
+function goToStudentProfile(studentId: string) {
+  closeCollegeDetail()
+  router.push({ path: ROUTES.student, query: { studentId } })
+}
+
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
@@ -261,7 +415,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               <h2>
                 {{ headerTitle }}
                 <span
-                  v-if="isCollegeSimulatedModule(state.kind) || (state.kind === 'warning' && isCollegeSimulatedWarning(state.id))"
+                  v-if="isCollegeSimulatedDetailKind(state.kind) || (state.kind === 'warning' && isCollegeSimulatedWarning(state.id))"
                   class="sim-data-badge"
                   :title="COLLEGE_SIMULATED_DATA_HINT"
                   aria-label="模拟数据"
@@ -280,29 +434,103 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             <!-- 年度重点任务 -->
             <template v-else-if="state.kind === 'key-tasks' && keyTasks">
               <div class="cdm-stat-row">
-                <div class="cdm-stat"><span>任务总数</span><strong>{{ keyTasks.summary.total }}</strong></div>
+                <div class="cdm-stat"><span>重点任务总数</span><strong>{{ keyTasks.summary.total }}</strong></div>
                 <div class="cdm-stat cdm-stat--green"><span>已完成</span><strong>{{ keyTasks.summary.completed }}</strong></div>
                 <div class="cdm-stat cdm-stat--blue"><span>推进中</span><strong>{{ keyTasks.summary.ongoing }}</strong></div>
                 <div class="cdm-stat cdm-stat--orange"><span>需关注</span><strong>{{ keyTasks.summary.delayed }}</strong></div>
+                <div class="cdm-stat cdm-stat--blue"><span>年度总体完成率</span><strong>{{ keyTasks.summary.completionRate }}<small>%</small></strong></div>
               </div>
-              <div class="cdm-cards">
-                <div v-for="t in keyTasks.tasks" :key="t.id" class="cdm-task">
-                  <div class="cdm-task__top">
-                    <strong>{{ t.name }}</strong>
-                    <em :class="`tag--${t.statusClass}`">{{ t.statusLabel }}</em>
+
+              <div class="cdm-section">
+                <h3>分析维度</h3>
+                <div class="cdm-plan-filters">
+                  <label>
+                    <span>年度</span>
+                    <select v-model="planFilterYear">
+                      <option v-for="y in keyTasks.filterOptions.years" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>科研 / 教学</span>
+                    <select v-model="planFilterDomain">
+                      <option v-for="d in keyTasks.filterOptions.domains" :key="d" :value="d">{{ d }}</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>任务类型</span>
+                    <select v-model="planFilterType">
+                      <option v-for="t in keyTasks.filterOptions.taskTypes" :key="t" :value="t">{{ t }}</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>责任人</span>
+                    <select v-model="planFilterOwner">
+                      <option v-for="o in keyTasks.filterOptions.owners" :key="o" :value="o">{{ o }}</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>项目级别</span>
+                    <select v-model="planFilterLevel">
+                      <option v-for="l in keyTasks.filterOptions.projectLevels" :key="l" :value="l">{{ l }}</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>专业方向</span>
+                    <select v-model="planFilterMajor">
+                      <option v-for="m in keyTasks.filterOptions.majorDirections" :key="m" :value="m">{{ m }}</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>进度状态</span>
+                    <select v-model="planFilterStatus">
+                      <option v-for="s in keyTasks.filterOptions.statuses" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                  </label>
+                  <button type="button" class="cdm-plan-filters__reset" @click="resetPlanFilters">重置</button>
+                </div>
+              </div>
+
+              <div v-if="planRiskTasks.length" class="cdm-section">
+                <h3>风险预警</h3>
+                <div class="cdm-cards">
+                  <div v-for="t in planRiskTasks" :key="`risk-${t.id}`" class="cdm-task cdm-task--risk">
+                    <div class="cdm-task__top">
+                      <strong>{{ t.name }}</strong>
+                      <em class="tag--status-delayed">需关注</em>
+                    </div>
+                    <p class="cdm-task__desc">{{ t.riskReason || t.description }}</p>
+                    <div class="cdm-task__meta">
+                      <span>当前处理状态：{{ t.handleStatus || '跟进中' }}</span>
+                      <span>责任人：{{ t.leadDept }}</span>
+                    </div>
                   </div>
-                  <p class="cdm-task__desc">{{ t.description }}</p>
-                  <div class="cdm-task__bar"><i :style="{ width: t.progress + '%' }" /></div>
-                  <div class="cdm-task__meta">
-                    <span>牵头：{{ t.leadDept }}</span>
-                    <span>截止：{{ t.deadline }}</span>
-                    <span class="cdm-task__pct">{{ t.progress }}%</span>
+                </div>
+              </div>
+
+              <div class="cdm-section">
+                <h3>任务过程管理 <small>（{{ filteredPlanTasks.length }}）</small></h3>
+                <div class="cdm-cards">
+                  <div v-for="t in filteredPlanTasks" :key="t.id" class="cdm-task">
+                    <div class="cdm-task__top">
+                      <strong>
+                        <small v-if="t.categoryLabel" class="cdm-task__cat">{{ t.categoryLabel }}</small>
+                        {{ t.name }}
+                      </strong>
+                      <em :class="`tag--${t.statusClass}`">{{ t.statusLabel }}</em>
+                    </div>
+                    <div class="cdm-task__bar"><i :style="{ width: t.progress + '%' }" /></div>
+                    <div class="cdm-plan-grid">
+                      <div><span>年度目标值</span><strong>{{ t.target ?? '—' }}{{ t.unit }}</strong></div>
+                      <div><span>当前完成值</span><strong>{{ t.actual ?? '—' }}{{ t.unit }}</strong></div>
+                      <div><span>完成率</span><strong>{{ t.progress }}%</strong></div>
+                      <div><span>责任人</span><strong>{{ t.leadDept }}</strong></div>
+                      <div><span>计划完成时间</span><strong>{{ t.deadline }}</strong></div>
+                      <div><span>当前里程碑</span><strong>{{ t.milestone || t.milestones.find((m) => !m.done)?.label || '—' }}</strong></div>
+                    </div>
+                    <div v-if="t.materials?.length" class="cdm-task__meta">
+                      <span>支撑材料：{{ t.materials.join(' · ') }}</span>
+                    </div>
                   </div>
-                  <ul class="cdm-milestones">
-                    <li v-for="m in t.milestones" :key="m.label" :class="{ done: m.done }">
-                      {{ m.done ? '✓' : '○' }} {{ m.label }}
-                    </li>
-                  </ul>
                 </div>
               </div>
             </template>
@@ -503,9 +731,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                     <tbody>
                       <tr v-for="(s, i) in empRows" :key="s.id">
                         <td class="col-idx">{{ i + 1 }}</td>
-                        <td class="cell-name">{{ s.name }}</td>
+                        <td class="cell-name cell-link" @click="goToStudentProfile(s.studentId)">{{ s.name }}</td>
                         <td>{{ s.gender }}</td>
-                        <td class="cell-sid">{{ s.studentId }}</td>
+                        <td class="cell-sid cell-link" @click="goToStudentProfile(s.studentId)">{{ s.studentId }}</td>
                         <td>{{ s.className }}</td>
                         <td>{{ s.major }}</td>
                         <td>{{ s.counselor }}</td>
@@ -524,7 +752,79 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               </div>
             </template>
 
-            <div v-else class="cdm-loading">暂无数据</div>
+            <!-- 入口/出口桑基图 -->
+            <template v-else-if="state.kind === 'student-flow' && flowSankey">
+              <div class="cdm-stat-row">
+                <div class="cdm-stat"><span>招生总数</span><strong>{{ flowSankey.summary.entranceTotal }}<small>人</small></strong></div>
+                <div class="cdm-stat cdm-stat--green"><span>录取均分</span><strong>{{ flowSankey.summary.avgEntranceScore }}</strong></div>
+                <div class="cdm-stat cdm-stat--blue"><span>毕业生数</span><strong>{{ flowSankey.summary.graduateTotal }}<small>人</small></strong></div>
+                <div class="cdm-stat cdm-stat--blue"><span>就业率</span><strong>{{ flowSankey.summary.employmentRate }}%</strong></div>
+                <div class="cdm-stat cdm-stat--green"><span>升学率</span><strong>{{ flowSankey.summary.furtherRate }}%</strong></div>
+              </div>
+              <div class="cdm-flow-sankey">
+                <StudentFlowSankeyChart
+                  title="入口流向 · 生源地 → 录取专业"
+                  :nodes="flowSankey.entrance.nodes"
+                  :links="flowSankey.entrance.links"
+                />
+                <StudentFlowSankeyChart
+                  title="出口流向 · 专业 → 毕业去向"
+                  :nodes="flowSankey.outcome.nodes"
+                  :links="flowSankey.outcome.links"
+                />
+              </div>
+            </template>
+
+            <!-- 教评指标详情 -->
+            <template v-else-if="state.kind === 'student-evaluation' && evaluationDetail">
+              <div class="cdm-stat-row">
+                <div class="cdm-stat cdm-stat--blue">
+                  <span>{{ evaluationDetail.label }}</span>
+                  <strong>{{ evaluationDetail.score }}<small v-if="evaluationDetail.unit">{{ evaluationDetail.unit }}</small></strong>
+                </div>
+              </div>
+              <p class="cdm-desc">{{ evaluationDetail.description }}</p>
+              <div class="cdm-section">
+                <h3>指标趋势</h3>
+                <div class="cdm-chart-box">
+                  <ChartContainer :option="evaluationTrendOption" />
+                </div>
+              </div>
+              <div v-if="evaluationDetail.highlights.length" class="cdm-stat-row">
+                <div v-for="h in evaluationDetail.highlights" :key="h.label" class="cdm-stat">
+                  <span>{{ h.label }}</span><strong>{{ h.value }}</strong>
+                </div>
+              </div>
+            </template>
+
+            <!-- 人才培养专题 -->
+            <template v-else-if="state.kind === 'student-dev-detail' && studentDevDetail">
+              <StudentDevDetailContent :data="studentDevDetail" />
+            </template>
+
+            <!-- 标杆成果专题 -->
+            <template v-else-if="state.kind === 'benchmark-detail' && benchmarkDetail">
+              <BenchmarkDetailContent :data="benchmarkDetail" :initial-filter="state.id" />
+            </template>
+
+            <!-- 教师专题分析 -->
+            <template v-else-if="state.kind === 'teacher-detail' && teacherDetail">
+              <TeacherDetailContent :data="teacherDetail" />
+            </template>
+
+            <!-- 学科概况专题 -->
+            <template v-else-if="state.kind === 'discipline-detail' && disciplineDetail">
+              <DisciplineDetailContent :data="disciplineDetail" />
+            </template>
+
+            <template v-else-if="state.kind === 'enrollment-employment' && enrollmentEmploymentDetail">
+              <EnrollmentEmploymentDetailContent
+                :data="enrollmentEmploymentDetail"
+                :focus="state.id"
+              />
+            </template>
+
+            <div v-else-if="!loading && state.kind !== 'high-potential' && state.kind !== 'high-potential-overview' && state.kind !== 'warning'" class="cdm-loading">暂无数据</div>
 
             <!-- 学生名单花名册（高潜维度 / 高潜总览 / 预警通用） -->
             <div v-if="showRoster && !loading" class="cdm-section cdm-roster">
@@ -589,9 +889,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                   <tbody>
                     <tr v-for="(s, i) in rosterRows" :key="s.id">
                       <td class="col-idx">{{ i + 1 }}</td>
-                      <td class="cell-name">{{ s.name }}</td>
+                      <td class="cell-name cell-link" @click="goToStudentProfile(s.studentId)">{{ s.name }}</td>
                       <td>{{ s.gender }}</td>
-                      <td class="cell-sid">{{ s.studentId }}</td>
+                      <td class="cell-sid cell-link" @click="goToStudentProfile(s.studentId)">{{ s.studentId }}</td>
                       <td>{{ s.className }}</td>
                       <td>{{ s.major }}</td>
                       <td>{{ s.grade }}</td>
@@ -682,14 +982,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       flex-wrap: wrap;
       gap: 8px;
       margin: 0;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
       color: #eaf7ff;
       letter-spacing: 0.04em;
     }
 
     span {
-      font-size: 14px;
+      font-size: 24px;
       color: #8ec8e8;
     }
   }
@@ -728,12 +1028,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   padding: 40px;
   text-align: center;
   color: #8ec8e8;
-  font-size: 16px;
+  font-size: 24px;
 }
 
 .cdm-desc {
   margin: 0 0 16px;
-  font-size: 16px;
+  font-size: 24px;
   line-height: 1.7;
   color: #c6dcf0;
 }
@@ -754,7 +1054,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   span {
     display: block;
     margin-bottom: 6px;
-    font-size: 14px;
+    font-size: 24px;
     color: #8ec8e8;
   }
 
@@ -765,7 +1065,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
     small {
       margin-left: 3px;
-      font-size: 14px;
+      font-size: 24px;
       color: #7fdfff;
     }
   }
@@ -781,10 +1081,93 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   h3 {
     margin: 0 0 12px;
     padding-left: 10px;
-    font-size: 17px;
+    font-size: 24px;
     font-weight: 800;
     color: #b8ecff;
     border-left: 3px solid #00e5ff;
+
+    small {
+      margin-left: 8px;
+      color: #7eb8d8;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+  }
+}
+
+.cdm-plan-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 10px 12px;
+  margin-bottom: 4px;
+  align-items: end;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+
+    span {
+      color: #8ec8e8;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    select {
+      width: 100%;
+      min-height: 40px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 200, 255, 0.28);
+      background: rgba(2, 24, 54, 0.85);
+      color: #eaf7ff;
+      font-size: 20px;
+    }
+  }
+
+  &__reset {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    background: rgba(0, 70, 130, 0.35);
+    color: #9fe8ff;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}
+
+.cdm-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin: 10px 0;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(0, 50, 100, 0.22);
+
+    span {
+      color: #8ec8e8;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    strong {
+      color: #eaf7ff;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+    }
   }
 }
 
@@ -804,18 +1187,36 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   border: 1px solid rgba(0, 242, 255, 0.16);
   background: rgba(3, 20, 46, 0.7);
 
+  &--risk {
+    border-color: rgba(255, 140, 80, 0.35);
+    background: rgba(60, 28, 12, 0.45);
+  }
+
+  &__cat {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 200, 255, 0.35);
+    background: rgba(0, 90, 160, 0.28);
+    color: #9fe8ff;
+    font-size: 16px;
+    font-weight: 700;
+    vertical-align: middle;
+  }
+
   &__top {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 6px;
 
-    strong { font-size: 16px; font-weight: 800; color: #eaf7ff; }
+    strong { font-size: 24px; font-weight: 800; color: #eaf7ff; }
   }
 
   &__desc {
     margin: 0 0 10px;
-    font-size: 14px;
+    font-size: 24px;
     line-height: 1.6;
     color: #9fb6d2;
   }
@@ -842,7 +1243,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     display: flex;
     flex-wrap: wrap;
     gap: 14px;
-    font-size: 13px;
+    font-size: 24px;
     color: #8ec8e8;
     margin-bottom: 8px;
   }
@@ -863,7 +1264,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   gap: 8px 16px;
 
   li {
-    font-size: 13px;
+    font-size: 24px;
     color: #8298b4;
 
     &.done { color: #6effc2; }
@@ -876,7 +1277,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .cdm-task__top em {
   padding: 2px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 24px;
   font-weight: 700;
   font-style: normal;
 }
@@ -890,7 +1291,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   span {
     padding: 5px 12px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 24px;
     color: #55dfff;
     border: 1px solid rgba(0, 184, 255, 0.25);
     background: rgba(0, 184, 255, 0.08);
@@ -913,7 +1314,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     padding: 10px 14px;
     border-radius: 8px;
     background: rgba(3, 20, 46, 0.7);
-    font-size: 15px;
+    font-size: 24px;
 
     span { color: #8ec8e8; }
     strong { color: #eaf7ff; font-weight: 700; }
@@ -932,7 +1333,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   li {
     position: relative;
     padding-left: 16px;
-    font-size: 15px;
+    font-size: 24px;
     line-height: 1.6;
     color: #c6dcf0;
 
@@ -965,19 +1366,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     margin-bottom: 4px;
   }
 
-  &__title { font-size: 15px; font-weight: 800; color: #dff7ff; }
+  &__title { font-size: 24px; font-weight: 800; color: #dff7ff; }
   &__metric {
     font-size: 26px; font-weight: 900; color: #fff;
-    small { margin-left: 2px; font-size: 13px; color: #7fdfff; }
+    small { margin-left: 2px; font-size: 24px; color: #7fdfff; }
   }
-  &__label { font-size: 13px; color: #8ec8e8; }
-  &__desc { margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: #93abc6; }
+  &__label { font-size: 24px; color: #8ec8e8; }
+  &__desc { margin: 6px 0 0; font-size: 24px; line-height: 1.55; color: #93abc6; }
 }
 
 .cdm-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 24px;
 
   thead th {
     padding: 10px 14px;
@@ -1003,7 +1404,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .cdm-badge {
   padding: 2px 10px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 24px;
   font-style: normal;
   color: #7fe0ff;
   border: 1px solid rgba(0, 200, 255, 0.3);
@@ -1013,7 +1414,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .cdm-level {
   padding: 2px 12px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 24px;
   font-style: normal;
   font-weight: 700;
 
@@ -1035,13 +1436,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     justify-content: space-between;
     margin-bottom: 4px;
 
-    strong { font-size: 16px; font-weight: 800; color: #eaf7ff; }
-    em { font-size: 20px; font-weight: 900; font-style: normal; color: #5cecff; }
+    strong { font-size: 24px; font-weight: 800; color: #eaf7ff; }
+    em { font-size: 24px; font-weight: 900; font-style: normal; color: #5cecff; }
   }
 
-  &__count { font-size: 14px; color: #7fdfff; margin-bottom: 6px; }
+  &__count { font-size: 24px; color: #7fdfff; margin-bottom: 6px; }
 
-  p { margin: 0; font-size: 13px; line-height: 1.55; color: #93abc6; }
+  p { margin: 0; font-size: 24px; line-height: 1.55; color: #93abc6; }
 }
 
 /* 学生名单花名册 */
@@ -1056,7 +1457,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   h3 {
     margin: 0;
     padding-left: 10px;
-    font-size: 17px;
+    font-size: 24px;
     font-weight: 800;
     color: #b8ecff;
     border-left: 3px solid #00e5ff;
@@ -1064,7 +1465,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     em {
       margin-left: 6px;
       font-style: normal;
-      font-size: 13px;
+      font-size: 24px;
       font-weight: 600;
       color: #7fa9c8;
     }
@@ -1085,7 +1486,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   border: 1px solid rgba(0, 200, 255, 0.28);
   background: rgba(2, 18, 44, 0.9);
   color: #dff2ff;
-  font-size: 13px;
+  font-size: 24px;
   outline: none;
 
   &:focus {
@@ -1113,7 +1514,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   border: 1px solid rgba(0, 200, 255, 0.28);
   background: rgba(0, 90, 180, 0.22);
   color: #bfeaff;
-  font-size: 13px;
+  font-size: 24px;
   cursor: pointer;
   transition: all 0.18s;
 
@@ -1128,13 +1529,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 }
 
 .cdm-roster-table {
-  font-size: 14px;
+  font-size: 24px;
 
   th, td { white-space: nowrap; }
   .col-idx { width: 52px; text-align: center; }
   td.col-idx { text-align: center; color: #7fa9c8; }
   .cell-name { font-weight: 700; color: #eaf7ff; }
   .cell-sid { font-family: var(--college-font-number); color: #a9c6de; }
+  .cell-link {
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover {
+      color: #7fe9ff;
+    }
+  }
   .cell-phone { font-family: var(--college-font-number); color: #a9c6de; }
   .cell-gpa { font-family: var(--college-font-number); font-weight: 700; color: #6effc2; }
   .col-dorm { min-width: 200px; white-space: normal; }
@@ -1152,7 +1562,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   margin: 2px 4px 2px 0;
   padding: 1px 8px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 24px;
   white-space: nowrap;
 
   &.is-hp { color: #8ef6c8; background: rgba(30, 180, 120, 0.18); border: 1px solid rgba(46, 230, 168, 0.35); }
@@ -1181,5 +1591,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 .cdm-fade-enter-from .cdm-panel,
 .cdm-fade-leave-to .cdm-panel {
   transform: scale(0.94) translateY(10px);
+}
+
+.cdm-flow-sankey {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-height: 360px;
+}
+
+.cdm-chart-box {
+  height: 240px;
+}
+
+@media (max-width: 1100px) {
+  .cdm-flow-sankey {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

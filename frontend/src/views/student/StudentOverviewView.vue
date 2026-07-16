@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import StudentScreenLayout from '@/components/student/StudentScreenLayout.vue'
@@ -23,8 +23,6 @@ const activeStudentId = computed(
   () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
 )
 const dashboard = ref<StudentDashboardVM | null>(null)
-const isSample = ref(false)
-const displayStudentId = ref('')
 const loading = ref(true)
 const error = ref<string | null>(null)
 const { play: playEntrance } = useStudentEntrance()
@@ -33,10 +31,7 @@ async function loadAll() {
   loading.value = true
   error.value = null
   try {
-    const result = await studentService.fetchDashboard(activeStudentId.value)
-    dashboard.value = result.dashboard
-    isSample.value = result.isSample
-    displayStudentId.value = result.studentId
+    dashboard.value = await studentService.fetchDashboard(activeStudentId.value)
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载失败'
   } finally {
@@ -52,11 +47,6 @@ useAutoRefresh(loadAll)
 
 <template>
   <StudentScreenLayout v-if="dashboard">
-    <div v-if="isSample" class="student-sample-banner" role="status">
-      <span>当前为样例学生展示</span>
-      <span class="student-sample-banner__hint">登录并绑定学号后将显示本人数据</span>
-      <span class="student-sample-banner__id">学号 {{ displayStudentId }}</span>
-    </div>
     <div class="student-grid">
       <div class="cell-left-stack">
         <PersonalInfoPanel
@@ -127,35 +117,6 @@ useAutoRefresh(loadAll)
 </template>
 
 <style scoped lang="scss">
-.student-sample-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-  margin-bottom: 10px;
-  padding: 8px 14px;
-  border: 1px solid rgba(0, 212, 255, 0.35);
-  border-radius: 6px;
-  background: linear-gradient(90deg, rgba(0, 120, 200, 0.22), rgba(0, 40, 80, 0.35));
-  color: #b8ecff;
-  font-size: 13px;
-  box-shadow: inset 0 0 16px rgba(0, 180, 255, 0.12);
-
-  &__hint {
-    color: rgba(184, 236, 255, 0.72);
-  }
-
-  &__id {
-    margin-left: auto;
-    padding: 2px 10px;
-    border-radius: 999px;
-    background: rgba(0, 212, 255, 0.12);
-    color: #e8fbff;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-  }
-}
-
 .student-grid {
   flex: 1;
   min-height: 0;
@@ -229,8 +190,9 @@ useAutoRefresh(loadAll)
 }
 
 .loading-screen {
-  width: 100vw;
+  width: 100%;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;

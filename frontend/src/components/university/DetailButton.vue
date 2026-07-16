@@ -29,8 +29,8 @@ defineProps<{ to: RouteLocationRaw; label?: string }>()
   transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
 
   svg {
-    width: 15px;
-    height: 15px;
+    width: 13px;
+    height: 13px;
     transition: transform 0.2s;
   }
 

@@ -1,7 +1,4 @@
 import type { TrendInfo } from '@/types/common'
-import type { UniversityModulesVM } from '@/types/university/view/modules'
-
-export type { UniversityModulesVM } from '@/types/university/view/modules'
 import type { RiskLevel } from '@/constants/university/risk'
 import type { EventCategory, EventStatus } from '@/types/university/api'
 
@@ -10,8 +7,6 @@ export interface DashboardMetaVM {
   dataScope: string
   academicYear: string
   semester: string
-  statsPeriod?: string
-  schoolScope?: string
 }
 
 export interface GoalDimensionVM {
@@ -67,10 +62,6 @@ export interface KeyTaskVM {
   riskLevel: RiskLevel
   riskLabel: string
   riskClass: string
-  department?: string
-  currentIssue?: string
-  nextAction?: string
-  rectifyDeadline?: string
 }
 
 export interface DisciplineChangeVM {
@@ -90,11 +81,6 @@ export interface DisciplineSummaryVM {
   yearlyTrend: Array<{ year: string; avgRank: number }>
   terrainCategories: string[]
   terrainLayers: Array<{ name: string; data: number[]; color: string }>
-  keyDisciplines?: number
-  phdPoints?: number
-  masterPoints?: number
-  firstClassMajors?: number
-  structureOptimization?: string
 }
 
 export interface EmploymentMetricVM {
@@ -122,61 +108,6 @@ export interface SchoolEventVM {
   status: EventStatus
   statusLabel: string
   needsAttention: boolean
-  progressNote?: string
-  nextStep?: string
-  isAchievement?: boolean
-}
-
-export interface SchoolPostureVM {
-  enrolledStudents: number
-  enrolledStudentsLabel: string
-  collegeCount: number
-  majorCount: number
-  disciplineCount: number
-  facultyCount: number
-  researchPlatforms: number
-  enrollment: number
-  graduation: number
-  developmentIndex: number
-  developmentIndexLabel: string
-  metrics: Array<{ label: string; value: string; unit?: string }>
-}
-
-export interface BenchmarkSummaryVM {
-  nationalRank: number
-  provincialRank: number
-  financeRank: number
-  gapVsPeers: Array<{ name: string; gap: number; gapLabel: string }>
-  attribution: Array<{ factor: string; impact: string }>
-}
-
-export interface TeachingSummaryVM {
-  metrics: Array<{ label: string; value: string; unit?: string }>
-  admissionQuality: number
-  courseCount: number
-  teachingEval: number
-  academicDev: number
-  gradRate: number
-  degreeRate: number
-}
-
-export interface FacultySummaryVM {
-  metrics: Array<{ label: string; value: string; unit?: string }>
-  total: number
-  fullTime: number
-  highLevelTalent: number
-  phdRatio: number
-  professorRatio: number
-  youngFaculty: number
-}
-
-export interface RiskWarningSummaryVM {
-  academic: number
-  employment: number
-  taskOverdue: number
-  indicatorMiss: number
-  fundingSlow: number
-  crossDept: Array<{ title: string; dept: string }>
 }
 
 export interface AcademicRiskSummaryVM {
@@ -192,18 +123,11 @@ export interface AcademicRiskSummaryVM {
 
 export interface UniversityDashboardVM {
   meta: DashboardMetaVM
-  modules: UniversityModulesVM
-  // legacy fields kept for detail services compatibility
-  schoolPosture: SchoolPostureVM
   goalOverview: GoalOverviewVM
-  benchmark: BenchmarkSummaryVM
   research: ResearchSummaryVM
   keyTasks: KeyTaskVM[]
   disciplines: DisciplineSummaryVM
-  teaching: TeachingSummaryVM
   employment: EmploymentSummaryVM
-  faculty: FacultySummaryVM
-  riskWarning: RiskWarningSummaryVM
   events: SchoolEventVM[]
   academicRisk: AcademicRiskSummaryVM
 }

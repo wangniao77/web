@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { formatTrend } from '@/utils/trend'
 import DashIcon, { type IconKind, resolveIconKind } from '@/components/college/DashIcon.vue'
+import type { OrbitPosition } from '@/constants/college/college-kpi'
 import type { TrendInfo } from '@/types/common'
 
 const props = defineProps<{
@@ -9,10 +10,10 @@ const props = defineProps<{
   value: string
   trend?: TrendInfo
   icon: IconKind | string
-  position: 'tl' | 'ml' | 'bl' | 'tr' | 'mr' | 'br'
+  position: OrbitPosition
 }>()
 
-const side = (position: string) => (['tl', 'ml', 'bl'].includes(position) ? 'left' : 'right')
+const side = (position: string) => (['tl', 'uml', 'lml', 'bl'].includes(position) ? 'left' : 'right')
 const resolvedIcon = computed(() => resolveIconKind(props.icon))
 </script>
 

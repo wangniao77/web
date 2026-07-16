@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   EmploymentDetailDTO,
   KeyTasksDetailDTO,
   ResearchPlatformsDetailDTO,
@@ -83,6 +83,15 @@ export const collegeDetailApi = {
   getEmploymentRoster: (params?: CollegeScope) =>
     client.get<ApiResponse<{ total: number; students: EmploymentRosterDTO[] }>>(
       '/college/students/employment-roster',
+      { params },
+    ),
+
+  getStudentEvaluationDetail: (
+    key: string,
+    params?: CollegeScope,
+  ) =>
+    client.get<ApiResponse<import('@/types/college/api/student-dev-quality').StudentEvaluationDetailDTO>>(
+      `/college/students/evaluation/${key}`,
       { params },
     ),
 }

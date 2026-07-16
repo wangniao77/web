@@ -1,5 +1,4 @@
 import client from '@/api/client'
-import type { UniversityScope } from '@/types/common'
 import type { UniversityOverviewDTO } from '@/types/university/api'
 import type {
   AcademicRiskDetailDTO,
@@ -13,8 +12,7 @@ import type {
 } from '@/types/university/api/details'
 
 export const universityApi = {
-  getOverview: (scope?: UniversityScope) =>
-    client.get<{ data: UniversityOverviewDTO }>('/university/overview', { params: scope }),
+  getOverview: () => client.get<{ data: UniversityOverviewDTO }>('/university/overview'),
 }
 
 export const universityDetailApi = {

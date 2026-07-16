@@ -22,8 +22,10 @@ Base URL: `{VITE_API_BASE}`（默认 `/api/v1`）
 | GET | `/college/teaching/overview` | 教学质量概览 |
 | GET | `/college/research/overview` | 科研创新概览 |
 | GET | `/college/warnings/overview` | 预警风险概览 |
+| GET | `/college/students/dev-quality` | 学生发展与质量核心数据（`dimension`: `major` \| `grade` \| `course`） |
+| GET | `/college/students/flow-sankey` | 学生入口/出口桑基图数据 |
 
-## Details（6）
+## Details（8）
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -33,5 +35,6 @@ Base URL: `{VITE_API_BASE}`（默认 `/api/v1`）
 | GET | `/college/teaching/courses` | 课程建设详情 |
 | GET | `/college/research/platforms` | 科研平台详情 |
 | GET | `/college/students/employment-detail` | 就业去向详情 |
+| GET | `/college/students/evaluation/:key` | 教评指标详情（`:key` 见 `EvaluationIndicatorKey`） |
 
 类型定义见 `src/domains/college/types/api/`。

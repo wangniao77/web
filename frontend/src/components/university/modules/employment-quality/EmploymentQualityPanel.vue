@@ -15,8 +15,8 @@ const props = defineProps<{
 
 defineEmits<{ retry: [] }>()
 
-const kpiOrder = [0, 2, 3, 6, 1]
-const kpiTones = ['cyan', 'green', 'ongoing', 'violet', 'cyan'] as const
+const kpiOrder = [0, 2, 3, 1]
+const kpiTones = ['cyan', 'green', 'ongoing', 'violet'] as const
 
 const trendOption = computed(() =>
   uniAreaLine(
@@ -43,12 +43,12 @@ const footer = computed(() => props.data.metrics.slice(4, 6))
       <div class="employ__kpi">
         <GlowMetricCard
           v-for="(idx, i) in kpiOrder"
-          :key="data.metrics[idx]?.label ?? i"
-          :label="data.metrics[idx]?.label ?? ''"
-          :value="data.metrics[idx]?.value ?? '—'"
-          :trend="data.metrics[idx]?.trendLabel"
+          :key="data.metrics[idx].label"
+          :label="data.metrics[idx].label"
+          :value="data.metrics[idx].value"
+          :trend="data.metrics[idx].trendLabel"
           :tone="kpiTones[i]"
-          :size="i === 0 ? 'md' : 'sm'"
+          :size="i === 0 ? 'lg' : 'md'"
         />
       </div>
 
@@ -85,8 +85,11 @@ const footer = computed(() => props.data.metrics.slice(4, 6))
 
 .employ__kpi {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: 1.3fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 8px;
+
+  > :first-child { grid-row: 1 / 3; }
 }
 
 .employ__charts {

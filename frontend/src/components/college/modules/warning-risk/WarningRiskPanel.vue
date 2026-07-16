@@ -16,8 +16,8 @@ const typeMeta: Record<string, { icon: IconKind; tone: string }> = {
   credit: { icon: 'credit', tone: 'yellow' },
 }
 
-const AXIS_BRIGHT = { color: '#e8f7ff', fontSize: 14, fontWeight: 500 as const }
-const LEGEND_STYLE = { color: '#d8efff', fontSize: 14, fontWeight: 500 as const }
+const AXIS_BRIGHT = { color: '#e8f7ff', fontSize: 20, fontWeight: 500 as const }
+const LEGEND_STYLE = { color: '#d8efff', fontSize: 20, fontWeight: 500 as const }
 
 const lineColors: Record<string, string> = {
   心理: '#ffd166',
@@ -29,7 +29,7 @@ const lineOption = computed<EChartsOption>(() => ({
     trigger: 'axis',
     backgroundColor: 'rgba(2, 14, 38, 0.94)',
     borderColor: 'rgba(0, 242, 255, 0.65)',
-    textStyle: { color: '#f4fbff', fontSize: 13 },
+    textStyle: { color: '#f4fbff', fontSize: 20 },
     confine: true,
   },
   legend: {
@@ -102,7 +102,7 @@ const creditOption = computed<EChartsOption>(() => {
       position: 'top' as const,
       formatter: '{c}%',
       color: '#eaf7ff',
-      fontSize: 11,
+      fontSize: 20,
       fontWeight: 700,
     },
   })
@@ -113,7 +113,7 @@ const creditOption = computed<EChartsOption>(() => {
     xAxis: {
       type: 'category',
       data: cc.categories,
-      axisLabel: { color: '#e8f7ff', fontSize: 13, lineHeight: 16, fontWeight: 500 },
+      axisLabel: { color: '#e8f7ff', fontSize: 20, lineHeight: 16, fontWeight: 500 },
       axisLine: { lineStyle: { color: 'rgba(80,180,255,0.32)' } },
       axisTick: { show: false },
     },

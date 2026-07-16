@@ -9,7 +9,7 @@ const props = withDefaults(
     trend?: string
     hint?: string
     tone?: 'cyan' | 'green' | 'ongoing' | 'violet' | 'warn' | 'danger'
-    size?: 'sm' | 'md' | 'lg'
+    size?: 'md' | 'lg'
   }>(),
   { tone: 'cyan', size: 'md' },
 )
@@ -91,7 +91,7 @@ const trendDir = computed(() => {
     text-shadow: 0 0 14px var(--tone-glow, rgba(51, 217, 255, 0.45));
 
     small {
-      font-size: var(--uni-fs-small);
+      font-size: 12px;
       font-weight: 500;
       margin-left: 2px;
       color: var(--uni-text-secondary);
@@ -112,19 +112,12 @@ const trendDir = computed(() => {
   &__hint {
     position: relative;
     margin-top: 5px;
-    font-size: var(--uni-fs-small);
+    font-size: 11px;
     color: var(--uni-text-muted);
     line-height: 1.35;
   }
 
   &--lg .glow-metric__value { font-size: var(--uni-fs-metric-lg); }
-
-  &--sm {
-    padding: 8px 11px;
-
-    .glow-metric__label { font-size: var(--uni-fs-micro); margin-bottom: 3px; }
-    .glow-metric__value { font-size: var(--uni-fs-metric-sm); }
-  }
 
   &--cyan { --tone-color: var(--uni-accent-cyan); --tone-glow: rgba(51, 217, 255, 0.5); --tone-wash: rgba(51, 217, 255, 0.09); }
   &--green { --tone-color: var(--uni-status-normal); --tone-glow: rgba(55, 224, 164, 0.45); --tone-wash: rgba(55, 224, 164, 0.08); }

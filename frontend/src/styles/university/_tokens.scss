@@ -47,18 +47,13 @@
   --uni-font-body: "HarmonyOS Sans SC", "MiSans", "PingFang SC", "Microsoft YaHei UI", sans-serif;
   --uni-font-number: "DIN Alternate", "Bahnschrift", "Rajdhani", "Roboto Condensed", var(--uni-font-body);
 
-  // Type scale — 1920×1080 大屏可读性
-  --uni-fs-page-title: 40px;
-  --uni-fs-subtitle: 17px;
-  --uni-fs-module-title: 26px;
-  --uni-fs-metric-lg: 54px;
-  --uni-fs-metric-md: 34px;
-  --uni-fs-metric-sm: 24px;
-  --uni-fs-hud-value: 84px;
-  --uni-fs-body: 18px;
-  --uni-fs-caption: 16px;
-  --uni-fs-small: 14px;
-  --uni-fs-micro: 12px;
+  --uni-fs-page-title: 33px;
+  --uni-fs-subtitle: 14px;
+  --uni-fs-module-title: 21px;
+  --uni-fs-metric-lg: 44px;
+  --uni-fs-metric-md: 27px;
+  --uni-fs-body: 15px;
+  --uni-fs-caption: 13px;
 
   // Spacing (compacted so the enlarged type still fits 1920×1080)
   --uni-gap-page: 14px;
@@ -68,7 +63,7 @@
   --uni-pad-inner: 11px;
   --uni-radius-module: 12px;
   --uni-radius-inner: 8px;
-  --uni-header-height: 84px;
-  --uni-nav-height: 40px;
+  --uni-header-height: 76px;
+  --uni-nav-height: 34px;
   --uni-clip: 14px; // HUD corner-cut size
 }

@@ -1,21 +1,19 @@
 ﻿<script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import PostureHeroPanel from '@/components/university/overview/PostureHeroPanel.vue'
-import GoalAchievementPanel from '@/components/university/overview/GoalAchievementPanel.vue'
-import BenchmarkAnalysisPanel from '@/components/university/overview/BenchmarkAnalysisPanel.vue'
-import DisciplineTalentPanel from '@/components/university/overview/DisciplineTalentPanel.vue'
-import ResearchInnovationOverviewPanel from '@/components/university/overview/ResearchInnovationOverviewPanel.vue'
-import EmploymentRiskPanel from '@/components/university/overview/EmploymentRiskPanel.vue'
+import { onMounted, ref } from 'vue'
+import GoalOverviewPanel from '@/components/university/modules/goal-overview/GoalOverviewPanel.vue'
+import ResearchInnovationPanel from '@/components/university/modules/research-innovation/ResearchInnovationPanel.vue'
+import UniversityKeyTasksPanel from '@/components/university/modules/key-tasks/UniversityKeyTasksPanel.vue'
+import DisciplineCompetitivenessPanel from '@/components/university/modules/discipline-competitiveness/DisciplineCompetitivenessPanel.vue'
+import EmploymentQualityPanel from '@/components/university/modules/employment-quality/EmploymentQualityPanel.vue'
+import EventsRiskPanel from '@/components/university/modules/events-risk/EventsRiskPanel.vue'
 import UniversityLoadingSkeleton from '@/components/university/UniversityLoadingSkeleton.vue'
 import { useUniversityEntrance } from '@/composables/useUniversityEntrance'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
 import { useScope } from '@/composables/useScope'
 import { universityService } from '@/api/university/services'
-import { useUniversityDashboardStore } from '@/stores/universityDashboard'
 import type { UniversityDashboardVM } from '@/types/university/view'
 
 const { universityScope } = useScope()
-const dashboardStore = useUniversityDashboardStore()
 const dashboard = ref<UniversityDashboardVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -26,7 +24,6 @@ async function loadAll() {
   error.value = null
   try {
     dashboard.value = await universityService.fetchOverview(universityScope.value)
-    dashboardStore.setMeta(dashboard.value.meta)
   } catch (e) {
     error.value = e instanceof Error ? e.message : '加载失败'
   } finally {
@@ -36,58 +33,79 @@ async function loadAll() {
 }
 
 onMounted(loadAll)
-watch(universityScope, loadAll, { deep: true })
 useAutoRefresh(loadAll)
 </script>
 
 <template>
   <UniversityLoadingSkeleton v-if="loading && !dashboard" />
-  <div v-else-if="error && !dashboard" class="uni-cockpit-loading uni-cockpit-loading--error">
+  <div v-else-if="error && !dashboard" class="university-loading">
     <p>{{ error }}</p>
     <button type="button" @click="loadAll">重试</button>
   </div>
-  <main v-else-if="dashboard" class="uni-overview-grid">
-    <GoalAchievementPanel
-      class="uni-overview-goals"
-      :data="dashboard.modules.goals"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <PostureHeroPanel
-      class="uni-overview-hero"
-      :data="dashboard.modules.posture"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <BenchmarkAnalysisPanel
-      class="uni-overview-benchmark"
-      :data="dashboard.modules.benchmark"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <DisciplineTalentPanel
-      class="uni-overview-discipline"
-      :data="dashboard.modules.disciplineTalent"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <ResearchInnovationOverviewPanel
-      class="uni-overview-research"
-      :data="dashboard.modules.research"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-    <EmploymentRiskPanel
-      class="uni-overview-employment"
-      :data="dashboard.modules.employmentRisk"
-      :loading="loading"
-      :error="error"
-      @retry="loadAll"
-    />
-  </main>
+  <div v-else-if="dashboard" class="university-grid">
+    <div class="university-row university-row--top">
+      <ResearchInnovationPanel
+        class="cell-research panel-row1"
+        :data="dashboard.research"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+      <GoalOverviewPanel
+        class="cell-goal panel-row1"
+        :data="dashboard.goalOverview"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+      <EmploymentQualityPanel
+        class="cell-employ panel-row1"
+        :data="dashboard.employment"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+    </div>
+    <div class="university-row university-row--bottom">
+      <UniversityKeyTasksPanel
+        class="cell-tasks panel-row2"
+        :tasks="dashboard.keyTasks"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+      <DisciplineCompetitivenessPanel
+        class="cell-disciplines panel-row2"
+        :data="dashboard.disciplines"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+      <EventsRiskPanel
+        class="cell-events panel-row2"
+        :events="dashboard.events"
+        :academic-risk="dashboard.academicRisk"
+        :loading="loading"
+        :error="error"
+        @retry="loadAll"
+      />
+    </div>
+  </div>
 </template>
+
+<style scoped lang="scss">
+.university-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--uni-text-secondary);
+
+  button {
+    color: var(--uni-accent-cyan);
+    cursor: pointer;
+  }
+}
+</style>

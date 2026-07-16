@@ -1,12 +1,14 @@
 import type { TrendInfo } from '@/types/common'
 
 export type KpiKey =
-  | 'students'
-  | 'faculty'
-  | 'funding'
-  | 'ranking'
-  | 'satisfaction'
-  | 'influence'
+  | 'teachers'
+  | 'studentRatio'
+  | 'courses'
+  | 'topPapers'
+  | 'projects'
+  | 'patents'
+  | 'platforms'
+  | 'teams'
 
 export interface OverviewHubDTO {
   developmentIndex: number
@@ -65,6 +67,48 @@ export interface ResearchOverviewDTO {
   }
   platforms: Array<{ name: string; count: number }>
 }
+
+export type {
+  DevQualityDimension,
+  EvaluationIndicatorKey,
+  SankeyLinkDTO,
+  SankeyNodeDTO,
+  StudentDevQualityDTO,
+  StudentDevDetailDTO,
+  StudentEvaluationDetailDTO,
+  StudentFlowSankeyDTO,
+} from './student-dev-quality'
+
+export type {
+  AchievementCategory,
+  BenchmarkAchievementItemDTO,
+  BenchmarkAchievementsDTO,
+  BenchmarkAchievementsDetailDTO,
+  BenchmarkCompetitionsDTO,
+  BenchmarkFacultyLeaderDTO,
+  BenchmarkKeyProjectsDTO,
+  BenchmarkMilestoneDTO,
+  BenchmarkSummaryDTO,
+  BenchmarkTopPapersDTO,
+  MilestoneBadge,
+} from './benchmark-achievements'
+
+export type {
+  TeacherAnalyticsDTO,
+  TeacherAnalyticsDetailDTO,
+} from './teacher-analytics'
+
+export type {
+  DisciplineDimensionScoreDTO,
+  DisciplineOverviewDTO,
+  DisciplineOverviewDetailDTO,
+} from './discipline-overview'
+
+export type {
+  EnrollmentEmploymentOverviewDTO,
+  EnrollmentEmploymentDetailDTO,
+  EnrollmentEmploymentFocus,
+} from './enrollment-employment'
 
 export interface WarningOverviewDTO {
   categories: Array<{
