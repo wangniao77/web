@@ -11,8 +11,8 @@ const props = withDefaults(
 )
 
 const rootRef = ref<HTMLElement | null>(null)
-const trackRef = ref<HTMLElement | null>(null)
 const itemRef = ref<HTMLElement | null>(null)
+const isOverflowing = ref(false)
 
 let loopDistance = 0
 let running = false
@@ -26,6 +26,7 @@ function measure() {
   if (!root || !item) {
     loopDistance = 0
     running = false
+    isOverflowing.value = false
     return
   }
   // 用 offsetWidth 取完整文字自然宽度，不受父级裁切影响
@@ -35,9 +36,11 @@ function measure() {
   if (textW > viewW + 2) {
     loopDistance = textW + gap
     running = true
+    isOverflowing.value = true
   } else {
     loopDistance = 0
     running = false
+    isOverflowing.value = false
     root.scrollLeft = 0
   }
 }
@@ -91,9 +94,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="rootRef" class="bm-marquee" :title="text">
-    <div ref="trackRef" class="bm-marquee__track">
+    <div class="bm-marquee__track">
       <span ref="itemRef" class="bm-marquee__item">{{ text }}</span>
-      <span class="bm-marquee__item" aria-hidden="true">{{ text }}</span>
+      <span v-if="isOverflowing" class="bm-marquee__item" aria-hidden="true">{{ text }}</span>
     </div>
   </div>
 </template>

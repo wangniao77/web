@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
@@ -18,9 +18,17 @@ const error = ref<string | null>(null)
 // Tab 切换
 type TabKey = 'resource-base' | 'structure-analysis' | 'teaching-investment' | 'capacity-building' | 'performance-analysis' | 'warning-center' | 'major-support'
 const currentTab = ref<TabKey>('resource-base')
+const tabBarRef = ref<HTMLElement | null>(null)
+
+function getDetailScroller() {
+  return tabBarRef.value?.closest<HTMLElement>('.college-detail__body') ?? null
+}
 
 function switchTab(tab: TabKey) {
   currentTab.value = tab
+  nextTick(() => {
+    getDetailScroller()?.scrollTo({ top: 0, behavior: 'auto' })
+  })
 }
 
 const tabTitle = computed(() => {
@@ -63,9 +71,19 @@ const sections = [
 function scrollToSection(id: string) {
   activeSection.value = id
   const el = document.getElementById(id)
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  const scroller = getDetailScroller()
+  if (!el || !scroller) return
+
+  const targetTop =
+    scroller.scrollTop +
+    el.getBoundingClientRect().top -
+    scroller.getBoundingClientRect().top -
+    8
+
+  scroller.scrollTo({
+    top: Math.max(0, targetTop),
+    behavior: 'smooth',
+  })
 }
 
 onMounted(async () => {
@@ -487,7 +505,7 @@ const supportIndexBarOption = computed(() => {
     <div v-else-if="error" class="detail-placeholder detail-error">{{ error }}</div>
     <template v-else-if="data">
       <!-- 顶部 Tab 切换 -->
-      <div class="tab-bar">
+      <div ref="tabBarRef" class="tab-bar">
         <button
           type="button"
           class="tab-btn"

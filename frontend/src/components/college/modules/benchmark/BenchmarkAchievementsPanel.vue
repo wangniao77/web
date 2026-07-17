@@ -251,12 +251,12 @@ onBeforeUnmount(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
   min-width: 0;
   max-width: 100%;
   width: 100%;
   min-height: 0;
-  padding: 14px 16px;
+  padding: 10px 14px;
   border: 1px solid rgba(255, 213, 106, 0.34);
   border-radius: 8px;
   background:
@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
 .benchmark-slide__hero-head {
   flex-shrink: 0;
   color: #ffe29a;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.14em;
   line-height: 1.2;
@@ -305,7 +305,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
-  justify-content: space-evenly;
+  justify-content: space-between;
   gap: 0;
   min-height: 0;
   margin: 0;
@@ -316,29 +316,31 @@ onBeforeUnmount(() => {
 .benchmark-slide__milestone {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
+  flex: 1 1 0;
+  justify-content: center;
+  min-height: 0;
   min-width: 0;
   max-width: 100%;
-  padding: 10px 0;
+  padding: 4px 0;
   border-top: 1px solid rgba(255, 213, 106, 0.14);
   animation: bm-in 0.5s ease-out both;
   animation-delay: calc(0.12s + var(--i, 0) * 0.1s);
 
   &:first-child {
     border-top: none;
-    padding-top: 0;
   }
 
   em {
     display: inline-flex;
     align-self: flex-start;
-    padding: 3px 10px;
+    padding: 2px 8px;
     border-radius: 4px;
     border: 1px solid rgba(255, 213, 106, 0.45);
     background: rgba(255, 200, 80, 0.14);
     color: #ffe29a;
     font-style: normal;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 800;
     letter-spacing: 0.06em;
     line-height: 1.35;
@@ -356,9 +358,9 @@ onBeforeUnmount(() => {
 
   :deep(.bm-marquee__item) {
     color: #eef9ff;
-    font-size: clamp(18px, 1.25vw, 22px);
+    font-size: clamp(16px, 1.1vw, 20px);
     font-weight: 700;
-    line-height: 1.35;
+    line-height: 1.25;
   }
 }
 
