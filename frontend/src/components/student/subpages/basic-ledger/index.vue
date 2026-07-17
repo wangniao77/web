@@ -242,7 +242,6 @@ onMounted(load)
             class="dynamic-item"
             :class="`dynamic-item--${d.kind}`"
           >
-            <span class="dynamic-time">{{ d.time }}</span>
             <span class="dynamic-text">{{ d.text }}</span>
           </div>
         </div>
@@ -277,7 +276,6 @@ onMounted(load)
                 <span class="warning-card__item-dot" :style="{ background: levelColor(item.level) }" />
                 <span class="warning-card__item-category">[{{ item.category }}]</span>
                 <span class="warning-card__item-label">{{ item.label }}</span>
-                <span class="warning-card__item-level" :style="{ color: levelColor(item.level) }">{{ item.levelLabel }}</span>
               </div>
             </div>
             <div class="warning-card__empty" v-else>
@@ -388,7 +386,7 @@ onMounted(load)
 
 .subsection-title {
   margin: 12px 0 8px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #9edcff;
   letter-spacing: 0.03em;
@@ -523,14 +521,8 @@ onMounted(load)
   flex-direction: column;
   gap: 2px;
   padding: 6px 8px;
-  border-left: 2px solid;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.56);
-
-  &--safe { border-color: #55e995; }
-  &--warn { border-color: #facc15; }
-  &--risk { border-color: #ff7474; }
-  &--info { border-color: #65dfff; }
 
   &__label {
     color: #7eb4d8;
@@ -745,13 +737,13 @@ onMounted(load)
 .warning-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 15px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
     padding: 6px 10px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -759,7 +751,7 @@ onMounted(load)
   }
 
   td {
-    padding: 6px 10px;
+    padding: 7px 10px;
     border-bottom: 1px solid rgba(102, 217, 255, 0.05);
   }
 
@@ -795,8 +787,8 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 12px;
-  padding: 2px 8px;
+  font-size: 14px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-weight: 700;
 

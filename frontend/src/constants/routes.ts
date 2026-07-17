@@ -35,6 +35,7 @@ export const ROUTES = {
     careerDevelopment: '/student/career-development',
     academicDetail: '/student/academic-detail',
     growthPath: '/student/growth-path',
+    aiPortrait: '/student/ai-portrait',
     graduationAudit: '/student/graduation-audit',
     semesterSchedule: '/student/semester-schedule',
   },

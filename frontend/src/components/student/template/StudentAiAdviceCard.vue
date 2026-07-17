@@ -21,6 +21,11 @@ function goGrowthPath() {
   router.push({ path: ROUTES.student.growthPath, query: studentId ? { studentId } : undefined })
 }
 
+function goAiPortrait() {
+  const studentId = route.query.studentId as string | undefined
+  router.push({ path: ROUTES.student.aiPortrait, query: studentId ? { studentId } : undefined })
+}
+
 type TabId = 'panorama' | 'risk' | 'coach' | 'chance' | 'path'
 
 const tabs: Array<{ id: TabId; label: string; tip: string }> = [
@@ -169,6 +174,11 @@ onBeforeUnmount(stopAutoplay)
     tip="AI 综合学业与画像，给出研判、风险、机会与成长建议，用于精准育人。"
     class="stu-tpl__ai"
   >
+    <template #title-extra>
+      <button type="button" class="ref-panel__detail-link" @click="goAiPortrait">
+        查看详情 ›
+      </button>
+    </template>
     <div class="navi" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
       <div class="navi__tabs" role="tablist" aria-label="智能育航功能">
         <StuHint v-for="tab in tabs" :key="tab.id" :tip="tab.tip">

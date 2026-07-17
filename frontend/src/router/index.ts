@@ -194,6 +194,12 @@ const router = createRouter({
       meta: { title: '成长路径完整方案', isStudentSubpage: true },
     },
     {
+      path: ROUTES.student.aiPortrait,
+      name: 'student-ai-portrait',
+      component: () => import('@/components/student/subpages/ai-portrait/index.vue'),
+      meta: { title: '智能育航全景详情', isStudentSubpage: true },
+    },
+    {
       path: ROUTES.student.graduationAudit,
       name: 'student-graduation-audit',
       component: () => import('@/components/student/subpages/graduation-audit/index.vue'),

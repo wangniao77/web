@@ -925,22 +925,34 @@ onMounted(load)
 .honor-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 28px;
 }
 
 /* 子面板 */
 .sub-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .sub-panel__title {
   margin: 0;
   font-size: 16px;
-  color: #b8ecff;
+  color: #f6fbff;
   font-weight: 700;
   letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: '';
+    width: 3px;
+    height: 15px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #00e5ff, #00b8ff);
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.45);
+  }
 }
 
 /* 表格 */

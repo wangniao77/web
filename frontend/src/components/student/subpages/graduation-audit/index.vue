@@ -132,22 +132,7 @@ const graduationTimeline = computed(() => {
   }))
 })
 
-/* ─── 6. 出口发展情况 ─── */
-const exportDevelopment = computed(() => {
-  if (!dashboard.value) return null
-  const { careerDev, employment, aiPortrait } = dashboard.value
-  return {
-    destination: careerDev.employmentDestination || careerDev.employmentIntention || '待实习',
-    careerDirections: employment.careerDirections,
-    jobReadiness: employment.jobReadiness,
-    certificateReadiness: employment.certificateReadiness,
-    targetUniversities: careerDev.targetUniversities || [],
-    targetCompanies: careerDev.targetCompanies || [],
-    jobMatches: aiPortrait.jobMatches.slice(0, 3),
-  }
-})
 
-/* ─── 7. 行动建议 ─── */
 const actionSuggestions = computed(() => {
   if (!dashboard.value) return []
   const { employment, aiAssistant, failedCritical, creditProgress } = dashboard.value
@@ -324,68 +309,7 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 6. 出口发展情况 -->
-      <section v-if="exportDevelopment" class="warn-section">
-        <h3 class="warn-section__title">出口发展情况</h3>
-        <div class="export-overview">
-          <div class="export-main">
-            <div class="export-item">
-              <span class="export-item__label">当前去向</span>
-              <strong class="export-item__value">{{ exportDevelopment.destination }}</strong>
-            </div>
-          </div>
-          <div class="export-readiness" v-if="exportDevelopment.careerDirections.length">
-            <span class="export-label">职业方向</span>
-            <div class="tag-list">
-              <span v-for="d in exportDevelopment.careerDirections" :key="d" class="tag">{{ d }}</span>
-            </div>
-          </div>
-          <div class="export-readiness">
-            <div class="readiness-row">
-              <span>就业准备度</span>
-              <div class="readiness-bar">
-                <div class="readiness-bar__inner" :style="{ width: `${exportDevelopment.jobReadiness}%` }" />
-              </div>
-              <strong>{{ exportDevelopment.jobReadiness }}%</strong>
-            </div>
-            <div class="readiness-row">
-              <span>证书准备度</span>
-              <div class="readiness-bar">
-                <div class="readiness-bar__inner" :style="{ width: `${exportDevelopment.certificateReadiness}%` }" />
-              </div>
-              <strong>{{ exportDevelopment.certificateReadiness }}%</strong>
-            </div>
-          </div>
-          <div class="export-targets" v-if="exportDevelopment.targetUniversities.length || exportDevelopment.targetCompanies.length">
-            <div v-if="exportDevelopment.targetUniversities.length" class="target-group">
-              <span class="target-group__label">目标高校</span>
-              <div class="target-group__list">
-                <span v-for="u in exportDevelopment.targetUniversities" :key="u" class="target-tag">{{ u }}</span>
-              </div>
-            </div>
-            <div v-if="exportDevelopment.targetCompanies.length" class="target-group">
-              <span class="target-group__label">目标企业</span>
-              <div class="target-group__list">
-                <span v-for="c in exportDevelopment.targetCompanies" :key="c" class="target-tag">{{ c }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="export-matches" v-if="exportDevelopment.jobMatches.length">
-            <span class="export-label">岗位匹配</span>
-            <div class="match-list">
-              <div v-for="job in exportDevelopment.jobMatches" :key="job.role" class="match-row">
-                <span>{{ job.role }}</span>
-                <div class="match-bar">
-                  <div class="match-bar__inner" :style="{ width: `${job.match}%` }" />
-                </div>
-                <strong>{{ job.match }}%</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- 7. 行动建议 -->
       <section class="warn-section">
         <h3 class="warn-section__title">行动建议</h3>
         <ul class="action-list">
@@ -401,10 +325,19 @@ onMounted(load)
 
 <style scoped lang="scss">
 .graduation-audit {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
+  align-items: start;
 }
+
+.warn-section:nth-child(1) { grid-column: 1 / -1; }
+.warn-section:nth-child(2) { grid-column: 1; }
+.warn-section:nth-child(3) { grid-column: 2; }
+.warn-section:nth-child(4) { grid-column: 1; }
+.warn-section:nth-child(5) { grid-column: 2; }
+.warn-section:nth-child(6) { grid-column: 1 / -1; }
+.warn-section:nth-child(7) { grid-column: 1 / -1; }
 
 .warn-section {
   padding: 10px 14px;
@@ -708,155 +641,7 @@ onMounted(load)
   }
 }
 
-/* ─── 6. 出口发展情况 ─── */
-.export-overview {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 
-.export-main {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.export-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.3);
-
-  &__label { color: #8fb7cd; font-size: 12px; font-weight: 600; }
-  &__value { color: #43e7af; font-size: 15px; font-weight: 700; }
-}
-
-.export-readiness {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.3);
-}
-
-.readiness-row {
-  display: grid;
-  grid-template-columns: 100px 1fr 50px;
-  align-items: center;
-  gap: 8px;
-
-  span { color: #8fb7cd; font-size: 13px; font-weight: 600; }
-  strong { color: #43e7af; font-size: 13px; font-weight: 700; text-align: right; }
-}
-
-.readiness-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(0, 69, 91, 0.68);
-  overflow: hidden;
-
-  &__inner {
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, #20c997, #52e8bf);
-  }
-}
-
-.export-label {
-  color: #8fb7cd;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tag {
-  padding: 3px 10px;
-  border-radius: 3px;
-  background: rgba(67, 231, 175, 0.12);
-  color: #43e7af;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.export-targets {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.target-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.3);
-
-  &__label { color: #8fb7cd; font-size: 12px; font-weight: 600; }
-
-  &__list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-}
-
-.target-tag {
-  padding: 3px 8px;
-  border-radius: 3px;
-  background: rgba(0, 184, 255, 0.12);
-  color: #55dfff;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.export-matches {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.3);
-}
-
-.match-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.match-row {
-  display: grid;
-  grid-template-columns: 1fr 100px 50px;
-  align-items: center;
-  gap: 8px;
-
-  span { color: #d0e8f8; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  strong { color: #43e7af; font-size: 13px; font-weight: 700; text-align: right; }
-}
-
-.match-bar {
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(0, 69, 91, 0.68);
-  overflow: hidden;
-
-  &__inner {
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, #20c997, #52e8bf);
-  }
-}
-
-/* ─── 7. 行动建议 ─── */
 .action-list {
   margin: 0;
   padding: 0;

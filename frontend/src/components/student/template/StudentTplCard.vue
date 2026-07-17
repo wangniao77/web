@@ -29,6 +29,9 @@ defineEmits<{ retry: [] }>()
         </span>
         <StuHint v-if="tip" :tip="tip">{{ title }}</StuHint>
         <template v-else>{{ title }}</template>
+        <span v-if="$slots['title-extra']" class="ref-panel__title-extra">
+          <slot name="title-extra" />
+        </span>
       </h3>
       <span v-if="extra" class="ref-panel__extra">{{ extra }}</span>
     </header>
@@ -97,6 +100,36 @@ defineEmits<{ retry: [] }>()
   box-shadow:
     inset 0 1px 0 rgba(180, 230, 255, 0.12),
     0 0 12px rgba(0, 160, 220, 0.16);
+}
+
+.ref-panel__title-extra {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
+
+  :deep(.ref-panel__detail-link) {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 8px;
+    border: 1px solid rgba(120, 210, 255, 0.28);
+    border-radius: 999px;
+    background: rgba(0, 70, 120, 0.32);
+    color: #8ee9ff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.18s, border-color 0.18s, background 0.18s, box-shadow 0.18s;
+
+    &:hover {
+      color: #ffffff;
+      border-color: rgba(0, 220, 255, 0.6);
+      background: rgba(0, 100, 160, 0.45);
+      box-shadow: 0 0 12px rgba(0, 200, 255, 0.25);
+    }
+  }
 }
 
 .ref-panel__extra {

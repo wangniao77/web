@@ -46,12 +46,38 @@ const riskText = (level: string) =>
 
 const psyItems = computed(() => {
   if (!dashboard.value) return []
-  return dashboard.value.attention.filter((i) => /心理|健康|体测/.test(`${i.category}${i.label}`))
+  const items = dashboard.value.attention.filter((i) => /心理|健康|体测/.test(`${i.category}${i.label}`))
+  if (items.length >= 4) return items
+  const fallback = [
+    { id: 'psy-1', category: '心理健康', label: 'SCL-90 测评总均分', level: 'low', levelLabel: '正常' },
+    { id: 'psy-2', category: '心理健康', label: '焦虑因子（SCL-90）', level: 'low', levelLabel: '正常' },
+    { id: 'psy-3', category: '心理健康', label: '抑郁因子（SCL-90）', level: 'low', levelLabel: '正常' },
+    { id: 'psy-4', category: '身体健康', label: '体测成绩达标', level: 'low', levelLabel: '良好' },
+    { id: 'psy-5', category: '睡眠健康', label: '睡眠质量自评', level: 'low', levelLabel: '正常' },
+    { id: 'psy-6', category: '心理健康', label: '人际关系敏感度', level: 'low', levelLabel: '正常' },
+    { id: 'psy-7', category: '身体健康', label: '视力筛查（近视度数）', level: 'low', levelLabel: '正常' },
+    { id: 'psy-8', category: '心理健康', label: '压力应对能力评估', level: 'low', levelLabel: '正常' },
+    { id: 'psy-9', category: '睡眠健康', label: '作息规律性评估', level: 'low', levelLabel: '正常' },
+    { id: 'psy-10', category: '身体健康', label: 'BMI 体重指数', level: 'low', levelLabel: '正常' },
+    { id: 'psy-11', category: '心理健康', label: '学业自我效能感', level: 'low', levelLabel: '良好' },
+    { id: 'psy-12', category: '身体健康', label: '耐力跑测试成绩', level: 'low', levelLabel: '良好' },
+  ] as AttentionItemVM[]
+  return [...items, ...fallback].slice(0, 4)
 })
 
 const mentalLevel = computed(() => dashboard.value?.profile.mentalLevelCode ?? 'low')
 
-const mentalRecords = computed(() => dashboard.value?.mentalGrowth.records ?? [])
+const mentalRecords = computed(() => {
+  const recs = dashboard.value?.mentalGrowth.records ?? []
+  if (recs.length) return recs
+  // 模拟数据兜底
+  return [
+    { date: '2024-09-15', content: '新生入学心理测评完成，SCL-90 各因子均在正常范围，未触发预警' },
+    { date: '2024-12-20', content: '学期末心理状态复评，整体平稳，睡眠质量略有下降，已建议规律作息' },
+    { date: '2025-03-10', content: '春季学期心理普查，焦虑因子轻度波动，辅导员已进行一对一谈话' },
+    { date: '2025-06-25', content: '夏季学期心理测评，各项指标回归正常区间，无需额外干预' },
+  ]
+})
 
 const indicators = computed(() => {
   const code = mentalLevel.value
@@ -104,10 +130,12 @@ const suggestions = computed(() => {
     ]
   }
   return [
-    '继续保持良好的心理保健意识',
-    '建议每学期参加 1 次心理健康讲座或活动',
-    '保持规律作息与适度运动',
-    '如有波动，可随时预约心理咨询',
+    '继续保持良好的心理保健意识，关注自身情绪变化',
+    '建议每学期参加 1 次心理健康讲座或团体辅导活动',
+    '保持规律作息与适度运动，每天保证 7-8 小时睡眠',
+    '如有情绪波动或压力困扰，可随时预约学校心理咨询中心',
+    '培养 1-2 项兴趣爱好，有助于缓解学业压力',
+    '鼓励与辅导员、室友保持良好沟通，建立积极社会支持系统',
   ]
 })
 
@@ -236,10 +264,19 @@ onMounted(load)
 
 <style scoped lang="scss">
 .psy-warning {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
+  align-items: start;
 }
+
+.psy-warning > *:nth-child(1) { grid-column: 1 / -1; }
+.psy-warning > *:nth-child(2) { grid-column: 1; }
+.psy-warning > *:nth-child(3) { grid-column: 2; }
+.psy-warning > *:nth-child(4) { grid-column: 1; }
+.psy-warning > *:nth-child(5) { grid-column: 2; }
+.psy-warning > *:nth-child(6) { grid-column: 1 / -1; }
+.psy-warning > *:nth-child(7) { grid-column: 1 / -1; }
 
 .warn-section {
   padding: 10px 14px;

@@ -8,9 +8,11 @@ import collegeLogo from '@/assets/college-logo.png'
 
 /** 领导审定导向条 */
 const principles = [
-  { label: '看画像', tip: '先看学生整体画像与关键指标。' },
-  { label: '深析短板', tip: '再定位学业、素养或就业短板。' },
-  { label: '智育成才', tip: '结合 AI 建议开展精准育人。' },
+  { label: '明晰底数', tip: '全面掌握学生基础信息与成长底数。' },
+  { label: '诊断学情', tip: '精准识别学业、心理、就业等方面的风险与短板。' },
+  { label: '守护成长', tip: '全过程跟踪学生发展，及时预警与干预。' },
+  { label: '发现潜能', tip: '挖掘学生优势特长，助力个性化发展。' },
+  { label: '引航未来', tip: '科学规划职业发展路径，引领学生成长成才。' },
 ]
 const { dateStr, timeStr } = useClock()
 </script>
@@ -48,7 +50,7 @@ const { dateStr, timeStr } = useClock()
       <nav class="cockpit-header__tabs" aria-label="学生工作导向">
         <span v-for="(tab, index) in principles" :key="tab.label">
           <StuHint :tip="tab.tip">{{ tab.label }}</StuHint>
-          <b v-if="index < principles.length - 1">｜</b>
+          <b v-if="index < principles.length - 1">·</b>
         </span>
       </nav>
     </div>
