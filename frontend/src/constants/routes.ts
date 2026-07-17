@@ -36,5 +36,6 @@ export const ROUTES = {
     academicDetail: '/student/academic-detail',
     growthPath: '/student/growth-path',
     graduationAudit: '/student/graduation-audit',
+    semesterSchedule: '/student/semester-schedule',
   },
 } as const

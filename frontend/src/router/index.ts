@@ -199,6 +199,12 @@ const router = createRouter({
       component: () => import('@/components/student/subpages/graduation-audit/index.vue'),
       meta: { title: '毕业审核与毕设进度', isStudentSubpage: true },
     },
+    {
+      path: ROUTES.student.semesterSchedule,
+      name: 'student-semester-schedule',
+      component: () => import('@/components/student/subpages/semester-schedule/index.vue'),
+      meta: { title: '本学期课表', isStudentSubpage: true },
+    },
   ],
 })
 

@@ -286,7 +286,7 @@ onMounted(load)
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: 18px;
     border-radius: 50%;
     background: rgba(0, 184, 255, 0.1);
     border: 1px solid rgba(0, 184, 255, 0.25);
@@ -305,7 +305,7 @@ onMounted(load)
   }
 
   &__value {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 900;
     color: #f6fbff;
     margin: 2px 0;

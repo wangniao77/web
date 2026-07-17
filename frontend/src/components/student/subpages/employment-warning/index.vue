@@ -291,13 +291,13 @@ onMounted(load)
   &--high { border-color: #ff7474; }
 
   &__label {
-    font-size: 11px;
+    font-size: 13px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 900;
     color: #f6fbff;
 
@@ -345,7 +345,7 @@ onMounted(load)
   }
 
   &__rank {
-    font-size: 10px;
+    font-size: 12px;
     padding: 1px 5px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.12);
@@ -355,7 +355,7 @@ onMounted(load)
   }
 
   &__role {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     color: #d0e8f8;
     overflow: hidden;
@@ -373,7 +373,7 @@ onMounted(load)
   }
 
   &__match {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 900;
     white-space: nowrap;
   }
@@ -389,7 +389,7 @@ onMounted(load)
   gap: 10px;
 
   &__role {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     color: #f6fbff;
     padding-bottom: 8px;
@@ -411,19 +411,19 @@ onMounted(load)
     gap: 2px;
 
     label {
-      font-size: 11px;
+      font-size: 13px;
       color: #7eb4d8;
       font-weight: 600;
     }
 
     strong {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 900;
       color: #f6fbff;
     }
 
     span {
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 700;
       color: #d0e8f8;
     }
@@ -432,7 +432,7 @@ onMounted(load)
   &__section {
     label {
       display: block;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
       color: #7eb4d8;
       margin-bottom: 4px;
@@ -440,7 +440,7 @@ onMounted(load)
 
     p {
       margin: 0;
-      font-size: 12px;
+      font-size: 14px;
       color: #c8dff0;
       line-height: 1.5;
     }
@@ -462,7 +462,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 12px;
+  font-size: 14px;
 
   &__dot {
     width: 7px;
@@ -476,7 +476,7 @@ onMounted(load)
   }
 
   &__level {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 800;
   }
 
@@ -500,7 +500,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 12px;
+  font-size: 14px;
 
   &__time {
     width: 56px;
@@ -516,7 +516,7 @@ onMounted(load)
   }
 
   &__tag {
-    font-size: 13px;
+    font-size: 15px;
     padding: 2px 8px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.12);
@@ -537,13 +537,13 @@ onMounted(load)
 .warn-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
     padding: 6px 8px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -567,9 +567,10 @@ onMounted(load)
     line-height: 1.4;
   }
 }
-
 .cat-badge {
-  font-size: 10px;
+  display: inline-block;
+  font-weight: 700;
+  font-size: 12px;
   padding: 1px 5px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -596,7 +597,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* Info grid */
@@ -615,12 +616,12 @@ onMounted(load)
   background: rgba(0, 38, 73, 0.3);
 
   &__label {
-    font-size: 11px;
+    font-size: 13px;
     color: #7eb4d8;
   }
 
   &__value {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -638,7 +639,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
 
@@ -668,7 +669,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 15px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }

@@ -261,6 +261,10 @@ function selectPeer(studentId: string) {
   router.push({ path: '/student', query: { studentId } })
 }
 
+function goSemesterSchedule() {
+  router.push({ name: 'student-semester-schedule', query: { studentId: props.profile.studentId } })
+}
+
 function goBasicLedger() {
   router.push({ name: 'student-basic-ledger', query: { studentId: props.profile.studentId } })
 }
@@ -448,7 +452,7 @@ function goWarningDetail(label: string) {
 
         <div class="sid__archive-actions">
           <StuHint tip="打开本学期课表详情。">
-            <button type="button" @click="emit('open', 'timetable')">本学期课表 ›</button>
+            <button type="button" @click="goSemesterSchedule">本学期课表 ›</button>
           </StuHint>
           <StuHint tip="打开更完整的学籍与基础档案。">
             <button type="button" class="sid__archive-btn" @click="goBasicLedger">基础信息台账 ›</button>

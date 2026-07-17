@@ -106,7 +106,7 @@ defineProps<{
 
 .kpi-value {
   font-family: 'DIN Alternate', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 700;
   color: #f4f8ff;
   line-height: 1.1;

@@ -231,7 +231,7 @@ const topBucket = computed(() => {
 
 .chart-card__title {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -313,9 +313,9 @@ const topBucket = computed(() => {
 }
 
 .bucket-num {
-  grid-area: num;
-  font-family: 'DIN Alternate', sans-serif;
-  font-size: 16px;
+    grid-area: num;
+    font-family: 'DIN Alternate', sans-serif;
+    font-size: 18px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.02em;

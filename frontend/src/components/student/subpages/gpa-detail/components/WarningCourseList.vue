@@ -112,7 +112,7 @@ function suggestPotential(c: CourseRecordVM): string {
 
 .list-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(240, 192, 64, 0.18);
@@ -226,7 +226,7 @@ function suggestPotential(c: CourseRecordVM): string {
 
 .score-num {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: #f0c040;
   line-height: 1.1;

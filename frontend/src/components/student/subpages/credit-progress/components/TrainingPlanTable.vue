@@ -489,7 +489,7 @@ const totalShown = computed(() => grouped.value.reduce((s, g) => s + g.courses.l
 .td-score {
   font-family: 'DIN Alternate', sans-serif;
   font-weight: 700;
-  font-size: 17px;
+  font-size: 19px;
   color: #f4f8ff;
 
   .muted { color: rgba(184, 236, 255, 0.3); font-weight: 400; }

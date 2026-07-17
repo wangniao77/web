@@ -295,33 +295,32 @@ onMounted(load)
 }
 
 .kpi-label {
-  font-size: 13px;
+  font-size: 15px;
   color: rgba(190, 210, 238, 0.8);
   letter-spacing: 0.04em;
 }
 
 .kpi-value {
   font-family: 'DIN Alternate', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 700;
   color: #f4f8ff;
   line-height: 1.1;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 12px rgba(57, 230, 255, 0.42);
 
   small {
-    font-size: 13px;
+    font-size: 15px;
     color: rgba(186, 208, 236, 0.7);
     font-weight: 400;
     margin-left: 2px;
   }
 
   &--sm {
-    font-size: 20px;
+    font-size: 22px;
   }
 }
-
-.kpi-tag {
-  font-size: 12px;
+.kpi-tag{
+  font-size: 14px;
   padding: 2px 10px;
   border-radius: 999px;
   border: 1px solid;
@@ -336,7 +335,7 @@ onMounted(load)
 /* ═══ Section ═══ */
 .section-title {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -371,12 +370,7 @@ onMounted(load)
 }
 
 .risk-chip {
-  padding: 5px 14px;
-  border: 1px solid rgba(102, 217, 255, 0.2);
-  border-radius: 999px;
-  background: rgba(0, 184, 255, 0.06);
-  color: rgba(184, 236, 255, 0.8);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -414,7 +408,7 @@ onMounted(load)
 }
 
 .risk-bar-chart__label {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -456,7 +450,7 @@ onMounted(load)
 }
 
 .semester-badge {
-  font-size: 12px;
+  font-size: 14px;
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(248, 113, 113, 0.12);
@@ -482,14 +476,13 @@ onMounted(load)
 .fail-table {
   width: 100%;
   min-width: 900px;
-  border-collapse: collapse;
-  font-size: 13px;
+  font-size: 15px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: center;
     padding: 8px 10px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     color: #9ecae8;
     text-transform: uppercase;
@@ -522,7 +515,7 @@ onMounted(load)
 }
 
 .cat-tag {
-  font-size: 11px;
+  font-size: 13px;
   padding: 2px 7px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -531,7 +524,7 @@ onMounted(load)
 }
 
 .sev-tag {
-  font-size: 11px;
+  font-size: 13px;
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
@@ -543,7 +536,7 @@ onMounted(load)
 }
 
 .risk-badge {
-  font-size: 11px;
+  font-size: 13px;
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
@@ -595,7 +588,7 @@ onMounted(load)
 
 .an-score {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #f87171;
 }

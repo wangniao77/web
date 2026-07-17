@@ -268,18 +268,18 @@ onMounted(load)
   border-left: 3px solid #65dfff;
 
   &__label {
-    font-size: 12px;
+    font-size: 14px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 900;
     color: #f6fbff;
 
     small {
-      font-size: 13px;
+      font-size: 15px;
       color: #9ecae8;
       font-weight: 600;
     }
@@ -302,7 +302,7 @@ onMounted(load)
   background: rgba(0, 38, 73, 0.3);
 
   &__label {
-    font-size: 12px;
+    font-size: 14px;
     color: #7eb4d8;
   }
 
@@ -313,7 +313,7 @@ onMounted(load)
 
     small,
     em {
-      font-size: 12px;
+      font-size: 14px;
       color: #9ecae8;
       font-weight: 600;
       font-style: normal;
@@ -336,7 +336,7 @@ onMounted(load)
   padding: 8px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 13px;
+  font-size: 15px;
 
   &__label {
     color: #7eb4d8;
@@ -377,7 +377,7 @@ onMounted(load)
   border: 1px solid rgba(0, 184, 255, 0.25);
   background: rgba(0, 184, 255, 0.1);
   color: #8ef6ff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -412,7 +412,7 @@ onMounted(load)
   &__percent {
     color: #5ce8bd;
     font-family: var(--student-font-number);
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
   }
 
@@ -434,7 +434,7 @@ onMounted(load)
     flex-wrap: wrap;
     gap: 4px 10px;
     color: #8fb7cd;
-    font-size: 12px;
+    font-size: 14px;
 
     span {
       font-weight: 600;
@@ -456,7 +456,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 13px;
+  font-size: 15px;
 
   &__dot {
     width: 7px;
@@ -486,12 +486,12 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 12px;
+  font-size: 14px;
 
   &__badge {
     padding: 1px 6px;
     border-radius: 999px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     background: rgba(0, 184, 255, 0.12);
     color: #8ef6ff;
@@ -518,7 +518,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 13px;
+  font-size: 15px;
 
   &__label {
     flex-shrink: 0;
@@ -546,7 +546,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     cursor: pointer;
 

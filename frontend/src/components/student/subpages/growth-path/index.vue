@@ -357,17 +357,33 @@ onMounted(load)
             :key="item.name"
             class="ability-item"
           >
-            <div class="ability-item__head">
-              <span class="ability-item__name">{{ item.name }}</span>
-              <span class="ability-item__score">{{ item.score }} <small>/ {{ item.max }}</small></span>
+            <div class="ability-item__info">
+              <div class="ability-item__head">
+                <span class="ability-item__name">{{ item.name }}</span>
+                <span class="ability-item__score">{{ item.score }} <small>/ {{ item.max }}</small></span>
+              </div>
+              <div class="ability-item__legend">
+                <span><i class="legend-personal" />个人</span>
+                <span><i class="legend-avg" />年级平均</span>
+              </div>
             </div>
-            <div class="ability-item__bar">
-              <div class="ability-item__bar-personal" :style="{ width: `${(item.score / item.max) * 100}%` }" />
-              <div class="ability-item__bar-avg" :style="{ width: `${(item.avg / item.max) * 100}%`, left: `${(item.score / item.max) * 100}%` }" />
-            </div>
-            <div class="ability-item__legend">
-              <span><i class="legend-personal" />个人</span>
-              <span><i class="legend-avg" />年级平均</span>
+            <div class="ability-item__ring">
+              <svg viewBox="0 0 100 100" class="ring-svg">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,69,91,0.68)" stroke-width="7" />
+                <circle
+                  cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="7"
+                  stroke-dasharray="251.2"
+                  :stroke-dashoffset="251.2 - (251.2 * item.avg / item.max)"
+                  stroke-linecap="round"
+                />
+                <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(0,69,91,0.68)" stroke-width="5" />
+                <circle
+                  cx="50" cy="50" r="28" fill="none" stroke="#20c997" stroke-width="5"
+                  stroke-dasharray="175.9"
+                  :stroke-dashoffset="175.9 - (175.9 * item.score / item.max)"
+                  stroke-linecap="round"
+                />
+              </svg>
             </div>
           </div>
         </div>
@@ -694,13 +710,13 @@ onMounted(load)
 
   .stage-value {
     color: #43e7af;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
   }
 
   .goal-value {
     color: #d0e8f8;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
   }
 
@@ -730,7 +746,7 @@ onMounted(load)
 
     strong {
       color: #43e7af;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
     }
 
@@ -865,9 +881,16 @@ onMounted(load)
 }
 
 .ability-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: 1fr 56px;
+  gap: 8px;
+  align-items: center;
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
 
   &__head {
     display: flex;
@@ -893,31 +916,10 @@ onMounted(load)
     }
   }
 
-  &__bar {
+  &__ring {
+    width: 56px;
+    height: 56px;
     position: relative;
-    height: 8px;
-    border-radius: 999px;
-    background: rgba(0, 69, 91, 0.68);
-    overflow: hidden;
-  }
-
-  &__bar-personal {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, #20c997, #52e8bf);
-    z-index: 2;
-  }
-
-  &__bar-avg {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    border-radius: inherit;
-    background: rgba(255, 255, 255, 0.15);
-    z-index: 1;
   }
 
   &__legend {
@@ -942,6 +944,12 @@ onMounted(load)
     .legend-personal { background: linear-gradient(90deg, #20c997, #52e8bf); }
     .legend-avg { background: rgba(255, 255, 255, 0.25); }
   }
+}
+
+.ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
 }
 
 /* ─── 4. 成长任务清单 ─── */
@@ -1186,7 +1194,7 @@ onMounted(load)
     border-bottom: 1px solid rgba(102, 217, 255, 0.08);
 
     .resource-icon {
-      font-size: 16px;
+      font-size: 18px;
     }
 
     strong {
@@ -1231,7 +1239,7 @@ onMounted(load)
 
     strong {
       color: #43e7af;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
     }
 
@@ -1280,8 +1288,9 @@ onMounted(load)
   line-height: 1.4;
 
   &__label {
-    color: #43e7af;
-    font-weight: 700;
+    color: #d0e8f8;
+    font-size: 13px;
+    font-weight: 600;
   }
 
   &__detail {
@@ -1341,7 +1350,7 @@ onMounted(load)
 
     strong {
       color: #43e7af;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
     }
 

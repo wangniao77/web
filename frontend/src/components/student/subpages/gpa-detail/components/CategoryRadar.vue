@@ -161,7 +161,7 @@ const weakCategory = computed(() => {
 
 .chart-card__title {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);

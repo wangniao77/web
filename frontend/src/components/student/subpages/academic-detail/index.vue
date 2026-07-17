@@ -390,13 +390,13 @@ onMounted(load)
   border-left: 3px solid #65dfff;
 
   &__label {
-    font-size: 11px;
+    font-size: 13px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 900;
     color: #f6fbff;
 
@@ -429,7 +429,7 @@ onMounted(load)
   }
 
   span {
-    font-size: 11px;
+    font-size: 13px;
     color: #7eb4d8;
   }
 
@@ -440,7 +440,7 @@ onMounted(load)
 
 .stability-desc {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: #8fb7cd;
   line-height: 1.5;
 }
@@ -453,7 +453,7 @@ onMounted(load)
 .trend-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 14px;
 
   th, td {
     padding: 6px 8px;
@@ -480,7 +480,7 @@ onMounted(load)
   display: inline-block;
   padding: 1px 6px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 
   &--up { background: rgba(85, 233, 149, 0.15); color: #55e995; border: 1px solid rgba(85, 233, 149, 0.25); }
@@ -521,7 +521,7 @@ onMounted(load)
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
 
-  &__label { font-size: 11px; color: #7eb4d8; }
+  &__label { font-size: 13px; color: #7eb4d8; }
   &__value { font-size: 14px; font-weight: 800; color: #f6fbff;
     &.is-safe { color: #55e995; }
     &.is-alert { color: #ff9b7a; }
@@ -541,14 +541,14 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 12px;
+  font-size: 14px;
 
   &__name { flex: 1; color: #d0e8f8; font-weight: 600; }
   &__score { color: #ff9b7a; font-weight: 700; font-family: var(--student-font-number); }
   &__tag {
     padding: 1px 6px;
     border-radius: 999px;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     &.is-required { background: rgba(255, 155, 122, 0.15); color: #ff9b7a; border: 1px solid rgba(255, 155, 122, 0.25); }
     &.is-elective { background: rgba(102, 217, 255, 0.15); color: #7eb4d8; border: 1px solid rgba(102, 217, 255, 0.25); }
@@ -571,7 +571,7 @@ onMounted(load)
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
 
-  &__label { font-size: 11px; color: #7eb4d8; }
+  &__label { font-size: 13px; color: #7eb4d8; }
   &__value { font-size: 14px; font-weight: 800; color: #f6fbff; }
 }
 
@@ -581,10 +581,10 @@ onMounted(load)
   gap: 8px;
   padding: 8px 0;
 
-  &__label { font-size: 12px; color: #7eb4d8; font-weight: 600; width: 90px; flex-shrink: 0; }
+  &__label { font-size: 14px; color: #7eb4d8; font-weight: 600; width: 90px; flex-shrink: 0; }
   &__bar { flex: 1; height: 6px; border-radius: 999px; background: rgba(0, 60, 120, 0.45); overflow: hidden; }
   &__inner { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #00b8ff, #00e5ff); }
-  &__percent { font-size: 12px; color: #7ff6ff; font-weight: 700; font-family: var(--student-font-number); width: 40px; text-align: right; flex-shrink: 0; }
+  &__percent { font-size: 14px; color: #7ff6ff; font-weight: 700; font-family: var(--student-font-number); width: 40px; text-align: right; flex-shrink: 0; }
 }
 
 .completion-status {
@@ -592,7 +592,7 @@ onMounted(load)
   align-items: center;
   gap: 8px;
   padding: 6px 0;
-  font-size: 12px;
+  font-size: 14px;
 
   &__label { color: #7eb4d8; font-weight: 600; width: 90px; flex-shrink: 0; }
   &__value { color: #d0e8f8;
@@ -615,7 +615,7 @@ onMounted(load)
   padding: 5px 8px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.25);
-  font-size: 11px;
+  font-size: 13px;
 
   &__label { color: #7eb4d8; width: 70px; flex-shrink: 0; }
   &__bar { flex: 1; height: 5px; border-radius: 999px; background: rgba(0, 60, 120, 0.45); overflow: hidden; }
@@ -639,7 +639,7 @@ onMounted(load)
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
 
-  &__label { font-size: 11px; color: #7eb4d8; }
+  &__label { font-size: 13px; color: #7eb4d8; }
   &__value { font-size: 14px; font-weight: 800; color: #f6fbff;
     &.is-safe { color: #55e995; }
     &.is-warn { color: #ff9b7a; }
@@ -656,7 +656,7 @@ onMounted(load)
     grid-template-columns: 1fr 60px 80px;
     gap: 8px;
     padding: 6px 10px;
-    font-size: 11px;
+    font-size: 13px;
     color: #7eb4d8;
     font-weight: 700;
     background: rgba(0, 38, 73, 0.25);
@@ -668,7 +668,7 @@ onMounted(load)
   grid-template-columns: 1fr 60px 80px;
   gap: 8px;
   padding: 5px 10px;
-  font-size: 12px;
+  font-size: 14px;
   color: #d0e8f8;
   border-radius: 3px;
 
@@ -676,7 +676,7 @@ onMounted(load)
   &:hover { background: rgba(0, 184, 255, 0.06); }
 
   .course-type {
-    font-size: 11px;
+    font-size: 13px;
     color: #8fb7cd;
   }
 }
@@ -694,8 +694,7 @@ onMounted(load)
   gap: 8px;
   padding: 5px 8px;
   border-radius: 4px;
-  background: rgba(0, 38, 73, 0.25);
-  font-size: 12px;
+  font-size: 14px;
 
   &__sem { width: 90px; color: #7eb4d8; flex-shrink: 0; }
   &__bar { flex: 1; height: 5px; border-radius: 999px; background: rgba(0, 60, 120, 0.45); overflow: hidden; }
@@ -715,7 +714,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
 
@@ -730,7 +729,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* Placeholder */
@@ -755,7 +754,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 15px;
 
     &:hover {
       background: rgba(0, 184, 255, 0.2);

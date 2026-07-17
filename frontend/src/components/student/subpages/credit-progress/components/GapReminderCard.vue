@@ -126,7 +126,7 @@ function severityLabel(sev: GapItemDTO['severity']) {
 
 .gap-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(248, 113, 113, 0.22);
@@ -139,11 +139,11 @@ function severityLabel(sev: GapItemDTO['severity']) {
   color: rgba(254, 202, 202, 0.7);
 
   b {
-    color: #f87171;
-    font-weight: 800;
-    font-family: 'DIN Alternate', sans-serif;
-    font-size: 16px;
-    margin: 0 2px;
+      color: #f87171;
+      font-weight: 800;
+      font-family: 'DIN Alternate', sans-serif;
+      font-size: 18px;
+      margin: 0 2px;
   }
 }
 

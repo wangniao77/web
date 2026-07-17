@@ -34,22 +34,7 @@ function goBack() {
 }
 
 const activeTab = ref<'honor' | 'discipline'>('honor')
-const activeHonorSub = ref(0)
 const activeDisciplineSub = ref(0)
-
-const honorTabs = [
-  { label: '学科竞赛', key: 'competition' },
-  { label: '科研项目', key: 'project' },
-  { label: '学术论文', key: 'paper' },
-  { label: '专利软著', key: 'patent' },
-  { label: '其他成果', key: 'other' },
-  { label: '荣誉称号', key: 'title' },
-  { label: '奖学金', key: 'scholarship' },
-  { label: '社会实践', key: 'practice' },
-  { label: '文体艺术', key: 'art' },
-  { label: '集体荣誉', key: 'collective' },
-  { label: '技能证书', key: 'certificate' },
-]
 
 const disciplineTabs = [
   { label: '校纪处分', key: 'disciplinary' },
@@ -347,20 +332,11 @@ onMounted(load)
 
       <!-- 荣誉成果 -->
       <div v-if="activeTab === 'honor'" class="tab-content">
-        <div class="sub-tabs">
-          <button
-            v-for="(t, i) in honorTabs"
-            :key="t.key"
-            class="sub-tab"
-            :class="{ 'sub-tab--active': activeHonorSub === i }"
-            @click="activeHonorSub = i"
-          >
-            {{ t.label }}
-          </button>
-        </div>
 
-        <!-- 学科竞赛 -->
-        <div v-if="activeHonorSub === 0" class="sub-panel">
+
+        <div class="honor-grid">
+          <!-- 学科竞赛 -->
+          <div class="sub-panel">
           <h4 class="sub-panel__title">学科竞赛获奖记录</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -399,7 +375,7 @@ onMounted(load)
         </div>
 
         <!-- 科研项目 -->
-        <div v-if="activeHonorSub === 1" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">科研与创新创业项目</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -438,7 +414,7 @@ onMounted(load)
         </div>
 
         <!-- 学术论文 -->
-        <div v-if="activeHonorSub === 2" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">学术论文发表记录</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -475,7 +451,7 @@ onMounted(load)
         </div>
 
         <!-- 专利软著 -->
-        <div v-if="activeHonorSub === 3" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">专利与软件著作权</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -510,7 +486,7 @@ onMounted(load)
         </div>
 
         <!-- 其他成果 -->
-        <div v-if="activeHonorSub === 4" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">其他学术成果</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -545,7 +521,7 @@ onMounted(load)
         </div>
 
         <!-- 荣誉称号 -->
-        <div v-if="activeHonorSub === 5" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">荣誉称号记录</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -576,7 +552,7 @@ onMounted(load)
         </div>
 
         <!-- 奖学金 -->
-        <div v-if="activeHonorSub === 6" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">奖学金获奖记录</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -609,7 +585,7 @@ onMounted(load)
         </div>
 
         <!-- 社会实践 -->
-        <div v-if="activeHonorSub === 7" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">社会实践与志愿服务</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -646,7 +622,7 @@ onMounted(load)
         </div>
 
         <!-- 文体艺术 -->
-        <div v-if="activeHonorSub === 8" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">文体艺术荣誉</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -675,7 +651,7 @@ onMounted(load)
         </div>
 
         <!-- 集体荣誉 -->
-        <div v-if="activeHonorSub === 9" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">集体荣誉记录</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -706,7 +682,7 @@ onMounted(load)
         </div>
 
         <!-- 技能证书 -->
-        <div v-if="activeHonorSub === 10" class="sub-panel">
+        <div class="sub-panel">
           <h4 class="sub-panel__title">技能证书记录</h4>
           <div class="table-wrap">
             <table class="detail-table">
@@ -730,6 +706,7 @@ onMounted(load)
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       </div>
 
@@ -927,7 +904,7 @@ onMounted(load)
   border: 1px solid rgba(0, 184, 255, 0.18);
   background: rgba(0, 38, 73, 0.3);
   color: #7eb4d8;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
@@ -944,6 +921,13 @@ onMounted(load)
   }
 }
 
+/* 荣誉成果网格 */
+.honor-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
 /* 子面板 */
 .sub-panel {
   display: flex;
@@ -953,7 +937,7 @@ onMounted(load)
 
 .sub-panel__title {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   color: #b8ecff;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -961,16 +945,14 @@ onMounted(load)
 
 /* 表格 */
 .table-wrap {
-  overflow-x: auto;
   border-radius: 4px;
   border: 1px solid rgba(0, 184, 255, 0.12);
 }
 
 .detail-table {
   width: 100%;
-  min-width: 800px;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.4;
 
   th,
@@ -979,7 +961,8 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.12);
     text-align: left;
     vertical-align: top;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-all;
   }
 
   th {
@@ -1005,7 +988,7 @@ onMounted(load)
   color: #55dfff;
   text-decoration: underline;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
 
   &:hover {
     color: #8ef6ff;
@@ -1042,18 +1025,18 @@ onMounted(load)
   &--high { border-color: #ff7474; }
 
   &__label {
-    font-size: 12px;
+    font-size: 14px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 900;
     color: #f6fbff;
 
     small {
-      font-size: 13px;
+      font-size: 15px;
       color: #9ecae8;
       font-weight: 600;
     }
@@ -1111,7 +1094,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 15px;
 
     &:hover {
       background: rgba(0, 184, 255, 0.2);

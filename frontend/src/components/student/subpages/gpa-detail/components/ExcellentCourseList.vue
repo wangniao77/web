@@ -98,7 +98,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 
 .list-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(52, 211, 153, 0.18);
@@ -213,7 +213,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 
 .score-num {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: #34d399;
   line-height: 1.1;

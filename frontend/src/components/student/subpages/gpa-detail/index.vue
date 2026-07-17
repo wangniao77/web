@@ -220,7 +220,7 @@ onMounted(load)
 
 .entry-title {
   margin: 0 0 6px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   color: #f4fbff;
   letter-spacing: 0.04em;
@@ -257,7 +257,7 @@ onMounted(load)
 
 .entry-stat-num {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   color: #66d9ff;
   line-height: 1;

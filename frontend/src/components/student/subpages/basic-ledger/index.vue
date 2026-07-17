@@ -132,30 +132,26 @@ onMounted(load)
 
     <div v-else-if="dashboard" class="basic-ledger">
       <!-- ═══ 一、学籍与家庭信息 ═══ -->
-      <section class="ledger-section">
+      <section class="ledger-section section--basic">
         <h3 class="section-title">学籍与家庭信息<span class="section-mock-tag">部分模拟</span></h3>
         <div class="info-table">
           <div class="info-row">
             <div class="info-cell"><span class="info-lbl">姓名</span><span class="info-val">{{ dashboard.profile.name }}</span></div>
             <div class="info-cell"><span class="info-lbl">性别</span><span class="info-val">{{ dashboard.profile.gender || '男' }}</span></div>
-          </div>
-          <div class="info-row">
             <div class="info-cell"><span class="info-lbl">学号</span><span class="info-val">{{ dashboard.profile.studentId }}</span></div>
-            <div class="info-cell"><span class="info-lbl">班级</span><span class="info-val">{{ dashboard.profile.className }}</span></div>
           </div>
           <div class="info-row">
+            <div class="info-cell"><span class="info-lbl">班级</span><span class="info-val">{{ dashboard.profile.className }}</span></div>
             <div class="info-cell"><span class="info-lbl">专业</span><span class="info-val">{{ dashboard.profile.major }}</span></div>
             <div class="info-cell"><span class="info-lbl">学院</span><span class="info-val">{{ dashboard.profile.college }}</span></div>
           </div>
           <div class="info-row">
             <div class="info-cell"><span class="info-lbl">年级</span><span class="info-val">{{ dashboard.profile.grade }}</span></div>
             <div class="info-cell"><span class="info-lbl">政治面貌</span><span class="info-val">{{ dashboard.profile.politicalStatus || '—' }}</span></div>
-          </div>
-          <div class="info-row">
             <div class="info-cell"><span class="info-lbl">宿舍</span><span class="info-val">{{ dashboard.profile.dormitory || '—' }}</span></div>
-            <div class="info-cell"><span class="info-lbl">辅导员</span><span class="info-val">{{ dashboard.profile.counselor || '—' }}</span></div>
           </div>
           <div class="info-row">
+            <div class="info-cell"><span class="info-lbl">辅导员</span><span class="info-val">{{ dashboard.profile.counselor || '—' }}</span></div>
             <div class="info-cell"><span class="info-lbl">班主任</span><span class="info-val">{{ dashboard.profile.mentor || '—' }}</span></div>
             <div class="info-cell"><span class="info-lbl">联系电话</span><span class="info-val">{{ dashboard.profile.phone || '—' }}</span></div>
           </div>
@@ -175,7 +171,7 @@ onMounted(load)
 
         <div class="info-section-divider" />
 
-        <div class="info-table">
+        <div class="info-table info-table--family">
           <div class="info-row">
             <div class="info-cell info-cell--wide"><span class="info-lbl">家庭住址</span><span class="info-val">{{ dashboard.profile.address || '—' }}</span></div>
           </div>
@@ -184,11 +180,8 @@ onMounted(load)
             <div class="info-cell"><span class="info-lbl">家长联系方式</span><span class="info-val">{{ dashboard.profile.guardianPhone || '—' }}</span></div>
           </div>
           <div class="info-row">
-            <div class="info-cell info-cell--wide"><span class="info-lbl">家庭成员</span><span class="info-val">{{ dashboard.profile.familyMembers?.join('、') || '暂无记录' }}</span></div>
-          </div>
-          <div class="info-row">
             <div class="info-cell"><span class="info-lbl">家庭经济情况</span><span class="info-val">{{ dashboard.profile.economicHardship ? '困难认定' : '一般' }}</span></div>
-            <div class="info-cell"></div>
+            <div class="info-cell"><span class="info-lbl">家庭成员</span><span class="info-val">{{ dashboard.profile.familyMembers?.join('、') || '暂无记录' }}</span></div>
           </div>
         </div>
         <div class="info-note" v-if="dashboard.profile.familySituation">
@@ -202,7 +195,7 @@ onMounted(load)
       </section>
 
       <!-- ═══ 二、管理与帮扶状态 ═══ -->
-      <section class="ledger-section">
+      <section class="ledger-section section--status">
         <h3 class="section-title">管理与帮扶状态<span class="section-mock-tag">部分模拟</span></h3>
         <div class="status-grid">
           <div class="status-card status-card--safe">
@@ -240,7 +233,7 @@ onMounted(load)
       </section>
 
       <!-- ═══ 三、近期动态 ═══ -->
-      <section class="ledger-section" v-if="dashboard.profile.recentDynamics?.length">
+      <section class="ledger-section section--dynamics" v-if="dashboard.profile.recentDynamics?.length">
         <h3 class="section-title">近期动态<span class="section-mock-tag">部分模拟</span></h3>
         <div class="dynamic-list">
           <div
@@ -256,7 +249,7 @@ onMounted(load)
       </section>
 
       <!-- ═══ 四、预警信息详细展示 ═══ -->
-      <section class="ledger-section">
+      <section class="ledger-section section--warning">
         <h3 class="section-title">预警信息<span class="section-mock-tag">部分模拟</span></h3>
 
         <!-- 4.1 预警总览 -->
@@ -330,20 +323,36 @@ onMounted(load)
         </div>
       </section>
 
+      <!-- ═══ 五、学业生活 ═══ -->
+      <section class="ledger-section section--actions">
+        <h3 class="section-title">学业生活</h3>
+        <div class="action-grid">
+          <button
+            type="button"
+            class="action-card"
+            @click="router.push({ name: 'student-semester-schedule', query: { studentId: activeStudentId } })"
+          >
+            <span class="action-card__icon">📅</span>
+            <span class="action-card__label">本学期课表</span>
+            <span class="action-card__arrow">&rsaquo;</span>
+          </button>
+        </div>
+      </section>
+
     </div>
   </StudentDetailLayout>
 </template>
 
 <style scoped lang="scss">
 .basic-ledger {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
   gap: 10px;
+  align-items: start;
 }
 
-/* ═══ Section ═══ */
 .ledger-section {
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 5px;
   background:
     linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
@@ -351,9 +360,15 @@ onMounted(load)
   border: 1px solid rgba(102, 217, 255, 0.1);
 }
 
+.ledger-section:nth-child(1) { grid-column: 1 / -1; }
+.ledger-section.section--status { grid-column: 1; }
+.ledger-section.section--dynamics { grid-column: 2; }
+.ledger-section.section--warning,
+.ledger-section.section--actions { grid-column: 1 / -1; }
+
 .section-title {
-  margin: 0 0 8px;
-  font-size: 14px;
+  margin: 0 0 10px;
+  font-size: 16px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -364,7 +379,7 @@ onMounted(load)
   &::before {
     content: '';
     width: 3px;
-    height: 13px;
+    height: 15px;
     border-radius: 2px;
     background: linear-gradient(180deg, #00e5ff, #00b8ff);
     box-shadow: 0 0 8px rgba(0, 212, 255, 0.45);
@@ -372,8 +387,8 @@ onMounted(load)
 }
 
 .subsection-title {
-  margin: 10px 0 6px;
-  font-size: 12px;
+  margin: 12px 0 8px;
+  font-size: 14px;
   font-weight: 700;
   color: #9edcff;
   letter-spacing: 0.03em;
@@ -391,12 +406,16 @@ onMounted(load)
 
 .info-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   background: rgba(0, 45, 84, 0.16);
 
   &:nth-child(even) {
     background: rgba(0, 45, 84, 0.08);
   }
+}
+
+.info-table--family .info-row {
+  grid-template-columns: 1fr 2fr;
 }
 
 .info-cell {
@@ -419,7 +438,7 @@ onMounted(load)
 
 .info-lbl {
   color: #6899b8;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
@@ -431,19 +450,19 @@ onMounted(load)
 
 .info-val {
   color: #d8ecff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 
   &--tag {
-    padding: 1px 6px;
+    padding: 2px 8px;
     border: 1px solid rgba(232, 200, 120, 0.45);
     border-radius: 3px;
     background: linear-gradient(135deg, rgba(140, 100, 20, 0.32), rgba(80, 55, 10, 0.35));
     color: #f0d78a;
-    font-size: 11px;
+    font-size: 13px;
   }
 }
 
@@ -459,9 +478,9 @@ onMounted(load)
 }
 
 .tag {
-  padding: 1px 6px;
+  padding: 2px 8px;
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 
@@ -475,12 +494,12 @@ onMounted(load)
 .info-note {
   display: flex;
   gap: 6px;
-  margin-top: 6px;
-  padding: 4px 10px;
+  margin-top: 8px;
+  padding: 6px 12px;
   border-radius: 3px;
   background: rgba(0, 45, 84, 0.16);
   border: 1px solid rgba(0, 180, 255, 0.06);
-  font-size: 12px;
+  font-size: 14px;
   color: #b0d4e8;
   line-height: 1.5;
 
@@ -515,13 +534,13 @@ onMounted(load)
 
   &__label {
     color: #7eb4d8;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
   }
 
   &__value {
     color: #e8f4ff;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
   }
 }
@@ -558,9 +577,9 @@ onMounted(load)
 }
 
 .dynamic-time {
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 2px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
@@ -568,7 +587,7 @@ onMounted(load)
 
 .dynamic-text {
   color: #e8f4ff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -630,21 +649,21 @@ onMounted(load)
 
   &__label {
     color: #e8f4ff;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     flex: 1;
   }
 
   &__level {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     white-space: nowrap;
   }
 
   &__tip {
-    margin: 0 0 6px;
+    margin: 0 0 8px;
     color: #8fb7cd;
-    font-size: 10px;
+    font-size: 13px;
     line-height: 1.35;
   }
 
@@ -665,10 +684,10 @@ onMounted(load)
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 5px;
+    padding: 3px 6px;
     border-radius: 2px;
     background: rgba(0, 0, 0, 0.15);
-    font-size: 10px;
+    font-size: 12px;
     overflow: hidden;
 
     &--low { border-left: none; }
@@ -703,7 +722,7 @@ onMounted(load)
 
   &__empty {
     color: #5a7d96;
-    font-size: 10px;
+    font-size: 12px;
     font-style: italic;
   }
 }
@@ -726,13 +745,13 @@ onMounted(load)
 .warning-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
-    padding: 5px 8px;
-    font-size: 11px;
+    padding: 6px 10px;
+    font-size: 13px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -740,7 +759,7 @@ onMounted(load)
   }
 
   td {
-    padding: 5px 8px;
+    padding: 6px 10px;
     border-bottom: 1px solid rgba(102, 217, 255, 0.05);
   }
 
@@ -766,8 +785,8 @@ onMounted(load)
 }
 
 .cat-badge {
-  font-size: 10px;
-  padding: 1px 5px;
+  font-size: 12px;
+  padding: 2px 6px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
   border: 1px solid rgba(0, 212, 255, 0.12);
@@ -776,8 +795,8 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 10px;
-  padding: 1px 6px;
+  font-size: 12px;
+  padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
 
@@ -800,8 +819,8 @@ onMounted(load)
 /* ═══ Section 模拟数据标签 ═══ */
 .section-mock-tag {
   display: inline-block;
-  padding: 1px 6px;
-  font-size: 10px;
+  padding: 2px 8px;
+  font-size: 12px;
   font-weight: 700;
   color: #f0a040;
   border: 1px solid rgba(240, 160, 64, 0.4);
@@ -852,6 +871,48 @@ onMounted(load)
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(102, 217, 255, 0.15);
+  background: rgba(0, 38, 73, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 184, 255, 0.14);
+    border-color: rgba(0, 212, 255, 0.55);
+  }
+
+  &__icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+    color: #d0e8f8;
+  }
+
+  &__arrow {
+    font-size: 20px;
+    color: #8ef6ff;
+    font-weight: 700;
+  }
 }
 
 /* ═══ Responsive ═══ */

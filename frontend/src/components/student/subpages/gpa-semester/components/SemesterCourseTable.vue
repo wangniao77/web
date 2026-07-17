@@ -213,7 +213,7 @@ watch(activeIndex, () => {
 
 .table-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: #f4fbff;
   text-shadow: 0 0 12px rgba(0, 242, 255, 0.28);
@@ -268,7 +268,7 @@ watch(activeIndex, () => {
 }
 
 .tab-name {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -310,7 +310,7 @@ watch(activeIndex, () => {
 
 .sum-val {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: #f4f8ff;
   line-height: 1.1;
@@ -397,7 +397,7 @@ watch(activeIndex, () => {
   td.td-score {
     font-family: 'DIN Alternate', sans-serif;
     font-weight: 800;
-    font-size: 16px;
+    font-size: 18px;
 
     &.lv-excellent { color: #34d399; text-shadow: 0 0 6px rgba(52, 211, 153, 0.3); }
     &.lv-good      { color: #66d9ff; }

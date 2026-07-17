@@ -287,13 +287,13 @@ onMounted(load)
   &--warn { border-color: #facc15; }
 
   &__label {
-    font-size: 11px;
+    font-size: 13px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 900;
     color: #f6fbff;
   }
@@ -306,7 +306,7 @@ onMounted(load)
   &__head {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: 14px;
     color: #9ecae8;
     margin-bottom: 6px;
     font-weight: 600;
@@ -338,13 +338,13 @@ onMounted(load)
   background: rgba(0, 38, 73, 0.3);
 
   &__label {
-    font-size: 11px;
+    font-size: 13px;
     color: #7eb4d8;
   }
 
   &__value {
     float: right;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -380,7 +380,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 12px;
+  font-size: 14px;
 
   &__dot {
     width: 7px;
@@ -397,7 +397,7 @@ onMounted(load)
   }
 
   &__tag {
-    font-size: 10px;
+    font-size: 12px;
     padding: 1px 6px;
     border-radius: 999px;
     background: rgba(250, 204, 21, 0.12);
@@ -417,7 +417,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.3);
     background: rgba(0, 184, 255, 0.08);
     color: #8ef6ff;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
 
@@ -434,13 +434,13 @@ onMounted(load)
 .warn-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
     padding: 6px 8px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -466,7 +466,7 @@ onMounted(load)
 }
 
 .cat-badge {
-  font-size: 10px;
+  font-size: 12px;
   padding: 1px 5px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -476,7 +476,7 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 10px;
+  font-size: 12px;
   padding: 1px 6px;
   border-radius: 999px;
   font-weight: 700;
@@ -490,7 +490,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* Support + Suggestion row */
@@ -514,7 +514,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 12px;
+  font-size: 14px;
 
   &__time { color: #7eb4d8; font-weight: 700; white-space: nowrap; }
   &__person { color: #8ef6ff; font-weight: 700; white-space: nowrap; }
@@ -526,7 +526,7 @@ onMounted(load)
   margin: 0;
   padding-left: 18px;
   color: #d0e8f8;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.8;
 
   li::marker { color: #00d4ff; }
@@ -544,7 +544,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
 
@@ -576,9 +576,8 @@ onMounted(load)
     border-radius: 4px;
     border: 1px solid rgba(0, 184, 255, 0.3);
     background: rgba(0, 184, 255, 0.1);
-    color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 15px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }
