@@ -21,7 +21,8 @@ const currentTab = ref<TabKey>('resource-base')
 const tabBarRef = ref<HTMLElement | null>(null)
 
 function getDetailScroller() {
-  return tabBarRef.value?.closest<HTMLElement>('.college-detail__body') ?? null
+  const root = tabBarRef.value?.closest<HTMLElement>('.college-detail')
+  return root?.querySelector<HTMLElement>('.college-detail__body') ?? null
 }
 
 function switchTab(tab: TabKey) {
@@ -30,32 +31,6 @@ function switchTab(tab: TabKey) {
     getDetailScroller()?.scrollTo({ top: 0, behavior: 'auto' })
   })
 }
-
-const tabTitle = computed(() => {
-  switch (currentTab.value) {
-    case 'resource-base': return '资源基础 · 师资建设'
-    case 'structure-analysis': return '结构分析 · 师资建设'
-    case 'teaching-investment': return '教学投入 · 师资建设'
-    case 'capacity-building': return '能力建设 · 师资建设'
-    case 'performance-analysis': return '绩效分析 · 师资建设'
-    case 'warning-center': return '预警中心 · 师资建设'
-    case 'major-support': return '专业支撑 · 师资建设'
-    default: return ''
-  }
-})
-
-const tabSubtitle = computed(() => {
-  switch (currentTab.value) {
-    case 'resource-base': return '专任教师 · 博士占比 · 高级职称占比 · 高层次人才 · 生师比'
-    case 'structure-analysis': return '年龄 · 学历 · 职称 · 专业方向 · 梯队结构 · 学缘结构'
-    case 'teaching-investment': return '平均课时 · 课时分布 · 课程明细 · 超负荷预警'
-    case 'capacity-building': return '新增博士 · 新增教授 · 新增人才 · 培训 · 访学 · 导师制'
-    case 'performance-analysis': return '教学贡献 · 科研贡献 · 四象限分类 · 精准帮扶'
-    case 'warning-center': return '科研预警 · 教学预警 · 课时异常 · 长期无成果 · 低绩效 · 退休接替'
-    case 'major-support': return '分专业对比 · 支撑指数 · 核心课程 · 人才覆盖 · 一目了然'
-    default: return ''
-  }
-})
 
 // 当前聚焦的指标（Part 1 用）
 const activeSection = ref<string>('')
@@ -500,12 +475,9 @@ const supportIndexBarOption = computed(() => {
 </script>
 
 <template>
-  <CollegeDetailLayout :title="tabTitle" :subtitle="tabSubtitle">
-    <div v-if="loading" class="detail-placeholder">加载中...</div>
-    <div v-else-if="error" class="detail-placeholder detail-error">{{ error }}</div>
-    <template v-else-if="data">
-      <!-- 顶部 Tab 切换 -->
-      <div ref="tabBarRef" class="tab-bar">
+  <CollegeDetailLayout>
+    <template #nav>
+      <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button
           type="button"
           class="tab-btn"
@@ -563,7 +535,11 @@ const supportIndexBarOption = computed(() => {
           🏛️ 专业支撑
         </button>
       </div>
+    </template>
 
+    <div v-if="loading" class="detail-placeholder">加载中...</div>
+    <div v-else-if="error" class="detail-placeholder detail-error">{{ error }}</div>
+    <template v-else-if="data">
       <!-- ===================== Part 1: 资源基础 ===================== -->
       <template v-if="currentTab === 'resource-base'">
         <div class="resource-summary">
@@ -1447,6 +1423,12 @@ const supportIndexBarOption = computed(() => {
   border: 1px solid rgba(0, 242, 255, 0.18);
   overflow: hidden;
   width: fit-content;
+
+  &--header {
+    margin-bottom: 0;
+    flex-wrap: nowrap;
+    background: rgba(0, 40, 90, 0.35);
+  }
 }
 
 .tab-btn {

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { ROUTES } from '@/constants/routes'
 import type { EnrollmentEmploymentFocus } from '@/types/college/api/enrollment-employment'
 import type { EnrollmentEmploymentOverviewVM } from '@/types/college/view/enrollment-employment'
 import type { EChartsOption } from 'echarts'
@@ -10,8 +11,21 @@ const props = defineProps<{
   data: EnrollmentEmploymentOverviewVM
 }>()
 
+const router = useRouter()
+
 function openDetail(focus: EnrollmentEmploymentFocus = 'overview') {
-  openCollegeDetail({ kind: 'enrollment-employment', id: focus })
+  const admissionFocuses = new Set([
+    'overview',
+    'admission-scale',
+    'source-quality',
+    'admission-trend',
+    'entrance-flow',
+  ])
+  const tab = admissionFocuses.has(focus) ? 'admission' : 'employment'
+  router.push({
+    path: ROUTES.college.studentDevDetail,
+    query: { tab, focus },
+  })
 }
 
 const colors = ['#39e6ff', '#0d71ff', '#30d7a4', '#ffb82e', '#7a8cff', '#f472b6', '#a78bfa', '#34d399']
@@ -108,7 +122,7 @@ const enrolledText = computed(() => props.data.enrolledCount.toLocaleString('zh-
     <button
       type="button"
       class="enrollment-employment__sankey"
-      @click="openDetail('employment-trend')"
+      @click="openDetail('outcome-flow')"
     >
       <div class="enrollment-employment__sankey-title">{{ data.flowPreview.title }}</div>
       <div class="enrollment-employment__sankey-chart">

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
 import { mockSchoolKpis, type SchoolKpiStatus } from '@/mock/college/school-kpi'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { useRouter } from 'vue-router'
+import { ROUTES } from '@/constants/routes'
 
+const router = useRouter()
 const kpis = mockSchoolKpis
 
 const kpiIcon: Record<string, IconKind> = {
@@ -34,7 +36,7 @@ function progressPercent(target: string, actual: string) {
 }
 
 function openDetail() {
-  openCollegeDetail({ kind: 'key-tasks' })
+  router.push(ROUTES.college.keyTasks)
 }
 </script>
 

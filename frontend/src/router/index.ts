@@ -61,9 +61,24 @@ const router = createRouter({
           component: () => import('@/views/college/details/EmploymentDetailView.vue'),
         },
         {
+          path: 'student/dev-detail',
+          name: 'college-student-dev-detail',
+          component: () => import('@/views/college/details/StudentDevDetailView.vue'),
+        },
+        {
           path: 'teacher/resource-base',
           name: 'college-teacher-resource-base',
           component: () => import('@/views/college/details/TeacherResourceBaseView.vue'),
+        },
+        {
+          path: 'discipline/detail',
+          name: 'college-discipline-detail',
+          component: () => import('@/views/college/details/DisciplineDetailView.vue'),
+        },
+        {
+          path: 'benchmark/detail',
+          name: 'college-benchmark-detail',
+          component: () => import('@/views/college/details/BenchmarkDetailView.vue'),
         },
       ],
     },

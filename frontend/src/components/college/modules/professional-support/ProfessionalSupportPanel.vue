@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { ROUTES } from '@/constants/routes'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 import type { SoftDimensionDTO } from '@/types/college/api/discipline-overview'
 import type { DisciplineOverviewVM } from '@/types/college/view/discipline-overview'
@@ -13,6 +14,8 @@ type SoftTone = 'lead' | 'even' | 'warn' | 'risk'
 const props = defineProps<{
   discipline: DisciplineOverviewVM | null
 }>()
+
+const router = useRouter()
 
 const MAJOR_ROTATION_MS = 6000
 
@@ -134,7 +137,7 @@ function shortName(name: string) {
 }
 
 function openDisciplineDetail() {
-  openCollegeDetail({ kind: 'discipline-detail' })
+  router.push(ROUTES.college.disciplineDetail)
 }
 
 function softDimensionTone(dim: SoftDimensionDTO): SoftTone {

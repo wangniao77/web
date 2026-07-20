@@ -4,13 +4,28 @@ import ChartContainer from '@/components/charts/ChartContainer.vue'
 import type { SankeyLinkDTO, SankeyNodeDTO } from '@/types/college/api/student-dev-quality'
 import type { EChartsOption } from 'echarts'
 
-const props = defineProps<{
-  title: string
-  nodes: SankeyNodeDTO[]
-  links: SankeyLinkDTO[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    title: string
+    nodes: SankeyNodeDTO[]
+    links: SankeyLinkDTO[]
+    /** 外层已有标题时关闭组件内标题 */
+    showTitle?: boolean
+  }>(),
+  {
+    showTitle: true,
+  },
+)
 
 const colors = ['#39e6ff', '#0d71ff', '#30d7a4', '#ffb82e', '#7a8cff', '#f472b6', '#a78bfa', '#34d399']
+
+function shortenLabel(name: string) {
+  return name
+    .replace('计算机科学与技术', '计科')
+    .replace('软件工程', '软工')
+    .replace('大数据管理与应用', '大数据')
+    .replace('人工智能', '人工智能')
+}
 
 const option = computed<EChartsOption>(() => ({
   tooltip: {
@@ -18,7 +33,7 @@ const option = computed<EChartsOption>(() => ({
     triggerOn: 'mousemove',
     backgroundColor: 'rgba(2, 14, 38, 0.94)',
     borderColor: 'rgba(0, 242, 255, 0.65)',
-    textStyle: { color: '#f4fbff', fontSize: 20 },
+    textStyle: { color: '#f4fbff', fontSize: 18 },
     formatter: (params: unknown) => {
       const item = params as { data?: { source?: string; target?: string; value?: number; name?: string } }
       const d = item.data
@@ -35,14 +50,38 @@ const option = computed<EChartsOption>(() => ({
       layout: 'none',
       emphasis: { focus: 'adjacency' },
       nodeAlign: 'justify',
-      nodeGap: 10,
-      left: 12,
-      right: 12,
-      top: 16,
-      bottom: 8,
+      nodeGap: 12,
+      nodeWidth: 12,
+      left: 88,
+      right: 108,
+      top: 12,
+      bottom: 12,
       lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.35 },
       itemStyle: { borderWidth: 0 },
-      label: { color: '#d8efff', fontSize: 20 },
+      label: {
+        color: '#d8efff',
+        fontSize: 16,
+        fontWeight: 600,
+        formatter: (params: { name?: string }) => shortenLabel(params.name ?? ''),
+      },
+      levels: [
+        {
+          depth: 0,
+          label: {
+            position: 'left',
+            distance: 8,
+            align: 'right',
+          },
+        },
+        {
+          depth: 1,
+          label: {
+            position: 'right',
+            distance: 8,
+            align: 'left',
+          },
+        },
+      ],
       data: props.nodes.map((node, index) => ({
         name: node.name,
         itemStyle: { color: colors[index % colors.length] },
@@ -54,8 +93,11 @@ const option = computed<EChartsOption>(() => ({
 </script>
 
 <template>
-  <div class="student-flow-sankey-chart">
-    <div class="student-flow-sankey-chart__title">{{ title }}</div>
+  <div
+    class="student-flow-sankey-chart"
+    :class="{ 'student-flow-sankey-chart--flat': !showTitle }"
+  >
+    <div v-if="showTitle" class="student-flow-sankey-chart__title">{{ title }}</div>
     <div class="student-flow-sankey-chart__body">
       <ChartContainer :option="option" />
     </div>
@@ -71,7 +113,13 @@ const option = computed<EChartsOption>(() => ({
   border: 1px solid rgba(0, 200, 255, 0.14);
   border-radius: 8px;
   background: rgba(0, 40, 90, 0.18);
-  overflow: hidden;
+  overflow: visible;
+
+  &--flat {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
 }
 
 .student-flow-sankey-chart__title {
@@ -85,6 +133,7 @@ const option = computed<EChartsOption>(() => ({
 
 .student-flow-sankey-chart__body {
   flex: 1;
-  min-height: 280px;
+  min-height: 320px;
+  overflow: visible;
 }
 </style>

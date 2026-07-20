@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { ROUTES } from '@/constants/routes'
+import { useSlots } from 'vue'
 
 defineProps<{
-  title: string
+  title?: string
   subtitle?: string
 }>()
 
+const slots = useSlots()
 const router = useRouter()
 
 function goBack() {
@@ -19,7 +21,10 @@ function goBack() {
     <div class="college-detail__mesh" aria-hidden="true" />
     <header class="college-detail__header">
       <button type="button" class="college-detail__back" @click="goBack">← 返回驾驶舱</button>
-      <div class="college-detail__title">
+      <div v-if="slots.nav" class="college-detail__nav">
+        <slot name="nav" />
+      </div>
+      <div v-else class="college-detail__title">
         <h1>{{ title }}</h1>
         <span v-if="subtitle">{{ subtitle }}</span>
       </div>
@@ -147,6 +152,21 @@ function goBack() {
   span {
     font-size: $college-fs-label;
     color: rgba(184, 236, 255, 0.74);
+  }
+}
+
+.college-detail__nav {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 

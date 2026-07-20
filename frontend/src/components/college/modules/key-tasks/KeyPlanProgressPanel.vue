@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { useRouter } from 'vue-router'
+import { ROUTES } from '@/constants/routes'
 import {
   mockKeyPlanProgress,
   type PlanProgressStatus,
 } from '@/mock/college/key-plan-progress'
+
+const router = useRouter()
 
 const data = mockKeyPlanProgress
 const viewportRef = ref<HTMLElement | null>(null)
@@ -57,7 +60,7 @@ function iconFor(name: string, category: 'research' | 'teaching'): IconKind {
 }
 
 function openDetail() {
-  openCollegeDetail({ kind: 'key-tasks' })
+  router.push(ROUTES.college.keyTasks)
 }
 
 const SPEED = 55

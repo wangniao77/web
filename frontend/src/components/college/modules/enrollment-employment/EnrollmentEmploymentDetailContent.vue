@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import StudentFlowSankeyChart from '@/components/college/modules/student-dev/StudentFlowSankeyChart.vue'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 import type { EnrollmentEmploymentFocus } from '@/types/college/api/enrollment-employment'
 import type { EnrollmentEmploymentDetailVM } from '@/types/college/view/enrollment-employment'
+import type { StudentFlowSankeyVM } from '@/types/college/view/student-dev-quality'
 import type { EChartsOption } from 'echarts'
 
-const props = defineProps<{
-  data: EnrollmentEmploymentDetailVM
-  focus?: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    data: EnrollmentEmploymentDetailVM
+    focus?: string | null
+    flowSankey?: StudentFlowSankeyVM | null
+    /** 锁定展示招生或就业，不再显示内层子 Tab */
+    mode?: 'admission' | 'graduation' | 'auto'
+  }>(),
+  {
+    mode: 'auto',
+  },
+)
 
 type MainTab = 'admission' | 'graduation'
 type DistTab = 'industry' | 'region' | 'salary'
@@ -25,33 +35,75 @@ function resolveFocus(focus?: string | null): { tab: MainTab; highlight: Enrollm
     case 'admission-scale':
     case 'source-quality':
     case 'admission-trend':
+    case 'entrance-flow':
       return { tab: 'admission', highlight: focus }
     case 'exit-quality':
     case 'high-quality-dest':
     case 'employment-trend':
+    case 'outcome-flow':
       return { tab: 'graduation', highlight: focus }
     default:
-      return { tab: 'admission', highlight: 'overview' }
+      return {
+        tab: props.mode === 'graduation' ? 'graduation' : 'admission',
+        highlight: 'overview',
+      }
   }
 }
 
+function scrollToFlow(id: string) {
+  nextTick(() => {
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+  })
+}
+
 watch(
-  () => props.focus,
-  (focus) => {
+  () => [props.focus, props.mode] as const,
+  ([focus, mode]) => {
     const resolved = resolveFocus(focus)
-    mainTab.value = resolved.tab
+    mainTab.value = mode === 'auto' ? resolved.tab : mode
     year.value = props.data.filters.years.at(-1) ?? ''
     major.value = props.data.filters.majors[0] ?? '全部专业'
     showGradSchools.value = focus === 'high-quality-dest'
+    if (focus === 'entrance-flow') scrollToFlow('ee-entrance-flow')
+    if (focus === 'outcome-flow' || focus === 'employment-trend') scrollToFlow('ee-outcome-flow')
   },
   { immediate: true },
 )
 
 watch(mainTab, (tab) => {
   if (tab !== 'graduation') showGradSchools.value = false
+  selectedDrillKey.value = ''
+  selectedDestKey.value = ''
 })
 
 const highlight = computed(() => resolveFocus(props.focus).highlight)
+const showInnerTabs = computed(() => props.mode === 'auto')
+
+const selectedDestKey = ref('')
+const selectedDrillKey = ref('')
+
+const activeInsights = computed(() =>
+  mainTab.value === 'admission' ? props.data.admission.insights : props.data.graduation.insights,
+)
+const activeActions = computed(() =>
+  mainTab.value === 'admission' ? props.data.admission.actions : props.data.graduation.actions,
+)
+const activeDrillSamples = computed(() => {
+  const map = mainTab.value === 'admission'
+    ? props.data.admission.drillSamples
+    : props.data.graduation.drillSamples
+  if (!selectedDrillKey.value) return []
+  return map[selectedDrillKey.value] ?? []
+})
+
+function openDrill(key: string) {
+  selectedDrillKey.value = selectedDrillKey.value === key ? '' : key
+  nextTick(() => {
+    document.getElementById('ee-drill-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  })
+}
 
 function delta(curr: number, prev: number) {
   const d = curr - prev
@@ -63,7 +115,17 @@ function delta(curr: number, prev: number) {
 const majorShareOption = computed<EChartsOption>(() => {
   const items = props.data.admission.majorShare
   return {
-    grid: { left: 8, right: 40, top: 4, bottom: 4, containLabel: true },
+    grid: { left: 8, right: 48, top: 4, bottom: 4, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: unknown) => {
+        const row = Array.isArray(params) ? params[0] : params
+        const item = row as { dataIndex?: number }
+        const raw = items[item.dataIndex ?? 0]
+        return `${raw?.major ?? ''}<br/>${raw?.count ?? 0} 人（${raw?.ratio ?? 0}%）<br/><span style="color:#9fe8ff">点击查看样本</span>`
+      },
+    },
     xAxis: {
       type: 'value',
       max: 100,
@@ -76,10 +138,27 @@ const majorShareOption = computed<EChartsOption>(() => {
       axisLabel: { ...AXIS_LABEL, color: '#c6e6ff' },
       axisLine: { show: false },
       axisTick: { show: false },
+      triggerEvent: true,
     },
     series: [{
       type: 'bar',
-      data: items.map((i) => i.ratio),
+      cursor: 'pointer',
+      data: items.map((i) => ({
+        value: i.ratio,
+        name: i.major,
+        itemStyle: {
+          borderRadius: [0, 4, 4, 0],
+          borderWidth: selectedDrillKey.value === i.major ? 2 : 0,
+          borderColor: selectedDrillKey.value === i.major ? '#fff6c8' : 'transparent',
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+            colorStops: [
+              { offset: 0, color: '#126dff' },
+              { offset: 1, color: '#65f7ff' },
+            ],
+          },
+        },
+      })),
       barWidth: 12,
       label: {
         show: true,
@@ -88,16 +167,6 @@ const majorShareOption = computed<EChartsOption>(() => {
         fontSize: CHART_FONT.label,
         formatter: '{c}%',
       },
-      itemStyle: {
-        borderRadius: [0, 4, 4, 0],
-        color: {
-          type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
-          colorStops: [
-            { offset: 0, color: '#126dff' },
-            { offset: 1, color: '#65f7ff' },
-          ],
-        },
-      },
     }],
   }
 })
@@ -105,7 +174,16 @@ const majorShareOption = computed<EChartsOption>(() => {
 const provinceOption = computed<EChartsOption>(() => {
   const items = [...props.data.admission.sourceStructure.provinces].reverse()
   return {
-    grid: { left: 8, right: 36, top: 4, bottom: 4, containLabel: true },
+    grid: { left: 8, right: 44, top: 4, bottom: 4, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: unknown) => {
+        const row = Array.isArray(params) ? params[0] : params
+        const item = row as { name?: string; value?: number }
+        return `${item.name ?? ''}<br/>${item.value ?? 0} 人<br/><span style="color:#9fe8ff">点击查看样本</span>`
+      },
+    },
     xAxis: {
       type: 'value',
       axisLabel: { show: false },
@@ -117,10 +195,21 @@ const provinceOption = computed<EChartsOption>(() => {
       axisLabel: { ...AXIS_LABEL, color: '#c6e6ff' },
       axisLine: { show: false },
       axisTick: { show: false },
+      triggerEvent: true,
     },
     series: [{
       type: 'bar',
-      data: items.map((i) => i.count),
+      cursor: 'pointer',
+      data: items.map((i) => ({
+        value: i.count,
+        name: i.name,
+        itemStyle: {
+          color: selectedDrillKey.value === i.name ? '#7ff0ff' : '#39e6ff',
+          borderRadius: [0, 4, 4, 0],
+          borderWidth: selectedDrillKey.value === i.name ? 2 : 0,
+          borderColor: selectedDrillKey.value === i.name ? '#fff6c8' : 'transparent',
+        },
+      })),
       barWidth: 10,
       label: {
         show: true,
@@ -129,7 +218,6 @@ const provinceOption = computed<EChartsOption>(() => {
         fontSize: CHART_FONT.label,
         formatter: '{c}',
       },
-      itemStyle: { color: '#39e6ff', borderRadius: [0, 4, 4, 0] },
     }],
   }
 })
@@ -172,7 +260,17 @@ const distItems = computed(() => props.data.graduation.distribution[distTab.valu
 const distOption = computed(() => {
   const items = distItems.value
   return {
-    grid: { left: 8, right: 40, top: 4, bottom: 4, containLabel: true },
+    grid: { left: 8, right: 88, top: 4, bottom: 4, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: unknown) => {
+        const row = Array.isArray(params) ? params[0] : params
+        const item = row as { dataIndex?: number }
+        const raw = items[item.dataIndex ?? 0]
+        return `${raw?.name ?? ''}<br/>${raw?.count ?? 0} 人（${raw?.ratio ?? 0}%）<br/><span style="color:#9fe8ff">点击查看样本</span>`
+      },
+    },
     xAxis: {
       type: 'value' as const,
       axisLabel: { show: false },
@@ -184,29 +282,36 @@ const distOption = computed(() => {
       axisLabel: { ...AXIS_LABEL, color: '#c6e6ff' },
       axisLine: { show: false },
       axisTick: { show: false },
+      triggerEvent: true,
     },
     series: [{
       type: 'bar' as const,
-      data: items.map((i) => i.ratio),
+      cursor: 'pointer',
+      data: items.map((i) => ({
+        value: i.ratio,
+        name: i.name,
+        itemStyle: {
+          borderRadius: [0, 4, 4, 0],
+          borderWidth: selectedDrillKey.value === i.name ? 2 : 0,
+          borderColor: selectedDrillKey.value === i.name ? '#fff6c8' : 'transparent',
+          color: {
+            type: 'linear' as const, x: 0, y: 0, x2: 1, y2: 0,
+            colorStops: [
+              { offset: 0, color: '#126dff' },
+              { offset: 1, color: '#65f7ff' },
+            ],
+          },
+        },
+      })),
       barWidth: 12,
       label: {
         show: true,
         position: 'right' as const,
         color: '#eaf7ff',
         fontSize: CHART_FONT.label,
-        formatter: (p: { dataIndex?: number; value?: unknown }) => {
+        formatter: (p: { dataIndex?: number }) => {
           const item = items[p.dataIndex ?? 0]
           return `${item?.count ?? ''}人 ${item?.ratio ?? ''}%`
-        },
-      },
-      itemStyle: {
-        borderRadius: [0, 4, 4, 0],
-        color: {
-          type: 'linear' as const, x: 0, y: 0, x2: 1, y2: 0,
-          colorStops: [
-            { offset: 0, color: '#126dff' },
-            { offset: 1, color: '#65f7ff' },
-          ],
         },
       },
     }],
@@ -261,15 +366,42 @@ const employmentTrendOption = computed<EChartsOption>(() => {
   }
 })
 
-function onDestClick(key: string) {
-  if (key === 'domestic-grad') showGradSchools.value = !showGradSchools.value
+function onDestClick(key: string, label: string) {
+  selectedDestKey.value = selectedDestKey.value === key ? '' : key
+  showGradSchools.value = key === 'domestic-grad' && selectedDestKey.value === key
+  openDrill(label)
+}
+
+function onMajorShareClick(params: unknown) {
+  const p = params as { data?: { name?: string }; name?: string; dataIndex?: number }
+  let full = p.data?.name ?? ''
+  if (!full && typeof p.dataIndex === 'number') {
+    full = props.data.admission.majorShare[p.dataIndex]?.major ?? ''
+  }
+  if (!full && p.name) {
+    full = props.data.admission.majorShare.find((i) =>
+      i.major === p.name || i.major.replace('科学与技术', '') === p.name,
+    )?.major ?? ''
+  }
+  if (full) openDrill(full)
+}
+
+function onProvinceClick(params: unknown) {
+  const name = (params as { name?: string })?.name
+  if (name && name !== '其他') openDrill(name)
+}
+
+function onDistClick(params: unknown) {
+  const name = (params as { name?: string; data?: { name?: string } })?.data?.name
+    ?? (params as { name?: string })?.name
+  if (name) openDrill(name)
 }
 </script>
 
 <template>
   <div class="ee-detail">
     <div class="ee-detail__toolbar">
-      <div class="ee-detail__tabs">
+      <div v-if="showInnerTabs" class="ee-detail__tabs">
         <button
           type="button"
           class="ee-detail__tab"
@@ -286,6 +418,9 @@ function onDestClick(key: string) {
         >
           毕业出口分析
         </button>
+      </div>
+      <div v-else class="ee-detail__mode-label">
+        {{ mainTab === 'admission' ? '招生质量专题' : '就业分析专题' }}
       </div>
       <div class="ee-detail__filters">
         <label>
@@ -336,14 +471,14 @@ function onDestClick(key: string) {
         </section>
 
         <section class="ee-detail__card">
-          <h3>专业结构</h3>
+          <h3>专业结构 <em class="ee-detail__hint">点击柱条下钻</em></h3>
           <div class="ee-detail__chart">
-            <ChartContainer :option="majorShareOption" />
+            <ChartContainer :option="majorShareOption" @chart-click="onMajorShareClick" />
           </div>
         </section>
 
         <section class="ee-detail__card">
-          <h3>生源结构</h3>
+          <h3>生源结构 <em class="ee-detail__hint">点击省份下钻</em></h3>
           <div class="ee-detail__structure">
             <div class="ee-detail__bars">
               <div class="ee-detail__dual">
@@ -364,16 +499,77 @@ function onDestClick(key: string) {
               </div>
             </div>
             <div class="ee-detail__chart ee-detail__chart--province">
-              <ChartContainer :option="provinceOption" />
+              <ChartContainer :option="provinceOption" @chart-click="onProvinceClick" />
             </div>
           </div>
         </section>
       </div>
 
+      <section class="ee-detail__card ee-detail__card--wide ee-detail__insights">
+        <h3>深度挖掘 · 招生质量</h3>
+        <div class="ee-detail__insight-grid">
+          <article
+            v-for="item in activeInsights"
+            :key="item.title"
+            class="ee-detail__insight"
+            :class="`ee-detail__insight--${item.tone || 'info'}`"
+          >
+            <h4>{{ item.title }}</h4>
+            <p>{{ item.detail }}</p>
+          </article>
+        </div>
+        <div class="ee-detail__actions">
+          <h4>建议动作</h4>
+          <ol>
+            <li v-for="(action, idx) in activeActions" :key="idx">{{ action }}</li>
+          </ol>
+        </div>
+      </section>
+
+      <section
+        v-if="selectedDrillKey"
+        id="ee-drill-panel"
+        class="ee-detail__card ee-detail__card--wide ee-detail__drill"
+      >
+        <div class="ee-detail__drill-head">
+          <h3>下钻样本 · {{ selectedDrillKey }}</h3>
+          <button type="button" class="ee-detail__drill-close" @click="selectedDrillKey = ''">收起</button>
+        </div>
+        <ul v-if="activeDrillSamples.length" class="ee-detail__drill-list">
+          <li v-for="(s, idx) in activeDrillSamples" :key="`${s.name}-${idx}`">
+            <strong>{{ s.name }}</strong>
+            <span>{{ s.major }}</span>
+            <em>{{ s.detail }}</em>
+            <b v-if="s.tag">{{ s.tag }}</b>
+          </li>
+        </ul>
+        <p v-else class="ee-detail__drill-empty">暂无该维度重点样本，可切换其他柱条继续挖掘。</p>
+      </section>
+
       <section class="ee-detail__card ee-detail__card--wide" :class="{ 'is-focus': highlight === 'admission-trend' }">
         <h3>招生历年趋势</h3>
         <div class="ee-detail__chart ee-detail__chart--trend">
           <ChartContainer :option="admissionTrendOption" />
+        </div>
+      </section>
+
+      <section
+        v-if="flowSankey"
+        id="ee-entrance-flow"
+        class="ee-detail__card ee-detail__card--wide"
+        :class="{ 'is-focus': highlight === 'entrance-flow' }"
+      >
+        <h3>入口流向 · 生源地 → 录取专业</h3>
+        <p class="ee-detail__flow-desc">
+          招生总数 {{ flowSankey.summary.entranceTotal }} 人 · 录取均分 {{ flowSankey.summary.avgEntranceScore }}
+        </p>
+        <div class="ee-detail__flow-chart">
+          <StudentFlowSankeyChart
+            :show-title="false"
+            title=""
+            :nodes="flowSankey.entrance.nodes"
+            :links="flowSankey.entrance.links"
+          />
         </div>
       </section>
     </template>
@@ -389,15 +585,15 @@ function onDestClick(key: string) {
         </section>
 
         <section class="ee-detail__card" :class="{ 'is-focus': highlight === 'high-quality-dest' }">
-          <h3>高质量去向结构</h3>
+          <h3>高质量去向结构 <em class="ee-detail__hint">点击条目下钻</em></h3>
           <div class="ee-detail__dests">
             <button
               v-for="item in data.graduation.highQualityDest"
               :key="item.key"
               type="button"
               class="ee-detail__dest"
-              :class="{ 'is-active': item.key === 'domestic-grad' && showGradSchools }"
-              @click="onDestClick(item.key)"
+              :class="{ 'is-active': selectedDestKey === item.key || selectedDrillKey === item.label }"
+              @click="onDestClick(item.key, item.label)"
             >
               <span>{{ item.label }}</span>
               <strong>{{ item.count }}人</strong>
@@ -417,14 +613,14 @@ function onDestClick(key: string) {
         </section>
 
         <section class="ee-detail__card">
-          <h3>就业分布</h3>
+          <h3>就业分布 <em class="ee-detail__hint">点击柱条下钻</em></h3>
           <div class="ee-detail__subtabs">
-            <button type="button" :class="{ 'is-active': distTab === 'industry' }" @click="distTab = 'industry'">行业</button>
-            <button type="button" :class="{ 'is-active': distTab === 'region' }" @click="distTab = 'region'">地区</button>
-            <button type="button" :class="{ 'is-active': distTab === 'salary' }" @click="distTab = 'salary'">薪资</button>
+            <button type="button" :class="{ 'is-active': distTab === 'industry' }" @click="distTab = 'industry'; selectedDrillKey = ''">行业</button>
+            <button type="button" :class="{ 'is-active': distTab === 'region' }" @click="distTab = 'region'; selectedDrillKey = ''">地区</button>
+            <button type="button" :class="{ 'is-active': distTab === 'salary' }" @click="distTab = 'salary'; selectedDrillKey = ''">薪资</button>
           </div>
           <div class="ee-detail__chart">
-            <ChartContainer :option="distOption" />
+            <ChartContainer :option="distOption" @chart-click="onDistClick" />
           </div>
         </section>
 
@@ -436,10 +632,71 @@ function onDestClick(key: string) {
         </section>
       </div>
 
+      <section class="ee-detail__card ee-detail__card--wide ee-detail__insights">
+        <h3>深度挖掘 · 就业分析</h3>
+        <div class="ee-detail__insight-grid">
+          <article
+            v-for="item in activeInsights"
+            :key="item.title"
+            class="ee-detail__insight"
+            :class="`ee-detail__insight--${item.tone || 'info'}`"
+          >
+            <h4>{{ item.title }}</h4>
+            <p>{{ item.detail }}</p>
+          </article>
+        </div>
+        <div class="ee-detail__actions">
+          <h4>建议动作</h4>
+          <ol>
+            <li v-for="(action, idx) in activeActions" :key="idx">{{ action }}</li>
+          </ol>
+        </div>
+      </section>
+
+      <section
+        v-if="selectedDrillKey"
+        id="ee-drill-panel"
+        class="ee-detail__card ee-detail__card--wide ee-detail__drill"
+      >
+        <div class="ee-detail__drill-head">
+          <h3>下钻样本 · {{ selectedDrillKey }}</h3>
+          <button type="button" class="ee-detail__drill-close" @click="selectedDrillKey = ''; selectedDestKey = ''">收起</button>
+        </div>
+        <ul v-if="activeDrillSamples.length" class="ee-detail__drill-list">
+          <li v-for="(s, idx) in activeDrillSamples" :key="`${s.name}-${idx}`">
+            <strong>{{ s.name }}</strong>
+            <span>{{ s.major }}</span>
+            <em>{{ s.detail }}</em>
+            <b v-if="s.tag">{{ s.tag }}</b>
+          </li>
+        </ul>
+        <p v-else class="ee-detail__drill-empty">暂无该维度重点样本，可切换其他柱条继续挖掘。</p>
+      </section>
+
       <section class="ee-detail__card ee-detail__card--wide" :class="{ 'is-focus': highlight === 'employment-trend' }">
         <h3>就业历年趋势</h3>
         <div class="ee-detail__chart ee-detail__chart--trend">
           <ChartContainer :option="employmentTrendOption" />
+        </div>
+      </section>
+
+      <section
+        v-if="flowSankey"
+        id="ee-outcome-flow"
+        class="ee-detail__card ee-detail__card--wide"
+        :class="{ 'is-focus': highlight === 'outcome-flow' || highlight === 'employment-trend' }"
+      >
+        <h3>出口流向 · 专业 → 毕业去向</h3>
+        <p class="ee-detail__flow-desc">
+          毕业生 {{ flowSankey.summary.graduateTotal }} 人 · 就业率 {{ flowSankey.summary.employmentRate }}% · 升学率 {{ flowSankey.summary.furtherRate }}%
+        </p>
+        <div class="ee-detail__flow-chart">
+          <StudentFlowSankeyChart
+            :show-title="false"
+            title=""
+            :nodes="flowSankey.outcome.nodes"
+            :links="flowSankey.outcome.links"
+          />
         </div>
       </section>
     </template>
@@ -482,6 +739,13 @@ function onDestClick(key: string) {
   }
 }
 
+.ee-detail__mode-label {
+  color: #9fe8ff;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .ee-detail__filters {
   display: flex;
   gap: 10px;
@@ -518,6 +782,7 @@ function onDestClick(key: string) {
 
   &--wide {
     margin-top: 12px;
+    overflow: visible;
   }
 
   &.is-focus {
@@ -558,17 +823,17 @@ function onDestClick(key: string) {
 
     span {
       color: #9ecae8;
-      font-size: 24px;
+      font-size: 18px;
     }
 
     strong {
       color: #eaf7ff;
-      font-size: 24px;
+      font-size: 36px;
       font-weight: 800;
 
       small {
         margin-left: 2px;
-        font-size: 24px;
+        font-size: 18px;
         color: #9ecae8;
       }
     }
@@ -576,7 +841,7 @@ function onDestClick(key: string) {
     em {
       color: #63ffe1;
       font-style: normal;
-      font-size: 24px;
+      font-size: 16px;
     }
   }
 }
@@ -732,9 +997,177 @@ function onDestClick(key: string) {
   }
 }
 
+.ee-detail__flow-desc {
+  margin: -4px 0 10px;
+  color: #9ecae8;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.ee-detail__flow-chart {
+  height: 400px;
+  min-height: 360px;
+  overflow: visible;
+}
+
+.ee-detail__hint {
+  margin-left: 8px;
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 600;
+  color: #7fe9ff;
+}
+
+.ee-detail__insights {
+  h3 {
+    margin-bottom: 12px;
+  }
+}
+
+.ee-detail__insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ee-detail__insight {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 200, 255, 0.16);
+  background: rgba(0, 50, 100, 0.22);
+
+  h4 {
+    margin: 0 0 6px;
+    color: #eaf7ff;
+    font-size: 20px;
+  }
+
+  p {
+    margin: 0;
+    color: #9ecae8;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  &--good {
+    border-color: rgba(46, 230, 168, 0.35);
+    background: rgba(20, 90, 70, 0.22);
+  }
+
+  &--warn {
+    border-color: rgba(255, 180, 90, 0.4);
+    background: rgba(90, 60, 20, 0.22);
+  }
+}
+
+.ee-detail__actions {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(0, 200, 255, 0.28);
+  background: rgba(0, 40, 90, 0.2);
+
+  h4 {
+    margin: 0 0 8px;
+    color: #9fe8ff;
+    font-size: 18px;
+  }
+
+  ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #c6e6ff;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+}
+
+.ee-detail__drill-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.ee-detail__drill-close {
+  border: 1px solid rgba(0, 200, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(0, 80, 140, 0.25);
+  color: #9fe8ff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 4px 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 120, 200, 0.35);
+  }
+}
+
+.ee-detail__drill-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    display: grid;
+    grid-template-columns: 88px 1.2fr 1.6fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 200, 255, 0.14);
+    background: rgba(0, 40, 90, 0.28);
+    color: #c6e6ff;
+    font-size: 16px;
+
+    strong {
+      color: #eaf7ff;
+      font-weight: 800;
+    }
+
+    em {
+      font-style: normal;
+      color: #9ecae8;
+    }
+
+    b {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffd56a;
+      border: 1px solid rgba(255, 210, 90, 0.35);
+      background: rgba(200, 160, 40, 0.14);
+      white-space: nowrap;
+    }
+  }
+}
+
+.ee-detail__drill-empty {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  color: #8eaec8;
+  font-size: 16px;
+}
+
 @media (max-width: 1100px) {
   .ee-detail__grid,
-  .ee-detail__structure {
+  .ee-detail__structure,
+  .ee-detail__insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ee-detail__drill-list li {
     grid-template-columns: 1fr;
   }
 }

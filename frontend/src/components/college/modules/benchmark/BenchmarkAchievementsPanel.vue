@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { useRouter } from 'vue-router'
 import MarqueeText from '@/components/college/modules/benchmark/MarqueeText.vue'
+import { ROUTES } from '@/constants/routes'
 import type { AchievementCategory } from '@/types/college/api/benchmark-achievements'
 import type { BenchmarkAchievementsVM } from '@/types/college/view/benchmark-achievements'
 
@@ -9,8 +10,13 @@ const props = defineProps<{
   data: BenchmarkAchievementsVM
 }>()
 
+const router = useRouter()
+
 function openDetail(filter: 'all' | AchievementCategory = 'all') {
-  openCollegeDetail({ kind: 'benchmark-detail', id: filter })
+  router.push({
+    path: ROUTES.college.benchmarkDetail,
+    query: filter === 'all' ? { tab: 'overview' } : { tab: 'roster', filter },
+  })
 }
 
 const facultyHover = ref(false)

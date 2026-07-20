@@ -21,7 +21,12 @@ import {
   mockWarningDetails,
 } from '@/mock/college/details'
 import { mockHighPotentialOverview } from '@/mock/college/high-potential'
-import type { WarningCategoryType } from '@/types/college/api/high-potential'
+import {
+  getEmploymentRoster,
+  getHpRoster,
+  getWarningRoster,
+} from '@/mock/college/roster'
+import type { HighPotentialModuleId, WarningCategoryType } from '@/types/college/api/high-potential'
 import type { CollegeScope } from '@/types/common'
 
 const fetchHighPotentialOverview = createService<
@@ -96,6 +101,10 @@ export const collegeDetailService = {
   fetchHighPotentialRoster: async (
     params?: CollegeScope & { moduleId?: string },
   ): Promise<RosterStudentDTO[]> => {
+    if (import.meta.env.VITE_USE_MOCK === 'true') {
+      await new Promise((r) => setTimeout(r, 200))
+      return getHpRoster(params?.moduleId as HighPotentialModuleId | undefined) as RosterStudentDTO[]
+    }
     const res = await collegeDetailApi.getHighPotentialRoster(params)
     return unwrapApiData(res).students
   },
@@ -103,10 +112,18 @@ export const collegeDetailService = {
     type: WarningCategoryType,
     params?: CollegeScope,
   ): Promise<RosterStudentDTO[]> => {
+    if (import.meta.env.VITE_USE_MOCK === 'true') {
+      await new Promise((r) => setTimeout(r, 200))
+      return getWarningRoster(type) as RosterStudentDTO[]
+    }
     const res = await collegeDetailApi.getWarningRoster(type, params)
     return unwrapApiData(res).students
   },
   fetchEmploymentRoster: async (params?: CollegeScope): Promise<EmploymentRosterDTO[]> => {
+    if (import.meta.env.VITE_USE_MOCK === 'true') {
+      await new Promise((r) => setTimeout(r, 200))
+      return getEmploymentRoster() as EmploymentRosterDTO[]
+    }
     const res = await collegeDetailApi.getEmploymentRoster(params)
     return unwrapApiData(res).students
   },

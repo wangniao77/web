@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { ROUTES } from '@/constants/routes'
 import type { KeyTaskVM } from '@/types/college/view'
+
+const router = useRouter()
 
 const props = defineProps<{
   tasks: KeyTaskVM[]
@@ -48,7 +51,7 @@ function iconFor(name: string): IconKind {
 }
 
 function openDetail() {
-  openCollegeDetail({ kind: 'key-tasks' })
+  router.push(ROUTES.college.keyTasks)
 }
 </script>
 

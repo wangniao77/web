@@ -9,7 +9,6 @@ import BenchmarkAchievementsPanel from '@/components/college/modules/benchmark/B
 import ProfessionalSupportPanel from '@/components/college/modules/professional-support/ProfessionalSupportPanel.vue'
 import FacultyAtlasPanel from '@/components/college/modules/faculty-atlas/FacultyAtlasPanel.vue'
 import CollegeDetailModal from '@/components/college/modules/detail-modal/CollegeDetailModal.vue'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
 import { collegeService } from '@/api/college/services'
 import { studentDevService } from '@/api/college/services/student-dev'
 import { benchmarkService } from '@/api/college/services/benchmark'
@@ -133,7 +132,7 @@ useAutoRefresh(loadAll)
             <button
               type="button"
               class="panel__action-link"
-              @click="openCollegeDetail({ kind: 'key-tasks' })"
+              @click="router.push(ROUTES.college.keyTasks)"
             >
               详情 →
             </button>
@@ -147,6 +146,15 @@ useAutoRefresh(loadAll)
           module-id="talent-overview"
           :simulated="true"
         >
+          <template #actions>
+            <button
+              type="button"
+              class="panel__action-link"
+              @click="router.push(ROUTES.college.studentDevDetail)"
+            >
+              详情 →
+            </button>
+          </template>
           <TalentOverviewCarouselPanel
             :dev-quality="devQuality"
             :enrollment="enrollmentEmployment"
@@ -170,7 +178,7 @@ useAutoRefresh(loadAll)
             <button
               type="button"
               class="panel__action-link"
-              @click="openCollegeDetail({ kind: 'discipline-detail' })"
+              @click="router.push(ROUTES.college.disciplineDetail)"
             >
               详情 →
             </button>
@@ -191,7 +199,7 @@ useAutoRefresh(loadAll)
             <button
               type="button"
               class="panel__action-link"
-              @click="openCollegeDetail({ kind: 'benchmark-detail' })"
+              @click="router.push(ROUTES.college.benchmarkDetail)"
             >
               详情 →
             </button>

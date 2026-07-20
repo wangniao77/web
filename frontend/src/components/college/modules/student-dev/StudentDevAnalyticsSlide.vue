@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
-import { openCollegeDetail } from '@/components/college/modules/detail-modal/useCollegeDetail'
+import { ROUTES } from '@/constants/routes'
 import { CHART_FONT } from '@/styles/echarts-theme'
 import type { StudentDevQualityVM } from '@/types/college/view/student-dev-quality'
 import type { EChartsOption } from 'echarts'
@@ -9,6 +10,8 @@ import type { EChartsOption } from 'echarts'
 const props = defineProps<{
   data: StudentDevQualityVM
 }>()
+
+const router = useRouter()
 
 const gpaColors = ['#39e6ff', '#0d71ff', '#30d7a4']
 const GRADE_ROTATION_MS = 6000
@@ -200,26 +203,23 @@ function formatCount(n: number) {
   return n.toLocaleString('zh-CN')
 }
 
-function openDetail() {
-  openCollegeDetail({ kind: 'student-dev-detail' })
+function openDetail(tab: 'overview' | 'high-potential' | 'warning-center' = 'overview') {
+  router.push({
+    path: ROUTES.college.studentDevDetail,
+    query: { tab },
+  })
 }
 
 function openHp() {
-  openCollegeDetail({ kind: 'high-potential-overview' })
+  openDetail('high-potential')
 }
 
-function openWarning(type?: string) {
-  openCollegeDetail({ kind: 'warning', id: type ?? 'academic' })
+function openWarning() {
+  openDetail('warning-center')
 }
 
-function openHpModule(key: string) {
-  const map: Record<string, string> = {
-    competition: 'competition',
-    academic: 'academic',
-    research: 'competition',
-    practice: 'internship',
-  }
-  openCollegeDetail({ kind: 'high-potential', id: map[key] ?? 'academic' })
+function openHpModule(_key: string) {
+  openDetail('high-potential')
 }
 </script>
 

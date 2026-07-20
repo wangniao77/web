@@ -7,6 +7,8 @@ export type EnrollmentEmploymentFocus =
   | 'high-quality-dest'
   | 'admission-trend'
   | 'employment-trend'
+  | 'entrance-flow'
+  | 'outcome-flow'
 
 export interface EnrollmentEmploymentOverviewDTO {
   enrolledCount: number
@@ -29,6 +31,19 @@ export interface EnrollmentEmploymentOverviewDTO {
     nodes: Array<{ name: string }>
     links: Array<{ source: string; target: string; value: number }>
   }
+}
+
+export interface EnrollmentEmploymentInsightItem {
+  title: string
+  detail: string
+  tone?: 'info' | 'good' | 'warn'
+}
+
+export interface EnrollmentEmploymentDrillSample {
+  name: string
+  major: string
+  detail: string
+  tag?: string
 }
 
 export interface EnrollmentEmploymentDetailDTO extends EnrollmentEmploymentOverviewDTO {
@@ -62,6 +77,9 @@ export interface EnrollmentEmploymentDetailDTO extends EnrollmentEmploymentOverv
       qualityIndex: number[]
       firstChoiceRate: number[]
     }
+    insights: EnrollmentEmploymentInsightItem[]
+    actions: string[]
+    drillSamples: Record<string, EnrollmentEmploymentDrillSample[]>
   }
   graduation: {
     exitQuality: {
@@ -90,5 +108,8 @@ export interface EnrollmentEmploymentDetailDTO extends EnrollmentEmploymentOverv
       placementRate: number[]
       highQualityRate: number[]
     }
+    insights: EnrollmentEmploymentInsightItem[]
+    actions: string[]
+    drillSamples: Record<string, EnrollmentEmploymentDrillSample[]>
   }
 }
