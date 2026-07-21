@@ -1,0 +1,477 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "高校发展与治理驾驶舱详细架构",
+    "subtitle": "明确外部数据查询接入点与大模型接入点",
+    "output": "project-architecture-detailed-ai-data.html",
+    "viewBox": [1780, 1240]
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "大屏用户",
+      "sublabel": "管理者 / 学生 / 展示终端",
+      "pos": [45, 390],
+      "size": [155, 66]
+    },
+    {
+      "id": "screens",
+      "type": "frontend",
+      "label": "门户与业务页面",
+      "sublabel": "Portal / College / University / Student",
+      "pos": [260, 230],
+      "size": [175, 66]
+    },
+    {
+      "id": "aiEntry",
+      "type": "frontend",
+      "label": "AI交互入口",
+      "sublabel": "学生助手 / 培养建议 / 风险解释",
+      "pos": [260, 390],
+      "size": [175, 66],
+      "tag": "前端入口"
+    },
+    {
+      "id": "apiServices",
+      "type": "frontend",
+      "label": "前端服务层",
+      "sublabel": "createService + adapters",
+      "pos": [500, 230],
+      "size": [175, 66]
+    },
+    {
+      "id": "mockData",
+      "type": "database",
+      "label": "前端Mock数据",
+      "sublabel": "src/mock/*",
+      "pos": [500, 390],
+      "size": [175, 66],
+      "tag": "演示默认"
+    },
+    {
+      "id": "apiRouter",
+      "type": "backend",
+      "label": "路由层",
+      "sublabel": "Routers/*_router.py",
+      "pos": [750, 230],
+      "size": [175, 66],
+      "tag": "/api/v1待统一"
+    },
+    {
+      "id": "domainServices",
+      "type": "backend",
+      "label": "业务服务层",
+      "sublabel": "Services/{domain}_service.py",
+      "pos": [750, 390],
+      "size": [175, 66]
+    },
+    {
+      "id": "securityPolicy",
+      "type": "security",
+      "label": "安全控制",
+      "sublabel": "JWT / 脱敏 / 限流 / 审计",
+      "pos": [750, 550],
+      "size": [175, 66],
+      "tag": "必须补齐"
+    },
+    {
+      "id": "dbUtils",
+      "type": "backend",
+      "label": "数据访问工具",
+      "sublabel": "Utils/DB/read|write",
+      "pos": [1000, 230],
+      "size": [180, 66]
+    },
+    {
+      "id": "externalQuery",
+      "type": "backend",
+      "label": "外部数据查询",
+      "sublabel": "建议: Utils/External",
+      "pos": [1000, 390],
+      "size": [180, 66],
+      "tag": "外部接入点"
+    },
+    {
+      "id": "agentWorkflow",
+      "type": "messagebus",
+      "label": "大模型工作流",
+      "sublabel": "Utils/Agent/WorkFlow",
+      "pos": [1000, 550],
+      "size": [180, 66],
+      "tag": "LLM编排点"
+    },
+    {
+      "id": "llmClient",
+      "type": "cloud",
+      "label": "模型调用客户端",
+      "sublabel": "Utils/Agent/API",
+      "pos": [1000, 710],
+      "size": [180, 66],
+      "tag": "LLM API"
+    },
+    {
+      "id": "externalCache",
+      "type": "database",
+      "label": "外部数据快照",
+      "sublabel": "排名 / 舆情 / 科研缓存表",
+      "pos": [1245, 190],
+      "size": [185, 66],
+      "tag": "建议新增"
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "业务数据库",
+      "sublabel": "PostgreSQL + Tortoise ORM",
+      "pos": [1245, 350],
+      "size": [185, 66]
+    },
+    {
+      "id": "vectorStore",
+      "type": "database",
+      "label": "知识库/向量库",
+      "sublabel": "政策文件 / 指标口径 / FAQ",
+      "pos": [1245, 510],
+      "size": [185, 66],
+      "tag": "RAG可选"
+    },
+    {
+      "id": "llmLogs",
+      "type": "database",
+      "label": "模型调用日志",
+      "sublabel": "prompt / response / token / trace",
+      "pos": [1245, 670],
+      "size": [185, 66],
+      "tag": "建议新增"
+    },
+    {
+      "id": "excelEtl",
+      "type": "backend",
+      "label": "Excel导入器",
+      "sublabel": "app/importers + openpyxl",
+      "pos": [1245, 830],
+      "size": [185, 66]
+    },
+    {
+      "id": "excelFiles",
+      "type": "external",
+      "label": "Excel源文件",
+      "sublabel": "Datas/*.xlsx",
+      "pos": [1245, 990],
+      "size": [185, 66]
+    },
+    {
+      "id": "internalSystems",
+      "type": "external",
+      "label": "校内业务系统",
+      "sublabel": "教务 / 科研 / 就业 / 资产",
+      "pos": [1490, 230],
+      "size": [185, 66]
+    },
+    {
+      "id": "publicSources",
+      "type": "external",
+      "label": "公开数据源",
+      "sublabel": "排名 / 论文 / 专利 / 招聘 / 舆情",
+      "pos": [1490, 390],
+      "size": [185, 66]
+    },
+    {
+      "id": "llmProvider",
+      "type": "external",
+      "label": "大模型服务",
+      "sublabel": "云端模型 / 本地私有模型",
+      "pos": [1490, 710],
+      "size": [185, 66]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "frontend/ Vue 3 大屏",
+      "wraps": ["screens", "aiEntry", "apiServices", "mockData"]
+    },
+    {
+      "kind": "region",
+      "label": "backend/ FastAPI 分层",
+      "wraps": ["apiRouter", "domainServices", "securityPolicy", "dbUtils", "externalQuery", "agentWorkflow", "llmClient"]
+    },
+    {
+      "kind": "region",
+      "label": "数据资产层",
+      "wraps": ["externalCache", "postgres", "vectorStore", "llmLogs", "excelEtl", "excelFiles"]
+    },
+    {
+      "kind": "region",
+      "label": "外部系统与模型",
+      "wraps": ["internalSystems", "publicSources", "llmProvider"]
+    },
+    {
+      "kind": "security-group",
+      "label": "敏感数据与模型安全边界",
+      "wraps": ["securityPolicy", "agentWorkflow", "llmClient", "llmLogs"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "users",
+      "to": "screens",
+      "label": "访问驾驶舱",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [230, 350]
+    },
+    {
+      "from": "screens",
+      "to": "apiServices",
+      "label": "页面数据请求",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [468, 250]
+    },
+    {
+      "from": "screens",
+      "to": "aiEntry",
+      "label": "AI功能入口",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 26
+    },
+    {
+      "from": "apiServices",
+      "to": "mockData",
+      "label": "Mock模式",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 26
+    },
+    {
+      "from": "apiServices",
+      "to": "apiRouter",
+      "label": "/api/v1",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [713, 250]
+    },
+    {
+      "from": "aiEntry",
+      "to": "apiRouter",
+      "label": "AI接口",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelAt": [705, 365]
+    },
+    {
+      "from": "apiRouter",
+      "to": "domainServices",
+      "label": "Router -> Service",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 26
+    },
+    {
+      "from": "domainServices",
+      "to": "dbUtils",
+      "label": "本地指标查询",
+      "fromSide": "top",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelAt": [964, 315]
+    },
+    {
+      "from": "dbUtils",
+      "to": "postgres",
+      "label": "ORM读写",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelAt": [1210, 300]
+    },
+    {
+      "from": "domainServices",
+      "to": "externalQuery",
+      "label": "外部数据补全",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [963, 415]
+    },
+    {
+      "from": "externalQuery",
+      "to": "internalSystems",
+      "label": "校内接口",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelAt": [1450, 300]
+    },
+    {
+      "from": "externalQuery",
+      "to": "publicSources",
+      "label": "公开查询",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [1450, 430]
+    },
+    {
+      "from": "externalQuery",
+      "to": "externalCache",
+      "label": "清洗后缓存",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelAt": [1210, 255]
+    },
+    {
+      "from": "domainServices",
+      "to": "agentWorkflow",
+      "label": "解释/建议/报告",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelAt": [958, 515]
+    },
+    {
+      "from": "agentWorkflow",
+      "to": "dbUtils",
+      "label": "工具: 本地数据",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDx": -76
+    },
+    {
+      "from": "agentWorkflow",
+      "to": "externalQuery",
+      "label": "工具: 外部查询",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDx": 80
+    },
+    {
+      "from": "agentWorkflow",
+      "to": "vectorStore",
+      "label": "RAG检索",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [1210, 560]
+    },
+    {
+      "from": "agentWorkflow",
+      "to": "llmClient",
+      "label": "模型调用",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 26
+    },
+    {
+      "from": "llmClient",
+      "to": "llmProvider",
+      "label": "HTTPS / SDK",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [1450, 750]
+    },
+    {
+      "from": "agentWorkflow",
+      "to": "llmLogs",
+      "label": "审计留痕",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelAt": [1210, 655]
+    },
+    {
+      "from": "securityPolicy",
+      "to": "externalQuery",
+      "label": "密钥/限流",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelAt": [965, 500]
+    },
+    {
+      "from": "securityPolicy",
+      "to": "agentWorkflow",
+      "label": "脱敏/授权",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [963, 575]
+    },
+    {
+      "from": "excelFiles",
+      "to": "excelEtl",
+      "label": "批量导入",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -24
+    },
+    {
+      "from": "excelEtl",
+      "to": "postgres",
+      "label": "upsert学籍成绩",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [1355, 630]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "外部数据查询接入位置",
+      "items": [
+        "新增 Utils/External 作为统一外部数据工具层，由 Services 调用",
+        "接入排名、论文、专利、招聘、舆情、校内教务/科研/就业等来源",
+        "外部结果先清洗落入快照/缓存表，再供驾驶舱查询，避免页面直接打外部接口"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "大模型接入位置",
+      "items": [
+        "前端 AI 入口只调用后端 /api/v1/agent/*，不直连模型服务",
+        "后端通过 Services -> Utils/Agent/WorkFlow 编排工具调用和上下文",
+        "Utils/Agent/API 负责对接云端或本地模型，模型输出写入审计日志"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "安全与治理",
+      "items": [
+        "调用外部接口和大模型前需要 JWT 鉴权、字段脱敏、密钥管理和限流",
+        "学生个人信息、成绩、预警原因进入模型前应做最小化上下文裁剪",
+        "保留 prompt、响应、工具调用轨迹，便于追溯和复核"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "推荐落地顺序",
+      "items": [
+        "先统一 /api/v1 与现有 Router -> Service -> Utils 规则",
+        "再补外部数据快照表和定时同步任务",
+        "最后接入 Agent 工作流，让大模型只通过工具读取已授权数据"
+      ]
+    }
+  ]
+}

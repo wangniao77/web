@@ -1,0 +1,9 @@
+[tool.aerich]
+tortoise_orm = "core.database.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."
+
+[project]
+name = "digital-modeling-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
