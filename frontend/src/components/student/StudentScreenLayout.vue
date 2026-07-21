@@ -2,7 +2,7 @@
 import { useScreenScale } from '@/composables/useScreenScale'
 import StudentScreenHeader from '@/components/student/StudentScreenHeader.vue'
 
-const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'fluid' })
+const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'contain' })
 </script>
 
 <template>

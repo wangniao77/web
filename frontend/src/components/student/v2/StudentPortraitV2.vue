@@ -29,38 +29,46 @@ function closeDetail() {
 </script>
 
 <template>
-  <div class="stu-tpl">
-    <div class="stu-tpl__top">
-      <StudentIdentityCard
-        :profile="dashboard.profile"
-        :attention="dashboard.attention"
-        :career-dev="dashboard.careerDev"
-        :academic="dashboard.academic"
-        :highlights="dashboard.highlights"
-        :cadre-roles="dashboard.quality.cadreRoles"
-        @open="openDetail"
-      />
-      <StudentScoreCard
-        :growth-overview="dashboard.growthOverview"
-        :growth-portrait="dashboard.growthPortrait"
-        :academic="dashboard.academic"
-        :health="dashboard.health"
-        :employment="dashboard.employment"
-        :profile="dashboard.profile"
-        :credit="dashboard.creditProgress"
-        :competition="dashboard.competition"
-        :internship="dashboard.internship"
-        :quality="dashboard.quality"
-        :scholarships="dashboard.scholarships"
-      />
-      <StudentAiAdviceCard
-        :assistant="dashboard.aiAssistant"
-        :portrait="dashboard.aiPortrait"
-        :employment="dashboard.employment"
-        @open="openDetail"
-      />
-    </div>
-
+  <div class="stu-tpl stu-tpl--ai-span">
+    <StudentIdentityCard
+      class="stu-tpl__identity"
+      :profile="dashboard.profile"
+      :attention="dashboard.attention"
+      :career-dev="dashboard.careerDev"
+      :academic="dashboard.academic"
+      :highlights="dashboard.highlights"
+      :cadre-roles="dashboard.quality.cadreRoles"
+      @open="openDetail"
+    />
+    <StudentScoreCard
+      class="stu-tpl__score"
+      :growth-overview="dashboard.growthOverview"
+      :growth-portrait="dashboard.growthPortrait"
+      :academic="dashboard.academic"
+      :health="dashboard.health"
+      :employment="dashboard.employment"
+      :profile="dashboard.profile"
+      :credit="dashboard.creditProgress"
+      :competition="dashboard.competition"
+      :internship="dashboard.internship"
+      :quality="dashboard.quality"
+      :scholarships="dashboard.scholarships"
+    />
+    <StudentAiAdviceCard
+      class="stu-tpl__ai"
+      :assistant="dashboard.aiAssistant"
+      :portrait="dashboard.aiPortrait"
+      :employment="dashboard.employment"
+      :academic="dashboard.academic"
+      :competition="dashboard.competition"
+      :highlights="dashboard.highlights"
+      :profile="dashboard.profile"
+      :career-dev="dashboard.careerDev"
+      :quality="dashboard.quality"
+      :growth-overview="dashboard.growthOverview"
+      :internship="dashboard.internship"
+      @open="openDetail"
+    />
     <div class="stu-tpl__kanban">
       <StudentKanbanCarousel
         :academic="dashboard.academic"
@@ -70,10 +78,6 @@ function closeDetail() {
         :competition="dashboard.competition"
         :quality="dashboard.quality"
         :scholarships="dashboard.scholarships"
-        :career-dev="dashboard.careerDev"
-        :internship="dashboard.internship"
-        :employment="dashboard.employment"
-        :ai-portrait="dashboard.aiPortrait"
         :profile="dashboard.profile"
         @open="openDetail"
       />

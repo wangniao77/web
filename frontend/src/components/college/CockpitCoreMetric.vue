@@ -9,6 +9,8 @@ import type { ScoreTone } from '@/utils/scoreTone'
 const props = defineProps<{
   label: string
   value: string
+  /** 主分旁环比，如 ↑0.6 */
+  valueDelta?: string
   trend?: TrendInfo
   icon: IconKind | string
   position: 'tl' | 'ml' | 'bl' | 'tr' | 'mr' | 'br'
@@ -17,6 +19,8 @@ const props = defineProps<{
   scoreTone?: ScoreTone
   tip?: string
 }>()
+
+const deltaDown = computed(() => /↓|回落|下降/.test(props.valueDelta || ''))
 
 const side = (position: string) => (['tl', 'ml', 'bl'].includes(position) ? 'left' : 'right')
 const resolvedIcon = computed(() => resolveIconKind(props.icon))
@@ -50,7 +54,13 @@ const toneClass = computed(() =>
           v-if="!levelText"
           class="core-orbit-metric__value"
           :class="toneClass"
-        >{{ value }}</strong>
+        >
+          {{ value }}<em
+            v-if="valueDelta"
+            class="core-orbit-metric__delta"
+            :class="{ 'is-down': deltaDown }"
+          >{{ valueDelta }}</em>
+        </strong>
         <strong
           v-else
           class="core-orbit-metric__value core-orbit-metric__value--level"
@@ -127,6 +137,20 @@ const toneClass = computed(() =>
 .core-orbit-metric__value--level {
   font-size: 18px !important;
   letter-spacing: 0.04em;
+}
+
+.core-orbit-metric__delta {
+  margin-left: 4px;
+  color: #55e995;
+  font-size: 0.72em;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: baseline;
+
+  &.is-down {
+    color: #ff9b7a;
+  }
 }
 
 .core-orbit-metric__details {

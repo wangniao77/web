@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import StudentTplCard from './StudentTplCard.vue'
 import StuHint from './StuHint.vue'
 import StudentPeerRosterModal from './StudentPeerRosterModal.vue'
-import { listClassPeers, listDormPeers, type StudentPeerItem } from '@/services/student/peers'
+import { listClassPeers, type StudentPeerItem } from '@/services/student/peers'
 import type {
   AcademicDevVM,
   AttentionItemVM,
@@ -23,7 +23,7 @@ const props = defineProps<{
   cadreRoles?: string[]
 }>()
 
-const emit = defineEmits<{ open: [id: string] }>()
+defineEmits<{ open: [id: string] }>()
 const router = useRouter()
 const avatarError = ref(false)
 
@@ -60,21 +60,24 @@ const warningCards = computed(() => {
   return [
     {
       label: '心理预警',
+      short: '心理',
       level: psychological,
       conclusion: props.profile.mentalLevel || riskText[psychological],
-      tip: `反映心理关注侧风险（绿=正常，黄=需关注，红=高危）。${detailFor(/心理|健康|体测/, '当前结论见下方文字')}`,
+      tip: `心理关注侧风险（绿=正常，黄=需关注，红=高危）。点击进入二级台账。${detailFor(/心理|健康|体测/, '')}`,
     },
     {
       label: '学业预警',
+      short: '学业',
       level: academic,
       conclusion: riskText[academic],
-      tip: `反映挂科、GPA 等学业风险（绿=正常，黄=需关注，红=高危）。${detailFor(/学业|课程|挂科|GPA|补考/, academic === 'low' ? '无挂科，仅需完成常规期末考核' : '请查看预警台账与补考安排')}`,
+      tip: `挂科、GPA 等学业风险（绿=正常，黄=需关注，红=高危）。点击进入二级台账。${detailFor(/学业|课程|挂科|GPA|补考/, academic === 'low' ? '无挂科' : '')}`,
     },
     {
       label: '就业预警',
+      short: '就业',
       level: employment,
       conclusion: riskText[employment],
-      tip: `反映实习就业准备不足风险（绿=正常，黄=需关注，红=高危）。${detailFor(/就业|实习|职业/, employment === 'low' ? '就业填报待完善，暂无高危信号' : '关注实习与岗位匹配短板')}`,
+      tip: `实习就业准备风险（绿=正常，黄=需关注，红=高危）。点击进入二级台账。${detailFor(/就业|实习|职业/, employment === 'low' ? '暂无高危' : '')}`,
     },
   ]
 })
@@ -86,73 +89,13 @@ const avatarRisk = computed<RiskLevel>(() =>
   ),
 )
 
-const growthTrendText = computed(() => ({
-  positive: '正向上升',
-  negative: '负向波动',
-  stable: '总体平稳',
-}[props.profile.growthTrend ?? 'stable']))
-
-const sparkTitle = computed(() => {
-  const values = props.academic?.gpaValues ?? []
-  if (values.length >= 2) {
-    const delta = values[values.length - 1] - values[values.length - 2]
-    const dir = delta >= 0 ? '上升' : '下降'
-    return `GPA 近学期${dir} ${Math.abs(delta).toFixed(2)}，趋势${growthTrendText.value}`
-  }
-  return `成长趋势：${growthTrendText.value}`
+/** 姓名旁职务：班长 / 团支书等，有则展示 */
+const cadreTitles = computed(() => {
+  const roles = (props.cadreRoles ?? []).map((r) => r.trim()).filter(Boolean)
+  if (roles.length) return roles.slice(0, 2)
+  const one = props.profile.classCadreRole?.trim()
+  return one ? [one] : []
 })
-
-const recentDynamic = computed(() => {
-  const fromProfile = props.profile.recentDynamics?.[0]
-  if (fromProfile) return fromProfile
-  const award = props.highlights?.[0]
-  if (award) return { time: award.date || '近期', text: award.label, kind: 'award' as const }
-  const warn = props.attention.find((a) => a.level !== 'low')
-  if (warn) return { time: '预警', text: warn.label, kind: 'warn' as const }
-  return { time: '动态', text: '暂无新增伴随式采集事件', kind: 'info' as const }
-})
-
-const managementItems = computed(() => [
-  {
-    label: '学籍状态',
-    value: props.profile.onCampusStatus || '在校',
-    tone: 'safe',
-    tip: '当前在校学籍状态（在校/休学等）；休学退学等变更以教务系统为准。',
-  },
-  {
-    label: '困难认定',
-    value: props.profile.economicHardship ? '已认定' : '未认定',
-    tone: props.profile.economicHardship ? 'warn' : 'safe',
-    tip: '家庭经济困难认定结果，影响资助与帮扶策略。',
-  },
-  {
-    label: '心理分级',
-    value: props.profile.mentalLevel || '正常',
-    tone: props.profile.mentalLevelCode === 'high' ? 'risk' : 'warn',
-    tip: '心理工作关注等级；中高关注请辅导员跟进。',
-  },
-  {
-    label: '成长趋势',
-    value: growthTrendText.value,
-    tone: props.profile.growthTrend === 'negative' ? 'risk' : 'safe',
-    tip: sparkTitle.value,
-  },
-  {
-    label: '征兵状态',
-    value: props.careerDev.militaryNote || '无',
-    tone: 'info',
-    tip: '应征入伍或征兵备案相关状态；无特殊情况显示「无」。',
-  },
-])
-
-const profileFieldTips: Record<string, string> = {
-  学号: '学生唯一学籍编号，用于查档与跨系统对表。',
-  班级: '行政班级；可点击查看同班同学名单。',
-  专业: '当前就读专业名称。',
-  年级: '入学年级或所在年级批次。',
-  政治面貌: '党员/团员/群众等政治面貌信息。',
-  宿舍: '住宿宿舍；可点击查看同宿舍同学。',
-}
 
 const highPotentialTags = computed(() => {
   const fromProfile = props.profile.highPotentialTags?.filter(Boolean) ?? []
@@ -162,63 +105,214 @@ const highPotentialTags = computed(() => {
     .filter((label) => /高潜/.test(label))
 })
 
-const linkedTeachers = computed(() => [
-  { label: '班主任', value: props.profile.mentor?.trim() || '—' },
-  { label: '辅导员', value: props.profile.counselor?.trim() || '—' },
-  { label: '毕设导师', value: props.profile.thesisAdvisor?.trim() || props.profile.mentor?.trim() || '—' },
+/** 干部 + 高潜：并排展示在姓名旁 */
+const hasCadreOrPotential = computed(
+  () => cadreTitles.value.length > 0 || highPotentialTags.value.length > 0,
+)
+
+const classLine = computed(() => props.profile.className?.trim() || '—')
+
+const dormitoryLine = computed(() => {
+  const dorm = props.profile.dormitory?.trim()
+  return dorm && dorm !== '—' ? dorm : '—'
+})
+
+const dutyLine = computed(() => {
+  if (cadreTitles.value.length) return cadreTitles.value.join('、')
+  return '无'
+})
+
+const growthTrendText = computed(() => ({
+  positive: '正向上升',
+  negative: '负向波动',
+  stable: '总体平稳',
+}[props.profile.growthTrend ?? 'stable']))
+
+/** 学籍与帮扶：心理风险放在右侧「核心态势」 */
+const managementItems = computed(() => [
+  {
+    label: '学籍状态',
+    value: props.profile.onCampusStatus || '在校',
+    tone: 'safe' as const,
+    tip: '当前在校学籍状态（在校/休学等）。',
+  },
+  {
+    label: '困难认定',
+    value: props.profile.economicHardship ? '已认定' : '未认定',
+    tone: (props.profile.economicHardship ? 'warn' : 'safe') as 'warn' | 'safe',
+    tip: '家庭经济困难认定结果，影响资助与帮扶策略。',
+  },
+  {
+    label: '成长趋势',
+    value: growthTrendText.value,
+    tone: (props.profile.growthTrend === 'negative' ? 'risk' : 'safe') as 'risk' | 'safe',
+    tip: '综合成长趋势判断。',
+  },
+  {
+    label: '征兵状态',
+    value: props.careerDev.militaryNote || '无',
+    tone: 'info' as const,
+    tip: '应征入伍或征兵备案相关状态。',
+  },
 ])
 
-const potentialMining = computed(() => {
-  const gpa = props.academic?.gpa
-  const majorRank = props.academic?.majorRank
-  const majorTotal = props.academic?.majorTotal
-  const awards = props.highlights?.length ?? 0
-  return [
-    {
-      label: '尖子生成绩',
-      value: gpa != null ? `GPA ${gpa.toFixed(2)}` : '—',
-      tip: majorTotal
-        ? `专业排名 ${majorRank}/${majorTotal}，用于识别学业尖子生。`
-        : 'GPA 与专业排名用于识别学业尖子生。',
-    },
-    {
-      label: '竞赛潜力',
-      value: awards ? `${awards}项动态` : (highPotentialTags.value.some((t) => /竞赛/.test(t)) ? '竞赛高潜' : '待挖掘'),
-      tip: '竞赛获奖与高潜标签，反映竞赛与创新实践潜力。',
-    },
-    {
-      label: '科研潜力',
-      value: highPotentialTags.value.some((t) => /科研/.test(t)) ? '科研高潜' : '待挖掘',
-      tip: '大创/论文/专利等科研相关信号；接入科研系统后可细化。',
-    },
-  ]
-})
-
-const futureBenchmarks = computed(() => {
-  const unis = props.careerDev.targetUniversities?.filter(Boolean) ?? []
-  const cos = props.careerDev.targetCompanies?.filter(Boolean) ?? []
-  return {
-    universities: unis.length ? unis.slice(0, 3).join(' · ') : '待明确升学目标',
-    companies: cos.length ? cos.slice(0, 3).join(' · ') : '待明确就业目标',
-    destination: props.careerDev.employmentDestination || props.careerDev.employmentIntention || '待实习',
-  }
-})
-
-/** 姓名旁职务标签：仅班干部显示，不再展示「在校」（学籍状态区已有） */
-const cadreTitle = computed(() => {
-  const roles = (props.cadreRoles ?? []).map((r) => r.trim()).filter(Boolean)
-  if (roles.length) return roles[0]
-  return props.profile.classCadreRole?.trim() || ''
-})
+const counselorPhone = computed(() => props.profile.counselorPhone?.trim() || '—')
+const studentPhone = computed(() => props.profile.phone?.trim() || '—')
 
 const classClickable = computed(() => {
   const name = props.profile.className?.trim()
   return Boolean(name && name !== '—')
 })
 
-const dormClickable = computed(() => {
-  const name = props.profile.dormitory?.trim()
-  return Boolean(name && name !== '—')
+/** 近期动态：滚动展示最近一条核心信息 */
+const recentDynamics = computed(() => props.profile.recentDynamics ?? [])
+const dynamicIndex = ref(0)
+
+const currentDynamic = computed(() => {
+  const list = recentDynamics.value
+  if (!list.length) return null
+  return list[dynamicIndex.value % list.length]!
+})
+
+const currentDynamicText = computed(() => {
+  const item = currentDynamic.value
+  if (!item) return ''
+  return `${item.time} · ${item.text}`
+})
+
+const tickerTrackRef = ref<HTMLElement | null>(null)
+const tickerTextRef = ref<HTMLElement | null>(null)
+const tickerMetrics = ref({ track: 0, text: 0 })
+let tickerResizeObserver: ResizeObserver | null = null
+let staticSwitchTimer: ReturnType<typeof setTimeout> | null = null
+
+const hasMultipleDynamics = computed(() => recentDynamics.value.length > 1)
+
+const dynamicNeedsScroll = computed(() => (
+  tickerMetrics.value.text > tickerMetrics.value.track + 2
+))
+
+const scrollDurationSec = computed(() => {
+  if (!dynamicNeedsScroll.value) return 0
+  const { track, text } = tickerMetrics.value
+  return Math.max(10, Math.min(32, (track + text) / 32))
+})
+
+const marqueeScrollStyle = computed(() => {
+  if (!dynamicNeedsScroll.value) return undefined
+  const { track, text } = tickerMetrics.value
+  return {
+    '--marquee-from': `${track}px`,
+    '--marquee-to': `${-text}px`,
+    '--ticker-duration': `${scrollDurationSec.value}s`,
+  } as Record<string, string>
+})
+
+function measureTextWidth(el: HTMLElement) {
+  const style = window.getComputedStyle(el)
+  const clone = el.cloneNode(true) as HTMLElement
+  clone.style.cssText = [
+    'position:absolute',
+    'visibility:hidden',
+    'white-space:nowrap',
+    'width:auto',
+    'max-width:none',
+    'pointer-events:none',
+    `font:${style.font}`,
+    `letter-spacing:${style.letterSpacing}`,
+  ].join(';')
+  document.body.appendChild(clone)
+  const width = Math.ceil(clone.getBoundingClientRect().width)
+  document.body.removeChild(clone)
+  return width || el.scrollWidth
+}
+
+function updateTickerMetrics() {
+  const track = tickerTrackRef.value
+  const text = tickerTextRef.value
+  if (!track || !text) {
+    tickerMetrics.value = { track: 0, text: 0 }
+    return
+  }
+  tickerMetrics.value = {
+    track: track.clientWidth,
+    text: measureTextWidth(text),
+  }
+}
+
+function setupTickerObserver() {
+  tickerResizeObserver?.disconnect()
+  if (typeof ResizeObserver === 'undefined') return
+  tickerResizeObserver = new ResizeObserver(() => {
+    updateTickerMetrics()
+    scheduleStaticSwitch()
+  })
+  if (tickerTrackRef.value) tickerResizeObserver.observe(tickerTrackRef.value)
+  if (tickerTextRef.value) tickerResizeObserver.observe(tickerTextRef.value)
+}
+
+async function refreshTickerLayout() {
+  await nextTick()
+  updateTickerMetrics()
+  setupTickerObserver()
+  scheduleStaticSwitch()
+}
+
+function stopStaticSwitch() {
+  if (staticSwitchTimer) {
+    clearTimeout(staticSwitchTimer)
+    staticSwitchTimer = null
+  }
+}
+
+function advanceDynamic() {
+  if (recentDynamics.value.length <= 1) return
+  dynamicIndex.value = (dynamicIndex.value + 1) % recentDynamics.value.length
+}
+
+function scheduleStaticSwitch() {
+  stopStaticSwitch()
+  if (!hasMultipleDynamics.value || dynamicNeedsScroll.value) return
+  staticSwitchTimer = setTimeout(() => {
+    advanceDynamic()
+  }, 3600)
+}
+
+function onMarqueeAnimationEnd(event: AnimationEvent) {
+  if (event.animationName !== 'sid-ticker-marquee') return
+  if (!hasMultipleDynamics.value) return
+  advanceDynamic()
+}
+
+function stopDynamicTicker() {
+  stopStaticSwitch()
+}
+
+function startDynamicTicker() {
+  stopDynamicTicker()
+  scheduleStaticSwitch()
+}
+
+watch(recentDynamics, () => {
+  dynamicIndex.value = 0
+  startDynamicTicker()
+  void refreshTickerLayout()
+})
+
+watch([dynamicIndex, currentDynamicText], () => {
+  void refreshTickerLayout()
+})
+
+onMounted(() => {
+  dynamicIndex.value = 0
+  startDynamicTicker()
+  void refreshTickerLayout()
+})
+
+onBeforeUnmount(() => {
+  stopDynamicTicker()
+  tickerResizeObserver?.disconnect()
+  tickerResizeObserver = null
 })
 
 async function openClassPeers() {
@@ -236,21 +330,6 @@ async function openClassPeers() {
   }
 }
 
-async function openDormPeers() {
-  if (!dormClickable.value) return
-  peerKind.value = 'dorm'
-  peerTitle.value = props.profile.dormitory || '宿舍'
-  peerSubtitle.value = `${props.profile.name}所在宿舍`
-  peerOpen.value = true
-  peerLoading.value = true
-  peers.value = []
-  try {
-    peers.value = await listDormPeers(props.profile.dormitory || '', props.profile.studentId)
-  } finally {
-    peerLoading.value = false
-  }
-}
-
 function closePeers() {
   peerOpen.value = false
 }
@@ -260,206 +339,218 @@ function selectPeer(studentId: string) {
   peerOpen.value = false
   router.push({ path: '/student', query: { studentId } })
 }
+
+function goSemesterSchedule() {
+  router.push({ name: 'student-semester-schedule', query: { studentId: props.profile.studentId } })
+}
+
+function goBasicLedger() {
+  router.push({ name: 'student-basic-ledger', query: { studentId: props.profile.studentId } })
+}
+
+function goWarningDetail(label: string) {
+  const map: Record<string, string> = {
+    心理预警: 'student-psy-warning',
+    学业预警: 'student-academic-warning',
+    就业预警: 'student-employment-warning',
+  }
+  const name = map[label]
+  if (name) {
+    router.push({ name, query: { studentId: props.profile.studentId } })
+  }
+}
 </script>
 
 <template>
   <StudentTplCard
     icon="students"
     title="学生基础信息台账"
-    tip="汇集学籍、帮扶与三类预警入口的基础档案，是辅导老师看学生的第一站。"
+    tip="精简身份卡：学籍识别 + 三类预警入口；政治面貌、宿舍、班主任、毕设导师等详见二级台账。"
     class="stu-tpl__identity"
   >
     <div class="sid">
-      <div class="sid__upper">
-        <div class="sid__profile">
-        <StuHint tip="照片边框颜色取三类预警中的最高等级：绿正常、黄需关注、红高危。" block class="sid__avatar-hint">
-          <div class="sid__avatar" :class="`sid__avatar--${avatarRisk}`">
-            <img
-              v-if="profile.avatarUrl && !avatarError"
-              :src="profile.avatarUrl"
-              :alt="profile.name"
-              @error="avatarError = true"
-            >
-            <span v-else>{{ profile.name.slice(0, 1) }}</span>
-          </div>
-        </StuHint>
+      <div class="sid__body">
+        <div class="sid__main">
+          <div class="sid__profile">
+            <div class="sid__profile-top">
+              <StuHint tip="照片边框颜色取三类预警中的最高等级：绿正常、黄需关注、红高危。" block class="sid__avatar-hint">
+                <div class="sid__avatar" :class="`sid__avatar--${avatarRisk}`">
+                  <img
+                    v-if="profile.avatarUrl && !avatarError"
+                    :src="profile.avatarUrl"
+                    :alt="profile.name"
+                    @error="avatarError = true"
+                  >
+                  <span v-else>{{ profile.name.slice(0, 1) }}</span>
+                </div>
+              </StuHint>
 
-        <div class="sid__identity">
-          <div class="sid__name">
-            <strong>{{ profile.name }}</strong>
-            <em>{{ profile.gender || '男' }}</em>
-            <StuHint v-if="cadreTitle" tip="班级干部职务，来自学工台账。">
-              <span class="sid__tag sid__tag--cadre">{{ cadreTitle }}</span>
-            </StuHint>
-            <StuHint
-              v-for="tag in highPotentialTags"
-              :key="tag"
-              tip="综合表现突出，建议重点培养与跟踪。"
-            >
-              <span class="sid__tag sid__tag--potential">{{ tag }}</span>
-            </StuHint>
-          </div>
-
-          <dl class="sid__grid">
-            <StuHint :tip="profileFieldTips['学号']" block>
-              <div><dt>学号</dt><dd :title="profile.studentId">{{ profile.studentId }}</dd></div>
-            </StuHint>
-            <StuHint :tip="profileFieldTips['班级']" block>
-              <div>
-                <dt>班级</dt>
-                <dd class="sid__grid-dd--wrap">
-                  <button
-                    v-if="classClickable"
-                    type="button"
-                    class="sid__link"
-                    :title="`查看同班同学 · ${profile.className}`"
-                    @click="openClassPeers"
-                  >{{ profile.className }}</button>
-                  <span v-else :title="profile.className">{{ profile.className || '—' }}</span>
-                </dd>
+              <div class="sid__identity">
+                <div class="sid__name">
+                  <div class="sid__name-row">
+                    <strong>{{ profile.name }}</strong>
+                    <em>{{ profile.gender || '男' }}</em>
+                    <div v-if="hasCadreOrPotential" class="sid__tags" aria-label="干部与高潜">
+                      <StuHint
+                        v-for="role in cadreTitles"
+                        :key="`cadre-${role}`"
+                        tip="班级干部职务（班长/团支书等），来自学工台账。"
+                      >
+                        <span class="sid__tag sid__tag--cadre">
+                          <i>干部</i>{{ role }}
+                        </span>
+                      </StuHint>
+                      <StuHint
+                        v-for="tag in highPotentialTags"
+                        :key="tag"
+                        tip="综合表现突出，建议重点培养与跟踪。"
+                      >
+                        <span class="sid__tag sid__tag--potential">
+                          <i>高潜</i>{{ tag.replace(/高潜$/, '') || tag }}
+                        </span>
+                      </StuHint>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </StuHint>
-            <StuHint :tip="profileFieldTips['专业']" block>
-              <div><dt>专业</dt><dd class="sid__grid-dd--wrap" :title="profile.major">{{ profile.major }}</dd></div>
-            </StuHint>
-            <StuHint :tip="profileFieldTips['年级']" block>
-              <div><dt>年级</dt><dd :title="profile.grade">{{ profile.grade }}</dd></div>
-            </StuHint>
-            <StuHint :tip="profileFieldTips['政治面貌']" block>
-              <div><dt>政治面貌</dt><dd class="sid__grid-dd--wrap" :title="profile.politicalStatus || '—'">{{ profile.politicalStatus || '—' }}</dd></div>
-            </StuHint>
-            <StuHint :tip="profileFieldTips['宿舍']" block>
-              <div>
-                <dt>宿舍</dt>
-                <dd class="sid__grid-dd--wrap">
-                  <button
-                    v-if="dormClickable"
-                    type="button"
-                    class="sid__link"
-                    :title="`查看同宿舍同学 · ${profile.dormitory}`"
-                    @click="openDormPeers"
-                  >{{ profile.dormitory }}</button>
-                  <span v-else :title="profile.dormitory || '—'">{{ profile.dormitory || '—' }}</span>
-                </dd>
-              </div>
-            </StuHint>
-          </dl>
-        </div>
-        </div>
-
-        <div class="sid__context">
-          <section class="sid__teachers" aria-label="关联老师">
-        <StuHint tip="班主任、辅导员与毕设导师，方便快速联络育人责任人。">
-          <strong class="sid__section-label">关联老师</strong>
-        </StuHint>
-        <div class="sid__teachers-grid">
-          <StuHint
-            v-for="item in linkedTeachers"
-            :key="item.label"
-            block
-            :tip="`${item.label}：${item.value}`"
-          >
-            <div class="sid__teacher-item">
-              <span>{{ item.label }}</span>
-              <em>{{ item.value }}</em>
             </div>
-          </StuHint>
+
+            <dl class="sid__grid">
+              <StuHint tip="学生唯一学籍编号，用于查档与跨系统对表。" block>
+                <div><dt>学号</dt><dd :title="profile.studentId">{{ profile.studentId }}</dd></div>
+              </StuHint>
+              <StuHint tip="行政班级；可点击班级查看同班同学。" block>
+                <div>
+                  <dt>班级</dt>
+                  <dd>
+                    <button
+                      v-if="classClickable"
+                      type="button"
+                      class="sid__link"
+                      :title="`查看同班同学 · ${profile.className}`"
+                      @click="openClassPeers"
+                    >{{ classLine }}</button>
+                    <span v-else :title="classLine">{{ classLine }}</span>
+                  </dd>
+                </div>
+              </StuHint>
+              <StuHint tip="宿舍楼栋与房间号，来自学工/宿管台账。" block>
+                <div>
+                  <dt>宿舍</dt>
+                  <dd :title="dormitoryLine">{{ dormitoryLine }}</dd>
+                </div>
+              </StuHint>
+              <StuHint tip="班级干部职务（班长/团支书等）；无职务时显示「无」。" block>
+                <div>
+                  <dt>职务</dt>
+                  <dd :title="dutyLine">{{ dutyLine }}</dd>
+                </div>
+              </StuHint>
+              <StuHint tip="学生本人联系电话，来自学籍档案。" block>
+                <div>
+                  <dt>联系电话</dt>
+                  <dd :title="studentPhone">{{ studentPhone }}</dd>
+                </div>
+              </StuHint>
+              <StuHint tip="辅导员姓名及联系电话（电话为学工台账模拟数据，接入后自动替换）。班主任/毕设导师见二级。" block>
+                <div>
+                  <dt>辅导员</dt>
+                  <dd :title="`${profile.counselor || '—'} ${counselorPhone}`">
+                    <span class="sid__counselor-line">
+                      <b>{{ profile.counselor?.trim() || '—' }}</b>
+                      <span class="sid__counselor-sep" aria-hidden="true">—</span>
+                      <i>{{ counselorPhone }}</i>
+                    </span>
+                  </dd>
+                </div>
+              </StuHint>
+            </dl>
+          </div>
         </div>
+
+        <div class="sid__side">
+          <section class="sid__panel sid__panel--core" aria-label="核心态势">
+            <div class="sid__panel-head">
+              <StuHint tip="三类核心预警总览：心理 / 学业 / 就业。点击进入对应二级台账。">
+                <strong>核心态势</strong>
+              </StuHint>
+            </div>
+            <div class="sid__core-grid">
+              <StuHint
+                v-for="item in warningCards"
+                :key="item.label"
+                :tip="item.tip"
+              >
+                <button
+                  type="button"
+                  class="sid__core-card"
+                  :class="`sid__core-card--${item.level}`"
+                  @click="goWarningDetail(item.label)"
+                >
+                  <span>{{ item.short }}</span>
+                  <strong>{{ item.conclusion }}</strong>
+                </button>
+              </StuHint>
+            </div>
           </section>
 
-          <section class="sid__mining" aria-label="挖掘性数据">
-        <StuHint tip="尖子生成绩、竞赛与科研潜力挖掘，用于重点培养识别。">
-          <strong class="sid__section-label">潜力挖掘</strong>
-        </StuHint>
-        <div class="sid__mining-grid">
-          <StuHint
-            v-for="item in potentialMining"
-            :key="item.label"
-            block
-            :tip="item.tip"
-          >
-            <div class="sid__mining-item">
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
+          <section class="sid__panel sid__panel--aid" aria-label="学籍与帮扶">
+            <div class="sid__panel-head">
+              <StuHint tip="学工侧关键状态总览；心理风险见上方核心态势。">
+                <strong>学籍与帮扶</strong>
+              </StuHint>
             </div>
-          </StuHint>
-        </div>
-          </section>
-
-          <section class="sid__benchmark" aria-label="对标未来规划">
-        <StuHint tip="对标升学高校与就业大厂（系统挖掘推荐，填报后可覆盖）。">
-          <strong class="sid__section-label">对标规划 · {{ futureBenchmarks.destination }}</strong>
-        </StuHint>
-        <div class="sid__benchmark-lines">
-          <p><em>升学高校</em><span>{{ futureBenchmarks.universities }}</span></p>
-          <p><em>就业大厂</em><span>{{ futureBenchmarks.companies }}</span></p>
-        </div>
+            <div class="sid__aid-grid">
+              <StuHint
+                v-for="item in managementItems"
+                :key="item.label"
+                block
+                :tip="item.tip"
+              >
+                <article
+                  class="sid__aid-item"
+                  :class="`sid__aid-item--${item.tone}`"
+                >
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.value }}</strong>
+                </article>
+              </StuHint>
+            </div>
           </section>
         </div>
       </div>
 
-      <section class="sid__management" aria-label="管理与帮扶状态">
-        <div class="sid__management-head">
-          <StuHint tip="学工侧关键状态总览，用于快速判断帮扶优先级。">
-            <strong>管理与帮扶状态</strong>
-          </StuHint>
-        </div>
-        <div class="sid__management-grid">
-          <StuHint
-            v-for="item in managementItems"
-            :key="item.label"
-            block
-            :tip="item.tip"
-          >
-            <article
-              class="sid__management-item"
-              :class="`sid__management-item--${item.tone}`"
+      <StuHint tip="近期伴随式动态（获奖/预警/伴学等），轮播最近一条核心信息。" block>
+        <div class="sid__ticker" :class="{ 'sid__ticker--empty': !currentDynamic }" aria-live="polite">
+          <span class="sid__ticker-label">近期动态</span>
+          <div ref="tickerTrackRef" class="sid__ticker-track">
+            <div
+              v-if="currentDynamic"
+              :key="`${dynamicIndex}-${currentDynamicText}`"
+              class="sid__ticker-marquee"
+              :class="[
+                `sid__ticker-marquee--${currentDynamic.kind}`,
+                dynamicNeedsScroll && (hasMultipleDynamics ? 'sid__ticker-marquee--scroll-once' : 'sid__ticker-marquee--scroll'),
+              ]"
+              :style="marqueeScrollStyle"
+              @animationend="onMarqueeAnimationEnd"
             >
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
-            </article>
-          </StuHint>
+              <span ref="tickerTextRef" class="sid__ticker-text">{{ currentDynamicText }}</span>
+            </div>
+            <span v-else class="sid__ticker-empty">暂无记录</span>
+          </div>
         </div>
-      </section>
+      </StuHint>
 
       <div class="sid__utility-row">
-        <StuHint tip="伴随式采集的最新事件（获奖、预警或信息变更）。" block>
-          <div class="sid__recent" :class="`sid__recent--${recentDynamic.kind}`" :title="recentDynamic.text">
-            <em>近期动态</em>
-            <strong>{{ recentDynamic.time }} · {{ recentDynamic.text }}</strong>
-          </div>
-        </StuHint>
-
         <div class="sid__archive-actions">
           <StuHint tip="打开本学期课表详情。">
-            <button type="button" @click="emit('open', 'timetable')">本学期课表 ›</button>
+            <button type="button" @click="goSemesterSchedule">本学期课表 ›</button>
           </StuHint>
-          <StuHint tip="打开更完整的学籍与基础档案。">
-            <button type="button" class="sid__archive-btn" @click="emit('open', 'basic')">基础信息台账 ›</button>
+          <StuHint tip="打开完整学籍、政治面貌、宿舍、班主任、毕设导师与帮扶明细。">
+            <button type="button" class="sid__archive-btn" @click="goBasicLedger">基础信息台账 ›</button>
           </StuHint>
         </div>
-      </div>
-
-      <div class="sid__warnings" aria-label="学生预警状态">
-        <StuHint
-          v-for="item in warningCards"
-          :key="item.label"
-          block
-          :tip="item.tip"
-        >
-          <button
-            type="button"
-            class="sid__warning"
-            :class="`sid__warning--${item.level}`"
-            @click="emit('open', 'warning')"
-          >
-            <span class="sid__warning-dot" aria-hidden="true" />
-            <span class="sid__warning-main">
-              <span class="sid__warning-label">{{ item.label }}</span>
-              <small>{{ item.conclusion }}</small>
-            </span>
-          </button>
-        </StuHint>
       </div>
     </div>
 
@@ -480,165 +571,69 @@ function selectPeer(studentId: string) {
 .sid {
   height: 100%;
   min-height: 0;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto auto;
-  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   overflow: hidden;
 }
 
-.sid__upper {
+.sid__body {
+  flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(250px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 1.05fr);
   gap: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
-.sid__context {
+.sid__main {
+  min-width: 0;
   min-height: 0;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 5px;
   overflow: hidden;
 }
 
 .sid__profile {
+  height: 100%;
   min-height: 0;
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  overflow: hidden;
+  overflow: visible;
+}
+
+.sid__profile-top {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
 
   :deep(.sid__avatar-hint) {
-    flex: 0 0 96px;
-  }
-}
-
-.sid__section-label {
-  display: block;
-  margin-bottom: 4px;
-  color: #9ed8f5;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
-
-.sid__teachers,
-.sid__mining,
-.sid__benchmark {
-  flex: 0 0 auto;
-  min-width: 0;
-}
-
-.sid__teachers-grid,
-.sid__mining-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.sid__context .sid__section-label {
-  margin-bottom: 2px;
-  font-size: 11px;
-}
-
-.sid__context .sid__teachers-grid,
-.sid__context .sid__mining-grid {
-  gap: 4px;
-}
-
-.sid__context .sid__teacher-item,
-.sid__context .sid__mining-item {
-  padding: 4px 5px;
-}
-
-.sid__teacher-item,
-.sid__mining-item {
-  min-width: 0;
-  padding: 5px 8px;
-  border: 1px solid rgba(120, 200, 255, 0.16);
-  border-radius: 3px;
-  background: rgba(0, 36, 72, 0.4);
-
-  span {
-    display: block;
-    color: #8eb8d8;
-    font-size: 11px;
-    font-weight: 600;
-  }
-
-  em,
-  strong {
-    display: block;
-    margin-top: 2px;
-    overflow: hidden;
-    color: #e8f7ff;
-    font-size: 13px;
-    font-style: normal;
-    font-weight: 700;
-    line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-.sid__mining-item strong {
-  color: #e8c878;
-}
-
-.sid__benchmark-lines {
-  display: grid;
-  gap: 3px;
-
-  p {
-    margin: 0;
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
-    gap: 8px;
-    align-items: baseline;
-    padding: 4px 8px;
-    border: 1px solid rgba(232, 200, 120, 0.16);
-    border-radius: 3px;
-    background: rgba(40, 32, 12, 0.28);
-  }
-
-  em {
-    color: #e8c878;
-    font-size: 11px;
-    font-style: normal;
-    font-weight: 700;
-  }
-
-  span {
-    overflow: hidden;
-    color: #dceef8;
-    font-size: 12px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    flex: 0 0 120px;
+    align-self: start;
   }
 }
 
 .sid__avatar {
-  flex: 0 0 96px;
-  width: 96px;
-  height: 96px;
+  flex: 0 0 120px;
+  width: 120px;
+  height: 120px;
   padding: 3px;
   border-radius: 50%;
-  transition: background 0.25s ease, box-shadow 0.25s ease;
+  transition: background 0.25s ease;
 
   &--low {
     background: conic-gradient(from 210deg, #7cf4ff, #2a7fd4 35%, #4ade80 70%, #7cf4ff);
-    box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.35), 0 0 28px rgba(40, 180, 120, 0.28);
+    box-shadow: none;
   }
 
   &--medium {
     background: conic-gradient(from 210deg, #fde68a, #f59e0b 40%, #facc15 75%, #fde68a);
-    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 28px rgba(250, 180, 40, 0.32);
+    box-shadow: none;
   }
 
   &--high {
     background: conic-gradient(from 210deg, #fda4af, #ef4444 40%, #f87171 75%, #fda4af);
-    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.5), 0 0 28px rgba(220, 60, 70, 0.35);
+    box-shadow: none;
   }
 
   img,
@@ -653,7 +648,7 @@ function selectPeer(studentId: string) {
     border: 3px solid #031528;
     background: linear-gradient(160deg, #0c2d52, #071a34);
     color: #7ff6ff;
-    font-size: 28px;
+    font-size: 36px;
     font-weight: 800;
   }
 }
@@ -661,71 +656,123 @@ function selectPeer(studentId: string) {
 .sid__identity {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible;
+  padding-top: 4px;
 }
 
 .sid__name {
+  position: relative;
+  z-index: 3;
+  overflow: visible;
+}
+
+.sid__name-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 6px 8px;
 
   strong {
-    font-size: 24px;
+    flex: 0 0 auto;
+    font-size: 28px;
     line-height: 1;
-    color: #f7fbff;
+    color: #8ed8ff;
     letter-spacing: 0.08em;
-    text-shadow: 0 1px 3px rgba(0, 10, 28, 0.8);
+    text-shadow: none;
   }
 
   em {
-    padding: 4px 10px;
-    border: 1px solid rgba(120, 210, 255, 0.28);
+    flex: 0 0 auto;
+    padding: 4px 9px;
+    border: 1px solid rgba(120, 210, 255, 0.45);
     border-radius: 2px;
-    background: linear-gradient(135deg, rgba(0, 90, 160, 0.28), rgba(0, 40, 80, 0.35));
-    color: #9ae4ff;
-    font-size: 14px;
+    background: linear-gradient(135deg, rgba(0, 90, 160, 0.35), rgba(0, 40, 80, 0.4));
+    color: #9ed8f5;
+    font-size: 15px;
     font-style: normal;
-    font-weight: 600;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+}
+
+.sid__tags {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: visible;
+
+  :deep(.stu-hint) {
+    flex: 0 0 auto;
+    display: inline-flex;
+    max-width: none;
   }
 }
 
 .sid__tag {
-  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  padding: 4px 9px;
   border: 1px solid;
-  border-radius: 3px;
-  font-size: 14px;
-  font-weight: 700;
+  border-radius: 2px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   white-space: nowrap;
+  line-height: 1.25;
+
+  i {
+    font-style: normal;
+    font-size: 15px;
+    font-weight: 800;
+    opacity: 0.9;
+    letter-spacing: 0.02em;
+  }
 
   &--cadre {
-    border-color: rgba(232, 200, 120, 0.45);
-    background: linear-gradient(135deg, rgba(140, 100, 20, 0.32), rgba(80, 55, 10, 0.35));
-    color: #f0d78a;
-    box-shadow: 0 0 10px rgba(232, 200, 120, 0.18);
+    border-color: rgba(232, 200, 120, 0.55);
+    background: linear-gradient(135deg, rgba(150, 110, 30, 0.42), rgba(80, 55, 10, 0.4));
+    color: #f5d78a;
+    box-shadow: none;
+
+    i { color: #ffe6a8; }
   }
 
   &--potential {
-    border-color: rgba(55, 233, 145, 0.55);
-    background: linear-gradient(135deg, rgba(20, 140, 80, 0.28), rgba(8, 70, 42, 0.35));
-    color: #4dffb0;
+    border-color: rgba(100, 220, 255, 0.75);
+    background: linear-gradient(135deg, rgba(0, 150, 220, 0.55), rgba(0, 80, 150, 0.5));
+    color: #b8fbff;
+    box-shadow: 0 0 14px rgba(80, 220, 255, 0.5);
+    animation: sid-breath-potential 1.8s ease-in-out infinite;
+
+    i { color: #e8feff; }
   }
 }
 
 .sid__grid {
+  margin: 0;
+  width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 3px;
-  margin: 0;
+  gap: 6px;
 
   :deep(.stu-hint--block),
   div {
     min-width: 0;
     display: grid;
-    grid-template-columns: 58px minmax(0, 1fr);
+    grid-template-columns: 88px minmax(0, 1fr);
     align-items: center;
-    font-size: 14px;
-    line-height: 1.25;
+    font-size: 16px;
+    line-height: 1.35;
   }
 
   :deep(.stu-hint--block > div) {
@@ -733,90 +780,370 @@ function selectPeer(studentId: string) {
   }
 
   dt {
-    padding-top: 1px;
-    color: #7eb4d8;
-    font-size: 13px;
-    font-weight: 600;
+    color: #7ec8f0;
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
   }
 
   dd {
     margin: 0;
-    color: #e8f4ff;
-    font-size: 14px;
-    font-weight: 500;
-    word-break: break-all;
-  }
-
-  dd:not(.sid__grid-dd--wrap) {
+    min-width: 0;
+    color: #8ed8ff;
+    font-size: 17px;
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
 
-  .sid__grid-dd--wrap {
-    overflow: visible;
-    white-space: normal;
+.sid__counselor-line {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+
+  b {
+    color: #8ed8ff;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .sid__counselor-sep {
+    color: #6eb4dc;
+    font-weight: 600;
+    flex: 0 0 auto;
+  }
+
+  i {
+    color: #9ed8f5;
+    font-style: normal;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-size: 17px;
+    white-space: nowrap;
   }
 }
 
 .sid__link {
   display: inline;
+  max-width: 100%;
   padding: 0;
   border: none;
-  border-bottom: 1px dashed rgba(127, 246, 255, 0.55);
+  border-bottom: 1px dashed rgba(142, 216, 255, 0.45);
   background: transparent;
-  color: #7ff6ff;
+  color: #8ed8ff;
   font: inherit;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &:hover {
-    color: #b8f7ff;
-    border-bottom-color: rgba(184, 247, 255, 0.9);
+    color: #b8ecff;
+    border-bottom-color: rgba(184, 236, 255, 0.75);
   }
 }
 
-.sid__management {
-  flex: 0 1 auto;
+.sid__side {
+  min-width: 0;
   min-height: 0;
-  padding: 3px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible;
+}
+
+.sid__panel {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 6px 8px;
   border: 1px solid rgba(120, 200, 255, 0.2);
-  border-radius: 2px;
+  border-radius: 3px;
   background:
     linear-gradient(135deg, rgba(0, 80, 140, 0.2), transparent 55%),
     rgba(0, 28, 58, 0.42);
-  overflow: hidden;
+  box-shadow: none;
+  filter: none;
+  overflow: visible;
+
+  &--core {
+    overflow: visible;
+  }
+
+  &--aid {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
 }
 
-.sid__management-head {
+.sid__panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 1px;
+  gap: 8px;
+  margin-bottom: 6px;
 
-  strong { color: #a8e8ff; font-size: 13px; font-weight: 700; }
+  strong {
+    color: #a8e8ff;
+    font-size: 17px;
+    font-weight: 700;
+  }
 }
 
-.sid__management-grid {
+.sid__core-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  overflow: visible;
+  padding: 2px;
+
+  :deep(.stu-hint) {
+    min-width: 0;
+    display: block;
+    overflow: visible;
+  }
+}
+
+.sid__core-card {
+  width: 100%;
+  min-height: 58px;
+  padding: 6px 4px;
+  border: 1px solid rgba(85, 233, 149, 0.35);
+  border-radius: 4px;
+  background: rgba(20, 80, 60, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  font: inherit;
+  box-shadow: none;
+  filter: none;
+  text-shadow: none;
+
+  span {
+    color: #9ed8f5;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: #7ef0a8;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  &--low {
+    border-color: rgba(85, 233, 149, 0.55);
+    background: rgba(20, 90, 65, 0.32);
+    box-shadow: 0 0 12px rgba(85, 233, 149, 0.35);
+    animation: sid-breath-warn-low 2s ease-in-out infinite;
+
+    strong { color: #9affc4; }
+  }
+
+  &--medium {
+    border-color: rgba(250, 204, 21, 0.7);
+    background: rgba(130, 95, 20, 0.38);
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.45);
+    animation: sid-breath-warn-mid 1.6s ease-in-out infinite;
+
+    strong { color: #ffe566; }
+  }
+
+  &--high {
+    border-color: rgba(255, 120, 120, 0.8);
+    background: rgba(140, 40, 50, 0.42);
+    box-shadow: 0 0 18px rgba(255, 90, 90, 0.55);
+    animation: sid-breath-warn-high 1.2s ease-in-out infinite;
+
+    strong { color: #ffb0b0; }
+  }
+}
+
+.sid__ticker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid rgba(100, 200, 255, 0.22);
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgba(0, 90, 140, 0.22), transparent 55%),
+    rgba(0, 28, 58, 0.48);
+  overflow: hidden;
+}
+
+.sid__ticker-label {
+  flex: 0 0 auto;
+  color: #7eb4d8;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.sid__ticker-track {
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.sid__ticker-marquee {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: sid-ticker-in 0.35s ease;
+
+  &--award .sid__ticker-text { color: #ffe6a8; }
+  &--warn .sid__ticker-text { color: #ffb4b4; }
+  &--info .sid__ticker-text { color: #b8ecff; }
+
+  &--scroll {
+    max-width: none;
+    width: max-content;
+    overflow: visible;
+    text-overflow: clip;
+    will-change: transform;
+    animation: sid-ticker-marquee var(--ticker-duration, 14s) linear infinite;
+  }
+
+  &--scroll-once {
+    max-width: none;
+    width: max-content;
+    overflow: visible;
+    text-overflow: clip;
+    will-change: transform;
+    animation: sid-ticker-marquee var(--ticker-duration, 14s) linear forwards;
+  }
+}
+
+.sid__ticker-text {
+  display: inline-block;
+  color: #d8eeff;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.sid__ticker-empty {
+  color: #6e9bb8;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sid__ticker--empty {
+  opacity: 0.85;
+}
+
+@keyframes sid-ticker-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sid-ticker-marquee {
+  0% { transform: translateX(var(--marquee-from, 0)); }
+  100% { transform: translateX(var(--marquee-to, -100%)); }
+}
+
+/* 关键信息呼吸灯：高潜 / 预警（仅光晕明暗，不缩放） */
+@keyframes sid-breath-potential {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: rgba(100, 220, 255, 0.5);
+    box-shadow: 0 0 8px rgba(80, 210, 255, 0.28);
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(180, 250, 255, 1);
+    box-shadow:
+      0 0 10px rgba(120, 240, 255, 0.9),
+      0 0 24px rgba(60, 200, 255, 0.55);
+  }
+}
+
+@keyframes sid-breath-warn-low {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: rgba(85, 233, 149, 0.4);
+    box-shadow: 0 0 6px rgba(85, 233, 149, 0.22);
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(140, 255, 190, 1);
+    box-shadow:
+      0 0 12px rgba(100, 255, 170, 0.75),
+      0 0 22px rgba(60, 220, 140, 0.4);
+  }
+}
+
+@keyframes sid-breath-warn-mid {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: rgba(250, 204, 21, 0.45);
+    box-shadow: 0 0 8px rgba(250, 204, 21, 0.25);
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(255, 236, 120, 1);
+    box-shadow:
+      0 0 14px rgba(255, 220, 80, 0.85),
+      0 0 26px rgba(250, 180, 20, 0.5);
+  }
+}
+
+@keyframes sid-breath-warn-high {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: rgba(248, 113, 113, 0.5);
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.28);
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(255, 170, 170, 1);
+    box-shadow:
+      0 0 16px rgba(255, 100, 100, 0.95),
+      0 0 28px rgba(255, 60, 60, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid__tag--potential,
+  .sid__core-card--low,
+  .sid__core-card--medium,
+  .sid__core-card--high {
+    animation: none !important;
+  }
+}
+
+.sid__aid-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 5px;
 
   :deep(.stu-hint--block) {
     min-width: 0;
     height: 100%;
   }
-
-  :deep(.sid__management-item) {
-    height: 100%;
-  }
 }
 
-.sid__management-item {
+.sid__aid-item {
   min-width: 0;
-  padding: 3px 5px;
+  padding: 5px 7px;
   border-left: 2px solid currentColor;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.56);
@@ -829,8 +1156,8 @@ function selectPeer(studentId: string) {
     white-space: nowrap;
   }
 
-  span { color: #7eb4d8; font-size: 11px; font-weight: 600; }
-  strong { margin-top: 1px; color: currentColor; font-size: 14px; font-weight: 700; }
+  span { color: #7eb4d8; font-size: 15px; font-weight: 600; }
+  strong { margin-top: 2px; color: currentColor; font-size: 17px; font-weight: 700; }
 
   &--safe { color: #55e995; }
   &--warn { color: #facc15; }
@@ -838,64 +1165,14 @@ function selectPeer(studentId: string) {
   &--info { color: #65dfff; }
 }
 
-.sid__recent {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  align-items: center;
-  padding: 3px 8px;
-  border: 1px solid rgba(120, 200, 255, 0.2);
-  border-radius: 2px;
-  background: rgba(0, 40, 78, 0.4);
-
-  em {
-    padding: 2px 8px;
-    border-radius: 2px;
-    font-style: normal;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  strong {
-    overflow: hidden;
-    color: #e8f4ff;
-    font-size: 14px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &--award {
-    border-color: rgba(55, 233, 145, 0.28);
-    em { background: rgba(55, 233, 145, 0.15); color: #67e8a3; }
-  }
-
-  &--warn {
-    border-color: rgba(250, 204, 21, 0.3);
-    em { background: rgba(250, 204, 21, 0.15); color: #facc15; }
-  }
-
-  &--info {
-    em { background: rgba(45, 206, 255, 0.12); color: #65dfff; }
-  }
-}
-
 .sid__utility-row {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr);
-  gap: 6px;
-
-  > :deep(.stu-hint--block) {
-    min-width: 0;
-  }
+  flex: 0 0 auto;
+  margin-top: auto;
 }
 
 .sid__archive-actions {
   display: grid;
-  grid-template-columns: 1fr 1.35fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 
   :deep(.stu-hint) {
@@ -903,108 +1180,24 @@ function selectPeer(studentId: string) {
     min-width: 0;
   }
 
-  :deep(button),
   button {
     width: 100%;
-    min-height: 30px;
-    padding: 0 12px;
-    border: 1px solid rgba(120, 210, 255, 0.28);
-    border-radius: 2px;
-    background: linear-gradient(180deg, rgba(0, 90, 160, 0.32), rgba(0, 50, 100, 0.28));
-    color: #8ee9ff;
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid rgba(100, 200, 255, 0.28);
+    border-radius: 3px;
+    background:
+      linear-gradient(180deg, rgba(0, 90, 160, 0.28), rgba(0, 40, 80, 0.35)),
+      rgba(0, 30, 60, 0.55);
+    color: #b8ecff;
     font-size: 15px;
-    font-weight: 600;
-    white-space: nowrap;
+    font-weight: 700;
     cursor: pointer;
+
+    &:hover {
+      border-color: rgba(120, 220, 255, 0.5);
+      color: #e8f8ff;
+    }
   }
-}
-
-.sid__archive-btn {
-  border-color: rgba(0, 202, 255, 0.34) !important;
-  background: rgba(0, 92, 168, 0.34) !important;
-  color: #c8f4ff !important;
-}
-
-.sid__warnings {
-  flex: 0 0 auto;
-  margin-top: auto;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-
-  :deep(.stu-hint--block) {
-    min-width: 0;
-    height: 100%;
-  }
-
-  :deep(.sid__warning) {
-    width: 100%;
-    height: 100%;
-  }
-}
-
-.sid__warning {
-  min-width: 0;
-  min-height: 44px;
-  display: grid;
-  grid-template-columns: 10px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  padding: 5px 9px;
-  border: 1px solid;
-  border-radius: 2px;
-  text-align: left;
-  cursor: pointer;
-
-  &--low {
-    border-color: rgba(74, 222, 128, 0.32);
-    background: rgba(38, 151, 92, 0.12);
-    color: #55e995;
-  }
-
-  &--medium {
-    border-color: rgba(250, 204, 21, 0.34);
-    background: rgba(174, 121, 10, 0.14);
-    color: #facc15;
-  }
-
-  &--high {
-    border-color: rgba(248, 91, 91, 0.42);
-    background: rgba(185, 43, 55, 0.16);
-    color: #ff7474;
-  }
-}
-
-.sid__warning-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 8px currentColor;
-}
-
-.sid__warning-main {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sid__warning-label {
-  overflow: hidden;
-  color: #e8f4ff;
-  font-size: 14px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sid__warning-main small {
-  overflow: hidden;
-  color: currentColor;
-  font-size: 12px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 </style>

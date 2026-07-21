@@ -1,6 +1,12 @@
 from Utils.DB.Models.account_models import Account
 from Utils.DB.Models.college_models import College
 from Utils.DB.Models.course_models import Course
+from Utils.DB.Models.dict_and_scholarship_models import (
+    DictHighPotentialTag,
+    DictScholarshipType,
+    DictWarningCategory,
+    StudentScholarship,
+)
 from Utils.DB.Models.key_task_models import KeyTask
 from Utils.DB.Models.major_models import Major
 from Utils.DB.Models.school_class_models import SchoolClass
@@ -19,4 +25,8 @@ __all__ = [
     "Course",
     "KeyTask",
     "SchoolEvent",
+    "DictScholarshipType",
+    "StudentScholarship",
+    "DictWarningCategory",
+    "DictHighPotentialTag",
 ]

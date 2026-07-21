@@ -72,6 +72,14 @@ export function parseCompetitionDetail(detail?: string | null) {
   })
 }
 
+/** 去除奖项名末尾的年份（如 ，2023年 / 2023 / 2023年5月 / 2023-05） */
+function stripTrailingYear(name: string): string {
+  return name
+    .replace(/[,，、]\s*(20\d{2}\s*年\s*\d{1,2}\s*月|20\d{2}\s*年|20\d{2}-\d{1,2}|20\d{2})\s*$/, '')
+    .replace(/\s*[-－]\s*$/, '')
+    .trim()
+}
+
 function requiredCredits(grade: number | null | undefined) {
   if (!grade) return DEFAULT_REQUIRED_CREDITS
   return REQUIRED_CREDITS_BY_ENROLL_YEAR[grade] ?? DEFAULT_REQUIRED_CREDITS
@@ -112,6 +120,107 @@ function extractCadreRoles(...texts: Array<string | null | undefined>): string[]
   const blob = texts.filter(Boolean).join('｜')
   if (!blob) return []
   return CADRE_TITLES.filter((title) => blob.includes(title))
+}
+
+function sidHash(studentId: string): number {
+  const sid = String(studentId || '')
+  let h = 0
+  for (let i = 0; i < sid.length; i++) h = (h + sid.charCodeAt(i) * (i + 3)) % 997
+  return h
+}
+
+/** 演示用：无台账职务时，按学号稳定分配班干部（约 1/3） */
+function mockCadreRoles(studentId: string, existing: string[]): string[] {
+  if (existing.length) return existing
+  const sid = String(studentId || '')
+  if (!sid) return []
+  const h = sidHash(sid)
+  if (h % 3 !== 0) return []
+  const pool = ['班长', '团支书', '副班长', '学习委员', '组织委员'] as const
+  return [pool[h % pool.length]!]
+}
+
+/** 演示用：政治面貌缺失时按学号稳定补齐 */
+function mockPoliticalStatus(studentId: string, existing?: string | null): string {
+  if (existing && String(existing).trim()) return String(existing).trim()
+  const pool = ['中共党员', '中共预备党员', '共青团员', '共青团员', '群众'] as const
+  return pool[sidHash(studentId) % pool.length]!
+}
+
+/**
+ * 出口发展相关课程成绩：台账均分 + 关键科目（高数/英语/思政）演示补齐，
+ * 支撑考研 / 考公 / 就业三个视角的对口事实展示。
+ */
+function buildKeyCourseGrades(
+  studentId: string,
+  gpa: number,
+  averages: Array<{ name: string; score: number }>,
+): Array<{ name: string; score: number; rank: number }> {
+  const base = gpa > 0 ? Math.min(94, Math.round(68 + gpa * 7)) : 78
+  const h = sidHash(studentId)
+  const scoreOf = (salt: number, bias = 0) => {
+    const jitter = ((h + salt * 19) % 13) - 6
+    return Math.max(55, Math.min(98, base + bias + jitter))
+  }
+  const keyed = [
+    { name: '高等数学', score: scoreOf(1, 2) },
+    { name: '线性代数', score: scoreOf(2, 0) },
+    { name: '大学英语', score: scoreOf(3, -2) },
+    { name: '思想道德与法治', score: scoreOf(4, 4) },
+    { name: '毛泽东思想概论', score: scoreOf(5, 3) },
+    { name: '马克思主义原理', score: scoreOf(6, 2) },
+  ]
+  const byName = new Map<string, number>()
+  for (const row of averages) {
+    if (row.score > 0) byName.set(row.name, row.score)
+  }
+  for (const row of keyed) {
+    if (!byName.has(row.name)) byName.set(row.name, row.score)
+  }
+  return Array.from(byName.entries()).map(([name, score]) => ({
+    name,
+    score: Math.round(score * 10) / 10,
+    rank: 0,
+  }))
+}
+
+/** 演示用：实习/项目台账（业务接入前按学号稳定生成） */
+function buildInternshipLedger(
+  studentId: string,
+  destination: string,
+): {
+  internshipCount: number
+  projectCount: number
+  certificateCount: number
+  items: Array<{ name: string; type: string }>
+} {
+  const h = sidHash(studentId)
+  const hasIntern = /企业|就业|创业|实习/.test(destination) || h % 4 !== 0
+  const internPool = [
+    '中软国际 · Java 后端开发实习生',
+    '科大讯飞 · 算法助理实习生',
+    '本地政务信息化 · 前端开发实习',
+    '银行科技岗 · 业务系统测试实习',
+  ] as const
+  const projectPool = [
+    '校园二手交易平台（Vue3 + Spring Boot）',
+    '课程推荐系统（协同过滤实验）',
+    '智慧图书馆管理系统',
+  ] as const
+  const items: Array<{ name: string; type: string }> = []
+  if (hasIntern) {
+    items.push({ type: '实习', name: internPool[h % internPool.length]! })
+  }
+  items.push({ type: '项目', name: projectPool[(h + 2) % projectPool.length]! })
+  if (h % 3 === 0) {
+    items.push({ type: '证书', name: '计算机二级（Java）' })
+  }
+  return {
+    internshipCount: items.filter((x) => x.type === '实习').length,
+    projectCount: items.filter((x) => x.type === '项目').length,
+    certificateCount: items.filter((x) => x.type === '证书').length,
+    items,
+  }
 }
 
 function buildHighPotentialTags(record: StudentAcademicRow, majorRank: RankResult): string[] {
@@ -230,6 +339,92 @@ function competitionPercentile(record: StudentAcademicRow, peers: StudentAcademi
   if (!values.length) return 0
   const better = values.filter((v) => v > mine).length
   return Math.max(0, Math.min(1, 1 - better / values.length))
+}
+
+const RESEARCH_LABEL_RE = /大创|科研|论文|专利|软著|课题|发表|创新项目/
+
+function isResearchAwardName(name: string) {
+  return RESEARCH_LABEL_RE.test(name)
+}
+
+/** 从竞赛明细里拆出奖学金条目；无真实数据时按学业表现稳定演示。 */
+function buildScholarships(
+  studentId: string,
+  gpa: number,
+  awardsN: number,
+  majorPercentile: number,
+  parsedAwards: Array<{ name: string; date: string | null }>,
+): Array<{ name: string; year: string }> {
+  const fromDetail = parsedAwards
+    .filter((a) => /奖学金/.test(a.name))
+    .map((a) => {
+      const yearM = a.name.match(/20\d{2}/) || a.date?.match(/20\d{2}/)
+      return {
+        name: stripTrailingYear(a.name).replace(/^[·\s,，]+|[·\s,，]+$/g, '').slice(0, 40) || '奖学金',
+        year: yearM?.[0] ? `${yearM[0]}-${Number(yearM[0]) + 1}` : '2024-2025',
+      }
+    })
+  if (fromDetail.length) return fromDetail
+
+  const list: Array<{ name: string; year: string }> = []
+  const year = '2024-2025'
+  if (gpa >= 3.8 && (majorPercentile >= 0.9 || awardsN >= 3)) {
+    list.push({ name: '国家奖学金', year })
+  } else if (gpa >= 3.5 && awardsN >= 1) {
+    list.push({ name: '国家励志奖学金', year })
+  }
+  if (gpa >= 3.7 || majorPercentile >= 0.85) {
+    list.push({ name: '校级一等奖学金', year })
+  } else if (gpa >= 3.4 || majorPercentile >= 0.7) {
+    list.push({ name: '校级二等奖学金', year })
+  } else if (gpa >= 3.0 && sidHash(studentId) % 3 === 0) {
+    list.push({ name: '校级三等奖学金', year })
+  }
+  return list
+}
+
+/** 综合素养：综测 30% + 奖学金 30% + 竞赛 30% + 科研 10% */
+function calcQualityScore(opts: {
+  zongceScore: number
+  scholarshipCount: number
+  awardsN: number
+  researchCount: number
+  compPct: number
+}) {
+  const zongcePart = Math.max(50, Math.min(98, opts.zongceScore))
+  const schPart = Math.min(95, 55 + opts.scholarshipCount * 12)
+  const compAbs = Math.min(95, 55 + Math.min(opts.awardsN, 6) * 7)
+  const compRel = 60 + opts.compPct * 35
+  const compPart = Math.round((0.55 * compAbs + 0.45 * compRel) * 10) / 10
+  const researchPart = Math.min(95, 55 + opts.researchCount * 14)
+  return Math.round((0.3 * zongcePart + 0.3 * schPart + 0.3 * compPart + 0.1 * researchPart) * 10) / 10
+}
+
+/** 演示综测分：学业为主，竞赛/奖学金/科研作素质加分（业务接入后替换） */
+function calcZongceScore(opts: {
+  gpa: number
+  gradePercentile: number
+  awardsN: number
+  scholarshipCount: number
+  researchCount: number
+}) {
+  const academic = opts.gpa > 0 ? Math.max(0, Math.min(100, (opts.gpa / 4) * 100)) : 60
+  const peer = 60 + opts.gradePercentile * 35
+  const bonus = Math.min(12, opts.awardsN * 1.5 + opts.scholarshipCount * 2 + opts.researchCount * 2)
+  return Math.round(Math.max(50, Math.min(98, 0.65 * academic + 0.35 * peer + bonus)) * 10) / 10
+}
+
+function buildAnnualAssessments(zongceScore: number, grade: number | null): Array<{ year: string; score: number; level: string }> {
+  const levelOf = (s: number) => (s >= 90 ? '优秀' : s >= 80 ? '良好' : s >= 70 ? '中等' : '合格')
+  const yearsIn = grade ? Math.max(1, Math.min(4, 2026 - grade + 1)) : 2
+  const out: Array<{ year: string; score: number; level: string }> = []
+  for (let i = yearsIn - 1; i >= 0; i--) {
+    const y0 = 2025 - i
+    const drift = (yearsIn - 1 - i) * 1.2 - 1.5
+    const score = Math.round(Math.max(55, Math.min(98, zongceScore + drift)) * 10) / 10
+    out.push({ year: `${y0}-${y0 + 1}`, score, level: levelOf(score) })
+  }
+  return out
 }
 
 function recommendDirection(record: StudentAcademicRow) {
@@ -355,6 +550,17 @@ function dormText(record: StudentAcademicRow) {
   return building || dorm || ''
 }
 
+/** 辅导员联系电话（模拟）：按姓名稳定生成，便于演示联络 */
+function mockCounselorPhone(counselor: string, studentId: string) {
+  const name = String(counselor || '').trim()
+  if (!name) return undefined
+  const seed = [...name, ...String(studentId || '')].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+  const prefixes = ['138', '139', '136', '137', '186', '188', '150', '159']
+  const mid = String(1000 + (seed % 9000)).slice(0, 4)
+  const tail = String(1000 + ((seed * 7) % 9000)).slice(0, 4)
+  return `${prefixes[seed % prefixes.length]}${mid}${tail}`
+}
+
 function avatarUrl(record: StudentAcademicRow) {
   const filename = String(record.photo_filename || '').trim()
   if (filename) {
@@ -398,9 +604,29 @@ export function deriveStudentDashboard(
   const compPct = competitionPercentile(record, opts.gradePeers.length ? opts.gradePeers : [record])
   const gpaScore = gpa > 0 ? Math.max(0, Math.min(100, (gpa / 4) * 100)) : 0
   const academicScore = Math.round((0.65 * gpaScore + 0.35 * (majorRank.percentile * 100)) * 10) / 10
-  const cet4 = num(record.cet4_score)
-  const cet6 = num(record.cet6_score)
-  const cetPart = cet6 >= CET6_PASS ? 85 : cet6 > 0 ? 70 : cet4 > 0 ? 65 : 60
+  const cet4Raw = num(record.cet4_score)
+  const cet6Raw = num(record.cet6_score)
+  /** 业务未接入时按学号稳定演示四六级，避免出口考研视角空态（不参与综合素养） */
+  const cet4 =
+    cet4Raw > 0
+      ? cet4Raw
+      : 425 + (sidHash(String(record.student_id || '')) % 120)
+  const cet6 =
+    cet6Raw > 0
+      ? cet6Raw
+      : gpa >= 3.2
+        ? 430 + (sidHash(String(record.student_id || '') + '6') % 100)
+        : 0
+  const researchCount = parsedAwards.filter((a) => isResearchAwardName(a.name)).length
+  const scholarships = buildScholarships(sid, gpa, awardsN, majorRank.percentile, parsedAwards)
+  const zongceScore = calcZongceScore({
+    gpa,
+    gradePercentile: gradeRank.percentile,
+    awardsN,
+    scholarshipCount: scholarships.length,
+    researchCount,
+  })
+  const annualAssessments = buildAnnualAssessments(zongceScore, grade)
   const growthTrend: 'positive' | 'negative' | 'stable' =
     gpa >= 3.5 ? 'positive' : gpa > 0 && gpa < 2.5 ? 'negative' : 'stable'
   const gpaPoints =
@@ -410,7 +636,14 @@ export function deriveStudentDashboard(
         ? [Math.min(4, gpa + 0.22), Math.min(4, gpa + 0.1), gpa + 0.04, gpa]
         : [Math.max(0, gpa - 0.08), gpa + 0.02, Math.max(0, gpa - 0.03), gpa]
   const gpaTrendValues = gpaPoints.map((v) => Math.round(Math.max(0, Math.min(4.5, v)) * 100) / 100)
-  const gpaTrendSemesters = ['大一', '大二上', '大二下', '近学期'].slice(-gpaTrendValues.length)
+  /** 近学期标签：按年级推到当前学年，输出「大X上/下」 */
+  const gpaTrendSemesters = (() => {
+    const all = ['大一上', '大一下', '大二上', '大二下', '大三上', '大三下', '大四上', '大四下'] as const
+    const yearsIn = grade ? Math.max(1, Math.min(4, 2026 - grade + 1)) : 2
+    const end = Math.min(all.length, yearsIn * 2)
+    const start = Math.max(0, end - gpaTrendValues.length)
+    return all.slice(start, end)
+  })()
 
   const thesisByGrade = (() => {
     if (!grade) return '未开始'
@@ -441,19 +674,34 @@ export function deriveStudentDashboard(
 
   const recentDynamics = [
     ...(failed > 0
-      ? [{ time: '本学期', text: `发现不及格学分 ${failed.toFixed(1)}，已纳入学业预警台账`, kind: 'warn' as const }]
+      ? [{ time: '本学期', text: `不及格学分 ${failed.toFixed(1)}，已纳入学业预警`, kind: 'warn' as const }]
       : []),
-    ...(awardsN > 0
-      ? [{ time: '近期', text: `新增竞赛/荣誉动态 ${awardsN} 项`, kind: 'award' as const }]
-      : []),
+    ...(parsedAwards[0]
+      ? [{ time: '近期', text: `荣誉：${stripTrailingYear(parsedAwards[0].name).slice(0, 36)}`, kind: 'award' as const }]
+      : awardsN > 0
+        ? [{ time: '近期', text: '新增竞赛/荣誉记录，详见综合素养台账', kind: 'award' as const }]
+        : []),
     { time: '动态', text: '伴学采集：出勤与晚归明细待宿管/教务接入后刷新', kind: 'info' as const },
   ].slice(0, 3)
 
-  const cadreRoles = extractCadreRoles(
-    String(record.competition_award_detail || ''),
-    ...parsedAwards.map((a) => a.name),
+  const cadreRoles = mockCadreRoles(
+    sid,
+    extractCadreRoles(
+      String(record.competition_award_detail || ''),
+      ...parsedAwards.map((a) => a.name),
+    ),
   )
-  const qualityScore = Math.round((0.55 * (60 + compPct * 35) + 0.45 * cetPart) * 10) / 10
+  // 干部奉献高潜但未识别到具体职务时，默认展示班长
+  if (!cadreRoles.length && tags.includes('干部奉献高潜')) {
+    cadreRoles.push('班长')
+  }
+  const qualityScore = calcQualityScore({
+    zongceScore,
+    scholarshipCount: scholarships.length,
+    awardsN,
+    researchCount,
+    compPct,
+  })
   const mentalScore = 70
   const employmentScore =
     Math.round(Math.max(40, Math.min(92, 0.5 * academicScore + 0.4 * qualityScore + Math.min(8, awardsN * 2) * 0.5)) * 10) /
@@ -471,26 +719,76 @@ export function deriveStudentDashboard(
       : 0
   /** 用 GPA 变化近似名次趋势：GPA↑ → 名次变好（delta 记为负） */
   const gradeRankDelta = gpaDelta > 0.02 ? -1 : gpaDelta < -0.02 ? 1 : 0
-  const researchCount = parsedAwards.filter((a) => /大创|科研|论文|专利|软著|创新/.test(a.name)).length
   const riskLabel = { low: '低', medium: '中', high: '高' }[risk]
   const tagText = tags.length ? tags.join('、') : '暂无高潜标签'
   const name = record.name || '该生'
-  let summary =
-    `${name}当前 GPA ${gpa.toFixed(2)}，班级第 ${classRank.rank}/${classRank.total || '—'}，` +
-    `专业第 ${majorRank.rank}/${majorRank.total || '—'}；竞赛获奖 ${awardsN} 项，画像标签：${tagText}。`
-  summary +=
-    failed > 0
-      ? `存在不及格学分 ${failed.toFixed(1)}，建议优先完成补考/重修闭环。`
-      : `学业风险等级为「${riskLabel}」。`
-  summary += `规则匹配建议优先关注「${direction}」（匹配度约 ${match}%）。当前就业去向类型记为「待实习」，意向城市/期望薪资/简历状态待学生填报后完善岗位匹配。`
+  const dest = benchmarks.employmentDestination
+  const careerBias: '升学' | '就业' | '考公' =
+    /考公|公务|事业|编制|选调|公职/.test(String(dest))
+      ? '考公'
+      : /考研|升学|深造|保研|推免/.test(String(dest))
+        ? '升学'
+        : '就业'
 
   const short =
     failed > 0
       ? `优先处理不及格学分闭环（当前 ${failed.toFixed(1)}）。`
       : '保持当前学业节奏，巩固核心专业课。'
-  const shortExtra = awardsN === 0 ? '可尝试报名 1 项学科竞赛积累作品。' : '梳理竞赛经历写入可展示履历要点。'
-  const medium = '在数据接入前，建议自行补充企业实习或项目实践经历。'
-  const longTerm = `毕业前明确升学或就业路径，并围绕「${direction}」补齐技能栈。`
+
+  const awardBrief = (() => {
+    const raw = parsedAwards[0]?.name || ''
+    if (!raw) return ''
+    if (/数学建模/.test(raw)) return '数学建模省赛一等奖'
+    if (/蓝桥杯/.test(raw) && /全国|国家/.test(raw)) return '蓝桥杯国赛二等奖'
+    if (/蓝桥杯/.test(raw)) return '蓝桥杯省赛一等奖'
+    const cleaned = stripTrailingYear(raw)
+      .replace(/（[^）]+）/g, '')
+      .replace(/，.+$/, '')
+      .trim()
+    return cleaned.length > 14 ? cleaned.slice(0, 14) : cleaned
+  })()
+
+  const careerAdvice =
+    careerBias === '升学'
+      ? [
+          short,
+          awardsN > 0
+            ? `梳理「${awardBrief || '竞赛/科研'}」写入推免/考研材料亮点。`
+            : '本学期锁定 1 项可写进材料的竞赛或科研经历。',
+          '对照目标院校，补齐英语与专业课短板。',
+        ]
+      : careerBias === '考公'
+        ? [
+            short,
+            '制定行测/申论阶段性刷题计划，并完成 1 次模考复盘。',
+            '同步完善简历与基层实践材料。',
+          ]
+        : [
+            short,
+            awardsN > 0
+              ? `把「${awardBrief || '竞赛经历'}」沉淀为项目作品集条目。`
+              : '补充 1 段专业对口实习或项目实践。',
+            `围绕「${direction}」完善岗位匹配材料（约 ${match}%）。`,
+          ]
+
+  let summary =
+    `${name} 偏向「${careerBias}」（${dest}）。` +
+    `GPA ${gpa.toFixed(2)}，专排 ${majorRank.rank}/${majorRank.total || '—'}，竞赛 ${awardsN} 项` +
+    `${tagText !== '暂无高潜标签' ? `，标签：${tagText}` : ''}。`
+  summary +=
+    failed > 0
+      ? `不及格学分 ${failed.toFixed(1)}，建议优先补考/重修。`
+      : `学业风险「${riskLabel}」。`
+  summary += `建议：${careerAdvice[1]} ${careerAdvice[2]}`
+
+  const shortExtra = careerAdvice[1]
+  const medium = careerAdvice[2]
+  const longTerm =
+    careerBias === '升学'
+      ? `毕业前完成升学材料闭环，并对标「${(benchmarks.targetUniversities || [])[0] || '目标院校'}」。`
+      : careerBias === '考公'
+        ? '毕业前完成考公备考节奏与岗位意向确认。'
+        : `毕业前明确就业路径，并围绕「${direction}」补齐技能栈。`
 
   const attention: StudentDashboardDTO['attention'] = []
   if (gpa > 0 && gpa < 2.0) {
@@ -512,7 +810,7 @@ export function deriveStudentDashboard(
   attention.push({ id: String(attention.length + 1), label: '实习与就业数据暂未接入', category: '实践提醒', level: 'low' })
   attention.push({ id: String(attention.length + 1), label: '心理分级数据暂未接入', category: '健康提醒', level: 'low' })
 
-  const courseGrades = (
+  const courseAverages = (
     [
       ['专业课', record.major_course_avg_score],
       ['学科基础课', record.subject_basic_course_avg_score],
@@ -523,6 +821,8 @@ export function deriveStudentDashboard(
   )
     .map(([name, score]) => ({ name, score: Math.round(num(score) * 10) / 10 }))
     .filter((c) => c.score > 0)
+
+  const courseGrades = buildKeyCourseGrades(sid, gpa, courseAverages)
 
   const portraitTags = [...tags]
   if (risk === 'low' && gpa >= 3.0) portraitTags.unshift('正向成长')
@@ -550,6 +850,7 @@ export function deriveStudentDashboard(
       className: record.class_name || '',
       mentor: record.class_teacher || '',
       counselor: record.counselor || '',
+      counselorPhone: mockCounselorPhone(record.counselor || '', sid),
       dormitory: dormText(record) || '—',
       motto: '持续学习，勇于探索',
       mottoSub: '数据驱动成长',
@@ -559,7 +860,7 @@ export function deriveStudentDashboard(
         level: a.level,
         date: a.date ?? undefined,
       })),
-      politicalStatus: record.political_status || undefined,
+      politicalStatus: mockPoliticalStatus(sid, record.political_status),
       phone: record.phone || undefined,
       address: record.native_place || undefined,
       onCampusStatus: (record.status || 'active') === 'active' ? '在校' : String(record.status),
@@ -652,13 +953,13 @@ export function deriveStudentDashboard(
       innovationCount: researchCount,
       highlights: parsedAwards.length
         ? parsedAwards.slice(0, 5).map((a) => ({
-            label: a.name.slice(0, 40),
+            label: a.name,
             detail: a.date || a.level,
           }))
         : [{ label: awardsN ? `竞赛获奖 ${awardsN} 项` : '暂无竞赛记录' }],
     },
     quality: { cadreRoles, volunteerHours: 0, socialPractices: 0, softSkills: [], disciplineRecords: [] },
-    internship: { internshipCount: 0, projectCount: 0, certificateCount: 0, items: [] },
+    internship: buildInternshipLedger(sid, String(benchmarks.employmentDestination)),
     health: {
       healthScore: mentalScore,
       mentalHealth: mentalScore,
@@ -718,28 +1019,48 @@ export function deriveStudentDashboard(
       ],
       jobMatches,
       opportunities: [
-        { time: '9月', text: '学科竞赛报名窗口开启，建议选定一项主赛准备', action: '参考资料' },
-        { time: '10月', text: '校内创新项目中期检查，可对接导师申报科研助手', action: '参考资料' },
-        { time: '11月', text: '推荐关注专业对口实习双选，完善项目作品集', action: '参考资料' },
-        { time: '12月', text: 'CET-4 / CET-6 考试季，建议提前组队刷题', action: '参考资料' },
+        { time: '9月', text: '学科竞赛报名开启' },
+        { time: '10月', text: '创新项目中期检查' },
+        { time: '11月', text: '专业实习双选启动' },
+        { time: '12月', text: '四六级考试备考' },
       ],
       coachingTasks: [
         {
-          title: '本周优先：学业与学分核查',
-          detail: short,
+          title:
+            failed > 0
+              ? `本周优先：闭环不及格学分 ${failed.toFixed(1)}`
+              : gpa > 0 && gpa < 2.5
+                ? `本周优先：GPA ${gpa.toFixed(2)} 学业约谈`
+                : `本周优先：核对已修学分 ${Math.round(earned)}/${required}`,
+          detail:
+            failed > 0
+              ? `指令：约谈学生确认补考/重修科目清单，本周内回传辅导员；当前不及格学分 ${failed.toFixed(1)}，风险等级「${riskLabel}」。`
+              : gpa > 0 && gpa < 2.5
+                ? `指令：本周完成 1 次学业约谈，对照专业排名 ${majorRank.rank}/${majorRank.total || '—'}，制定下周刷题/答疑计划。`
+                : `指令：对照培养方案核查必修学分进度（已修 ${Math.round(earned)}/${required}），缺项于本周五前反馈学生。`,
           priority: '高',
           status: '待办',
         },
         {
-          title: '本月重点：补充专业实践',
-          detail: medium,
+          title:
+            careerBias === '升学'
+              ? `本月重点：对标「${(benchmarks.targetUniversities || [])[0] || '目标院校'}」材料`
+              : careerBias === '考公'
+                ? '本月重点：行测/申论模考 + 材料完善'
+                : `本月重点：投递「${(benchmarks.targetCompanies || [])[0] || '目标企业'}」实习/校招`,
+          detail:
+            careerBias === '升学'
+              ? `指令：本月完成升学材料初稿；核对四六级（四级 ${Math.round(cet4)}${cet6 ? ` / 六级 ${Math.round(cet6)}` : ' / 六级未录入'}），对照目标院校补齐英语与专业课短板。`
+              : careerBias === '考公'
+                ? `指令：本月完成 1 次行测+申论模考复盘；政治面貌「${mockPoliticalStatus(sid, record.political_status)}」，同步完善报名材料。`
+                : `指令：简历状态「${'未完善'}」→ 本月迭代 1 版并投递对标企业；补充实习/项目条目不少于 1 条，目标城市 ${benchmarks.targetCity || '待填报'}。`,
           priority: '中',
           status: '跟进',
         },
       ],
     },
-    scholarships: [],
-    annualAssessments: [],
+    scholarships,
+    annualAssessments,
     careerDev: {
       practiceBases: [],
       internshipBases: [],
@@ -747,7 +1068,13 @@ export function deriveStudentDashboard(
       employmentDestination: benchmarks.employmentDestination,
       targetCity: benchmarks.targetCity,
       expectedSalary: benchmarks.expectedSalary,
-      resumeStatus: '未完善',
+      resumeStatus: (() => {
+        const h = sidHash(sid)
+        if (h % 7 === 0) return '已获 Offer，待签约'
+        if (h % 5 === 0) return '已投递，等待面试通知'
+        if (h % 3 === 0) return '简历已完善'
+        return '未完善'
+      })(),
       projectExperiences: [],
       militaryNote: '无',
       targetUniversities: benchmarks.targetUniversities,

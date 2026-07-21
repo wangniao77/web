@@ -119,12 +119,24 @@ export interface AcademicDevVM {
   majorRank: number
   majorTotal: number
   physicalTestScore: number
-  semesters: string[]
-  gpaValues: number[]
-  classRankValues: number[]
-  departmentRankValues: number[]
-  majorRankValues: number[]
-  physicalTestValues: number[]
+  /** @deprecated 实际数据以 gpaTrend 等趋势对象提供 */
+  semesters?: string[]
+  /** @deprecated 实际数据以 gpaTrend 等趋势对象提供 */
+  gpaValues?: number[]
+  classRankValues?: number[]
+  departmentRankValues?: number[]
+  majorRankValues?: number[]
+  physicalTestValues?: number[]
+  /** 学期 GPA 趋势（学业成绩趋势分析用） */
+  gpaTrend?: { semesters: string[]; values: number[] }
+  /** 学期班级排名趋势 */
+  classRankTrend?: { semesters: string[]; values: number[] }
+  /** 学期年级排名趋势 */
+  departmentRankTrend?: { semesters: string[]; values: number[] }
+  /** 学期专业排名趋势 */
+  majorRankTrend?: { semesters: string[]; values: number[] }
+  /** 体测成绩趋势 */
+  physicalTestTrend?: { semesters: string[]; values: number[] }
   courseGrades: CourseGradeVM[]
   courseCompletionRate: number
   excellentCourses: number

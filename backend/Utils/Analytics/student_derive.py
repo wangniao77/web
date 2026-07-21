@@ -493,6 +493,7 @@ def derive_student_dashboard(
     major_peers: Sequence[Any],
     grade_peers: Sequence[Any],
     college_name: str | None = None,
+    scholarships: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """生成与前端 StudentDashboardDTO 对齐的 dict。"""
     sid = str(record_get(record, "student_id") or "")
@@ -742,7 +743,7 @@ def derive_student_dashboard(
             "pushes": copy["pushes"],
             "jobMatches": job_matches,
         },
-        "scholarships": [],
+        "scholarships": list(scholarships or []),
         "annualAssessments": [],
         "careerDev": {
             "practiceBases": [],

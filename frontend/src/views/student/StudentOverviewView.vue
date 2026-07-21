@@ -7,6 +7,7 @@ import StudentLoadingSkeleton from '@/components/student/StudentLoadingSkeleton.
 import { useStudentEntrance } from '@/composables/useStudentEntrance'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM } from '@/types/student/view'
 import '@/styles/student/student.scss'
@@ -20,6 +21,7 @@ const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const { play: playEntrance } = useStudentEntrance()
+useStudentDashboardExport('学生总览', dashboard)
 
 async function loadAll() {
   loading.value = true

@@ -5,7 +5,7 @@ function defaultEntryPath() {
   const view = import.meta.env.VITE_DEFAULT_VIEW
   if (view === 'college') return ROUTES.college.root
   if (view === 'university') return ROUTES.university.root
-  if (view === 'student') return ROUTES.student
+  if (view === 'student') return ROUTES.student.root
   return ROUTES.portal
 }
 
@@ -117,9 +117,99 @@ const router = createRouter({
       ],
     },
     {
-      path: ROUTES.student,
+      path: ROUTES.student.root,
       name: 'student',
       component: () => import('@/views/student/StudentOverviewView.vue'),
+    },
+    {
+      path: ROUTES.student.gpaDetail,
+      name: 'student-gpa-detail',
+      component: () => import('@/components/student/subpages/gpa-detail/index.vue'),
+      meta: { title: 'GPA 详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.gpaSemester,
+      name: 'student-gpa-semester',
+      component: () => import('@/components/student/subpages/gpa-semester/index.vue'),
+      meta: { title: '学期课程明细', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.creditProgress,
+      name: 'student-credit-progress',
+      component: () => import('@/components/student/subpages/credit-progress/index.vue'),
+      meta: { title: '学分进度', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.failDetail,
+      name: 'student-fail-detail',
+      component: () => import('@/components/student/subpages/fail-detail/index.vue'),
+      meta: { title: '挂科详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.basicLedger,
+      name: 'student-basic-ledger',
+      component: () => import('@/components/student/subpages/basic-ledger/index.vue'),
+      meta: { title: '学生基础信息台账', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.psyWarning,
+      name: 'student-psy-warning',
+      component: () => import('@/components/student/subpages/psy-warning/index.vue'),
+      meta: { title: '心理预警详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.academicWarning,
+      name: 'student-academic-warning',
+      component: () => import('@/components/student/subpages/academic-warning/index.vue'),
+      meta: { title: '学业预警详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.employmentWarning,
+      name: 'student-employment-warning',
+      component: () => import('@/components/student/subpages/employment-warning/index.vue'),
+      meta: { title: '就业预警详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.comprehensiveLedger,
+      name: 'student-comprehensive-ledger',
+      component: () => import('@/components/student/subpages/comprehensive-ledger/index.vue'),
+      meta: { title: '综合素养台账详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.careerDevelopment,
+      name: 'student-career-development',
+      component: () => import('@/components/student/subpages/career-development/index.vue'),
+      meta: { title: '出口发展详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.academicDetail,
+      name: 'student-academic-detail',
+      component: () => import('@/components/student/subpages/academic-detail/index.vue'),
+      meta: { title: '学情轨迹护航详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.growthPath,
+      name: 'student-growth-path',
+      component: () => import('@/components/student/subpages/growth-path/index.vue'),
+      meta: { title: '成长路径完整方案', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.aiPortrait,
+      name: 'student-ai-portrait',
+      component: () => import('@/components/student/subpages/ai-portrait/index.vue'),
+      meta: { title: '智能育航全景详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.graduationAudit,
+      name: 'student-graduation-audit',
+      component: () => import('@/components/student/subpages/graduation-audit/index.vue'),
+      meta: { title: '毕业审核与毕设进度', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.semesterSchedule,
+      name: 'student-semester-schedule',
+      component: () => import('@/components/student/subpages/semester-schedule/index.vue'),
+      meta: { title: '本学期课表', isStudentSubpage: true },
     },
   ],
 })

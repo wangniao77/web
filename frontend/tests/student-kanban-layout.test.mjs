@@ -41,12 +41,15 @@ test('quality metrics use one stable row so the full ledger fits above its actio
 test('career card reserves one explicit row for every content block', () => {
   assert.match(
     styleBlock('.development-card--career'),
-    /grid-template-rows:\s*auto 82px minmax\(56px, 1fr\) 32px 32px;/,
+    /grid-template-rows:\s*auto minmax\(0, 1fr\) 34px 34px;/,
   )
-  assert.match(
-    styleBlock('.development-card--career .development-metrics.development-metrics--pair'),
-    /height:\s*82px;/,
-  )
+  assert.match(source, /const careerPathCards = computed/)
+  assert.match(source, /career-path-grid/)
+  assert.match(source, /深造升学/)
+  assert.match(source, /公职考取/)
+  assert.match(source, /职场就业/)
+  assert.doesNotMatch(source, /对标规划 · 考研备考/)
+  assert.doesNotMatch(source, /<span>专业<\/span>/)
 })
 
 test('graduation overview is summarized inside academic card and details stay secondary', () => {
