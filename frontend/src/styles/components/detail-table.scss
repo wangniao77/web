@@ -1,0 +1,54 @@
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $college-fs-label;
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.12);
+    text-align: left;
+  }
+
+  th {
+    color: $color-text-muted;
+    font-weight: 500;
+    background: rgba(0, 40, 80, 0.35);
+  }
+
+  td {
+    color: $color-text-primary;
+  }
+}
+
+.detail-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  color: $color-text-muted;
+}
+
+.detail-error {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  min-height: 200px;
+  color: $color-text-muted;
+
+  button {
+    color: $color-accent;
+    text-decoration: underline;
+  }
+}
+
+.status-ongoing {
+  color: #00e5ff;
+}
+
+.status-completed {
+  color: #52c41a;
+}
+
+.status-delayed {
+  color: #ff4d4f;
+}

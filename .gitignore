@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Build / dist outputs
+dist/
+build/
+.output/
+.vite/
+coverage/
+
+# Env / secrets
+backend/.env
+.env.local
+.env.*.local
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

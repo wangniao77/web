@@ -1,0 +1,535 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "高校发展治理平台目标态层次架构图",
+    "subtitle": "自上而下呈现产品层次，自下而上呈现数据与平台支撑",
+    "output": "target-product-hierarchy.html",
+    "viewBox": [1600, 1160]
+  },
+  "components": [
+    {
+      "id": "layerUsers",
+      "type": "messagebus",
+      "label": "用户入口层",
+      "sublabel": "谁使用系统",
+      "pos": [70, 70],
+      "size": [190, 62]
+    },
+    {
+      "id": "userLeader",
+      "type": "external",
+      "label": "校级领导",
+      "sublabel": "战略态势/决策督办",
+      "pos": [340, 70],
+      "size": [170, 62]
+    },
+    {
+      "id": "userCollege",
+      "type": "external",
+      "label": "学院管理者",
+      "sublabel": "学院运行/学生管理",
+      "pos": [560, 70],
+      "size": [170, 62]
+    },
+    {
+      "id": "userStudent",
+      "type": "external",
+      "label": "学生",
+      "sublabel": "成长画像/规划建议",
+      "pos": [780, 70],
+      "size": [170, 62]
+    },
+    {
+      "id": "userAdmin",
+      "type": "external",
+      "label": "管理员",
+      "sublabel": "账号/权限/数据维护",
+      "pos": [1000, 70],
+      "size": [170, 62]
+    },
+    {
+      "id": "layerApps",
+      "type": "messagebus",
+      "label": "产品应用层",
+      "sublabel": "用户看到的产品",
+      "pos": [70, 205],
+      "size": [190, 62]
+    },
+    {
+      "id": "appPortal",
+      "type": "frontend",
+      "label": "统一门户",
+      "sublabel": "角色入口/导航",
+      "pos": [300, 205],
+      "size": [150, 62]
+    },
+    {
+      "id": "appUniversity",
+      "type": "frontend",
+      "label": "校级驾驶舱",
+      "sublabel": "University",
+      "pos": [490, 205],
+      "size": [160, 62]
+    },
+    {
+      "id": "appCollege",
+      "type": "frontend",
+      "label": "学院驾驶舱",
+      "sublabel": "College",
+      "pos": [690, 205],
+      "size": [160, 62]
+    },
+    {
+      "id": "appStudent",
+      "type": "frontend",
+      "label": "学生成长画像",
+      "sublabel": "Student",
+      "pos": [890, 205],
+      "size": [170, 62]
+    },
+    {
+      "id": "appAssistant",
+      "type": "cloud",
+      "label": "财宝助手",
+      "sublabel": "Student 内嵌 LLM",
+      "pos": [1100, 205],
+      "size": [170, 62]
+    },
+    {
+      "id": "appAdmin",
+      "type": "security",
+      "label": "后台管理/报告",
+      "sublabel": "资源维护/专题报告",
+      "pos": [1310, 205],
+      "size": [190, 62]
+    },
+    {
+      "id": "layerBusiness",
+      "type": "messagebus",
+      "label": "业务能力层",
+      "sublabel": "产品能力模块",
+      "pos": [70, 340],
+      "size": [190, 62]
+    },
+    {
+      "id": "bizIndicator",
+      "type": "backend",
+      "label": "指标驾驶舱",
+      "sublabel": "发展指数/核心指标",
+      "pos": [300, 340],
+      "size": [160, 62]
+    },
+    {
+      "id": "bizTask",
+      "type": "backend",
+      "label": "任务闭环",
+      "sublabel": "派发/整改/跟踪",
+      "pos": [500, 340],
+      "size": [160, 62]
+    },
+    {
+      "id": "bizPortrait",
+      "type": "backend",
+      "label": "学生画像",
+      "sublabel": "潜力/预警/雷达",
+      "pos": [700, 340],
+      "size": [160, 62]
+    },
+    {
+      "id": "bizRisk",
+      "type": "security",
+      "label": "风险预警",
+      "sublabel": "学业/就业/任务",
+      "pos": [900, 340],
+      "size": [160, 62]
+    },
+    {
+      "id": "bizBenchmark",
+      "type": "backend",
+      "label": "对标排名",
+      "sublabel": "高校/财经类/省内",
+      "pos": [1100, 340],
+      "size": [170, 62]
+    },
+    {
+      "id": "bizOutcome",
+      "type": "backend",
+      "label": "质量与成果",
+      "sublabel": "教学/科研/竞赛/就业",
+      "pos": [1310, 340],
+      "size": [190, 62]
+    },
+    {
+      "id": "layerAnalysis",
+      "type": "messagebus",
+      "label": "智能分析层",
+      "sublabel": "模型与分析能力",
+      "pos": [70, 475],
+      "size": [190, 62]
+    },
+    {
+      "id": "anaRule",
+      "type": "backend",
+      "label": "规则引擎",
+      "sublabel": "高潜/预警规则",
+      "pos": [300, 475],
+      "size": [160, 62]
+    },
+    {
+      "id": "anaTag",
+      "type": "backend",
+      "label": "标签体系",
+      "sublabel": "学生/群体标签",
+      "pos": [500, 475],
+      "size": [160, 62]
+    },
+    {
+      "id": "anaPortrait",
+      "type": "backend",
+      "label": "画像建模",
+      "sublabel": "学生/学院/学校",
+      "pos": [700, 475],
+      "size": [160, 62]
+    },
+    {
+      "id": "anaTrend",
+      "type": "backend",
+      "label": "归因与趋势",
+      "sublabel": "指标归因/预测",
+      "pos": [900, 475],
+      "size": [160, 62]
+    },
+    {
+      "id": "anaLLM",
+      "type": "cloud",
+      "label": "LLM 上下文",
+      "sublabel": "学生面板摘要/提示词",
+      "pos": [1100, 475],
+      "size": [170, 62]
+    },
+    {
+      "id": "anaReport",
+      "type": "cloud",
+      "label": "报告生成",
+      "sublabel": "个人建议/专题报告",
+      "pos": [1310, 475],
+      "size": [190, 62]
+    },
+    {
+      "id": "layerData",
+      "type": "messagebus",
+      "label": "数据中台层",
+      "sublabel": "统一数据资产",
+      "pos": [70, 610],
+      "size": [190, 62]
+    },
+    {
+      "id": "dataETL",
+      "type": "messagebus",
+      "label": "数据接入 ETL",
+      "sublabel": "采集/清洗/映射",
+      "pos": [300, 610],
+      "size": [160, 62]
+    },
+    {
+      "id": "dataStudent",
+      "type": "database",
+      "label": "学生主题库",
+      "sublabel": "当前核心资产",
+      "pos": [500, 610],
+      "size": [160, 62]
+    },
+    {
+      "id": "dataIndicator",
+      "type": "database",
+      "label": "指标库",
+      "sublabel": "口径/目标/阈值",
+      "pos": [700, 610],
+      "size": [160, 62]
+    },
+    {
+      "id": "dataTag",
+      "type": "database",
+      "label": "标签库",
+      "sublabel": "高潜/风险/能力",
+      "pos": [900, 610],
+      "size": [160, 62]
+    },
+    {
+      "id": "dataPortrait",
+      "type": "database",
+      "label": "画像库",
+      "sublabel": "个体/群体/组织",
+      "pos": [1100, 610],
+      "size": [170, 62]
+    },
+    {
+      "id": "dataGovernance",
+      "type": "security",
+      "label": "元数据与权限",
+      "sublabel": "口径/血缘/脱敏/审计",
+      "pos": [1310, 610],
+      "size": [190, 62]
+    },
+    {
+      "id": "layerSources",
+      "type": "messagebus",
+      "label": "数据来源层",
+      "sublabel": "已有与外部接入",
+      "pos": [70, 745],
+      "size": [190, 62]
+    },
+    {
+      "id": "sourceExisting",
+      "type": "database",
+      "label": "现有学生数据",
+      "sublabel": "22-25级学籍成绩 Excel",
+      "tag": "可直接使用",
+      "pos": [300, 745],
+      "size": [190, 62]
+    },
+    {
+      "id": "sourceTeaching",
+      "type": "external",
+      "label": "教务系统",
+      "sublabel": "课程/成绩/排名",
+      "pos": [530, 745],
+      "size": [150, 62]
+    },
+    {
+      "id": "sourceStudentAffairs",
+      "type": "external",
+      "label": "学工心理",
+      "sublabel": "德育/心理/奖惩",
+      "pos": [720, 745],
+      "size": [150, 62]
+    },
+    {
+      "id": "sourceEmployment",
+      "type": "external",
+      "label": "就业升学",
+      "sublabel": "去向/单位/升学",
+      "pos": [910, 745],
+      "size": [150, 62]
+    },
+    {
+      "id": "sourceResearch",
+      "type": "external",
+      "label": "科研竞赛证书",
+      "sublabel": "论文/项目/证书",
+      "pos": [1100, 745],
+      "size": [170, 62]
+    },
+    {
+      "id": "sourceGovernance",
+      "type": "external",
+      "label": "治理与对标",
+      "sublabel": "任务/预算/排名",
+      "pos": [1310, 745],
+      "size": [170, 62]
+    },
+    {
+      "id": "layerFoundation",
+      "type": "messagebus",
+      "label": "平台底座层",
+      "sublabel": "运行与治理基础",
+      "pos": [70, 885],
+      "size": [190, 62]
+    },
+    {
+      "id": "baseWarehouse",
+      "type": "database",
+      "label": "PostgreSQL/数仓",
+      "sublabel": "明细库/主题库/结果库",
+      "pos": [330, 885],
+      "size": [190, 62]
+    },
+    {
+      "id": "baseStorage",
+      "type": "cloud",
+      "label": "对象存储与缓存",
+      "sublabel": "文件/图片/热点数据",
+      "pos": [570, 885],
+      "size": [190, 62]
+    },
+    {
+      "id": "baseSchedule",
+      "type": "messagebus",
+      "label": "调度与任务流",
+      "sublabel": "同步/计算/报告",
+      "pos": [810, 885],
+      "size": [190, 62]
+    },
+    {
+      "id": "baseAuth",
+      "type": "security",
+      "label": "认证授权审计",
+      "sublabel": "SSO/JWT/RBAC/日志",
+      "pos": [1050, 885],
+      "size": [190, 62]
+    },
+    {
+      "id": "baseOps",
+      "type": "cloud",
+      "label": "部署运维监控",
+      "sublabel": "Nginx/API/告警/备份",
+      "pos": [1290, 885],
+      "size": [190, 62]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "01 用户入口层",
+      "wraps": ["layerUsers", "userLeader", "userCollege", "userStudent", "userAdmin"]
+    },
+    {
+      "kind": "region",
+      "label": "02 产品应用层",
+      "wraps": ["layerApps", "appPortal", "appUniversity", "appCollege", "appStudent", "appAssistant", "appAdmin"]
+    },
+    {
+      "kind": "region",
+      "label": "03 业务能力层",
+      "wraps": ["layerBusiness", "bizIndicator", "bizTask", "bizPortrait", "bizRisk", "bizBenchmark", "bizOutcome"]
+    },
+    {
+      "kind": "security-group",
+      "label": "04 智能分析层",
+      "wraps": ["layerAnalysis", "anaRule", "anaTag", "anaPortrait", "anaTrend", "anaLLM", "anaReport"]
+    },
+    {
+      "kind": "region",
+      "label": "05 数据中台层",
+      "wraps": ["layerData", "dataETL", "dataStudent", "dataIndicator", "dataTag", "dataPortrait", "dataGovernance"]
+    },
+    {
+      "kind": "region",
+      "label": "06 数据来源层",
+      "wraps": ["layerSources", "sourceExisting", "sourceTeaching", "sourceStudentAffairs", "sourceEmployment", "sourceResearch", "sourceGovernance"]
+    },
+    {
+      "kind": "security-group",
+      "label": "07 平台底座层",
+      "wraps": ["layerFoundation", "baseWarehouse", "baseStorage", "baseSchedule", "baseAuth", "baseOps"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "layerUsers",
+      "to": "layerApps",
+      "label": "访问",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [168, 166]
+    },
+    {
+      "from": "layerApps",
+      "to": "layerBusiness",
+      "label": "承载",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [168, 301]
+    },
+    {
+      "from": "layerBusiness",
+      "to": "layerAnalysis",
+      "label": "调用",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [168, 436]
+    },
+    {
+      "from": "layerAnalysis",
+      "to": "layerData",
+      "label": "依赖",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [168, 571]
+    },
+    {
+      "from": "layerData",
+      "to": "layerSources",
+      "label": "接入",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [168, 706]
+    },
+    {
+      "from": "layerSources",
+      "to": "layerFoundation",
+      "label": "运行支撑",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [168, 844]
+    },
+    {
+      "from": "appStudent",
+      "to": "appAssistant",
+      "label": "内嵌",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [1080, 290]
+    },
+    {
+      "from": "sourceExisting",
+      "to": "dataStudent",
+      "label": "当前主数据",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [418, 718]
+    },
+    {
+      "from": "anaLLM",
+      "to": "appAssistant",
+      "label": "学生面板上下文",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [1178, 430]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "读图顺序",
+      "items": [
+        "从上到下看产品层级：用户入口 → 产品应用 → 业务能力 → 智能分析 → 数据中台 → 数据来源 → 平台底座",
+        "从下到上看支撑关系：平台底座承载数据来源，数据中台沉淀资产，智能分析和业务能力服务上层产品"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "当前可用数据",
+      "items": [
+        "现有学生数据位于数据来源层，并直接进入学生主题库",
+        "可支撑学生成长画像、学业预警、高潜识别、学院学生画像和部分质量成果聚合"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "智能助手位置",
+      "items": [
+        "财宝助手属于 Student 学生成长画像的内嵌能力",
+        "LLM 只读取学生面板的结构化上下文，输出亮点、关注、匹配依据、规划和就业建议"
+      ]
+    }
+  ]
+}

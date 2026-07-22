@@ -1,0 +1,111 @@
+// ============================================================
+// Design Tokens — Tech Luminous (Glassmorphism + Neon)
+// ============================================================
+
+// ── Backgrounds (depth-stacked) ─────────────────────────────
+$color-bg-root:    #020617;
+$color-bg-screen:  #030b1f;
+$color-bg-card:    rgba(6, 17, 52, 0.55);
+$color-bg-card-hover: rgba(10, 25, 65, 0.65);
+$color-bg-elevated:   rgba(8, 22, 55, 0.7);
+$color-bg-header:     rgba(3, 11, 31, 0.75);
+
+// ── Borders (neon-transparent gradient) ─────────────────────
+$color-border-card:        rgba(0, 212, 255, 0.10);
+$color-border-card-hover:  rgba(0, 212, 255, 0.22);
+$color-border-subtle:      rgba(255, 255, 255, 0.04);
+$color-border-accent:      rgba(0, 212, 255, 0.35);
+
+// ── Accents ──────────────────────────────────────────────────
+$color-accent:         #00b8ff;
+$color-accent-light:   #66d9ff;
+$color-accent-cyan:    #00e5ff;
+$color-accent-gold:    #f0c040;
+$color-accent-purple:  #8b5cf6;
+$color-accent-magenta: #d946ef;
+
+// ── Text ────────────────────────────────────────────────────
+$color-text-primary:   #e2edff;
+$color-text-secondary: #889ec2;
+$color-text-muted:     #4a5d7e;
+$color-text-inverse:   #020617;
+
+// ── Semantic ────────────────────────────────────────────────
+$color-success: #34d399;
+$color-warning: #f0a030;
+$color-danger:  #f87171;
+$color-info:    #00b8ff;
+
+// ── Typography ──────────────────────────────────────────────
+$font-display: 'DIN Alternate', 'Inter', 'Roboto', sans-serif;
+$font-body:    'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+$font-mono:    'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+// ── Layout ──────────────────────────────────────────────────
+$panel-radius:   8px;
+$header-height:  86px;
+$design-width:   1920px;
+$design-height:  1080px;
+$main-height:    1000px;
+
+// ── 学院大屏协调字号阶梯（实体展厅远距离可读） ─────────────────
+// 正文/标签/辅助字号下限对齐原面板标题可读性（≥24px），面板标题与主标题再抬一级
+$college-fs-display:   56px;  // 主标题「数智洞察视界」
+$college-fs-hero:      50px;  // 核心指标 / KPI
+$college-fs-highlight: 42px;  // 次级大数 / 时钟
+$college-fs-title:     30px;  // 面板标题（如「学院重点工作动态监测总览」）
+$college-fs-body:      26px;  // 正文 / 列表
+$college-fs-label:     24px;  // 标签 / 图表小标题（页面最小常用字）
+$college-fs-meta:      24px;  // 辅助 / 日期 / 状态（不低于标签）
+$college-fs-chart:     24px;  // 坐标轴 / 图例
+
+// 兼容旧变量名
+$college-fs-xs:     $college-fs-meta;
+$college-fs-sm:     $college-fs-label;
+$college-fs-base:   $college-fs-body;
+$college-fs-md:     $college-fs-title;
+$college-fs-lg:     34px;
+$college-fs-xl:     46px;
+$college-fs-metric: $college-fs-hero;
+
+// ── Shadows ─────────────────────────────────────────────────
+$shadow-card:       0 4px 24px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 212, 255, 0.06);
+$shadow-card-hover: 0 4px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 184, 255, 0.12), inset 0 0 0 1px rgba(0, 212, 255, 0.12);
+
+// ── Glow Presets ────────────────────────────────────────────
+$glow-blue:    0 0 12px rgba(0, 184, 255, 0.25);
+$glow-cyan:    0 0 16px rgba(0, 229, 255, 0.3);
+$glow-purple:  0 0 12px rgba(139, 92, 246, 0.25);
+$glow-gold:    0 0 10px rgba(240, 192, 64, 0.2);
+$glow-danger:  0 0 10px rgba(248, 113, 113, 0.2);
+$glow-text:    0 0 6px rgba(0, 184, 255, 0.35);
+$glow-text-strong: 0 0 8px rgba(0, 242, 255, 0.5), 0 0 14px rgba(0, 200, 255, 0.22);
+$glow-text-soft: 0 0 4px rgba(0, 242, 255, 0.28);
+
+// ── Transition ──────────────────────────────────────────────
+$transition-fast: 0.15s ease;
+$transition-base: 0.25s ease;
+
+// ── Glassmorphism Mixins ────────────────────────────────────
+@mixin glass-panel {
+  background: $color-bg-card;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid $color-border-card;
+  border-radius: $panel-radius;
+  box-shadow: $shadow-card;
+}
+
+@mixin glass-panel-hover {
+  background: $color-bg-card-hover;
+  border-color: $color-border-card-hover;
+  box-shadow: $shadow-card-hover;
+}
+
+@mixin glass-card {
+  background: rgba(6, 17, 52, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 212, 255, 0.10);
+  border-radius: 6px;
+}

@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "白板架构图还原版",
+    "subtitle": "由照片整理：BI / 管理系统 / 机器人 / AI / 数据 / 分析 / 画像 / 底座",
+    "output": "whiteboard-architecture.html",
+    "viewBox": [1320, 920]
+  },
+  "components": [
+    {
+      "id": "requirements",
+      "type": "external",
+      "label": "需求与访问入口",
+      "sublabel": "用户需求/访问/计划",
+      "pos": [56, 140],
+      "size": [170, 66]
+    },
+    {
+      "id": "bi",
+      "type": "frontend",
+      "label": "BI",
+      "sublabel": "数据看板/可视化分析",
+      "pos": [300, 70],
+      "size": [210, 68]
+    },
+    {
+      "id": "manageSystem",
+      "type": "backend",
+      "label": "管理系统",
+      "sublabel": "事务网/业务管理",
+      "pos": [620, 70],
+      "size": [210, 68]
+    },
+    {
+      "id": "robot",
+      "type": "external",
+      "label": "机器人",
+      "sublabel": "智能问答/自动执行",
+      "pos": [940, 70],
+      "size": [190, 68]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API",
+      "sublabel": "接口服务",
+      "pos": [86, 315],
+      "size": [150, 60]
+    },
+    {
+      "id": "appPages",
+      "type": "frontend",
+      "label": "应用页面",
+      "sublabel": "门户/图表/功能页",
+      "pos": [86, 440],
+      "size": [150, 60]
+    },
+    {
+      "id": "ai",
+      "type": "backend",
+      "label": "AI",
+      "sublabel": "智能分析与推理",
+      "pos": [380, 305],
+      "size": [220, 70]
+    },
+    {
+      "id": "dataService",
+      "type": "database",
+      "label": "数据服务",
+      "sublabel": "清洗/聚合/特征加工",
+      "pos": [380, 450],
+      "size": [220, 70]
+    },
+    {
+      "id": "analysis",
+      "type": "backend",
+      "label": "分析服务",
+      "sublabel": "指标分析/趋势分析",
+      "pos": [700, 305],
+      "size": [210, 70]
+    },
+    {
+      "id": "videoAnalysis",
+      "type": "backend",
+      "label": "视频分析",
+      "sublabel": "视频识别/行为分析",
+      "pos": [700, 450],
+      "size": [210, 70]
+    },
+    {
+      "id": "portrait",
+      "type": "frontend",
+      "label": "画像",
+      "sublabel": "用户/学生/业务画像",
+      "pos": [990, 380],
+      "size": [190, 66]
+    },
+    {
+      "id": "database",
+      "type": "database",
+      "label": "数据库",
+      "sublabel": "业务数据/日志/模型数据",
+      "pos": [240, 650],
+      "size": [240, 66]
+    },
+    {
+      "id": "metricSystem",
+      "type": "messagebus",
+      "label": "指标体系",
+      "sublabel": "统一口径/指标库/标签",
+      "pos": [560, 650],
+      "size": [260, 66]
+    },
+    {
+      "id": "infra",
+      "type": "cloud",
+      "label": "软件与硬件底座",
+      "sublabel": "服务器/存储/网络/运行环境",
+      "pos": [400, 780],
+      "size": [360, 66]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "入口与呈现层",
+      "wraps": ["requirements", "bi", "manageSystem", "robot"]
+    },
+    {
+      "kind": "region",
+      "label": "应用接入层",
+      "wraps": ["api", "appPages"]
+    },
+    {
+      "kind": "security-group",
+      "label": "AI 数据分析核心",
+      "wraps": ["ai", "dataService", "analysis", "videoAnalysis", "portrait"]
+    },
+    {
+      "kind": "region",
+      "label": "数据与基础设施底座",
+      "wraps": ["database", "metricSystem", "infra"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "requirements",
+      "to": "bi",
+      "label": "看板访问",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "requirements",
+      "to": "api",
+      "label": "调用",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [144, 252]
+    },
+    {
+      "from": "bi",
+      "to": "manageSystem",
+      "label": "业务闭环",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "manageSystem",
+      "to": "robot",
+      "label": "任务/计划",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "api",
+      "to": "appPages",
+      "label": "页面渲染",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [170, 408]
+    },
+    {
+      "from": "api",
+      "to": "ai",
+      "label": "服务编排",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "appPages",
+      "to": "dataService",
+      "label": "数据请求",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "ai",
+      "to": "analysis",
+      "label": "智能分析",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "dataService",
+      "to": "analysis",
+      "label": "指标数据",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "dataService",
+      "to": "videoAnalysis",
+      "label": "视频/行为数据",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "analysis",
+      "to": "portrait",
+      "label": "分析结果",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "videoAnalysis",
+      "to": "portrait",
+      "label": "画像特征",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "database",
+      "to": "dataService",
+      "label": "数据供给",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [430, 585]
+    },
+    {
+      "from": "metricSystem",
+      "to": "dataService",
+      "label": "口径约束",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [560, 585]
+    },
+    {
+      "from": "metricSystem",
+      "to": "analysis",
+      "label": "指标模型",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [780, 585]
+    },
+    {
+      "from": "infra",
+      "to": "database",
+      "label": "承载",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [350, 750]
+    },
+    {
+      "from": "infra",
+      "to": "metricSystem",
+      "label": "运行环境",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [720, 750]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "白板可辨认节点",
+      "items": [
+        "BI、管理系统、机器人、API、应用页面、AI、数据、分析、视频分析、画像",
+        "底部可辨认为数据库、指标体系、软件/硬件底座"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "整理后的主路径",
+      "items": [
+        "需求入口进入 BI 或 API，业务系统与机器人形成任务闭环",
+        "API 和页面进入 AI 与数据服务，输出分析结果、视频分析和画像"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "需要确认的文字",
+      "items": [
+        "顶部手写的“事务网/模块描述/计划”等字样较模糊，当前按业务管理与任务计划理解",
+        "若要严格复刻白板文字，可提供更近距离照片或直接发节点名称"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,899 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "高校发展治理平台目标态产品架构",
+    "subtitle": "最终产品完整架构：学生数据为现有基础，外部系统逐步接入；智能助手内嵌 Student 学生成长画像",
+    "output": "target-product-architecture.html",
+    "viewBox": [1800, 1400]
+  },
+  "components": [
+    {
+      "id": "leaderEntry",
+      "type": "external",
+      "label": "校级领导",
+      "sublabel": "战略态势/决策督办",
+      "pos": [70, 50],
+      "size": [165, 60]
+    },
+    {
+      "id": "collegeEntry",
+      "type": "external",
+      "label": "学院管理者",
+      "sublabel": "学院运行/学生管理",
+      "pos": [290, 50],
+      "size": [165, 60]
+    },
+    {
+      "id": "studentEntry",
+      "type": "external",
+      "label": "学生",
+      "sublabel": "成长画像/规划建议",
+      "pos": [510, 50],
+      "size": [165, 60]
+    },
+    {
+      "id": "adminEntry",
+      "type": "external",
+      "label": "管理员",
+      "sublabel": "数据维护/权限配置",
+      "pos": [730, 50],
+      "size": [165, 60]
+    },
+    {
+      "id": "portal",
+      "type": "frontend",
+      "label": "统一门户",
+      "sublabel": "角色入口/大屏导航",
+      "pos": [70, 180],
+      "size": [165, 62]
+    },
+    {
+      "id": "universityApp",
+      "type": "frontend",
+      "label": "校级驾驶舱",
+      "sublabel": "University",
+      "pos": [290, 180],
+      "size": [165, 62]
+    },
+    {
+      "id": "collegeApp",
+      "type": "frontend",
+      "label": "学院驾驶舱",
+      "sublabel": "College",
+      "pos": [510, 180],
+      "size": [165, 62]
+    },
+    {
+      "id": "studentApp",
+      "type": "frontend",
+      "label": "学生成长画像",
+      "sublabel": "Student",
+      "pos": [730, 180],
+      "size": [175, 62]
+    },
+    {
+      "id": "adminSystem",
+      "type": "security",
+      "label": "后台管理系统",
+      "sublabel": "账号/资源/基础数据",
+      "pos": [980, 180],
+      "size": [175, 62]
+    },
+    {
+      "id": "reportCenter",
+      "type": "frontend",
+      "label": "报告中心",
+      "sublabel": "驾驶舱快照/专题报告",
+      "pos": [1230, 180],
+      "size": [175, 62]
+    },
+    {
+      "id": "studentPanel",
+      "type": "frontend",
+      "label": "学生面板数据",
+      "sublabel": "个人/学业/雷达/实践",
+      "pos": [650, 300],
+      "size": [178, 60]
+    },
+    {
+      "id": "caibaoAssistant",
+      "type": "backend",
+      "label": "财宝助手",
+      "sublabel": "读取学生面板上下文",
+      "pos": [880, 300],
+      "size": [178, 60]
+    },
+    {
+      "id": "llmService",
+      "type": "cloud",
+      "label": "LLM 接入服务",
+      "sublabel": "提示词/安全边界/调用",
+      "pos": [1110, 300],
+      "size": [178, 60]
+    },
+    {
+      "id": "studentOutput",
+      "type": "frontend",
+      "label": "结构化成长信息",
+      "sublabel": "亮点/关注/依据/规划/就业",
+      "pos": [1340, 300],
+      "size": [200, 60]
+    },
+    {
+      "id": "businessHub",
+      "type": "messagebus",
+      "label": "业务能力编排",
+      "sublabel": "三端共用能力聚合",
+      "pos": [70, 450],
+      "size": [175, 62]
+    },
+    {
+      "id": "indicatorDash",
+      "type": "backend",
+      "label": "指标驾驶舱",
+      "sublabel": "发展指数/核心指标",
+      "pos": [290, 450],
+      "size": [160, 62]
+    },
+    {
+      "id": "taskLoop",
+      "type": "backend",
+      "label": "任务闭环",
+      "sublabel": "派发/整改/追踪",
+      "pos": [485, 450],
+      "size": [160, 62]
+    },
+    {
+      "id": "portraitCapability",
+      "type": "backend",
+      "label": "学生画像",
+      "sublabel": "潜力/预警/成长雷达",
+      "pos": [680, 450],
+      "size": [170, 62]
+    },
+    {
+      "id": "riskWarning",
+      "type": "security",
+      "label": "风险预警",
+      "sublabel": "学业/就业/任务/指标",
+      "pos": [885, 450],
+      "size": [170, 62]
+    },
+    {
+      "id": "benchmark",
+      "type": "backend",
+      "label": "对标排名",
+      "sublabel": "高校/财经类/省内",
+      "pos": [1090, 450],
+      "size": [170, 62]
+    },
+    {
+      "id": "qualityTeaching",
+      "type": "backend",
+      "label": "培养质量",
+      "sublabel": "教学/学科/专业",
+      "pos": [1295, 450],
+      "size": [170, 62]
+    },
+    {
+      "id": "outcomeService",
+      "type": "backend",
+      "label": "成果与去向",
+      "sublabel": "科研/竞赛/就业/升学",
+      "pos": [1500, 450],
+      "size": [180, 62]
+    },
+    {
+      "id": "analysisHub",
+      "type": "messagebus",
+      "label": "智能分析服务",
+      "sublabel": "画像/归因/预测/报告",
+      "pos": [70, 635],
+      "size": [175, 62]
+    },
+    {
+      "id": "ruleEngine",
+      "type": "backend",
+      "label": "规则引擎",
+      "sublabel": "预警规则/高潜识别",
+      "pos": [290, 635],
+      "size": [160, 62]
+    },
+    {
+      "id": "labelEngine",
+      "type": "backend",
+      "label": "标签体系",
+      "sublabel": "学生标签/群体标签",
+      "pos": [485, 635],
+      "size": [160, 62]
+    },
+    {
+      "id": "portraitEngine",
+      "type": "backend",
+      "label": "画像建模",
+      "sublabel": "个人画像/学院画像",
+      "pos": [680, 635],
+      "size": [170, 62]
+    },
+    {
+      "id": "attributionTrend",
+      "type": "backend",
+      "label": "归因与趋势",
+      "sublabel": "指标归因/趋势预测",
+      "pos": [885, 635],
+      "size": [170, 62]
+    },
+    {
+      "id": "llmContext",
+      "type": "cloud",
+      "label": "LLM 上下文构建",
+      "sublabel": "面板摘要/结构化提示词",
+      "pos": [1090, 635],
+      "size": [185, 62]
+    },
+    {
+      "id": "reportGeneration",
+      "type": "cloud",
+      "label": "报告生成",
+      "sublabel": "周报/月报/个人建议",
+      "pos": [1310, 635],
+      "size": [170, 62]
+    },
+    {
+      "id": "videoReserve",
+      "type": "cloud",
+      "label": "视频分析预留",
+      "sublabel": "图像/行为/物联扩展",
+      "pos": [1515, 635],
+      "size": [170, 62]
+    },
+    {
+      "id": "dataIntegration",
+      "type": "messagebus",
+      "label": "数据接入 ETL",
+      "sublabel": "采集/清洗/映射/校验",
+      "pos": [70, 820],
+      "size": [175, 62]
+    },
+    {
+      "id": "studentMart",
+      "type": "database",
+      "label": "学生主题库",
+      "sublabel": "当前核心数据资产",
+      "pos": [290, 820],
+      "size": [170, 62]
+    },
+    {
+      "id": "indicatorLibrary",
+      "type": "database",
+      "label": "指标库",
+      "sublabel": "统一口径/目标值",
+      "pos": [500, 820],
+      "size": [160, 62]
+    },
+    {
+      "id": "tagLibrary",
+      "type": "database",
+      "label": "标签库",
+      "sublabel": "高潜/风险/能力标签",
+      "pos": [700, 820],
+      "size": [160, 62]
+    },
+    {
+      "id": "portraitStore",
+      "type": "database",
+      "label": "画像库",
+      "sublabel": "学生/学院/学校画像",
+      "pos": [900, 820],
+      "size": [170, 62]
+    },
+    {
+      "id": "metadataQuality",
+      "type": "security",
+      "label": "元数据与质量",
+      "sublabel": "数据口径/血缘/质量规则",
+      "pos": [1110, 820],
+      "size": [185, 62]
+    },
+    {
+      "id": "dataSecurity",
+      "type": "security",
+      "label": "数据权限",
+      "sublabel": "角色范围/脱敏/审计",
+      "pos": [1335, 820],
+      "size": [170, 62]
+    },
+    {
+      "id": "existingStudentData",
+      "type": "database",
+      "label": "现有学生数据",
+      "sublabel": "22-25级学籍成绩 Excel",
+      "tag": "可直接使用",
+      "pos": [70, 1030],
+      "size": [190, 66]
+    },
+    {
+      "id": "teachingSource",
+      "type": "external",
+      "label": "教务系统",
+      "sublabel": "课程明细/成绩/排名",
+      "pos": [310, 1030],
+      "size": [170, 66]
+    },
+    {
+      "id": "studentAffairsSource",
+      "type": "external",
+      "label": "学工心理系统",
+      "sublabel": "德育/活动/心理/奖惩",
+      "pos": [520, 1030],
+      "size": [180, 66]
+    },
+    {
+      "id": "employmentSource",
+      "type": "external",
+      "label": "就业升学系统",
+      "sublabel": "去向/单位/行业/升学",
+      "pos": [740, 1030],
+      "size": [180, 66]
+    },
+    {
+      "id": "researchSource",
+      "type": "external",
+      "label": "科研竞赛证书",
+      "sublabel": "论文/项目/竞赛/证书",
+      "pos": [960, 1030],
+      "size": [180, 66]
+    },
+    {
+      "id": "governanceSource",
+      "type": "external",
+      "label": "治理任务数据",
+      "sublabel": "任务/预算/排名/对标",
+      "pos": [1180, 1030],
+      "size": [180, 66]
+    },
+    {
+      "id": "videoIotSource",
+      "type": "external",
+      "label": "视频物联预留",
+      "sublabel": "视频/设备/空间行为",
+      "pos": [1400, 1030],
+      "size": [180, 66]
+    },
+    {
+      "id": "postgresWarehouse",
+      "type": "database",
+      "label": "PostgreSQL/数仓",
+      "sublabel": "主题库/明细库/结果库",
+      "pos": [220, 1210],
+      "size": [190, 64]
+    },
+    {
+      "id": "objectCache",
+      "type": "cloud",
+      "label": "对象存储与缓存",
+      "sublabel": "文件/图片/报告/热点数据",
+      "pos": [480, 1210],
+      "size": [200, 64]
+    },
+    {
+      "id": "scheduler",
+      "type": "messagebus",
+      "label": "调度与任务流",
+      "sublabel": "同步/计算/报告定时任务",
+      "pos": [750, 1210],
+      "size": [200, 64]
+    },
+    {
+      "id": "authAudit",
+      "type": "security",
+      "label": "认证授权与审计",
+      "sublabel": "SSO/JWT/RBAC/日志",
+      "pos": [1020, 1210],
+      "size": [200, 64]
+    },
+    {
+      "id": "opsMonitor",
+      "type": "cloud",
+      "label": "部署运维监控",
+      "sublabel": "Nginx/API/告警/备份",
+      "pos": [1290, 1210],
+      "size": [200, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "用户入口与产品应用层",
+      "wraps": [
+        "leaderEntry",
+        "collegeEntry",
+        "studentEntry",
+        "adminEntry",
+        "portal",
+        "universityApp",
+        "collegeApp",
+        "studentApp",
+        "adminSystem",
+        "reportCenter"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Student 学生成长画像内嵌智能助手",
+      "wraps": [
+        "studentApp",
+        "studentPanel",
+        "caibaoAssistant",
+        "llmService",
+        "studentOutput"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "业务能力层",
+      "wraps": [
+        "businessHub",
+        "indicatorDash",
+        "taskLoop",
+        "portraitCapability",
+        "riskWarning",
+        "benchmark",
+        "qualityTeaching",
+        "outcomeService"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "智能分析与模型层",
+      "wraps": [
+        "analysisHub",
+        "ruleEngine",
+        "labelEngine",
+        "portraitEngine",
+        "attributionTrend",
+        "llmContext",
+        "reportGeneration",
+        "videoReserve"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "数据中台层",
+      "wraps": [
+        "dataIntegration",
+        "studentMart",
+        "indicatorLibrary",
+        "tagLibrary",
+        "portraitStore",
+        "metadataQuality",
+        "dataSecurity"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "数据来源层：现有学生数据 + 目标态外部接入",
+      "wraps": [
+        "existingStudentData",
+        "teachingSource",
+        "studentAffairsSource",
+        "employmentSource",
+        "researchSource",
+        "governanceSource",
+        "videoIotSource"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "平台与治理底座",
+      "wraps": [
+        "postgresWarehouse",
+        "objectCache",
+        "scheduler",
+        "authAudit",
+        "opsMonitor"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "leaderEntry",
+      "to": "portal",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "collegeEntry",
+      "to": "portal",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "studentEntry",
+      "to": "studentApp",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "adminEntry",
+      "to": "adminSystem",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "portal",
+      "to": "universityApp",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "portal",
+      "to": "collegeApp",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h"
+    },
+    {
+      "from": "portal",
+      "to": "studentApp",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h"
+    },
+    {
+      "from": "universityApp",
+      "to": "businessHub",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [238, 350],
+      "label": "校级分析"
+    },
+    {
+      "from": "collegeApp",
+      "to": "businessHub",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [445, 350],
+      "label": "学院分析"
+    },
+    {
+      "from": "studentApp",
+      "to": "studentPanel",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "studentPanel",
+      "to": "caibaoAssistant",
+      "label": "结构化上下文",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [854, 374]
+    },
+    {
+      "from": "caibaoAssistant",
+      "to": "llmService",
+      "label": "调用 LLM",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "llmService",
+      "to": "studentOutput",
+      "label": "结构化返回",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [1314, 374]
+    },
+    {
+      "from": "studentOutput",
+      "to": "reportCenter",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [1390, 275],
+      "label": "报告沉淀"
+    },
+    {
+      "from": "businessHub",
+      "to": "indicatorDash",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "indicatorDash",
+      "to": "taskLoop",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "taskLoop",
+      "to": "portraitCapability",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "portraitCapability",
+      "to": "riskWarning",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "riskWarning",
+      "to": "benchmark",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "benchmark",
+      "to": "qualityTeaching",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "qualityTeaching",
+      "to": "outcomeService",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "businessHub",
+      "to": "analysisHub",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v",
+      "labelAt": [155, 580],
+      "label": "能力调用"
+    },
+    {
+      "from": "analysisHub",
+      "to": "ruleEngine",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "ruleEngine",
+      "to": "labelEngine",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "labelEngine",
+      "to": "portraitEngine",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "portraitEngine",
+      "to": "attributionTrend",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "attributionTrend",
+      "to": "llmContext",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "llmContext",
+      "to": "reportGeneration",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "reportGeneration",
+      "to": "videoReserve",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "llmContext",
+      "to": "caibaoAssistant",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [1110, 560],
+      "label": "面板摘要"
+    },
+    {
+      "from": "dataIntegration",
+      "to": "studentMart",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentMart",
+      "to": "indicatorLibrary",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "indicatorLibrary",
+      "to": "tagLibrary",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "tagLibrary",
+      "to": "portraitStore",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "portraitStore",
+      "to": "metadataQuality",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "metadataQuality",
+      "to": "dataSecurity",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "studentMart",
+      "to": "analysisHub",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [375, 760],
+      "label": "学生画像数据"
+    },
+    {
+      "from": "portraitStore",
+      "to": "portraitEngine",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [810, 760],
+      "label": "画像特征"
+    },
+    {
+      "from": "existingStudentData",
+      "to": "dataIntegration",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [150, 955],
+      "label": "现有可用"
+    },
+    {
+      "from": "teachingSource",
+      "to": "dataIntegration",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "studentAffairsSource",
+      "to": "dataIntegration",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "employmentSource",
+      "to": "dataIntegration",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "researchSource",
+      "to": "dataIntegration",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "governanceSource",
+      "to": "dataIntegration",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "videoIotSource",
+      "to": "videoReserve",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v",
+      "labelAt": [1530, 950],
+      "label": "预留接入"
+    },
+    {
+      "from": "postgresWarehouse",
+      "to": "studentMart",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "scheduler",
+      "to": "dataIntegration",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "authAudit",
+      "to": "dataSecurity",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "opsMonitor",
+      "to": "adminSystem",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "orthogonal-v"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "现有可直接使用的数据",
+      "items": [
+        "22-25级学籍成绩 Excel：学号、姓名、年级、专业、班级、GPA、课程均分、学分、缺考补考重修、四六级、竞赛、班主任、辅导员",
+        "可直接支撑学生成长画像、学院学生画像、学业预警、高潜识别、部分教学质量与竞赛成果聚合"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "目标态需外部接入的数据",
+      "items": [
+        "教务、学工心理、就业升学、科研竞赛证书、治理任务、预算财务、排名对标、视频物联等系统",
+        "外部数据补齐校级竞争力、双一流建设、就业去向、心理风险、科研经费、社会服务和视频分析"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Student 内嵌智能助手",
+      "items": [
+        "财宝助手读取学生面板数据，构建结构化上下文后调用 LLM",
+        "LLM 输出亮点分析、需关注事项、匹配依据、短期规划、长期规划和就业建议，并沉淀到报告中心"
+      ]
+    }
+  ]
+}

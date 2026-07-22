@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+tortoise-orm[asyncpg]
+pydantic-settings
+python-dotenv
+PyJWT
+aerich
+openpyxl
+
+# Agent 工作流（按需安装）
+# langgraph
+# langchain-core

@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "发展与治理驾驶舱 · 整体系统架构",
+    "subtitle": "Vue 3 大屏 + FastAPI 联调 + PostgreSQL + Nginx 生产部署（master @ fdbc0d8）",
+    "output": "system-architecture.html"
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "终端用户",
+      "sublabel": "展厅大屏 / 管理端浏览器",
+      "pos": [30, 300],
+      "size": [130, 64]
+    },
+    {
+      "id": "nginx",
+      "type": "cloud",
+      "label": "Nginx :80",
+      "sublabel": "117.72.60.47",
+      "pos": [210, 300],
+      "size": [140, 64],
+      "tag": "production"
+    },
+    {
+      "id": "static",
+      "type": "frontend",
+      "label": "前端静态资源",
+      "sublabel": "frontend/dist SPA",
+      "pos": [400, 210],
+      "size": [150, 64]
+    },
+    {
+      "id": "portal",
+      "type": "frontend",
+      "label": "门户 & 路由",
+      "sublabel": "/portal · college · university · student",
+      "pos": [400, 300],
+      "size": [150, 64]
+    },
+    {
+      "id": "views",
+      "type": "frontend",
+      "label": "驾驶舱视图层",
+      "sublabel": "Overview + Detail 下钻页",
+      "pos": [400, 390],
+      "size": [150, 64]
+    },
+    {
+      "id": "apiLayer",
+      "type": "frontend",
+      "label": "API 访问层",
+      "sublabel": "createService · adapters · axios",
+      "pos": [600, 300],
+      "size": [155, 64]
+    },
+    {
+      "id": "mock",
+      "type": "database",
+      "label": "Mock 数据",
+      "sublabel": "frontend/src/mock",
+      "pos": [600, 420],
+      "size": [155, 64],
+      "tag": "展厅可开"
+    },
+    {
+      "id": "fastapi",
+      "type": "backend",
+      "label": "FastAPI :8080",
+      "sublabel": "uvicorn + systemd",
+      "pos": [810, 210],
+      "size": [155, 64]
+    },
+    {
+      "id": "routers",
+      "type": "backend",
+      "label": "API 路由",
+      "sublabel": "auth · admin · college · university · student",
+      "pos": [810, 300],
+      "size": [155, 64]
+    },
+    {
+      "id": "services",
+      "type": "backend",
+      "label": "Services 业务层",
+      "sublabel": "聚合查询 · JWT · 权限",
+      "pos": [810, 390],
+      "size": [155, 64]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "aerich migrations",
+      "pos": [1020, 300],
+      "size": [155, 64]
+    },
+    {
+      "id": "etl",
+      "type": "backend",
+      "label": "Excel ETL",
+      "sublabel": "app/importers",
+      "pos": [1020, 420],
+      "size": [155, 64]
+    },
+    {
+      "id": "excel",
+      "type": "external",
+      "label": "学籍 Excel",
+      "sublabel": "Datas/*.xlsx",
+      "pos": [1020, 530],
+      "size": [155, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "生产服务器 /opt/governance-cockpit",
+      "wraps": ["nginx", "static", "fastapi", "routers", "services", "postgres"]
+    },
+    {
+      "kind": "region",
+      "label": "frontend/ Vue 3 SPA",
+      "wraps": ["portal", "views", "apiLayer", "mock"]
+    },
+    {
+      "kind": "region",
+      "label": "backend/ FastAPI + 数据导入",
+      "wraps": ["services", "etl", "excel"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "users",
+      "to": "nginx",
+      "label": "HTTP",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "nginx",
+      "to": "static",
+      "label": "/",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelDy": -18
+    },
+    {
+      "from": "nginx",
+      "to": "fastapi",
+      "label": "/api/*",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelDy": 18
+    },
+    {
+      "from": "static",
+      "to": "portal",
+      "label": "SPA boot",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "portal",
+      "to": "views",
+      "label": "Vue Router",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "views",
+      "to": "apiLayer",
+      "label": "DTO → VM",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "apiLayer",
+      "to": "mock",
+      "label": "VITE_USE_MOCK=true",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "apiLayer",
+      "to": "routers",
+      "label": "VITE_USE_MOCK=false",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": 56
+    },
+    {
+      "from": "fastapi",
+      "to": "routers",
+      "label": "include_router",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "routers",
+      "to": "services",
+      "label": "handler",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "from": "services",
+      "to": "postgres",
+      "label": "Tortoise ORM",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelDy": -71
+    },
+    {
+      "from": "excel",
+      "to": "etl",
+      "label": "import",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -2
+    },
+    {
+      "from": "etl",
+      "to": "postgres",
+      "label": "bulk upsert",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -2
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "前端三层驾驶舱",
+      "items": [
+        "统一门户 /portal，根路径 / 按 VITE_DEFAULT_VIEW 重定向",
+        "学院 /college/*：KPI、任务、高潜、教学、科研、预警、就业（已联调）",
+        "学校 /university/*：战略总览 + 科研/学科/任务/就业/风险详情",
+        "学生 /student：个人成长大屏（Mock 为主）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "后端 API 域",
+      "items": [
+        "GET /api/health — 健康检查",
+        "POST /api/v1/auth/login · GET /me — JWT 认证",
+        "GET /api/v1/college/* — 学院大屏聚合接口（主力联调面）",
+        "GET /api/v1/university/* — 学校总览与详情",
+        "GET /api/v1/student/{id}/dashboard — 学生大屏",
+        "GET/POST /api/v1/admin/* — 超级管理员 CRUD"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "数据层",
+      "items": [
+        "PostgreSQL governance_cockpit，aerich 管理 schema 迁移",
+        "学籍宽表 + 重点任务 + 校园事件等 ORM 模型",
+        "生产：Nginx 静态托管 + 反代 FastAPI，systemd 守护"
+      ]
+    }
+  ]
+}

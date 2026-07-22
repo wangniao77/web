@@ -1,0 +1,60 @@
+@import './tokens';
+
+.uni-cockpit-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1.05fr 1.35fr 1.05fr;
+  gap: var(--uni-gap-module);
+}
+
+.uni-cockpit-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uni-gap-module);
+  min-height: 0;
+  min-width: 0;
+
+  > * {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  &--center {
+    > .uni-cockpit-hero {
+      flex: 1.35;
+    }
+
+    > :not(.uni-cockpit-hero) {
+      flex: 0.85;
+    }
+  }
+}
+
+.uni-cockpit-hero {
+  min-height: 0;
+}
+
+.uni-cockpit-loading {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  color: var(--uni-text-muted);
+  font-size: 16px;
+  padding: 24px;
+  text-align: center;
+
+  &--error {
+    color: var(--uni-status-attention);
+
+    button {
+      padding: 6px 16px;
+      border: 1px solid rgba(51, 217, 255, 0.35);
+      background: rgba(51, 217, 255, 0.08);
+      color: var(--uni-accent-cyan);
+      cursor: pointer;
+    }
+  }
+}
