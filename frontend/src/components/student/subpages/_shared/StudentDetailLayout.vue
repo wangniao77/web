@@ -61,6 +61,9 @@ function goBack() {
         <h1>{{ title }}<span v-if="mockBadge" class="student-detail__mock-badge">{{ mockBadge }}</span></h1>
         <span v-if="subtitle">{{ subtitle }}</span>
       </div>
+      <div class="student-detail__header-actions">
+        <slot name="header-actions" />
+      </div>
       <div class="student-detail__header-glow" aria-hidden="true" />
     </header>
     <main class="student-detail__body" :class="{ 'student-detail__body--full': full }">
@@ -129,6 +132,16 @@ function goBack() {
   flex-shrink: 0;
 }
 
+.student-detail__header-actions {
+  position: relative;
+  z-index: 1;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .student-detail__header-glow {
   position: absolute;
   left: 16px;
@@ -187,6 +200,16 @@ function goBack() {
     font-size: 15px;
     color: rgba(184, 236, 255, 0.74);
   }
+}
+
+.student-detail__header-actions {
+  position: relative;
+  z-index: 1;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .student-detail__mock-badge {

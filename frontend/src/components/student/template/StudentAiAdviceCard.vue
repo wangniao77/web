@@ -365,13 +365,15 @@ onBeforeUnmount(stopAutoplay)
     title="智能育航"
     tip="AI 综合学业与画像，给出研判、风险、机会与成长建议，用于精准育人。"
     class="stu-tpl__ai"
+    @mouseenter="stopAutoplay"
+    @mouseleave="startAutoplay"
   >
-    <template #title-extra>
-      <button type="button" class="ref-panel__detail-link" @click="goAiPortrait">
+    <template #header-extra>
+      <button type="button" class="stu-tpl__detail-link" @click="goAiPortrait">
         查看详情 ›
       </button>
     </template>
-    <div class="navi" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
+    <div class="navi">
       <div class="navi__tabs" role="tablist" aria-label="智能育航功能">
         <StuHint v-for="tab in tabs" :key="tab.id" :tip="tab.tip">
           <button
@@ -1036,5 +1038,23 @@ onBeforeUnmount(stopAutoplay)
   font-size: var(--fs-sm);
   font-weight: 700;
   cursor: pointer;
+}
+
+.stu-tpl__detail-link {
+  padding: 4px 12px;
+  border: 1px solid rgba(0, 200, 255, 0.35);
+  border-radius: 14px;
+  background: rgba(0, 100, 180, 0.22);
+  color: #55dfff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    background: rgba(0, 130, 220, 0.32);
+    box-shadow: 0 0 10px rgba(0, 200, 255, 0.25);
+  }
 }
 </style>
