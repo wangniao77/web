@@ -1,0 +1,310 @@
+// Student portrait: 2×3 grid (reference layout, no clutter)
+
+.student-screen {
+  .cockpit-header {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 30% 40% 30%;
+    gap: 10px;
+    height: 112px;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 0 10px;
+    border-bottom: 1px solid rgba(120, 210, 255, 0.28);
+    background: linear-gradient(180deg, rgba(6, 36, 72, 0.45), transparent 85%);
+    box-shadow: 0 8px 32px rgba(0, 40, 90, 0.28);
+
+    &::after {
+      position: absolute;
+      left: 4%;
+      right: 4%;
+      bottom: -1px;
+      height: 2px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 200, 255, 0.25),
+        #7cf4ff,
+        #c9a86c,
+        #7cf4ff,
+        rgba(0, 200, 255, 0.25),
+        transparent
+      );
+      box-shadow: 0 0 18px rgba(0, 230, 255, 0.55);
+      animation: stuHeaderLineSweep 5s ease-in-out infinite;
+      content: "";
+    }
+  }
+
+  .cockpit-header__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding-left: 4px;
+  }
+
+  .school-name__title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #f7fbff;
+    letter-spacing: 0.06em;
+  }
+
+  .school-name__school {
+    font-size: 15px;
+    font-weight: 700;
+    color: #7aefff;
+    letter-spacing: 0.1em;
+  }
+
+  .school-name__motto {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e8c878;
+    letter-spacing: 0.22em;
+    text-shadow: 0 0 10px rgba(232, 200, 120, 0.35);
+  }
+
+  .cockpit-header__title {
+    position: relative;
+    text-align: center;
+
+    h1 {
+      margin: 0;
+      font-size: 36px;
+      line-height: 1.08;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      background: linear-gradient(180deg, #ffffff 0%, #d8f7ff 38%, #9ae8ff 72%, #f2fbff 100%);
+      background-size: 100% 220%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 14px rgba(0, 220, 255, 0.45));
+      animation: stuTitleShine 6s ease-in-out infinite;
+    }
+  }
+
+  .cockpit-header__tabs {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(140, 230, 255, 0.88);
+    letter-spacing: 0.14em;
+
+    b {
+      margin-left: 12px;
+      color: rgba(180, 210, 235, 0.28);
+      font-weight: 400;
+    }
+  }
+
+  .cockpit-header__title-wings {
+    position: absolute;
+    inset: 0 4px auto;
+    height: 62px;
+    pointer-events: none;
+    background:
+      linear-gradient(135deg, transparent 0 20%, rgba(120, 230, 255, 0.55) 20.6%, transparent 21.4% 100%) left 4px top 22px / 190px 40px no-repeat,
+      linear-gradient(225deg, transparent 0 20%, rgba(120, 230, 255, 0.55) 20.6%, transparent 21.4% 100%) right 4px top 22px / 190px 40px no-repeat,
+      linear-gradient(90deg, transparent, rgba(200, 170, 100, 0.35), rgba(90, 220, 255, 0.45), rgba(200, 170, 100, 0.35), transparent) center 52px / 78% 1px no-repeat;
+    opacity: 0.9;
+  }
+
+  .cockpit-header__meta {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .meta-card {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 12px;
+    border: 1px solid rgba(120, 210, 255, 0.32);
+    border-radius: 2px;
+    background:
+      linear-gradient(145deg, rgba(8, 58, 110, 0.55), rgba(2, 16, 40, 0.88)),
+      rgba(0, 20, 48, 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(180, 230, 255, 0.12),
+      0 0 16px rgba(0, 140, 220, 0.12);
+    color: #eef9ff;
+    font-size: var(--fs-meta);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    backdrop-filter: blur(6px);
+  }
+}
+
+@keyframes stuHeaderLineSweep {
+  0%, 100% { opacity: 0.45; transform: scaleX(0.85); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes stuTitleShine {
+  0%, 100% { background-position: 0 0; }
+  50% { background-position: 0 100%; }
+}
+
+.stu-ref {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stu-ref__grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 12px;
+}
+
+// Layout: archive carousel | radar | AI + (academic + career)
+.stu-layout-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.18fr) minmax(0, 0.95fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.88fr);
+  gap: 12px;
+}
+
+.stu-layout__archive,
+.stu-layout__radar,
+.stu-layout__ai,
+.stu-layout__bottom,
+.stu-layout__academic,
+.stu-layout__career {
+  min-height: 0;
+  min-width: 0;
+}
+
+.stu-layout__archive { grid-column: 1; grid-row: 1 / 3; }
+.stu-layout__radar    { grid-column: 2; grid-row: 1 / 3; }
+.stu-layout__ai       { grid-column: 3; grid-row: 1; }
+.stu-layout__bottom   {
+  grid-column: 3;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-height: 0;
+}
+
+.stu-layout__radar :deep(.cockpit-frame) {
+  box-shadow:
+    0 0 24px rgba(0, 180, 255, 0.35),
+    inset 0 0 28px rgba(0, 127, 255, 0.22);
+}
+
+// 学院驾驶舱同款横向轮播（学生档案三屏）
+.student-screen .panel-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  min-height: 0;
+
+  &__chrome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 0 2px;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: var(--fs-micro);
+    font-weight: 700;
+    color: #9fe8ff;
+    background: rgba(0, 90, 170, 0.28);
+    border: 1px solid rgba(0, 229, 255, 0.28);
+    letter-spacing: 0.04em;
+  }
+
+  &__dots {
+    display: inline-flex;
+    gap: 6px;
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(120, 190, 230, 0.35);
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+
+    &--active {
+      background: #39e6ff;
+      box-shadow: 0 0 8px rgba(57, 230, 255, 0.65);
+      transform: scale(1.15);
+    }
+  }
+
+  &__viewport {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  &__track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &__slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+.stu-ref__cell {
+  min-height: 0;
+  min-width: 0;
+}
+
+.stu-ref__personal { grid-column: 1; grid-row: 1; }
+.stu-ref__radar    { grid-column: 2; grid-row: 1; }
+.stu-ref__ai       { grid-column: 3; grid-row: 1; }
+
+.stu-ref__academic    { grid-column: 1; grid-row: 2; }
+.stu-ref__quality     { grid-column: 2; grid-row: 2; }
+.stu-ref__innovation  { grid-column: 3; grid-row: 2; }
+
+.stu-ref__radar :deep(.cockpit-frame) {
+  box-shadow:
+    0 0 24px rgba(0, 180, 255, 0.35),
+    inset 0 0 28px rgba(0, 127, 255, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-screen .cockpit-header::after,
+  .student-screen .cockpit-header__title h1 {
+    animation: none;
+  }
+}
