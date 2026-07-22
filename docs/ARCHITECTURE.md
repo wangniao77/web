@@ -453,7 +453,7 @@ class PageData(BaseModel, Generic[T]):
 | `/api/v1/university/*` | ❌ 待实现 | 9 个端点 |
 | `/api/v1/student/*` | ❌ 待实现 | 1 个端点 |
 | CORS 中间件 | ❌ 未配置 | 生产环境需添加 |
-| Agent 工作流 | ❌ 预留 | langgraph 注释 |
+| Agent 工作流 | ⚠️ 试点 | `/api/v1/agent/analyze|chat` + OpenViking 上下文（规则/LLM） |
 
 ---
 

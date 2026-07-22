@@ -29,7 +29,19 @@ class Settings(BaseSettings):
 
     superadmin_username: str = "superadmin"
     superadmin_password: str = "superadmin123"
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = (
+        "http://localhost:5173,http://127.0.0.1:5173,"
+        "http://localhost:5174,http://127.0.0.1:5174"
+    )
+
+    # OpenViking 上下文库
+    openviking_url: str = "http://127.0.0.1:1933"
+    openviking_api_key: str = ""
+
+    # LLM（OpenAI 兼容）；未配置时 Agent 走规则引擎
+    llm_api_base: str = "https://api.openai.com/v1"
+    llm_api_key: str = ""
+    llm_model: str = "gpt-4o-mini"
 
 
 @lru_cache

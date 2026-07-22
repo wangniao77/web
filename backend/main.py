@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from Routers import (
     admin_router,
+    agent_router,
     auth_router,
     college_router,
     health_router,
@@ -55,3 +56,4 @@ app.include_router(admin_router.router, prefix="/api/v1")
 app.include_router(college_router.router, prefix="/api/v1")
 app.include_router(university_router.router, prefix="/api/v1")
 app.include_router(student_router.router, prefix="/api/v1")
+app.include_router(agent_router.router, prefix="/api/v1")

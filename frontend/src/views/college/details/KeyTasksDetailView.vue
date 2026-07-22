@@ -3,10 +3,14 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import AnalysisInsightPanel from '@/components/ai/AnalysisInsightPanel.vue'
+import AgentFollowUpChat from '@/components/ai/AgentFollowUpChat.vue'
 import { collegeDetailService } from '@/api/college/services/details'
+import { useAgentAnalysis } from '@/composables/useAgentAnalysis'
 import { useScope } from '@/composables/useScope'
 import { ROUTES } from '@/constants/routes'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
+import type { AgentAnalyzeContextDTO } from '@/types/agent/api'
 import type { KeyTaskDetailVM, KeyTasksDetailVM } from '@/types/college/view/details'
 import type { EChartsOption } from 'echarts'
 
@@ -116,46 +120,43 @@ function onProgressChartClick(params: unknown) {
   }
 }
 
-const insights = computed(() => {
-  if (!data.value) return []
-  const { summary } = data.value
-  const attentionShare = summary.total
-    ? Math.round((summary.delayed / summary.total) * 100)
-    : 0
-  const researchAvg = researchTasks.value.length
-    ? Math.round(researchTasks.value.reduce((s, t) => s + t.progress, 0) / researchTasks.value.length)
-    : 0
-  const teachingAvg = teachingTasks.value.length
-    ? Math.round(teachingTasks.value.reduce((s, t) => s + t.progress, 0) / teachingTasks.value.length)
-    : 0
-  const lowProgress = [...(data.value.tasks)].sort((a, b) => a.progress - b.progress).slice(0, 2)
+const insightsTabActive = computed(() => currentTab.value === 'insights')
 
-  return [
-    {
-      title: '总体完成节奏可控',
-      detail: `年度完成率 ${summary.completionRate}%，已完成 ${summary.completed} 项、推进中 ${summary.ongoing} 项；主体任务按节点推进。`,
-      tone: 'good' as const,
+const agentContext = computed<AgentAnalyzeContextDTO | null>(() => {
+  if (!data.value) return null
+  return {
+    scope: 'college',
+    page: 'key-tasks',
+    collegeId: collegeScope.value.collegeId,
+    filters: {
+      year: filterYear.value,
+      domain: filterDomain.value,
+      status: filterStatus.value,
     },
-    {
-      title: '风险仍集中在少数任务',
-      detail: `需关注 ${summary.delayed} 项，占比约 ${attentionShare}%。${
-        riskTasks.value[0] ? `当前最紧的是「${riskTasks.value[0].name}」。` : ''
-      }`,
-      tone: 'warn' as const,
+    summarySnapshot: {
+      summary: data.value.summary,
+      year: data.value.year,
+      tasks: data.value.tasks.map((t) => ({
+        id: t.id,
+        name: t.name,
+        progress: t.progress,
+        statusLabel: t.statusLabel,
+        statusClass: t.statusClass,
+        category: t.category,
+        leadDept: t.leadDept,
+      })),
     },
-    {
-      title: '科研与教学进度差可拆解',
-      detail: `科研均进度 ${researchAvg}%、教学均进度 ${teachingAvg}%，差距 ${Math.abs(researchAvg - teachingAvg)} 个百分点；低进度任务：${lowProgress.map((t) => t.name).join('、')}。`,
-      tone: 'info' as const,
-    },
-  ]
+  }
 })
 
-const actions = computed(() => [
-  '对「需关注」任务建立双周督导清单，明确责任人与补救节点',
-  '把低进度科研任务与学院科研例会绑定，提前预审材料',
-  '教学竞赛类任务提前锁定参赛教师课表，避免报名窗口冲突',
-])
+const {
+  analysis: agentAnalysis,
+  loading: agentLoading,
+  error: agentError,
+  sessionId: agentSessionId,
+  refresh: refreshAgentAnalysis,
+  run: runAgentAnalysis,
+} = useAgentAnalysis(agentContext, { enabled: insightsTabActive, auto: true })
 
 const statusPieOption = computed<EChartsOption>(() => {
   if (!data.value) return {}
@@ -587,27 +588,20 @@ watch(() => route.query, () => applyRouteQuery())
       <!-- ===================== 深度挖掘 ===================== -->
       <template v-else-if="currentTab === 'insights'">
         <section class="resource-section">
-          <h2 class="resource-section__title"><span class="resource-section__title-icon">🔍</span>深度挖掘 · 规划进展</h2>
-          <p class="resource-section__desc">不只看看板数字，还给出结构结论与可执行建议；点击进度柱条可继续下钻单任务过程。</p>
-
-          <div class="insight-grid">
-            <article
-              v-for="item in insights"
-              :key="item.title"
-              class="insight-card"
-              :class="`insight-card--${item.tone}`"
-            >
-              <h4>{{ item.title }}</h4>
-              <p>{{ item.detail }}</p>
-            </article>
-          </div>
-
-          <div class="resource-card" style="margin-top: 14px">
-            <h3>建议动作</h3>
-            <ol class="action-list">
-              <li v-for="(action, idx) in actions" :key="idx">{{ action }}</li>
-            </ol>
-          </div>
+          <p class="resource-section__desc">不只看看板数字，还给出结构结论与可执行建议；可继续追问，或点击进度柱条下钻单任务过程。</p>
+          <AnalysisInsightPanel
+            :data="agentAnalysis"
+            :loading="agentLoading"
+            :error="agentError"
+            @refresh="refreshAgentAnalysis"
+            @retry="() => runAgentAnalysis(false)"
+          />
+          <AgentFollowUpChat
+            v-if="agentContext"
+            :session-id="agentSessionId"
+            :context="agentContext"
+            :disabled="agentLoading"
+          />
         </section>
 
         <section class="resource-section">

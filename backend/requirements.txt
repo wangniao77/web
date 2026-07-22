@@ -6,6 +6,7 @@ python-dotenv
 PyJWT
 aerich
 openpyxl
+httpx
 
 # Agent 工作流（按需安装）
 # langgraph
