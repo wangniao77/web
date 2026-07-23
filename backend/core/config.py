@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     app_debug: bool = False
 
     postgres_dsn: str = (
-        "postgres://root:123456@192.168.8.127:5432/studentmodelingdata"
+        "postgres://root:123456@192.168.8.110:5432/studentmodelingdata"
     )
 
     jwt_secret: str = "change-me-in-production"
@@ -38,10 +38,10 @@ class Settings(BaseSettings):
     openviking_url: str = "http://127.0.0.1:1933"
     openviking_api_key: str = ""
 
-    # LLM（OpenAI 兼容）；未配置时 Agent 走规则引擎
-    llm_api_base: str = "https://api.openai.com/v1"
+    # LLM（OpenAI 兼容；默认指向阿里云百炼）
+    llm_api_base: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_api_key: str = ""
-    llm_model: str = "gpt-4o-mini"
+    llm_model: str = "deepseek-v4-flash"
 
 
 @lru_cache

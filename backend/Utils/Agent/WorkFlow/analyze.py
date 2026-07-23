@@ -1,4 +1,4 @@
-"""重点任务分析工作流：OpenViking 上下文 + 规则/LLM 生成洞察。"""
+"""Agent 分析工作流：按 page 分发 + OpenViking 上下文 + 规则/LLM。"""
 
 from __future__ import annotations
 
@@ -10,16 +10,19 @@ from Routers.Models.req.agent_model import AgentAnalyzeContext
 from Routers.Models.resp.agent_model import AgentAnalyzeData, AgentInsight
 from Services.college_service import CollegeService
 from Utils.Agent.API.llm import LLMClient
-from Utils.Agent.OpenViking import (
+from Utils.Agent.OpenViking import get_openviking_client
+from Utils.Agent.OpenViking.paths import (
+    ACADEMIC_RISK_SKILL_DOC,
     KEY_TASKS_SKILL_DOC,
-    get_openviking_client,
-    memory_session,
+    resource_academic_risk,
     resource_key_tasks,
+    skill_academic_risk_analysis,
     skill_key_tasks_analysis,
 )
+from Utils.Analytics.academic_risk_aggregate import rule_insights_from_academic_risk
 
 
-def _rule_insights_from_snapshot(snapshot: dict[str, Any]) -> AgentAnalyzeData:
+def _rule_insights_from_key_tasks(snapshot: dict[str, Any]) -> AgentAnalyzeData:
     summary = snapshot.get("summary") or {}
     tasks = snapshot.get("tasks") or []
     total = int(summary.get("total") or len(tasks) or 0)
@@ -96,13 +99,43 @@ def _rule_insights_from_snapshot(snapshot: dict[str, Any]) -> AgentAnalyzeData:
     )
 
 
+def _rule_insights_academic_risk(snapshot: dict[str, Any]) -> AgentAnalyzeData:
+    insights_raw, actions = rule_insights_from_academic_risk(snapshot)
+    insights = [
+        AgentInsight(
+            title=str(i["title"]),
+            detail=str(i["detail"]),
+            tone=i["tone"] if i.get("tone") in {"good", "warn", "info"} else "info",  # type: ignore[arg-type]
+        )
+        for i in insights_raw
+    ]
+    return AgentAnalyzeData(
+        insights=insights,
+        actions=actions,
+        sessionId="",
+        traceId="",
+        source="rule",
+    )
+
+
+def _is_academic_risk_page(page: str) -> bool:
+    return page in {"academic-risk", "warning", "warnings"}
+
+
 async def _load_snapshot(context: AgentAnalyzeContext, college_service: CollegeService) -> dict[str, Any]:
     if context.summarySnapshot:
         return context.summarySnapshot
+    if _is_academic_risk_page(context.page):
+        warning_type = (context.filters or {}).get("warningType") or None
+        if warning_type in {"all", ""}:
+            warning_type = None
+        return await college_service.get_academic_risk_aggregate(
+            college_id=context.collegeId,
+            warning_type=warning_type,
+        )
     if context.page == "key-tasks":
-        detail = await college_service.get_key_tasks_detail(college_id=context.collegeId)
-        return detail
-    return {"summary": {}, "tasks": []}
+        return await college_service.get_key_tasks_detail(college_id=context.collegeId)
+    return {"summary": {}}
 
 
 async def run_analyze(
@@ -119,31 +152,45 @@ async def run_analyze(
 
     sid = session_id or f"sess-{uuid.uuid4().hex[:12]}"
     trace_id = f"trace-{uuid.uuid4().hex[:12]}"
-
-    snapshot = await _load_snapshot(context, college_service)
     college_id = context.collegeId or "default"
+    snapshot = await _load_snapshot(context, college_service)
 
-    # 确保技能与资源写入 OpenViking（或内存降级）
-    await viking.store(skill_key_tasks_analysis(), KEY_TASKS_SKILL_DOC)
+    if _is_academic_risk_page(context.page):
+        skill_path = skill_academic_risk_analysis()
+        resource_path = resource_academic_risk(college_id)
+        skill_doc = ACADEMIC_RISK_SKILL_DOC
+        result = _rule_insights_academic_risk(snapshot)
+    else:
+        skill_path = skill_key_tasks_analysis()
+        resource_path = resource_key_tasks(college_id)
+        skill_doc = KEY_TASKS_SKILL_DOC
+        result = _rule_insights_from_key_tasks(snapshot)
+
+    await viking.store(skill_path, skill_doc)
     await viking.store(
-        resource_key_tasks(college_id),
+        resource_path,
         snapshot,
         metadata={"page": context.page, "scope": context.scope},
     )
+    await viking.ensure_session(sid)
+    await viking.add_session_message(
+        sid,
+        "user",
+        f"[analyze] page={context.page} refresh={refresh} snapshot_keys={list(snapshot.keys())}",
+    )
+    skill_text = await viking.read(skill_path) or skill_doc
 
-    skill_text = await viking.read(skill_key_tasks_analysis()) or KEY_TASKS_SKILL_DOC
-    source: str = "rule"
-    result = _rule_insights_from_snapshot(snapshot)
-
+    source = "rule"
     if llm.enabled:
         system = (
             "你是高校治理驾驶舱分析助手。严格按技能说明输出 JSON，"
             "字段仅限 insights/actions，tone 只能是 good|warn|info。"
+            "禁止输出任何学生姓名或学号。"
         )
         user = (
             f"技能说明:\n{skill_text}\n\n"
             f"页面: {context.scope}/{context.page}\n"
-            f"任务快照:\n{json.dumps(snapshot, ensure_ascii=False)[:8000]}"
+            f"聚合快照:\n{json.dumps(snapshot, ensure_ascii=False)[:8000]}"
         )
         parsed = await llm.complete_json(system, user)
         if parsed and isinstance(parsed.get("insights"), list):
@@ -175,17 +222,16 @@ async def run_analyze(
         result.traceId = trace_id
         result.source = "rule"
 
-    # 会话记忆
-    await viking.append_memory(
-        memory_session(sid),
+    await viking.add_session_message(
+        sid,
+        "assistant",
         json.dumps(
             {
                 "type": "analyze",
                 "traceId": trace_id,
-                "refresh": refresh,
-                "page": context.page,
-                "insightCount": len(result.insights),
                 "source": result.source,
+                "insights": [i.title for i in result.insights],
+                "actions": result.actions,
             },
             ensure_ascii=False,
         ),

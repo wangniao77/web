@@ -57,6 +57,20 @@ async def warning_detail(warning_type: str, collegeId: str | None = None) -> Api
     return ok(await college_service.get_warning_detail(warning_type, college_id=collegeId))
 
 
+@router.get("/analytics/academic-risk", response_model=ApiResponse)
+async def academic_risk_aggregate(
+    collegeId: str | None = None,
+    warningType: str | None = None,
+) -> ApiResponse:
+    """学业风险聚合（年级/专业），不含花名册 PII。"""
+    return ok(
+        await college_service.get_academic_risk_aggregate(
+            college_id=collegeId,
+            warning_type=warningType,
+        )
+    )
+
+
 @router.get("/high-potential/overview", response_model=ApiResponse)
 async def high_potential_overview(collegeId: str | None = None) -> ApiResponse:
     return ok(await college_service.get_high_potential_overview(college_id=collegeId))

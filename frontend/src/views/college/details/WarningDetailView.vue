@@ -1,12 +1,19 @@
 ﻿<script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AnalysisInsightPanel from '@/components/ai/AnalysisInsightPanel.vue'
+import AgentFollowUpChat from '@/components/ai/AgentFollowUpChat.vue'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
 import { isWarningCategoryType } from '@/api/college/adapters/details'
 import { collegeDetailService } from '@/api/college/services/details'
+import { useAgentAnalysis } from '@/composables/useAgentAnalysis'
+import { useScope } from '@/composables/useScope'
+import type { AgentAnalyzeContextDTO } from '@/types/agent/api'
 import type { WarningDetailVM } from '@/types/college/view/details'
+import { aggregateWarningRecords } from '@/utils/agent/academic-risk-insights'
 
 const route = useRoute()
+const { collegeScope } = useScope()
 const data = ref<WarningDetailVM | null>(null)
 const loading = ref(true)
 
@@ -28,6 +35,31 @@ async function load() {
 
 onMounted(load)
 watch(() => route.params.type, load)
+
+const agentContext = computed<AgentAnalyzeContextDTO | null>(() => {
+  if (!data.value) return null
+  const snapshot = aggregateWarningRecords(data.value)
+  return {
+    scope: 'college',
+    page: 'academic-risk',
+    collegeId: collegeScope.value.collegeId,
+    filters: {
+      warningType: data.value.type,
+    },
+    summarySnapshot: snapshot as unknown as Record<string, unknown>,
+  }
+})
+
+const pageEnabled = computed(() => Boolean(data.value) && !loading.value)
+
+const {
+  analysis: agentAnalysis,
+  loading: agentLoading,
+  error: agentError,
+  sessionId: agentSessionId,
+  refresh: refreshAgentAnalysis,
+  run: runAgentAnalysis,
+} = useAgentAnalysis(agentContext, { enabled: pageEnabled, auto: true })
 </script>
 
 <template>
@@ -36,30 +68,48 @@ watch(() => route.params.type, load)
     :subtitle="data ? `${data.label} · 名单明细` : '预警明细'"
   >
     <div v-if="loading" class="detail-placeholder">加载中...</div>
-    <div v-else-if="data" class="table-wrap">
-      <table class="detail-table">
-        <thead>
-          <tr>
-            <th>姓名</th>
-            <th>学号</th>
-            <th>专业</th>
-            <th>年级</th>
-            <th>预警原因</th>
-            <th>等级</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in data.records" :key="row.studentId">
-            <td>{{ row.name }}</td>
-            <td>{{ row.studentId }}</td>
-            <td>{{ row.major }}</td>
-            <td>{{ row.grade }}</td>
-            <td>{{ row.reason }}</td>
-            <td>{{ row.level }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <template v-else-if="data">
+      <AnalysisInsightPanel
+        class="risk-agent"
+        :data="agentAnalysis"
+        :loading="agentLoading"
+        :error="agentError"
+        @refresh="refreshAgentAnalysis"
+        @retry="() => runAgentAnalysis(false)"
+      />
+      <AgentFollowUpChat
+        v-if="agentContext"
+        :session-id="agentSessionId"
+        :context="agentContext"
+        :disabled="agentLoading"
+      />
+
+      <div class="table-wrap">
+        <h3 class="table-title">名单明细</h3>
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>姓名</th>
+              <th>学号</th>
+              <th>专业</th>
+              <th>年级</th>
+              <th>预警原因</th>
+              <th>等级</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in data.records" :key="`${row.studentId}-${row.reason}`">
+              <td>{{ row.name }}</td>
+              <td>{{ row.studentId }}</td>
+              <td>{{ row.major }}</td>
+              <td>{{ row.grade }}</td>
+              <td>{{ row.reason }}</td>
+              <td>{{ row.level }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </template>
     <div v-else class="detail-placeholder">未找到对应预警类别</div>
   </CollegeDetailLayout>
 </template>
@@ -67,6 +117,16 @@ watch(() => route.params.type, load)
 <style scoped lang="scss">
 .detail-placeholder {
   color: rgba(174, 198, 230, 0.7);
+}
+
+.risk-agent {
+  margin-bottom: 12px;
+}
+
+.table-title {
+  margin: 16px 0 10px;
+  font-size: 18px;
+  color: #e8f7ff;
 }
 
 .table-wrap {

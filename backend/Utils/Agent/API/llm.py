@@ -1,9 +1,10 @@
-"""LLM 客户端封装。未配置密钥时返回 None，由工作流走规则引擎。"""
+"""LLM 客户端封装（OpenAI 兼容，含阿里云百炼）。未配置密钥时由工作流走规则引擎。"""
 
 from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any, AsyncIterator
 
 import httpx
@@ -11,6 +12,30 @@ import httpx
 from core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_json(text: str) -> dict[str, Any] | None:
+    text = (text or "").strip()
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    # 容错：从 markdown 代码块或夹杂文本中抽 JSON
+    fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+    if fence:
+        try:
+            return json.loads(fence.group(1))
+        except json.JSONDecodeError:
+            pass
+    start, end = text.find("{"), text.rfind("}")
+    if start >= 0 and end > start:
+        try:
+            return json.loads(text[start : end + 1])
+        except json.JSONDecodeError:
+            return None
+    return None
 
 
 class LLMClient:
@@ -24,32 +49,62 @@ class LLMClient:
     def enabled(self) -> bool:
         return bool(self.api_key and self.api_base)
 
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
     async def complete_json(self, system: str, user: str) -> dict[str, Any] | None:
         if not self.enabled:
             return None
-        try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                resp = await client.post(
-                    f"{self.api_base}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": self.model,
-                        "temperature": 0.2,
-                        "response_format": {"type": "json_object"},
-                        "messages": [
-                            {"role": "system", "content": system},
-                            {"role": "user", "content": user},
-                        ],
-                    },
-                )
-                resp.raise_for_status()
-                content = resp.json()["choices"][0]["message"]["content"]
-                return json.loads(content)
-        except Exception as exc:
-            logger.warning("LLM complete_json failed: %s", exc)
+
+        payloads = [
+            # 百炼 DeepSeek V4：关闭思考，便于稳定输出 JSON
+            {
+                "model": self.model,
+                "temperature": 0.2,
+                "response_format": {"type": "json_object"},
+                "enable_thinking": False,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            },
+            {
+                "model": self.model,
+                "temperature": 0.2,
+                "enable_thinking": False,
+                "messages": [
+                    {"role": "system", "content": system + "\n只输出 JSON 对象，不要其它文字。"},
+                    {"role": "user", "content": user},
+                ],
+            },
+        ]
+
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            last_err: Exception | None = None
+            for payload in payloads:
+                try:
+                    resp = await client.post(
+                        f"{self.api_base}/chat/completions",
+                        headers=self._headers(),
+                        json=payload,
+                    )
+                    if resp.status_code >= 400:
+                        last_err = RuntimeError(f"{resp.status_code} {resp.text[:300]}")
+                        logger.warning("LLM complete_json http error: %s", last_err)
+                        continue
+                    content = resp.json()["choices"][0]["message"]["content"]
+                    parsed = _extract_json(content)
+                    if parsed is not None:
+                        return parsed
+                    last_err = RuntimeError(f"non-json content: {str(content)[:200]}")
+                except Exception as exc:
+                    last_err = exc
+                    logger.warning("LLM complete_json failed: %s", exc)
+            if last_err:
+                logger.warning("LLM complete_json exhausted retries: %s", last_err)
             return None
 
     async def stream_text(self, system: str, user: str) -> AsyncIterator[str]:
@@ -63,21 +118,22 @@ class LLMClient:
                 async with client.stream(
                     "POST",
                     f"{self.api_base}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
+                    headers=self._headers(),
                     json={
                         "model": self.model,
                         "stream": True,
                         "temperature": 0.3,
+                        "enable_thinking": False,
                         "messages": [
                             {"role": "system", "content": system},
                             {"role": "user", "content": user},
                         ],
                     },
                 ) as resp:
-                    resp.raise_for_status()
+                    if resp.status_code >= 400:
+                        body = await resp.aread()
+                        yield f"模型调用失败：HTTP {resp.status_code} {body[:200]!r}"
+                        return
                     async for line in resp.aiter_lines():
                         if not line.startswith("data:"):
                             continue

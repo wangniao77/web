@@ -224,7 +224,7 @@ v3/
 ### 4.3 数据库
 
 - **引擎**: PostgreSQL
-- **默认 DSN**: `postgres://root:123456@192.168.8.127:5432/studentmodelingdata`
+- **默认 DSN**: `postgres://root:123456@192.168.8.110:5432/studentmodelingdata`
 - **核心表**: `student_academic_records`（学籍成绩，90+ 字段）
 
 ---

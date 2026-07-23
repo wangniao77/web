@@ -3,11 +3,16 @@ from Utils.DB.Models import (
     Account,
     College,
     Course,
+    EmploymentRecord,
     KeyTask,
     Major,
+    ResearchIp,
+    ResearchPaper,
+    ResearchProject,
     SchoolClass,
     SchoolEvent,
     StudentAcademicRecord,
+    ThesisAdvisor,
 )
 
 
@@ -22,3 +27,8 @@ def init_admin_registry() -> None:
     register_admin_model("courses", Course)
     register_admin_model("key_tasks", KeyTask)
     register_admin_model("school_events", SchoolEvent)
+    register_admin_model("employment_records", EmploymentRecord)
+    register_admin_model("research_projects", ResearchProject)
+    register_admin_model("research_papers", ResearchPaper)
+    register_admin_model("research_ips", ResearchIp)
+    register_admin_model("thesis_advisors", ThesisAdvisor)

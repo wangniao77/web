@@ -367,6 +367,18 @@ class CollegeService:
             "records": result,
         }
 
+    async def get_academic_risk_aggregate(
+        self,
+        *,
+        college_id: str | None = None,
+        warning_type: str | None = None,
+    ) -> dict[str, Any]:
+        """学业风险聚合快照（无 PII），供 Agent / 二级页分析。"""
+        from Utils.Analytics.academic_risk_aggregate import build_academic_risk_snapshot
+
+        _, students = await self._load_students(college_id)
+        return await build_academic_risk_snapshot(students, warning_type=warning_type)
+
     async def get_high_potential_overview(self, *, college_id: str | None = None) -> dict[str, Any]:
         _, students = await self._load_students(college_id)
         tagged = [s for s in students if build_high_potential_tags(s)]

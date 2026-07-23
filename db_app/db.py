@@ -5,7 +5,7 @@ from tortoise import Tortoise
 
 POSTGRES_DSN = os.getenv(
     "POSTGRES_DSN",
-    "postgres://root:123456@192.168.8.127:5432/studentmodelingdata",
+    "postgres://root:123456@192.168.8.110:5432/studentmodelingdata",
 )
 
 TORTOISE_ORM = {

@@ -1,13 +1,40 @@
 import type { AgentAnalyzeRequestDTO, AgentAnalyzeResponseDTO, AgentChatRequestDTO } from '@/types/agent/api'
+import {
+  buildAcademicRiskRuleAnalysis,
+  type AcademicRiskSnapshot,
+} from '@/utils/agent/academic-risk-insights'
 import { buildKeyTasksRuleAnalysis } from '@/utils/agent/key-tasks-insights'
 import type { KeyTasksDetailVM } from '@/types/college/view/details'
 
-/** Mock analyze：优先用前端传入的 summarySnapshot 还原规则洞察 */
+function isAcademicRiskSnapshot(snapshot: unknown): snapshot is AcademicRiskSnapshot {
+  if (!snapshot || typeof snapshot !== 'object') return false
+  const s = snapshot as AcademicRiskSnapshot
+  return Boolean(s.summary && (s.byGrade || s.topRiskMajors || typeof s.summary.warned === 'number'))
+}
+
+/** Mock analyze：按页面快照形状分发 */
 export function mockAgentAnalyze(req: AgentAnalyzeRequestDTO): AgentAnalyzeResponseDTO {
   const sessionId = req.sessionId || `mock-session-${Date.now()}`
-  const snapshot = req.context.summarySnapshot as Partial<KeyTasksDetailVM> | undefined
+  const snapshot = req.context.summarySnapshot
 
-  if (snapshot?.summary && Array.isArray(snapshot.tasks)) {
+  if (
+    req.context.page === 'academic-risk' ||
+    req.context.page === 'warning' ||
+    isAcademicRiskSnapshot(snapshot)
+  ) {
+    if (isAcademicRiskSnapshot(snapshot)) {
+      const vm = buildAcademicRiskRuleAnalysis(snapshot, sessionId)
+      return {
+        insights: vm.insights,
+        actions: vm.actions,
+        sessionId: vm.sessionId,
+        traceId: `mock-${vm.traceId}`,
+        source: 'mock',
+      }
+    }
+  }
+
+  if (snapshot && typeof snapshot === 'object' && Array.isArray((snapshot as KeyTasksDetailVM).tasks)) {
     const vm = buildKeyTasksRuleAnalysis(snapshot as KeyTasksDetailVM, sessionId)
     return {
       insights: vm.insights,
@@ -49,5 +76,8 @@ export function mockAgentAnalyze(req: AgentAnalyzeRequestDTO): AgentAnalyzeRespo
 
 export function mockAgentChatReply(req: AgentChatRequestDTO): string {
   const page = req.context.page
+  if (page === 'academic-risk' || page === 'warning') {
+    return `（Mock）已结合「${page}」学业风险聚合理解：「${req.message}」。建议先看预警率最高的年级与专业，安排辅导员双周跟进，不对外点名。`
+  }
   return `（Mock）已结合「${page}」页面上下文理解你的问题：「${req.message}」。建议先核对需关注任务的责任人与下一里程碑节点，再安排双周督导。`
 }

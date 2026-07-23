@@ -5,8 +5,15 @@
 ## 已落地试点
 
 - 页面：`/college/key-tasks` →「深度挖掘」Tab
+- 页面：`/college/warning/:type` → 学业风险 Agent 分析（聚合，不点名）
 - 组件：`AnalysisInsightPanel` + `AgentFollowUpChat`
 - 钩子：`useAgentAnalysis(context, { enabled, auto })`
+
+## 后端聚合接口
+
+- `GET /api/v1/college/analytics/academic-risk?collegeId=&warningType=`
+- 仅返回年级/专业聚合，不含花名册 PII
+- Agent `page=academic-risk|warning` 时自动拉取该快照
 
 ## 在其他二级页复用
 

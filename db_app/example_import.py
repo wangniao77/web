@@ -20,7 +20,7 @@ async def import_xlsx_to_postgresql(xlsx_path: str) -> None:
             "connections": {
                 "default": os.getenv(
                     "POSTGRES_DSN",
-                    "postgres://root:123456@192.168.8.127:5432/studentmodelingdata",
+                    "postgres://root:123456@192.168.8.110:5432/studentmodelingdata",
                 )
             },
             "apps": {
