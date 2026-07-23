@@ -134,27 +134,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="benchmark-slide">
-    <div class="benchmark-slide__matrix">
-      <button
-        type="button"
-        class="benchmark-slide__hero"
-        @click="openDetail('all')"
-      >
-        <header class="benchmark-slide__hero-head">年度里程碑</header>
-        <ul class="benchmark-slide__milestones">
-          <li
-            v-for="(item, index) in data.milestones"
-            :key="item.id"
-            class="benchmark-slide__milestone"
-            :style="{ '--i': index }"
-            :title="item.interpretation"
-          >
-            <em>{{ item.badge }}</em>
-            <MarqueeText class="benchmark-slide__title-marquee" :text="item.title" :duration="9" />
-          </li>
-        </ul>
-      </button>
-
+    <div class="benchmark-slide__cards">
       <button
         type="button"
         class="benchmark-slide__card benchmark-slide__card--faculty"
@@ -214,6 +194,29 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
+    <button
+      type="button"
+      class="benchmark-slide__hero"
+      @click="openDetail('all')"
+    >
+      <header class="benchmark-slide__hero-head">年度里程碑</header>
+      <ul class="benchmark-slide__milestones">
+        <li
+          v-for="(item, index) in data.milestones"
+          :key="item.id"
+          class="benchmark-slide__milestone"
+          :style="{ '--i': index }"
+          :title="item.interpretation"
+        >
+          <em>{{ item.badge }}</em>
+          <MarqueeText class="benchmark-slide__title-marquee" :text="item.title" :duration="9" />
+          <span v-if="item.leader" class="benchmark-slide__milestone-leader">
+            {{ item.leader }}
+          </span>
+        </li>
+      </ul>
+    </button>
+
     <div class="benchmark-slide__ticker" @click="openDetail('all')">
       <em class="benchmark-slide__ticker-label">成果长廊</em>
       <div ref="viewportRef" class="benchmark-slide__ticker-viewport">
@@ -237,24 +240,29 @@ onBeforeUnmount(() => {
 .benchmark-slide {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
-.benchmark-slide__matrix {
+.benchmark-slide__cards {
   flex: 1 1 0;
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.3fr) minmax(0, 0.95fr);
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
   gap: 10px;
   min-height: 0;
+
+  .benchmark-slide__card {
+    flex: 1 1 0;
+    min-width: 0;
+  }
 }
 
 .benchmark-slide__hero {
-  grid-row: 1 / span 2;
-  grid-column: 2;
+  flex: 0 0 auto;
+  min-height: 140px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -262,7 +270,6 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 100%;
   width: 100%;
-  min-height: 0;
   padding: 10px 14px;
   border: 1px solid rgba(255, 213, 106, 0.34);
   border-radius: 8px;
@@ -310,10 +317,10 @@ onBeforeUnmount(() => {
 
 .benchmark-slide__milestones {
   display: flex;
-  flex: 1 1 0;
+  flex: 0 0 auto;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 0;
+  justify-content: flex-start;
+  gap: 4px;
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -322,11 +329,11 @@ onBeforeUnmount(() => {
 
 .benchmark-slide__milestone {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1 1 0;
-  justify-content: center;
-  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-height: 28px;
   min-width: 0;
   max-width: 100%;
   padding: 4px 0;
@@ -339,8 +346,11 @@ onBeforeUnmount(() => {
   }
 
   em {
+    flex-shrink: 0;
     display: inline-flex;
-    align-self: flex-start;
+    align-items: center;
+    justify-content: center;
+    min-width: 96px;
     padding: 2px 8px;
     border-radius: 4px;
     border: 1px solid rgba(255, 213, 106, 0.45);
@@ -358,28 +368,45 @@ onBeforeUnmount(() => {
 }
 
 .benchmark-slide__title-marquee {
-  display: block;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
   min-width: 0;
   max-width: 100%;
+  min-height: 22px;
   width: 100%;
 
   :deep(.bm-marquee__item) {
     color: #eef9ff;
-    font-size: clamp(16px, 1.1vw, 20px);
+    font-size: clamp(14px, 1vw, 17px);
     font-weight: 700;
     line-height: 1.25;
   }
 }
 
+.benchmark-slide__milestone-leader {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 213, 106, 0.3);
+  background: rgba(255, 200, 80, 0.08);
+  color: #ffd98a;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
 .benchmark-slide__card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 3px;
   min-width: 0;
   max-width: 100%;
   width: 100%;
   min-height: 0;
-  padding: 12px 14px;
+  padding: 7px 10px;
   border: 1px solid rgba(0, 200, 255, 0.18);
   border-radius: 8px;
   background: rgba(0, 50, 100, 0.24);
@@ -424,7 +451,7 @@ onBeforeUnmount(() => {
 
   span {
     color: #9ecae8;
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.05em;
     white-space: nowrap;
@@ -432,7 +459,7 @@ onBeforeUnmount(() => {
 
   strong {
     color: #eaf7ff;
-    font-size: clamp(28px, 2vw, 36px);
+    font-size: clamp(20px, 1.3vw, 24px);
     font-weight: 800;
     line-height: 1;
     font-variant-numeric: tabular-nums;
@@ -451,9 +478,9 @@ onBeforeUnmount(() => {
 .benchmark-slide__line {
   margin: 0;
   color: #8ec8e8;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
@@ -465,19 +492,18 @@ onBeforeUnmount(() => {
 
   :deep(.bm-marquee__item) {
     color: #8ec8e8;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.15;
   }
 }
 
 .benchmark-slide__foot {
   margin: 0;
-  margin-top: auto;
   color: #b8e8ff;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.15;
   white-space: nowrap;
 
   &--gold {
@@ -490,37 +516,36 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 100%;
   width: 100%;
-  margin-top: auto;
 
   :deep(.bm-marquee__item) {
     color: #b8e8ff;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.15;
   }
 }
 
 .benchmark-slide__roster {
   flex: 1 1 0;
   min-height: 0;
-  max-height: 26px;
+  max-height: 18px;
   overflow: hidden;
   opacity: 0.75;
   transition: max-height 0.25s, opacity 0.25s;
 
   span {
     display: block;
-    height: 26px;
+    height: 18px;
     color: #9fe8ff;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 600;
-    line-height: 26px;
+    line-height: 18px;
     white-space: nowrap;
   }
 }
 
 .benchmark-slide__card--faculty.is-hover .benchmark-slide__roster {
-  max-height: 52px;
+  max-height: 36px;
   opacity: 1;
 }
 
@@ -531,7 +556,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   flex: 0 0 auto;
   min-width: 0;
-  min-height: 42px;
+  min-height: 40px;
   padding: 8px 14px;
   border-radius: 6px;
   border: 1px solid rgba(0, 200, 255, 0.18);

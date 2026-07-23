@@ -212,6 +212,14 @@ const actions = computed(() => [
   '竞赛金奖团队与一流课程、平台建设交叉赋能，形成育人闭环',
 ])
 
+const benchmarkGaps = [
+  '连续三年无科研成果奖和决策咨询报告批示、采纳',
+  '无省部级以上重大或重点科研项目',
+  '无计算机学报等中文核心期刊',
+  '无100万以上金额的横向项目',
+  '无科技进步奖等政府奖',
+]
+
 const categoryBarOption = computed<EChartsOption>(() => {
   if (!data.value) return {}
   const items = [...data.value.byCategory].reverse()
@@ -329,7 +337,7 @@ watch(() => route.query, () => applyRouteQuery())
 </script>
 
 <template>
-  <CollegeDetailLayout>
+  <CollegeDetailLayout module="精品成果集萃">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">📋 成果总览</button>
@@ -662,14 +670,32 @@ watch(() => route.query, () => applyRouteQuery())
           </div>
         </section>
 
-        <section class="resource-section">
-          <h2 class="resource-section__title"><span class="resource-section__title-icon">✅</span>建议动作</h2>
-          <div class="resource-card">
-            <ol class="action-list">
-              <li v-for="(action, idx) in actions" :key="idx">{{ action }}</li>
-            </ol>
-          </div>
-        </section>
+        <div class="resource-section__row">
+          <section class="resource-section">
+            <h2 class="resource-section__title">
+              <span class="resource-section__title-icon">🎯</span>
+              对标申博 · 存在以下薄弱点
+              <em class="resource-section__hint">博士点申报对标分析</em>
+            </h2>
+            <div class="resource-card">
+              <ul class="weak-list">
+                <li v-for="(gap, idx) in benchmarkGaps" :key="idx" class="weak-item">
+                  <span class="weak-item__index">{{ idx + 1 }}</span>
+                  <span class="weak-item__text">{{ gap }}</span>
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="resource-section">
+            <h2 class="resource-section__title"><span class="resource-section__title-icon">✅</span>建议动作</h2>
+            <div class="resource-card">
+              <ol class="action-list">
+                <li v-for="(action, idx) in actions" :key="idx">{{ action }}</li>
+              </ol>
+            </div>
+          </section>
+        </div>
 
         <section class="resource-section">
           <h2 class="resource-section__title">
@@ -779,6 +805,22 @@ watch(() => route.query, () => applyRouteQuery())
   border-radius: 12px;
   border: 1px solid rgba(0, 180, 255, 0.12);
   background: rgba(2, 18, 48, 0.35);
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 22px;
+
+    .resource-section {
+      margin-bottom: 0;
+      display: flex;
+      flex-direction: column;
+
+      .resource-card { flex: 1 1 auto; }
+    }
+  }
+
 
   &--active {
     border-color: rgba(0, 242, 255, 0.35);
@@ -1081,6 +1123,47 @@ watch(() => route.query, () => applyRouteQuery())
   li + li { margin-top: 8px; }
 }
 
+.weak-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.weak-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 120, 90, 0.26);
+  background: rgba(90, 30, 20, 0.22);
+
+  &__index {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 150, 110, 0.45);
+    background: rgba(255, 110, 70, 0.18);
+    color: #ffcaa8;
+    font-size: 15px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__text {
+    font-size: 18px;
+    line-height: 1.5;
+    color: #ffd9cc;
+    font-weight: 600;
+  }
+}
+
 @media (max-width: 1400px) {
   .resource-summary--6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -1091,6 +1174,7 @@ watch(() => route.query, () => applyRouteQuery())
   .milestone-grid,
   .insight-grid,
   .resource-section__grid--2,
+  .resource-section__row,
   .kv-grid { grid-template-columns: 1fr; }
 }
 

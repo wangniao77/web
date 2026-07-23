@@ -524,7 +524,7 @@ function goEmploymentPage() {
 </script>
 
 <template>
-  <CollegeDetailLayout>
+  <CollegeDetailLayout module="人才培养纵览">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">📋 画像总览</button>

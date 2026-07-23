@@ -376,7 +376,7 @@ watch(() => route.query, () => applyRouteQuery())
 </script>
 
 <template>
-  <CollegeDetailLayout>
+  <CollegeDetailLayout module="学院重点工作动态监测总览">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">📋 进展总览</button>

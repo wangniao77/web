@@ -704,7 +704,7 @@ const supportRadarOption = computed(() => {
 </script>
 
 <template>
-  <CollegeDetailLayout>
+  <CollegeDetailLayout module="师资建设图谱">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button

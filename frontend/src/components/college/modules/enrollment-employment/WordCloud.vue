@@ -30,6 +30,12 @@ let placed: Array<{
   color: string
   rot: number
 }> = []
+
+// 计算词在给定旋转下的实际包围盒（旋转 90° 时宽高互换）
+function boxOf(tw: number, th: number, rot: number): { bw: number; bh: number } {
+  if (rot === 0) return { bw: tw, bh: th }
+  return { bw: th, bh: tw }
+}
 let hoverIdx = -1
 let ro: ResizeObserver | null = null
 
@@ -57,10 +63,10 @@ function findPos(tw: number, th: number, rot: number, cx: number, cy: number, W:
     bw = th
     bh = tw
   }
-  const pad = 2
+  const pad = 6
   const step = 3.5
   const maxR = Math.hypot(W, H)
-  for (let i = 0; i < 900; i++) {
+  for (let i = 0; i < 1400; i++) {
     const angle = 0.35 * i
     const radius = step * 0.5 * i
     const x = cx + radius * Math.cos(angle)
@@ -73,7 +79,7 @@ function findPos(tw: number, th: number, rot: number, cx: number, cy: number, W:
       if (radius > maxR) return null
       continue
     }
-    if (!collides(left, top, right, bottom)) return { x, y }
+    if (!collides(left, top, right, bottom)) return { x, y, bw, bh }
   }
   return null
 }
@@ -115,9 +121,10 @@ function layout() {
     const m = ctx.measureText(wd.name)
     const tw = m.width
     const th = (m.actualBoundingBoxAscent || font * 0.7) + (m.actualBoundingBoxDescent || font * 0.3)
+    const { bw, bh } = boxOf(tw, th, rot)
     const pos = findPos(tw, th, rot, cx, cy, W, H)
     if (!pos) continue
-    placed.push({ word: wd, x: pos.x, y: pos.y, w: tw, h: th, font, color, rot })
+    placed.push({ word: wd, x: pos.x, y: pos.y, w: pos.bw, h: pos.bh, font, color, rot })
   }
   hoverIdx = -1
   draw()
@@ -206,6 +213,10 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   height: 100%;
+  border-radius: 12px;
+  background:
+    radial-gradient(72% 72% at 50% 48%, rgba(125, 211, 252, 0.10) 0%, rgba(125, 211, 252, 0.42) 60%, rgba(125, 211, 252, 0) 80%);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.22), 0 0 26px rgba(56, 189, 248, 0.12);
 
   canvas {
     display: block;

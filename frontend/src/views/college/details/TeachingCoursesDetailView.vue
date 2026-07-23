@@ -18,7 +18,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <CollegeDetailLayout title="教学质量与教学运行" subtitle="课程建设明细">
+  <CollegeDetailLayout module="教学质量与教学运行" title="教学质量与教学运行" subtitle="课程建设明细">
     <div v-if="loading" class="detail-placeholder">加载中...</div>
     <div v-else-if="data" class="table-wrap">
       <table class="detail-table">

@@ -6,6 +6,8 @@ import { useSlots } from 'vue'
 defineProps<{
   title?: string
   subtitle?: string
+  /** 模块名称，显示在「返回驾驶舱」之后的面包屑，如「精品成果集萃」 */
+  module?: string
 }>()
 
 const slots = useSlots()
@@ -21,16 +23,21 @@ function goBack() {
     <div class="college-detail__mesh" aria-hidden="true" />
     <header class="college-detail__header">
       <button type="button" class="college-detail__back" @click="goBack">← 返回驾驶舱</button>
-      <div v-if="slots.nav" class="college-detail__nav">
-        <slot name="nav" />
-      </div>
-      <div v-else class="college-detail__title">
-        <h1>{{ title }}</h1>
-        <span v-if="subtitle">{{ subtitle }}</span>
+      <div v-if="module" class="college-detail__crumb">
+        <span class="college-detail__crumb-root">数智洞察视界</span>
+        <span class="college-detail__crumb-sep">·</span>
+        <span class="college-detail__crumb-module">{{ module }}</span>
       </div>
       <div class="college-detail__header-glow" aria-hidden="true" />
     </header>
     <main class="college-detail__body">
+      <div v-if="title" class="college-detail__pagehead">
+        <h1 class="college-detail__pagetitle">{{ title }}</h1>
+        <span v-if="subtitle" class="college-detail__pagesub">{{ subtitle }}</span>
+      </div>
+      <div v-if="slots.nav" class="college-detail__topnav">
+        <slot name="nav" />
+      </div>
       <slot />
     </main>
   </div>
@@ -133,14 +140,47 @@ function goBack() {
   }
 }
 
-.college-detail__title {
+.college-detail__crumb {
   position: relative;
   z-index: 1;
-  min-width: 0;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 
-  h1 {
-    position: relative;
-    margin: 0 0 4px;
+  &-root {
+    color: rgba(184, 236, 255, 0.82);
+  }
+
+  &-sep {
+    color: rgba(0, 242, 255, 0.55);
+    font-weight: 700;
+  }
+
+  &-module {
+    color: #f6fbff;
+    font-size: 28px;
+    text-shadow: 0 0 14px rgba(0, 242, 255, 0.32);
+  }
+}
+
+.college-detail__pagehead {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 4px 2px 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(102, 217, 255, 0.16);
+
+  &__pagetitle {
+    margin: 0;
     color: #f6fbff;
     font-size: 24px;
     line-height: 1.15;
@@ -149,19 +189,19 @@ function goBack() {
     text-shadow: 0 0 16px rgba(0, 242, 255, 0.38);
   }
 
-  span {
+  &__pagesub {
     font-size: $college-fs-label;
     color: rgba(184, 236, 255, 0.74);
   }
 }
 
-.college-detail__nav {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  flex: 1 1 auto;
-  min-width: 0;
+.college-detail__topnav {
+  position: sticky;
+  top: -2px;
+  z-index: 3;
+  margin: 0 0 4px;
+  padding: 2px 0 8px;
+  background: linear-gradient(180deg, rgba(3, 11, 30, 0.96), rgba(3, 11, 30, 0.72));
   overflow-x: auto;
   scrollbar-width: none;
 

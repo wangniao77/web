@@ -32,6 +32,7 @@ watch(() => route.params.type, load)
 
 <template>
   <CollegeDetailLayout
+    module="预警与风险监测"
     title="预警与风险监测"
     :subtitle="data ? `${data.label} · 名单明细` : '预警明细'"
   >
