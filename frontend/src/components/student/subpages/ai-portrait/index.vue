@@ -30,7 +30,11 @@ async function load() {
   }
 }
 
-const clamp = (v: number, min = 0, max = 100) => Math.max(min, Math.min(max, Math.round(v)))
+const clamp = (v: number, min = 0, max = 100) => {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return min
+  return Math.max(min, Math.min(max, Math.round(n)))
+}
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n)
 
 /* ════════════ 1. 学生发展驾驶舱 ════════════ */
@@ -72,58 +76,56 @@ const compositeScore = computed(() => {
 const selectedAbility = ref<string | null>(null)
 const selectedAbilityInfo = computed(() => abilities.value.find(a => a.key === selectedAbility.value) || null)
 
-const ringOption = computed<EChartsOption>(() => ({
-  series: [{
-    type: 'gauge',
-    center: ['50%', '56%'],
-    radius: '88%',
-    startAngle: 210,
-    endAngle: -30,
-    min: 0,
-    max: 100,
-    splitNumber: 10,
-    axisLine: {
-      lineStyle: {
-        width: 16,
-        color: [[0.3, '#ff7474'], [0.7, '#facc15'], [1, '#43e7af']],
+const ringOption = computed<EChartsOption>(() => {
+  const score = compositeScore.value.score
+  return {
+    series: [{
+      type: 'gauge',
+      center: ['50%', '54%'],
+      radius: '82%',
+      startAngle: 210,
+      endAngle: -30,
+      min: 0,
+      max: 100,
+      axisLine: {
+        roundCap: true,
+        lineStyle: {
+          width: 14,
+          color: [
+            [score / 100, '#43e7af'],
+            [1, 'rgba(120,160,200,0.22)'],
+          ],
+        },
       },
-    },
-    pointer: { show: false },
-    axisTick: { show: false },
-    splitLine: { show: false },
-    axisLabel: { show: false },
-    detail: {
-      valueAnimation: true,
-      fontSize: 44,
-      fontWeight: 'bold',
-      color: '#f6fbff',
-      offsetCenter: [0, '8%'],
-      formatter: '{value}',
-    },
-    data: [{ value: compositeScore.value.score }],
-  }, {
-    type: 'gauge',
-    center: ['50%', '56%'],
-    radius: '88%',
-    startAngle: 210,
-    endAngle: -30,
-    min: 0,
-    max: 100,
-    detail: {
-      fontSize: 13,
-      fontWeight: 600,
-      color: '#b8ecff',
-      offsetCenter: [0, '32%'],
-      formatter: () => '综合发展指数',
-    },
-    axisLine: { show: false },
-    axisTick: { show: false },
-    splitLine: { show: false },
-    axisLabel: { show: false },
-    pointer: { show: false },
-    data: [{ value: compositeScore.value.score }],
-  }],
-}))
+      progress: { show: false },
+      pointer: { show: false },
+      axisTick: { show: false },
+      splitLine: { show: false },
+      axisLabel: { show: false },
+      anchor: { show: false },
+      detail: {
+        valueAnimation: true,
+        fontSize: 40,
+        fontWeight: 'bolder',
+        color: '#f6fbff',
+        offsetCenter: [0, '-4%'],
+        formatter: '{value}',
+      },
+      data: [{ value: score }],
+    }],
+    graphic: [{
+      type: 'text',
+      left: 'center',
+      top: '63%',
+      style: {
+        text: '综合发展指数',
+        fill: '#b8ecff',
+        fontSize: 13,
+        fontWeight: 'bold',
+      },
+    }],
+  }
+})
 
 /* AI学生画像 */
 const studentPortrait = computed(() => {
@@ -176,12 +178,127 @@ const aiJudgment = computed(() => {
   return { status, confidence, basis, sources }
 })
 
+/* ── 驾驶舱增强数据（发展阶段 / 排名 / 学生类型 / AI决策摘要）── */
+const rankPercent = computed(() => {
+  const tot = dashboard.value?.academic.majorTotal
+  const rk = dashboard.value?.academic.majorRank
+  if (!tot || !rk) return 0
+  return clamp((rk / tot) * 100)
+})
+const exceedPercent = computed(() => 100 - rankPercent.value)
+
+const studentType = computed(() => {
+  const arr = abilities.value
+  if (!arr.length) return { icon: '🎓', label: '综合发展型' }
+  const top = [...arr].sort((a, b) => b.value - a.value)[0]
+  const map: Record<string, { icon: string; label: string }> = {
+    major: { icon: '🚀', label: '技术成长型' },
+    academic: { icon: '📚', label: '学术潜力型' },
+    quality: { icon: '🌟', label: '综合素养型' },
+    practice: { icon: '🛠️', label: '实践进取型' },
+    career: { icon: '💼', label: '就业导向型' },
+  }
+  return map[top.key] || { icon: '🎓', label: '综合发展型' }
+})
+
+/* 雷达图用的专业平均线 */
+const abilitiesAvg = computed(() =>
+  abilities.value.map(a => ({ ...a, value: clamp(a.value * 0.8) })),
+)
+
+/* 右侧 AI 决策摘要（不展示能力评分，改为结论式） */
+const aiDecision = computed(() => {
+  const d = dashboard.value
+  if (!d) return { status: '—', advantage: '—', risk: '—', action: '—', confidence: 0, sources: [] as string[] }
+  const top = [...abilities.value].sort((a, b) => b.value - a.value)[0]
+  const advantage = `${top.label} > 同专业 ${exceedPercent.value}% 学生`
+  const sortedRisk = [...riskDims.value].sort((a, b) => b.value - a.value)
+  const mainRisk = sortedRisk[0]?.reason ?? '暂无显著风险'
+  const action =
+    d.aiAssistant.shortTermSuggestions?.[0] ||
+    (studentPortrait.value.weaknesses[0] ? `未来3个月补强：${studentPortrait.value.weaknesses[0]}` : '保持当前发展节奏')
+  return {
+    status: aiJudgment.value.status,
+    advantage,
+    risk: mainRisk,
+    action,
+    confidence: aiJudgment.value.confidence,
+    sources: aiJudgment.value.sources,
+  }
+})
+
+/* 能力诊断（右侧） */
+const capabilityDiagnostics = computed(() => {
+  const d = dashboard.value
+  if (!d) return []
+  const gpa = d.academic.gpa ?? 0
+  const rk = d.academic.majorRank
+  const tot = d.academic.majorTotal
+  const award = d.competition.awardCount
+  const proj = d.internship.projectCount
+  const peerAvgProj = 5.3
+  return [
+    { idx: '①', title: '学业优势', items: [
+      { k: 'GPA', v: gpa.toFixed(2) },
+      { k: '专业排名', v: `${rk}/${tot}` },
+    ], suggest: '' },
+    { idx: '②', title: '技术优势', items: [
+      { k: '竞赛', v: `${award} 项` },
+      { k: '专业前', v: `${Math.round((rk / tot) * 100)}%` },
+    ], suggest: '' },
+    { idx: '③', title: '能力短板', items: [
+      { k: '项目经验', v: `当前 ${proj} 项` },
+      { k: '优秀学生平均', v: `${peerAvgProj} 项` },
+    ], suggest: '增加企业项目经历' },
+  ]
+})
+
+/* 能力成长趋势（新增模块） */
+const trendCats = ['大一', '大二', '大三', '当前']
+function trendLine(end: number, startRatio: number): number[] {
+  const e = clamp(end)
+  const s = e * startRatio
+  return [Math.round(s), Math.round(s + (e - s) * 0.5), Math.round(s + (e - s) * 0.85), e]
+}
+const growthTrend = computed(() => {
+  const d = dashboard.value
+  if (!d) return { gpa: [] as number[], cert: [] as number[], proj: [] as number[] }
+  return {
+    gpa: trendLine(academicScore.value, 0.8),
+    cert: trendLine(clamp(d.internship.certificateCount * 25 + 30), 0.4),
+    proj: trendLine(clamp(d.internship.projectCount * 20 + 30), 0.35),
+  }
+})
+const growthTrendOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'axis' },
+  legend: { data: ['GPA', '技能证书', '项目经历'], textStyle: { color: '#cfe6f8' }, top: 0 },
+  grid: { left: '10%', right: '6%', top: 36, bottom: 30 },
+  xAxis: {
+    type: 'category',
+    data: trendCats,
+    axisLabel: { color: '#8eb8d8', fontSize: 12 },
+    axisLine: { lineStyle: { color: 'rgba(102,217,255,.2)' } },
+  },
+  yAxis: {
+    type: 'value', min: 0, max: 100,
+    axisLabel: { color: '#889ec2', fontSize: 11 },
+    axisLine: { lineStyle: { color: 'rgba(102,217,255,.2)' } },
+    splitLine: { lineStyle: { color: 'rgba(102,217,255,.06)' } },
+  },
+  series: [
+    { name: 'GPA', type: 'line', smooth: true, symbol: 'circle', symbolSize: 7, data: growthTrend.value.gpa, lineStyle: { color: '#38bdf8', width: 2.5 }, itemStyle: { color: '#38bdf8' }, areaStyle: { color: 'rgba(56,189,248,.15)' } },
+    { name: '技能证书', type: 'line', smooth: true, symbol: 'circle', symbolSize: 7, data: growthTrend.value.cert, lineStyle: { color: '#43e7af', width: 2.5 }, itemStyle: { color: '#43e7af' } },
+    { name: '项目经历', type: 'line', smooth: true, symbol: 'circle', symbolSize: 7, data: growthTrend.value.proj, lineStyle: { color: '#facc15', width: 2.5 }, itemStyle: { color: '#facc15' } },
+  ],
+}))
+
 /* ════════════ 2. 能力画像分析 ════════════ */
 const radarOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'item' },
+  legend: { data: ['本人', '专业平均'], textStyle: { color: '#cfe6f8' }, top: 0, right: 0 },
   radar: {
-    center: ['50%', '52%'],
-    radius: '66%',
+    center: ['50%', '54%'],
+    radius: '64%',
     indicator: abilities.value.map(a => ({ name: a.label, max: 100 })),
     axisName: { color: '#8eb8d8', fontSize: 12 },
     shape: 'polygon',
@@ -192,13 +309,22 @@ const radarOption = computed<EChartsOption>(() => ({
   },
   series: [{
     type: 'radar',
-    data: [{
-      value: abilities.value.map(a => a.value),
-      name: '当前能力',
-      areaStyle: { color: 'rgba(0,229,255,0.2)' },
-      lineStyle: { color: '#00e5ff', width: 2 },
-      itemStyle: { color: '#00e5ff' },
-    }],
+    data: [
+      {
+        value: abilitiesAvg.value.map(a => a.value),
+        name: '专业平均',
+        areaStyle: { color: 'rgba(250,204,21,0.12)' },
+        lineStyle: { color: '#facc15', width: 2, type: 'dashed' },
+        itemStyle: { color: '#facc15' },
+      },
+      {
+        value: abilities.value.map(a => a.value),
+        name: '本人',
+        areaStyle: { color: 'rgba(0,229,255,0.2)' },
+        lineStyle: { color: '#00e5ff', width: 2 },
+        itemStyle: { color: '#00e5ff' },
+      },
+    ],
     symbol: 'circle',
     symbolSize: 6,
   }],
@@ -513,78 +639,102 @@ onMounted(load)
             <div class="cockpit-ring">
               <ChartContainer :option="ringOption" style="height:200px" />
             </div>
+            <div class="stage-block">
+              <div class="stage-block__label">发展阶段</div>
+              <div class="stage-block__stage">
+                <span class="stage-block__stars">{{ stars(studentPortrait.stageStars) }}</span>
+                <span class="stage-block__text">{{ studentPortrait.stage }}学生</span>
+              </div>
+              <div class="stage-progress">
+                <div class="stage-progress__head">
+                  <span>成长阶段</span>
+                  <em>{{ compositeScore.score }}%</em>
+                </div>
+                <div class="stage-progress__bar">
+                  <div class="stage-progress__fill" :style="{ width: compositeScore.score + '%' }" />
+                </div>
+              </div>
+              <div class="stage-stats">
+                <div class="stage-stat">
+                  <span class="stage-stat__label">超过专业学生</span>
+                  <strong class="stage-stat__value">{{ exceedPercent }}%</strong>
+                </div>
+                <div class="stage-stat">
+                  <span class="stage-stat__label">排名</span>
+                  <strong class="stage-stat__value">TOP {{ rankPercent }}%</strong>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 中：AI学生画像 -->
           <div class="cockpit-portrait">
             <h4 class="panel-label">AI 学生画像</h4>
-            <div class="portrait-head">
-              <div class="portrait-name">{{ profile.name }}</div>
-              <div class="portrait-meta">{{ profile.major }} · {{ profile.grade }}</div>
-            </div>
-            <div class="portrait-stage">
-              <span class="portrait-stage__label">发展阶段</span>
-              <span class="portrait-stage__stars">{{ stars(studentPortrait.stageStars) }}</span>
-              <span class="portrait-stage__text">{{ studentPortrait.stage }}</span>
-            </div>
-            <div class="portrait-block">
-              <div class="portrait-block__title portrait-block__title--good">优势标签</div>
-              <div class="tag-row">
-                <span v-for="s in studentPortrait.strengths" :key="s" class="tag tag--good">✓ {{ s }}</span>
+            <div class="portrait-card">
+              <div class="portrait-card__head">
+                <div class="portrait-name">{{ profile.name }}</div>
+                <div class="portrait-meta">{{ profile.major }} · {{ profile.grade }}</div>
               </div>
-            </div>
-            <div class="portrait-block">
-              <div class="portrait-block__title portrait-block__title--warn">短板</div>
-              <div class="tag-row">
-                <span v-for="w in studentPortrait.weaknesses" :key="w" class="tag tag--warn">⚠ {{ w }}</span>
+              <div class="portrait-type">
+                <span class="portrait-type__icon">{{ studentType.icon }}</span>
+                <span class="portrait-type__label">{{ studentType.label }}</span>
               </div>
-            </div>
-            <div class="portrait-block">
-              <div class="portrait-block__title">适合方向</div>
-              <div class="tag-row">
-                <span v-for="dir in studentPortrait.directions" :key="dir" class="tag tag--dir">→ {{ dir }}</span>
+              <div class="portrait-section">
+                <div class="portrait-section__title portrait-section__title--good">优势</div>
+                <div class="tag-row">
+                  <span v-for="s in studentPortrait.strengths" :key="s" class="tag tag--good">✓ {{ s }}</span>
+                </div>
+              </div>
+              <div class="portrait-section">
+                <div class="portrait-section__title portrait-section__title--warn">待提升</div>
+                <div class="tag-row">
+                  <span v-for="w in studentPortrait.weaknesses" :key="w" class="tag tag--warn">⚠ {{ w }}</span>
+                </div>
+              </div>
+              <div class="portrait-section">
+                <div class="portrait-section__title">发展路线</div>
+                <div class="route-row">
+                  <template v-for="(dir, i) in studentPortrait.directions" :key="dir">
+                    <span class="route-item">{{ dir }}</span>
+                    <span v-if="i < studentPortrait.directions.length - 1" class="route-arrow">↓</span>
+                  </template>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- 右：AI综合判断（含能力拆解） -->
+          <!-- 右：AI综合判断（决策摘要） -->
           <div class="cockpit-judgment">
             <h4 class="panel-label">AI 综合判断</h4>
-            <div class="ability-break">
-              <div class="ability-break__hint">点击能力查看详情</div>
-              <button
-                v-for="a in abilities"
-                :key="a.key"
-                type="button"
-                class="ability-chip"
-                :class="{ 'is-active': selectedAbility === a.key }"
-                :style="{ '--c': a.color }"
-                @click="selectedAbility = selectedAbility === a.key ? null : a.key"
-              >
-                <span class="ability-chip__dot" :style="{ background: a.color }" />
-                {{ a.label }}
-                <em>{{ a.value }}</em>
-              </button>
-              <transition name="fade">
-                <p v-if="selectedAbilityInfo" class="ability-break__detail">
-                  {{ selectedAbilityInfo.label }}：{{ selectedAbilityInfo.detail }}
-                </p>
-              </transition>
-            </div>
-            <div class="judge-status">
-              <div class="judge-status__item">
-                <span class="judge-status__label">发展状态</span>
-                <strong class="judge-status__value">{{ aiJudgment.status }}</strong>
+            <div class="ai-decision">
+              <div class="ai-decision__status">
+                <span class="ai-decision__dot" :class="aiDecision.status === '良好' ? 'is-good' : 'is-warn'" />
+                <div>
+                  <div class="ai-decision__row-label">当前状态</div>
+                  <div class="ai-decision__status-text">{{ aiDecision.status }}</div>
+                </div>
               </div>
-              <div class="judge-status__item">
-                <span class="judge-status__label">可信度</span>
-                <strong class="judge-status__value">{{ aiJudgment.confidence }}%</strong>
+              <div class="ai-decision__block">
+                <div class="ai-decision__label">核心优势</div>
+                <div class="ai-decision__text">{{ aiDecision.advantage }}</div>
               </div>
-            </div>
-            <div class="judge-source">
-              <span class="judge-source__label">数据来源</span>
-              <div class="tag-row">
-                <span v-for="s in aiJudgment.sources" :key="s" class="tag tag--src">{{ s }}</span>
+              <div class="ai-decision__block">
+                <div class="ai-decision__label">主要风险</div>
+                <div class="ai-decision__text">{{ aiDecision.risk }}</div>
+              </div>
+              <div class="ai-decision__block">
+                <div class="ai-decision__label">推荐动作</div>
+                <div class="ai-decision__text">{{ aiDecision.action }}</div>
+              </div>
+              <div class="ai-decision__confidence">
+                <span>AI 可信度</span>
+                <strong>{{ aiDecision.confidence }}%</strong>
+              </div>
+              <div class="judge-source">
+                <span class="judge-source__label">数据来源</span>
+                <div class="tag-row">
+                  <span v-for="s in aiDecision.sources" :key="s" class="tag tag--src">{{ s }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -595,16 +745,48 @@ onMounted(load)
       <section class="deep-card">
         <h3 class="deep-card__title">能力画像分析</h3>
         <div class="capability-grid">
+          <!-- 左：能力雷达（本人 vs 专业平均） -->
           <div class="cap-cell">
-            <div class="cap-cell__title">能力雷达</div>
+            <div class="cap-cell__title">能力雷达（本人 vs 专业平均）</div>
             <ChartContainer :option="radarOption" style="height:300px" />
           </div>
+          <!-- 中：能力指数排行 -->
           <div class="cap-cell">
-            <div class="cap-summary-box">
-              <div class="cap-cell__title">AI 总结</div>
-              <p class="cap-summary">{{ aiSummary }}</p>
+            <div class="cap-cell__title">能力指数排行</div>
+            <div class="cap-bars">
+              <div v-for="b in capabilityBars" :key="b.key" class="cap-bar">
+                <span class="cap-bar__label">{{ b.label }}</span>
+                <span class="cap-bar__value">{{ b.value }}</span>
+                <div class="cap-bar__track">
+                  <div class="cap-bar__fill" :style="{ width: b.value + '%', background: b.color }" />
+                </div>
+              </div>
             </div>
           </div>
+          <!-- 右：AI 能力诊断 -->
+          <div class="cap-cell">
+            <div class="cap-cell__title">AI 能力诊断</div>
+            <div class="diag-list">
+              <div v-for="item in capabilityDiagnostics" :key="item.idx" class="diag-item">
+                <div class="diag-item__title">{{ item.idx }} {{ item.title }}</div>
+                <div class="diag-item__rows">
+                  <div v-for="it in item.items" :key="it.k" class="diag-row">
+                    <span class="diag-row__k">{{ it.k }}</span>
+                    <span class="diag-row__v">{{ it.v }}</span>
+                  </div>
+                </div>
+                <div v-if="item.suggest" class="diag-item__suggest">提升建议：{{ item.suggest }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════ 2.5 能力成长趋势 ═══════ -->
+      <section class="deep-card">
+        <h3 class="deep-card__title">能力成长趋势</h3>
+        <div class="trend-wrap">
+          <ChartContainer :option="growthTrendOption" style="height:280px" />
         </div>
       </section>
 
@@ -817,7 +999,7 @@ onMounted(load)
 
 .deep-card__title {
   margin: 0 0 16px;
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: .04em;
@@ -827,8 +1009,8 @@ onMounted(load)
 
   &::before {
     content: '';
-    width: 3px;
-    height: 14px;
+    width: 4px;
+    height: 17px;
     border-radius: 2px;
     background: linear-gradient(180deg, #00e5ff, #00b8ff);
     box-shadow: 0 0 8px rgba(0, 212, 255, .45);
@@ -837,7 +1019,7 @@ onMounted(load)
 
 .panel-label {
   margin: 0 0 12px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #6cdfff;
   padding-bottom: 8px;
@@ -845,7 +1027,7 @@ onMounted(load)
 }
 
 .cap-cell__title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: #8eb8d8;
   margin-bottom: 10px;
@@ -855,14 +1037,81 @@ onMounted(load)
 /* ── 1. 驾驶舱 ── */
 .cockpit-grid {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 18px;
   align-items: stretch;
 }
 
+/* 三栏统一为面板卡片，视觉层级一致、顶端对齐 */
+.cockpit-left,
+.cockpit-portrait,
+.cockpit-judgment {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(0, 96, 186, .14), rgba(4, 16, 44, .5));
+  border: 1px solid rgba(0, 206, 255, .2);
+  box-shadow: inset 0 0 20px rgba(0, 184, 255, .05);
+}
+
 .cockpit-ring {
-  max-width: 220px;
-  margin: 0 auto;
+  max-width: 240px;
+  margin: 0 auto 4px;
+}
+
+.stage-block {
+  margin-top: auto;
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(0, 30, 60, .28);
+  border: 1px solid rgba(0, 184, 255, .12);
+
+  &__label { color: #7aa4c0; font-size: 14px; margin-bottom: 6px; }
+  &__stage { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  &__stars { color: #facc15; font-size: 17px; letter-spacing: 2px; }
+  &__text { color: #7ff6ff; font-size: 16px; font-weight: 700; }
+}
+
+.stage-progress {
+  margin-bottom: 12px;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 14px;
+    color: #8eb8d8;
+    margin-bottom: 6px;
+
+    em { color: #7ff6ff; font-weight: 800; font-style: normal; font-size: 16px; }
+  }
+  &__bar {
+    height: 11px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(80, 120, 160, .25);
+  }
+  &__fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #43e7af, #38bdf8);
+  }
+}
+
+.stage-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.stage-stat {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 30, 60, .3);
+  border: 1px solid rgba(102, 217, 255, .1);
+
+  &__label { display: block; color: #7aa4c0; font-size: 13px; margin-bottom: 4px; }
+  &__value { color: #7ff6ff; font-size: 19px; font-weight: 800; }
 }
 
 .ability-break {
@@ -926,10 +1175,64 @@ onMounted(load)
 }
 
 .cockpit-portrait {
-  padding: 0 20px;
-  border-left: 1px solid rgba(102, 217, 255, .1);
-  border-right: 1px solid rgba(102, 217, 255, .1);
+  min-width: 0;
 }
+
+.portrait-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+}
+
+.portrait-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(0, 184, 255, .14);
+  border: 1px solid rgba(0, 184, 255, .32);
+
+  &__icon { font-size: 19px; }
+  &__label { color: #8ef6ff; font-size: 15px; font-weight: 800; }
+}
+
+.portrait-section {
+  &__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #7aa4c0;
+    margin-bottom: 8px;
+
+    &--good { color: #43e7af; }
+    &--warn { color: #facc15; }
+  }
+}
+
+.route-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.route-item {
+  padding: 5px 14px;
+  border-radius: 6px;
+  background: rgba(0, 180, 255, .12);
+  border: 1px solid rgba(0, 200, 255, .3);
+  color: #8ef6ff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.route-arrow { color: #6cdfff; font-size: 18px; font-weight: 800; }
 
 .portrait-head {
   display: flex;
@@ -938,12 +1241,12 @@ onMounted(load)
   margin-bottom: 10px;
 }
 .portrait-name {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 900;
   color: #f6fbff;
   text-shadow: 0 0 14px rgba(0, 242, 255, .28);
 }
-.portrait-meta { color: #8eb8d8; font-size: 13px; }
+.portrait-meta { color: #8eb8d8; font-size: 15px; }
 
 .portrait-stage {
   display: flex;
@@ -977,9 +1280,9 @@ onMounted(load)
 }
 
 .tag {
-  padding: 3px 9px;
+  padding: 4px 11px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   border: 1px solid transparent;
 
@@ -1026,20 +1329,120 @@ onMounted(load)
 }
 
 .judge-source {
-  &__label { display: block; color: #7aa4c0; font-size: 12px; font-weight: 700; margin-bottom: 7px; }
+  &__label { display: block; color: #7aa4c0; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+}
+
+.ai-decision {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(0, 30, 60, .3);
+    border: 1px solid rgba(102, 217, 255, .1);
+  }
+  &__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &.is-good { background: #43e7af; box-shadow: 0 0 10px rgba(67, 231, 175, .6); }
+    &.is-warn { background: #facc15; box-shadow: 0 0 10px rgba(250, 204, 21, .6); }
+  }
+  &__row-label { color: #7aa4c0; font-size: 13px; }
+  &__status-text { color: #7ff6ff; font-size: 18px; font-weight: 800; }
+
+  &__block {
+    padding: 11px 13px;
+    border-radius: 8px;
+    background: rgba(0, 30, 60, .24);
+    border: 1px solid rgba(102, 217, 255, .08);
+  }
+  &__label { color: #6cdfff; font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+  &__text { color: #d8eeff; font-size: 15px; line-height: 1.55; }
+
+  &__confidence {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 13px;
+    border-radius: 8px;
+    background: rgba(0, 100, 180, .12);
+    border: 1px solid rgba(0, 184, 255, .2);
+
+    span { color: #7aa4c0; font-size: 14px; }
+    strong { color: #7ff6ff; font-size: 22px; font-weight: 800; }
+  }
 }
 
 /* ── 2. 能力画像分析 ── */
 .capability-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 22px;
+  align-items: stretch;
 }
 
 .cap-summary-box {
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid rgba(102, 217, 255, .08);
+}
+
+/* AI 能力诊断 */
+.diag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.diag-item {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(0, 30, 60, .24);
+  border: 1px solid rgba(102, 217, 255, .1);
+
+  &__title {
+    color: #8ef6ff;
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 9px;
+  }
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  &__suggest {
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px dashed rgba(102, 217, 255, .12);
+    color: #f7d774;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+.diag-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+
+  &__k { color: #8eb8d8; }
+  &__v { color: #eaf6ff; font-weight: 700; }
+}
+
+/* 能力成长趋势 */
+.trend-wrap {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 184, 255, .1);
+  background: rgba(0, 30, 60, .18);
+  padding: 8px 6px 4px;
 }
 
 .cap-bars {
@@ -1050,13 +1453,13 @@ onMounted(load)
 }
 .cap-bar {
   display: grid;
-  grid-template-columns: 64px 30px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 84px 40px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
 
-  &__label { color: #8eb8d8; font-size: 12px; font-weight: 600; text-align: right; }
-  &__value { color: #7ff6ff; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
-  &__track { height: 9px; border-radius: 99px; overflow: hidden; background: rgba(80, 120, 160, .25); }
+  &__label { color: #8eb8d8; font-size: 14px; font-weight: 600; text-align: right; }
+  &__value { color: #7ff6ff; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  &__track { height: 11px; border-radius: 99px; overflow: hidden; background: rgba(80, 120, 160, .25); }
   &__fill { height: 100%; border-radius: inherit; transition: width 1.2s ease; }
 }
 
@@ -1111,12 +1514,12 @@ onMounted(load)
   gap: 6px;
 }
 .oppo-chip {
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
   background: rgba(0, 30, 60, .28);
   color: #d8eeff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all .2s;
@@ -1199,9 +1602,9 @@ onMounted(load)
   padding: 10px 12px;
   border-radius: 8px;
   background: rgba(0, 30, 60, .28);
-  border: 1px solid var(--c);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent) inset,
-              0 0 10px color-mix(in srgb, var(--c) 22%, transparent);
+  border: 1px solid rgba(120, 224, 255, .55);
+  box-shadow: 0 0 0 1px rgba(120, 224, 255, .25) inset,
+              0 0 12px rgba(120, 224, 255, .35);
 
   &__head {
     display: flex;
@@ -1210,7 +1613,7 @@ onMounted(load)
     margin-bottom: 4px;
   }
   &__name { color: #eaf6ff; font-size: 14px; font-weight: 700; }
-  &__val { color: var(--c); font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  &__val { color: #7fe3ff; font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
   &__reason { margin: 0 0 2px; color: #cfe6f8; font-size: 12px; }
   &__suggest { margin: 0; color: #8eb8d8; font-size: 12px; }
 }

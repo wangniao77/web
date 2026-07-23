@@ -621,6 +621,9 @@ onMounted(load)
             <h4 class="sub-panel__title">{{ p.title }}</h4>
             <div class="table-wrap">
               <table class="detail-table">
+                <colgroup>
+                  <col v-for="c in p.columns" :key="c.key" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th v-for="c in p.columns" :key="c.key">{{ c.label }}</th>
@@ -727,6 +730,9 @@ onMounted(load)
           <h4 class="sub-panel__title">学业警示与日常违纪</h4>
           <div class="table-wrap">
             <table class="detail-table">
+              <colgroup>
+                <col /><col /><col /><col /><col /><col /><col />
+              </colgroup>
               <thead>
                 <tr>
                   <th>异常类型</th>
@@ -961,11 +967,22 @@ onMounted(load)
 }
 
 .detail-table {
-  width: 100%;
-  min-width: 720px;
+  /* 不撑满容器，按统一列宽排布，保证不同奖项表格左右对齐 */
+  width: auto;
+  min-width: 0;
   border-collapse: collapse;
+  /* fixed 布局 + 统一列宽：所有表格每列位置一致，跨表左右对齐 */
+  table-layout: fixed;
   font-size: 14px;
   line-height: 1.4;
+
+  /* 在 colgroup 层级锁定列宽，所有奖项的表格共用同一套列网格，列宽绝对一致 */
+  col {
+    width: 150px;
+  }
+  col:first-child {
+    width: 200px;
+  }
 
   th,
   td {
@@ -974,15 +991,15 @@ onMounted(load)
     text-align: left;
     vertical-align: top;
     white-space: normal;
-    word-break: break-all;
+    word-break: break-word;
   }
 
   th {
     background: rgba(0, 38, 73, 0.55);
     color: #8edcff;
     font-weight: 700;
-    white-space: nowrap;
-    min-width: 92px;
+    /* 列标题过长时允许换行，不再被强制单行截断 */
+    line-height: 1.3;
   }
 
   td {
