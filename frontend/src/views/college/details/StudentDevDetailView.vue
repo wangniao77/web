@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import MockText from '@/components/common/MockText.vue'
 import EnrollmentEmploymentDetailContent from '@/components/college/modules/enrollment-employment/EnrollmentEmploymentDetailContent.vue'
 import StudentRosterPanel from '@/components/college/modules/student-dev/StudentRosterPanel.vue'
 import type { RosterStudentDTO } from '@/api/college/details'
@@ -10,6 +11,7 @@ import { collegeDetailService } from '@/api/college/services/details'
 import { enrollmentEmploymentService } from '@/api/college/services/enrollment-employment'
 import { studentDevService } from '@/api/college/services/student-dev'
 import { useScope } from '@/composables/useScope'
+import { isMockField } from '@/composables/useMockFields'
 import { ROUTES } from '@/constants/routes'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 import type { EnrollmentEmploymentFocus } from '@/types/college/api/enrollment-employment'
@@ -48,14 +50,31 @@ const WARN_NAME_TO_TYPE: Record<string, WarningCategoryType> = {
   学业预警: 'academic',
   学分预警: 'credit',
   心理关注: 'psychological',
+  心理预警: 'psychological',
   就业困难: 'employment',
+  academic: 'academic',
+  credit: 'credit',
+  psychological: 'psychological',
+  employment: 'employment',
 }
 
 const HP_NAME_TO_MODULE: Record<string, HighPotentialModuleId> = {
   学业卓越: 'academic',
   竞赛创新: 'competition',
   领导实践: 'leadership',
+  双百工程: 'rural',
   实习就业: 'internship',
+  就业升学: 'career',
+  academic: 'academic',
+  competition: 'competition',
+  leadership: 'leadership',
+  rural: 'rural',
+  internship: 'internship',
+  career: 'career',
+}
+
+function isMock(path: string) {
+  return isMockField(data.value?.mockFields, path) || isMockField(eeData.value?.mockFields, path) || isMockField(flowSankey.value?.mockFields, path)
 }
 
 const selectedWarnName = ref('学业预警')
@@ -211,6 +230,24 @@ onMounted(async () => {
   }
 })
 
+async function onEmploymentFilterChange(payload: { year: string; major: string }) {
+  const scope = {
+    ...collegeScope.value,
+    year: payload.year || undefined,
+    major: payload.major && payload.major !== '全部专业' ? payload.major : undefined,
+  }
+  try {
+    const [enrollment, flow] = await Promise.all([
+      enrollmentEmploymentService.fetchEnrollmentEmploymentDetail(scope),
+      studentDevService.fetchStudentFlowSankey(scope),
+    ])
+    eeData.value = enrollment
+    flowSankey.value = flow
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : '就业筛选加载失败'
+  }
+}
+
 watch(
   () => [route.query.tab, route.query.focus, route.hash] as const,
   () => {
@@ -247,6 +284,7 @@ function breakdownBarOption(
   items: Array<{ name: string; count: number }>,
   tone: 'cyan' | 'gold' | 'warn' = 'cyan',
   selectedName = '',
+  mockNames: Set<string> = new Set(),
 ): EChartsOption {
   const sorted = [...items].sort((a, b) => a.count - b.count)
   const baseColors =
@@ -261,6 +299,8 @@ function breakdownBarOption(
       : tone === 'warn'
         ? [{ offset: 0, color: '#e06030' }, { offset: 1, color: '#ffb08a' }]
         : [{ offset: 0, color: '#1a8cff' }, { offset: 1, color: '#8af7ff' }]
+  const mockColors = [{ offset: 0, color: '#a8071a' }, { offset: 1, color: '#ff4d4f' }]
+  const mockActiveColors = [{ offset: 0, color: '#cf1322' }, { offset: 1, color: '#ff7875' }]
 
   return {
     grid: { left: 8, right: 28, top: 8, bottom: 4, outerBoundsMode: 'same', outerBoundsContain: 'axisLabel' },
@@ -292,25 +332,31 @@ function breakdownBarOption(
     series: [{
       type: 'bar',
       cursor: 'pointer',
-      data: sorted.map((i) => ({
-        value: i.count,
-        name: i.name,
-        itemStyle: {
-          borderRadius: [0, 4, 4, 0],
-          borderWidth: selectedName === i.name ? 2 : 0,
-          borderColor: selectedName === i.name ? '#fff6c8' : 'transparent',
-          shadowBlur: selectedName === i.name ? 12 : 0,
-          shadowColor: selectedName === i.name ? 'rgba(255, 220, 120, 0.45)' : 'transparent',
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 1,
-            y2: 0,
-            colorStops: selectedName === i.name ? activeColors : baseColors,
+      data: sorted.map((i) => {
+        const isMockBar = mockNames.has(i.name)
+        const stops = isMockBar
+          ? (selectedName === i.name ? mockActiveColors : mockColors)
+          : (selectedName === i.name ? activeColors : baseColors)
+        return {
+          value: i.count,
+          name: i.name,
+          itemStyle: {
+            borderRadius: [0, 4, 4, 0],
+            borderWidth: selectedName === i.name ? 2 : 0,
+            borderColor: selectedName === i.name ? '#fff6c8' : 'transparent',
+            shadowBlur: selectedName === i.name ? 12 : 0,
+            shadowColor: selectedName === i.name ? 'rgba(255, 220, 120, 0.45)' : 'transparent',
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 1,
+              y2: 0,
+              colorStops: stops,
+            },
           },
-        },
-      })),
+        }
+      }),
       barWidth: 14,
       label: {
         show: true,
@@ -467,7 +513,15 @@ const hpBarOption = computed(() => {
 const warnBarOption = computed(() => {
   if (!data.value) return {}
   const selected = warnDim.value === 'byType' ? selectedWarnName.value : ''
-  return breakdownBarOption(data.value.warningBreakdown[warnDim.value], 'warn', selected)
+  const mockNames = new Set<string>()
+  if (warnDim.value === 'byType') {
+    for (const item of data.value.warningBreakdown.byType) {
+      if (item.name === '心理关注' || isMock(`warningBreakdown.byType.${item.name}`)) {
+        mockNames.add(item.name)
+      }
+    }
+  }
+  return breakdownBarOption(data.value.warningBreakdown[warnDim.value], 'warn', selected, mockNames)
 })
 
 async function onWarnChartClick(params: unknown) {
@@ -538,6 +592,9 @@ function goEmploymentPage() {
     <div v-if="loading" class="detail-placeholder">加载中...</div>
     <div v-else-if="error" class="detail-placeholder detail-error">{{ error }}</div>
     <template v-else-if="data">
+      <p class="mock-legend">
+        <span class="mock-legend__swatch" />红色数字/图表为示意或缺源数据（mock），主题色为真实库表聚合
+      </p>
       <!-- ===================== 画像总览 ===================== -->
       <template v-if="currentTab === 'overview'">
         <div class="resource-summary">
@@ -545,14 +602,18 @@ function goEmploymentPage() {
             <span class="resource-summary__icon">🧑‍🎓</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">本科生</span>
-              <strong class="resource-summary__value">{{ data.summary.enrolledUndergrad }}<small>人</small></strong>
+              <strong class="resource-summary__value">
+                <MockText>{{ data.summary.enrolledUndergrad }}</MockText><small>人</small>
+              </strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="scrollToSection('graduate')">
             <span class="resource-summary__icon">🎓</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">研究生</span>
-              <strong class="resource-summary__value">{{ data.summary.enrolledGraduate }}<small>人</small></strong>
+              <strong class="resource-summary__value">
+                <MockText :mock="isMock('summary.enrolledGraduate')">{{ data.summary.enrolledGraduate }}</MockText><small>人</small>
+              </strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="switchTab('employment', { focus: 'exit-quality' })">
@@ -594,7 +655,7 @@ function goEmploymentPage() {
         </section>
 
         <section id="graduate" class="resource-section" :class="{ 'resource-section--active': activeSection === 'graduate' }">
-          <h2 class="resource-section__title"><span class="resource-section__title-icon">🎓</span>研究生培养<span class="resource-section__badge resource-section__badge--accent">{{ data.summary.enrolledGraduate }} 人</span></h2>
+          <h2 class="resource-section__title"><span class="resource-section__title-icon">🎓</span>研究生培养<span class="resource-section__badge resource-section__badge--accent"><MockText :mock="isMock('summary.enrolledGraduate')">{{ data.summary.enrolledGraduate }}</MockText> 人</span></h2>
           <p class="resource-section__desc">研究生规模体现学院科研育人与学科支撑能力。结合高潜学生结构，可观察拔尖创新人才从本科到研究生阶段的衔接情况。</p>
           <div class="resource-card">
             <div class="resource-card__note">
@@ -661,7 +722,9 @@ function goEmploymentPage() {
                       :style="{ width: `${Math.max(8, (item.count / Math.max(...data.warningBreakdown.byType.map((i) => i.count))) * 100)}%` }"
                     />
                   </div>
-                  <span class="resource-list__value">{{ item.count }} 人</span>
+                  <span class="resource-list__value">
+                    <MockText :mock="item.name === '心理关注' || isMock('warningBreakdown.byType.心理关注')">{{ item.count }}</MockText> 人
+                  </span>
                 </li>
               </ul>
             </div>
@@ -686,6 +749,7 @@ function goEmploymentPage() {
           :data="eeData"
           :focus="eeFocus"
           :flow-sankey="flowSankey"
+          @filter-change="onEmploymentFilterChange"
         />
         <div v-else class="detail-placeholder">招生质量数据加载中...</div>
       </template>
@@ -698,6 +762,7 @@ function goEmploymentPage() {
           :data="eeData"
           :focus="eeFocus"
           :flow-sankey="flowSankey"
+          @filter-change="onEmploymentFilterChange"
         />
         <div v-else class="detail-placeholder">就业分析数据加载中...</div>
       </template>
@@ -861,6 +926,28 @@ function goEmploymentPage() {
     color: #eaf7ff;
     box-shadow: inset 0 0 18px rgba(0, 200, 255, 0.15);
   }
+}
+
+.mock-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 77, 79, 0.08);
+  border: 1px solid rgba(255, 77, 79, 0.28);
+  color: #ffb4b4;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mock-legend__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: #ff4d4f;
+  flex: 0 0 auto;
 }
 
 .resource-summary {

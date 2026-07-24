@@ -341,7 +341,10 @@ async function load() {
         disciplineDetail.value = await disciplineService.fetchDisciplineDetail(scope)
         break
       case 'enrollment-employment':
-        enrollmentEmploymentDetail.value = await enrollmentEmploymentService.fetchEnrollmentEmploymentDetail(scope)
+        ;[enrollmentEmploymentDetail.value, flowSankey.value] = await Promise.all([
+          enrollmentEmploymentService.fetchEnrollmentEmploymentDetail(scope),
+          studentDevService.fetchStudentFlowSankey(scope),
+        ])
         break
     }
   } finally {
@@ -821,6 +824,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               <EnrollmentEmploymentDetailContent
                 :data="enrollmentEmploymentDetail"
                 :focus="state.id"
+                :flow-sankey="flowSankey"
               />
             </template>
 

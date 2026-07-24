@@ -5,11 +5,15 @@ from Utils.Agent.OpenViking.client import (
 )
 from Utils.Agent.OpenViking.paths import (
     ACADEMIC_RISK_SKILL_DOC,
+    EMPLOYMENT_SKILL_DOC,
     KEY_TASKS_SKILL_DOC,
     memory_session,
     resource_academic_risk,
+    resource_enrollment_employment,
+    resource_enrollment_employment_report,
     resource_key_tasks,
     skill_academic_risk_analysis,
+    skill_enrollment_employment_analysis,
     skill_key_tasks_analysis,
 )
 
@@ -19,9 +23,13 @@ __all__ = [
     "reset_openviking_client",
     "KEY_TASKS_SKILL_DOC",
     "ACADEMIC_RISK_SKILL_DOC",
+    "EMPLOYMENT_SKILL_DOC",
     "memory_session",
     "resource_key_tasks",
     "resource_academic_risk",
+    "resource_enrollment_employment",
+    "resource_enrollment_employment_report",
     "skill_key_tasks_analysis",
     "skill_academic_risk_analysis",
+    "skill_enrollment_employment_analysis",
 ]

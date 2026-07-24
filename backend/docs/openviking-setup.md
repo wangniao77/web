@@ -80,8 +80,9 @@ OpenViking 自身需要 embedding（以及可选 VLM）。可用交互向导 `op
 |----------|------|
 | `viking://resources/college/{id}/key-tasks/...` | 重点任务快照 |
 | `viking://resources/college/{id}/academic-risk/...` | 学业风险聚合快照 |
-| `viking://skills/college/...` | 分析技能说明 |
-| `viking://memory/sessions/{sessionId}/...` | 追问会话记忆 |
+| `viking://resources/college/cultivation-plans/2024/` | 2024 培养方案知识库 |
+| `viking://agent/skills/college/...` | 分析技能说明 |
+| `viking://user/default/sessions/...` | 追问会话记忆 |
 
 服务不可达时，后端会**自动降级内存存储**（重启丢失）；服务可用后会优先写入 OpenViking。
 
@@ -99,4 +100,22 @@ OpenViking 自身需要 embedding（以及可选 VLM）。可用交互向导 `op
 ```bash
 cd backend
 python scripts/test_openviking.py
+```
+
+## 6. 导入培养方案（本地 txt → OpenViking）
+
+源目录默认 `D:\UGit\data\培养方案\2024`（约 113 个 `.txt`），写入：
+
+`viking://resources/college/cultivation-plans/2024/{学院}/...`
+
+```bash
+# 先确保 openviking-server 已启动
+openviking-server --host 127.0.0.1 --port 1933
+
+cd backend
+python scripts/import_cultivation_plans_to_ov.py
+# 仅信息学院
+python scripts/import_cultivation_plans_to_ov.py --college 信息学院 --per-file
+# 调试：只导 3 个且不等待向量化
+python scripts/import_cultivation_plans_to_ov.py --per-file --limit 3 --no-wait
 ```

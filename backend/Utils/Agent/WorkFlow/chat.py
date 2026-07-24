@@ -12,6 +12,7 @@ from Utils.Agent.API.llm import LLMClient
 from Utils.Agent.OpenViking import (
     get_openviking_client,
     resource_academic_risk,
+    resource_enrollment_employment,
     resource_key_tasks,
 )
 
@@ -20,6 +21,8 @@ def _resource_path(context: AgentAnalyzeContext) -> str:
     college_id = context.collegeId or "default"
     if context.page in {"academic-risk", "warning", "warnings"}:
         return resource_academic_risk(college_id)
+    if context.page in {"enrollment-employment", "employment"}:
+        return resource_enrollment_employment(college_id)
     return resource_key_tasks(college_id)
 
 
@@ -85,6 +88,13 @@ async def run_chat_stream(
                             f"建议明确责任人（{delayed[0].get('leadDept') or '承办单位'}）"
                             "并在两周内复核里程碑材料。"
                         )
+                elif data.get("placementRate") is not None:
+                    hint = (
+                        f"当前届次落实率 {data.get('placementRate')}%、"
+                        f"高质量率 {data.get('highQualityEmploymentRate')}%、"
+                        f"待就业 {data.get('pendingCount')} 人。"
+                        "可追问某专业差距或高质量六类结构。"
+                    )
             except Exception:
                 pass
         text = f"已结合「{context.page}」上下文理解：「{message}」。{hint}"

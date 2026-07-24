@@ -70,6 +70,14 @@ class StudentAcademicRecord(Model):
     competition_award_count = fields.IntField(null=True, description="学科竞赛获奖次数")
     competition_award_detail = fields.TextField(null=True, description="学科竞赛获奖明细")
 
+    # 招生/生源（来自学籍表，非敏感）
+    admission_score = fields.DecimalField(
+        max_digits=8, decimal_places=2, null=True, description="录取分数（高考分）"
+    )
+    source_place = fields.CharField(max_length=128, null=True, description="生源所在地")
+    native_place = fields.CharField(max_length=128, null=True, description="籍贯")
+    hmt_status = fields.CharField(max_length=64, null=True, description="港澳台侨外")
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 

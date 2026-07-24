@@ -43,10 +43,12 @@ export function adaptStudentDevQuality(dto: StudentDevQualityDTO): StudentDevQua
     groups: { ...dto.groups },
     warningBreakdown: dto.warningBreakdown.map((w) => ({ ...w })),
     evaluationIndicators: dto.evaluationIndicators.map((item) => ({ ...item })),
+    mockFields: dto.mockFields ? [...dto.mockFields] : [],
   }
 }
 
 export function adaptStudentFlowSankey(dto: StudentFlowSankeyDTO): StudentFlowSankeyVM {
+  const drills = dto.outcomeDrillSamples || {}
   return {
     entrance: {
       nodes: dto.entrance.nodes.map((n) => ({ ...n })),
@@ -56,7 +58,11 @@ export function adaptStudentFlowSankey(dto: StudentFlowSankeyDTO): StudentFlowSa
       nodes: dto.outcome.nodes.map((n) => ({ ...n })),
       links: dto.outcome.links.map((l) => ({ ...l })),
     },
+    outcomeDrillSamples: Object.fromEntries(
+      Object.entries(drills).map(([k, rows]) => [k, rows.map((r) => ({ ...r }))]),
+    ),
     summary: { ...dto.summary },
+    mockFields: dto.mockFields ? [...dto.mockFields] : [],
   }
 }
 
@@ -95,5 +101,6 @@ export function adaptStudentDevDetail(dto: StudentDevDetailDTO): StudentDevDetai
       byMajor: dto.undergradDistribution.byMajor.map((i) => ({ ...i })),
       byGrade: dto.undergradDistribution.byGrade.map((i) => ({ ...i })),
     },
+    mockFields: dto.mockFields ? [...dto.mockFields] : [],
   }
 }

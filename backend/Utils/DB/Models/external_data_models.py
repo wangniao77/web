@@ -6,8 +6,25 @@ class EmploymentRecord(Model):
     """就业去向（来自就业信息 Excel）。"""
 
     id = fields.IntField(pk=True)
+    college = fields.ForeignKeyField(
+        "models.College",
+        related_name="employment_records",
+        null=True,
+        description="所属学院",
+    )
     student_id = fields.CharField(max_length=32, index=True, description="学号")
+    profile = fields.ForeignKeyField(
+        "models.StudentProfile",
+        related_name="employment_records",
+        null=True,
+        source_field="student_pk",
+        description="规范化主档 FK",
+    )
     name = fields.CharField(max_length=64, null=True, description="姓名")
+    education_level = fields.CharField(max_length=32, null=True, description="学历（本科/硕士等）")
+    education_status = fields.CharField(max_length=64, null=True, description="学历状况（如本科生毕业）")
+    major_name = fields.CharField(max_length=128, null=True, description="专业名称（就业表）")
+    class_name = fields.CharField(max_length=128, null=True, description="班级名称（就业表）")
     destination = fields.CharField(max_length=128, null=True, description="毕业去向")
     unit_name = fields.CharField(max_length=255, null=True, description="单位/院校名称")
     unit_type = fields.CharField(max_length=128, null=True, description="单位类型")
@@ -31,6 +48,11 @@ class ResearchProject(Model):
     """科研项目（纵向/横向）。"""
 
     id = fields.IntField(pk=True)
+    college = fields.ForeignKeyField(
+        "models.College",
+        related_name="research_projects",
+        null=True,
+    )
     kind = fields.CharField(max_length=32, description="vertical|horizontal")
     project_no = fields.CharField(max_length=128, null=True, index=True)
     title = fields.CharField(max_length=512)
@@ -52,6 +74,11 @@ class ResearchPaper(Model):
     """科研论文。"""
 
     id = fields.IntField(pk=True)
+    college = fields.ForeignKeyField(
+        "models.College",
+        related_name="research_papers",
+        null=True,
+    )
     category = fields.CharField(max_length=64, null=True)
     title = fields.CharField(max_length=512)
     authors = fields.CharField(max_length=255, null=True)
@@ -69,6 +96,11 @@ class ResearchIp(Model):
     """知识产权/专利。"""
 
     id = fields.IntField(pk=True)
+    college = fields.ForeignKeyField(
+        "models.College",
+        related_name="research_ips",
+        null=True,
+    )
     patent_type = fields.CharField(max_length=64, null=True)
     title = fields.CharField(max_length=512)
     inventor = fields.CharField(max_length=64, null=True)
@@ -86,7 +118,19 @@ class ThesisAdvisor(Model):
     """毕业设计指导关系。"""
 
     id = fields.IntField(pk=True)
+    college = fields.ForeignKeyField(
+        "models.College",
+        related_name="thesis_advisors",
+        null=True,
+    )
     student_id = fields.CharField(max_length=32, index=True)
+    profile = fields.ForeignKeyField(
+        "models.StudentProfile",
+        related_name="thesis_advisors",
+        null=True,
+        source_field="student_pk",
+        description="规范化主档 FK",
+    )
     student_name = fields.CharField(max_length=64, null=True)
     major_name = fields.CharField(max_length=128, null=True)
     class_name = fields.CharField(max_length=128, null=True)

@@ -65,11 +65,25 @@ export interface StudentDevQualityVM {
     unit?: string
     trend?: TrendInfo
   }>
+  mockFields?: string[]
 }
 
 export interface StudentFlowSankeyVM {
   entrance: { nodes: SankeyNodeDTO[]; links: SankeyLinkDTO[] }
   outcome: { nodes: SankeyNodeDTO[]; links: SankeyLinkDTO[] }
+  outcomeDrillSamples?: Record<
+    string,
+    Array<{
+      name: string
+      studentId?: string
+      major: string
+      className?: string
+      educationLevel?: string
+      detail: string
+      salary?: string | null
+      tag?: string
+    }>
+  >
   summary: {
     entranceTotal: number
     graduateTotal: number
@@ -80,6 +94,7 @@ export interface StudentFlowSankeyVM {
     topEntranceRegions: Array<{ name: string; count: number }>
     topOutcomes: Array<{ name: string; count: number }>
   }
+  mockFields?: string[]
 }
 
 export interface StudentEvaluationDetailVM {

@@ -59,4 +59,9 @@ export const collegeApi = {
     client.get<ApiResponse<EnrollmentEmploymentOverviewDTO>>('/college/enrollment-employment/overview', { params }),
   getEnrollmentEmploymentDetail: (params?: CollegeScope) =>
     client.get<ApiResponse<EnrollmentEmploymentDetailDTO>>('/college/enrollment-employment/detail', { params }),
+  getEnrollmentEmploymentAnalysisReport: (params?: CollegeScope) =>
+    client.get<ApiResponse<import('@/types/college/api/employment-analysis').EmploymentAnalysisReportResponseDTO>>(
+      '/college/enrollment-employment/analysis-report',
+      { params },
+    ),
 }

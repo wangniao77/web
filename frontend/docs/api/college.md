@@ -23,7 +23,10 @@ Base URL: `{VITE_API_BASE}`（默认 `/api/v1`）
 | GET | `/college/research/overview` | 科研创新概览 |
 | GET | `/college/warnings/overview` | 预警风险概览 |
 | GET | `/college/students/dev-quality` | 学生发展与质量核心数据（`dimension`: `major` \| `grade` \| `course`） |
+| GET | `/college/students/dev-quality/detail` | 人才培养详情（画像/预警/高潜拆解） |
 | GET | `/college/students/flow-sankey` | 学生入口/出口桑基图数据 |
+| GET | `/college/enrollment-employment/overview` | 生源与就业一级概览 |
+| GET | `/college/enrollment-employment/detail` | 生源与就业二级详情 |
 
 ## Details（8）
 

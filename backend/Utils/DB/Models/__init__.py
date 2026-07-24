@@ -1,5 +1,20 @@
 from Utils.DB.Models.account_models import Account
+from Utils.DB.Models.college_ext_models import (
+    AchievementItem,
+    CollegeKpiSnapshot,
+    EnrollmentCohort,
+    MajorRankSnapshot,
+    ResearchPlatform,
+    StudentTag,
+    Teacher,
+)
 from Utils.DB.Models.college_models import College
+from Utils.DB.Models.college_student_models import (
+    AcademicSnapshot,
+    AnalysisRuleRun,
+    StudentAdmission,
+    StudentProfile,
+)
 from Utils.DB.Models.course_models import Course
 from Utils.DB.Models.external_data_models import (
     EmploymentRecord,
@@ -23,6 +38,10 @@ __all__ = [
     "SchoolClass",
     "Student",
     "StudentAcademicRecord",
+    "StudentProfile",
+    "StudentAdmission",
+    "AcademicSnapshot",
+    "AnalysisRuleRun",
     "Course",
     "KeyTask",
     "SchoolEvent",
@@ -31,4 +50,11 @@ __all__ = [
     "ResearchPaper",
     "ResearchIp",
     "ThesisAdvisor",
+    "Teacher",
+    "ResearchPlatform",
+    "AchievementItem",
+    "MajorRankSnapshot",
+    "EnrollmentCohort",
+    "StudentTag",
+    "CollegeKpiSnapshot",
 ]

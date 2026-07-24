@@ -212,6 +212,19 @@ export const mockStudentFlowSankey: StudentFlowSankeyDTO = {
       { source: '金融科技', target: '待就业', value: 18 },
     ],
   },
+  outcomeDrillSamples: {
+    '软件工程→升学深造': [
+      {
+        name: '示例学生',
+        studentId: '2022001001',
+        major: '软件工程',
+        className: '软工2201',
+        detail: '境内升学 · 示例高校',
+        salary: null,
+        tag: '升学深造',
+      },
+    ],
+  },
   summary: {
     entranceTotal: 2846,
     graduateTotal: 2156,

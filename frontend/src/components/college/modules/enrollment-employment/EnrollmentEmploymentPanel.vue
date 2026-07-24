@@ -2,7 +2,9 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import MockText from '@/components/common/MockText.vue'
 import { ROUTES } from '@/constants/routes'
+import { isMockField } from '@/composables/useMockFields'
 import type { EnrollmentEmploymentFocus } from '@/types/college/api/enrollment-employment'
 import type { EnrollmentEmploymentOverviewVM } from '@/types/college/view/enrollment-employment'
 import type { EChartsOption } from 'echarts'
@@ -12,6 +14,10 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
+
+function isMock(path: string) {
+  return isMockField(props.data.mockFields, path)
+}
 
 function openDetail(focus: EnrollmentEmploymentFocus = 'overview') {
   const admissionFocuses = new Set([
@@ -102,19 +108,19 @@ const enrolledText = computed(() => props.data.enrolledCount.toLocaleString('zh-
   <div class="enrollment-employment">
     <div class="enrollment-employment__kpis">
       <button type="button" class="enrollment-employment__kpi" @click="openDetail('admission-scale')">
-        <span>录取人数</span>
+        <span>在校本科</span>
         <strong>{{ enrolledText }}<small>人</small></strong>
       </button>
       <button type="button" class="enrollment-employment__kpi" @click="openDetail('source-quality')">
         <span>生源质量指数</span>
-        <strong>{{ data.sourceQualityIndex }}</strong>
+        <strong><MockText :mock="isMock('sourceQualityIndex')">{{ data.sourceQualityIndex }}</MockText></strong>
       </button>
       <button type="button" class="enrollment-employment__kpi" @click="openDetail('exit-quality')">
         <span>毕业去向落实率</span>
         <strong>{{ data.placementRate }}<small>%</small></strong>
       </button>
       <button type="button" class="enrollment-employment__kpi enrollment-employment__kpi--accent" @click="openDetail('high-quality-dest')">
-        <span>高质量就业率</span>
+        <span>高质量毕业去向率</span>
         <strong>{{ data.highQualityEmploymentRate }}<small>%</small></strong>
       </button>
     </div>

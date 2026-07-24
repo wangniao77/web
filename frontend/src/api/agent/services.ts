@@ -24,6 +24,11 @@ function toVM(dto: AgentAnalyzeResponseDTO, degraded?: boolean, degradeReason?: 
     source: dto.source,
     degraded,
     degradeReason,
+    headline: dto.headline,
+    dataFingerprint: dto.dataFingerprint,
+    filters: dto.filters,
+    sections: dto.sections,
+    generatedAt: dto.generatedAt,
   }
 }
 

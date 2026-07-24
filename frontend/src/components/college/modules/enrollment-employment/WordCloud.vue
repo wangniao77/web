@@ -96,11 +96,13 @@ function layout() {
   ctx.textBaseline = 'middle'
   ctx.textAlign = 'center'
 
-  const list = [...props.words].sort((a, b) => b.weight - a.weight)
+  const list = [...props.words]
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 18)
   const maxW = Math.max(...list.map((w) => w.weight))
   const minW = Math.min(...list.map((w) => w.weight))
-  const maxFont = Math.min(W / 3.2, 60)
-  const minFont = 14
+  const maxFont = Math.min(W / 2.6, 72)
+  const minFont = 20
   placed = []
   const cx = W / 2
   const cy = H / 2
@@ -108,8 +110,8 @@ function layout() {
   for (const wd of list) {
     const t = maxW === minW ? 1 : (wd.weight - minW) / (maxW - minW)
     const font = Math.round(minFont + t * (maxFont - minFont))
-    // 短词水平，长词有概率竖排以增强密铺感
-    const rot = wd.name.length <= 2 || Math.random() < 0.55 ? 0 : Math.PI / 2
+    // 短词水平，长词少量竖排；优先可读性
+    const rot = wd.name.length <= 2 && Math.random() < 0.25 ? Math.PI / 2 : 0
     const color = props.colors[placed.length % props.colors.length]
     ctx.font = `800 ${font}px ${FONT_STACK}`
     const m = ctx.measureText(wd.name)

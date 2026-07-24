@@ -2,7 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import MockText from '@/components/common/MockText.vue'
+import { COLLEGE_MOCK_DATA_COLOR } from '@/constants/college/simulated-modules'
 import { ROUTES } from '@/constants/routes'
+import { isMockField } from '@/composables/useMockFields'
 import { CHART_FONT } from '@/styles/echarts-theme'
 import type { StudentDevQualityVM } from '@/types/college/view/student-dev-quality'
 import type { EChartsOption } from 'echarts'
@@ -12,6 +15,10 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
+
+function isMock(path: string) {
+  return isMockField(props.data.mockFields, path)
+}
 
 const gpaColors = ['#39e6ff', '#0d71ff', '#30d7a4']
 const GRADE_ROTATION_MS = 6000
@@ -109,6 +116,7 @@ const structureMax = computed(() => {
 const structureRows = computed(() =>
   props.data.highPotential.structure.map((item) => ({
     ...item,
+    mock: isMock(`highPotential.structure.${item.key}`),
     ratio: (item.count / structureMax.value) * 100,
   })),
 )
@@ -238,7 +246,9 @@ function openHpModule(_key: string) {
       </button>
       <button type="button" class="talent-portrait__kpi" @click="openDetail">
         <span>研究生人数</span>
-        <strong>{{ formatCount(data.enrolledGraduate) }}</strong>
+        <strong>
+          <MockText :mock="isMock('enrolledGraduate')">{{ formatCount(data.enrolledGraduate) }}</MockText>
+        </strong>
       </button>
       <button type="button" class="talent-portrait__kpi talent-portrait__kpi--hp" @click="openHp">
         <span>高潜学生</span>
@@ -306,15 +316,26 @@ function openHpModule(_key: string) {
         <header class="talent-portrait__block-title">高潜学生结构</header>
         <ul class="talent-portrait__structure">
           <li v-for="item in structureRows" :key="item.key">
-            <button type="button" class="talent-portrait__row" @click="openHpModule(item.key)">
+            <button
+              type="button"
+              class="talent-portrait__row"
+              :class="{ 'talent-portrait__row--mock': item.mock }"
+              @click="openHpModule(item.key)"
+            >
               <div class="talent-portrait__row-head">
                 <span class="talent-portrait__row-label">{{ item.label }}</span>
                 <span class="talent-portrait__row-count">
-                  {{ item.count }}<i v-if="item.flux !== undefined" class="talent-portrait__row-flux">{{ formatFlux(item.flux) }}</i>
+                  <MockText :mock="item.mock">{{ item.count }}</MockText>
+                  <i v-if="item.flux !== undefined" class="talent-portrait__row-flux">{{ formatFlux(item.flux) }}</i>
                 </span>
               </div>
-              <span class="talent-portrait__bar">
-                <i :style="{ width: `${item.ratio}%` }" />
+              <span class="talent-portrait__bar" :class="{ 'talent-portrait__bar--mock': item.mock }">
+                <i
+                  :style="{
+                    width: `${item.ratio}%`,
+                    ...(item.mock ? { background: COLLEGE_MOCK_DATA_COLOR } : {}),
+                  }"
+                />
               </span>
             </button>
           </li>
@@ -331,5 +352,14 @@ function openHpModule(_key: string) {
   font-weight: 600;
   font-style: normal;
   color: rgba(174, 198, 230, 0.65);
+}
+
+.talent-portrait__row--mock .talent-portrait__row-label {
+  color: rgba(255, 160, 150, 0.9);
+}
+
+.talent-portrait__bar--mock i {
+  background: #ff4d4f !important;
+  box-shadow: 0 0 8px rgba(255, 77, 79, 0.35);
 }
 </style>

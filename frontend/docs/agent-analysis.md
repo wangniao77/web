@@ -6,14 +6,29 @@
 
 - 页面：`/college/key-tasks` →「深度挖掘」Tab
 - 页面：`/college/warning/:type` → 学业风险 Agent 分析（聚合，不点名）
-- 组件：`AnalysisInsightPanel` + `AgentFollowUpChat`
-- 钩子：`useAgentAnalysis(context, { enabled, auto })`
+- 页面：`/college/student/dev-detail?tab=employment` →「深度挖掘 · 就业分析」（**缓存报告**，手动刷新）
+- 组件：`AnalysisInsightPanel` + `AgentFollowUpChat`；就业页另有 `EmploymentAnalysisReportModal`
+- 钩子：`useAgentAnalysis(context, { enabled, auto })`（就业页 `auto: false`，进页读缓存）
 
 ## 后端聚合接口
 
 - `GET /api/v1/college/analytics/academic-risk?collegeId=&warningType=`
-- 仅返回年级/专业聚合，不含花名册 PII
-- Agent `page=academic-risk|warning` 时自动拉取该快照
+  - 仅返回年级/专业聚合，不含花名册 PII
+  - Agent `page=academic-risk|warning` 时自动拉取该快照
+- `GET /api/v1/college/enrollment-employment/analysis-report?collegeId=&year=&major=`
+  - 读 OpenViking 缓存报告；返回 `report` / `stale` / `dataFingerprint`
+  - 不触发重算
+- 就业重算：`POST /api/v1/agent/analyze`，`page=enrollment-employment`，`refresh=true`
+
+## 就业深度分析约定
+
+| 项 | 说明 |
+|----|------|
+| page | `enrollment-employment`（别名 `employment`） |
+| 快照 | 无 PII：落实率、高质量、专业对比、行业、待就业、fingerprint |
+| 报告 | `headline` + `insights[].evidence` + `actions` + `sections` |
+| 证据 | 每条洞察至少 1 条 `source=db`；`web` 须具名出处 |
+| 触发 | 页面「生成/重新分析」；导入自动跑本期不做，仅 `stale` 提示 |
 
 ## 在其他二级页复用
 
@@ -53,5 +68,9 @@
 ## OpenViking 路径约定
 
 - `viking://resources/college/{collegeId}/key-tasks/snapshot.json`
-- `viking://skills/college/key-tasks-analysis/SKILL.md`
-- `viking://memory/sessions/{sessionId}/transcript.jsonl`
+- `viking://resources/college/{collegeId}/academic-risk/snapshot.json`
+- `viking://resources/college/{collegeId}/enrollment-employment/snapshot.json`
+- `viking://resources/college/{collegeId}/enrollment-employment/analysis-report.json`
+- `viking://agent/skills/college/key-tasks-analysis/SKILL.md`
+- `viking://agent/skills/college/academic-risk-analysis/SKILL.md`
+- `viking://agent/skills/college/enrollment-employment-analysis/SKILL.md`

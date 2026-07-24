@@ -572,3 +572,80 @@ class CollegeService:
                 }
             )
         return {"total": len(rows), "students": rows}
+
+    async def get_student_dev_quality(
+        self,
+        *,
+        college_id: str | None = None,
+        dimension: str = "major",
+    ) -> dict[str, Any]:
+        from Services.talent_overview_service import talent_overview_service
+
+        return await talent_overview_service.get_student_dev_quality(
+            college_id=college_id,
+            dimension=dimension,
+        )
+
+    async def get_student_dev_detail(self, *, college_id: str | None = None) -> dict[str, Any]:
+        from Services.talent_overview_service import talent_overview_service
+
+        return await talent_overview_service.get_student_dev_detail(college_id=college_id)
+
+    async def get_enrollment_employment_overview(
+        self, *, college_id: str | None = None
+    ) -> dict[str, Any]:
+        from Services.talent_overview_service import talent_overview_service
+
+        return await talent_overview_service.get_enrollment_employment_overview(
+            college_id=college_id
+        )
+
+    async def get_enrollment_employment_detail(
+        self, *, college_id: str | None = None, year: str | None = None, major: str | None = None
+    ) -> dict[str, Any]:
+        from Services.talent_overview_service import talent_overview_service
+
+        return await talent_overview_service.get_enrollment_employment_detail(
+            college_id=college_id, year=year, major=major
+        )
+
+    async def get_enrollment_employment_analysis_snapshot(
+        self,
+        *,
+        college_id: str | None = None,
+        year: str | None = None,
+        major: str | None = None,
+    ) -> dict[str, Any]:
+        from Services.talent_overview_service import talent_overview_service
+
+        return await talent_overview_service.build_enrollment_employment_analysis_snapshot(
+            college_id=college_id, year=year, major=major
+        )
+
+    async def get_enrollment_employment_analysis_report(
+        self,
+        *,
+        college_id: str | None = None,
+        year: str | None = None,
+        major: str | None = None,
+    ) -> dict[str, Any]:
+        from Services.talent_overview_service import talent_overview_service
+
+        return await talent_overview_service.get_enrollment_employment_analysis_report(
+            college_id=college_id, year=year, major=major
+        )
+
+    async def get_student_flow_sankey(self, *, college_id: str | None = None) -> dict[str, Any]:
+        from Services.talent_overview_service import talent_overview_service
+
+        return await talent_overview_service.get_student_flow_sankey(college_id=college_id)
+
+    async def get_student_evaluation_detail(
+        self, *, key: str, college_id: str | None = None
+    ) -> dict[str, Any]:
+        from Services.talent_overview_service import talent_overview_service
+
+        return await talent_overview_service.get_student_evaluation_detail(
+            key=key,
+            college_id=college_id,
+        )

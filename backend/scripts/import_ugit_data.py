@@ -1,10 +1,9 @@
 """
-从 D:\\UGit\\data 导入学院数据到 PostgreSQL。
+从 D:\\UGit\\data 导入学院数据到 PostgreSQL（含 L0/L1 扩展表）。
 
 用法（在 backend 目录）:
-  set POSTGRES_DSN=postgres://user:pass@host:5432/studentmodelingdata
   python scripts/import_ugit_data.py
-  python scripts/import_ugit_data.py --data-root D:\\UGit\\data --only students,gpa,cet,employment,research,thesis,dorm
+  python scripts/import_ugit_data.py --only students,gpa,cet,dorm,employment,research,thesis,teachers,classes,tags,kpi
 """
 
 from __future__ import annotations
@@ -25,14 +24,24 @@ from tortoise.transactions import in_transaction
 
 from core.config import get_settings
 from core.database import TORTOISE_ORM
+from Utils.Analytics.student_tag_service import rebuild_student_tags
 from Utils.DB.Models import (
+    AchievementItem,
+    AcademicSnapshot,
     College,
+    CollegeKpiSnapshot,
     EmploymentRecord,
     Major,
     ResearchIp,
     ResearchPaper,
+    ResearchPlatform,
     ResearchProject,
+    SchoolClass,
     StudentAcademicRecord,
+    StudentAdmission,
+    StudentProfile,
+    StudentTag,
+    Teacher,
     ThesisAdvisor,
 )
 from Utils.Excel import list_sheet_names, read_tabular
@@ -40,9 +49,6 @@ from Utils.Excel import list_sheet_names, read_tabular
 COLLEGE_NAME = "大数据与人工智能学院"
 COLLEGE_CODE = "big-data-ai"
 DEFAULT_DATA_ROOT = Path(r"D:\UGit\data")
-
-# 不入库的敏感列关键词
-SENSITIVE_KEYS = ("身份证", "银行", "电话", "手机", "证件", "考生号", "准考证")
 
 
 def _to_int(v: str | None) -> int | None:
@@ -85,6 +91,24 @@ def _grade_from_name(name: str) -> int | None:
     return 2000 + yy if yy < 100 else yy
 
 
+def _find_sheet(path: Path, *keywords: str) -> str | None:
+    names = list_sheet_names(path)
+    for kw in keywords:
+        for name in names:
+            if kw == name or kw in name:
+                return name
+    return None
+
+
+def _research_workbook(data_root: Path) -> Path | None:
+    cands = list(data_root.glob("科研成果*.xls")) + list(data_root.glob("科研成果*.xlsx"))
+    if not cands:
+        return None
+    # 优先带完整 sheet 命名说明的那份
+    cands.sort(key=lambda p: (("sheet" not in p.name.lower()), p.stat().st_size))
+    return cands[0]
+
+
 async def ensure_college() -> College:
     college = await College.get_or_none(code=COLLEGE_CODE)
     if college:
@@ -111,6 +135,36 @@ async def ensure_major(college: College, major_name: str) -> Major | None:
     return await Major.create(college=college, name=name, code=code)
 
 
+async def ensure_class(
+    *,
+    major: Major | None,
+    class_name: str | None,
+    grade: int | None,
+    counselor: str | None = None,
+) -> SchoolClass | None:
+    name = (class_name or "").strip()
+    if not major or not name:
+        return None
+    existing = await SchoolClass.get_or_none(major_id=major.id, name=name)
+    if existing:
+        changed = False
+        if grade and existing.grade != grade:
+            existing.grade = grade
+            changed = True
+        if counselor and existing.counselor_name != counselor:
+            existing.counselor_name = counselor
+            changed = True
+        if changed:
+            await existing.save()
+        return existing
+    return await SchoolClass.create(
+        major=major,
+        name=name,
+        grade=grade or 0,
+        counselor_name=counselor,
+    )
+
+
 async def upsert_student(payload: dict[str, Any], *, college: College) -> str:
     student_id = str(payload.get("student_id") or "").strip()
     grade = payload.get("grade")
@@ -121,10 +175,21 @@ async def upsert_student(payload: dict[str, Any], *, college: College) -> str:
     fields = {k: v for k, v in payload.items() if k not in {"student_id", "grade"} and v is not None}
     fields["college_id"] = college.id
     major_name = fields.get("major_name")
+    major = None
     if major_name:
         major = await ensure_major(college, str(major_name))
         if major:
             fields["major_id"] = major.id
+    class_name = fields.get("class_name")
+    if class_name and major:
+        klass = await ensure_class(
+            major=major,
+            class_name=str(class_name),
+            grade=int(grade) if grade else None,
+            counselor=fields.get("counselor"),
+        )
+        if klass:
+            fields["school_class_id"] = klass.id
 
     if existing:
         for k, v in fields.items():
@@ -132,6 +197,46 @@ async def upsert_student(payload: dict[str, Any], *, college: College) -> str:
         await existing.save()
         return "update"
     await StudentAcademicRecord.create(student_id=student_id, grade=grade, **fields)
+    return "create"
+
+
+async def upsert_teacher(
+    college: College,
+    *,
+    name: str,
+    teacher_no: str | None = None,
+    photo_path: str | None = None,
+    source: str | None = None,
+) -> str:
+    name = (name or "").strip()
+    if not name:
+        return "skip"
+    existing = await Teacher.get_or_none(college_id=college.id, name=name)
+    if existing:
+        changed = False
+        if teacher_no and not existing.teacher_no:
+            existing.teacher_no = teacher_no
+            changed = True
+        if photo_path and not existing.photo_path:
+            existing.photo_path = photo_path
+            changed = True
+        if source and existing.source and source not in existing.source:
+            existing.source = f"{existing.source},{source}"
+            changed = True
+        elif source and not existing.source:
+            existing.source = source
+            changed = True
+        if changed:
+            await existing.save()
+        return "update"
+    await Teacher.create(
+        college=college,
+        name=name,
+        teacher_no=teacher_no,
+        photo_path=photo_path,
+        source=source,
+        status="active",
+    )
     return "create"
 
 
@@ -144,7 +249,6 @@ async def import_rosters(data_root: Path, college: College) -> dict[str, int]:
         rows = read_tabular(path)
         print(f"[roster] {path.name} rows={len(rows)}")
         for row in rows:
-            # 跳过敏感字段，不读取入库
             sid = _pick(row, "学号")
             if not sid:
                 stats["skip"] += 1
@@ -152,7 +256,7 @@ async def import_rosters(data_root: Path, college: College) -> dict[str, int]:
             grade = _to_int(_pick(row, "当前所在级", "年级")) or default_grade
             status_raw = _pick(row, "学籍状态")
             status = "active"
-            if status_raw and ("无" in status_raw or "注销" in status_raw):
+            if status_raw and ("离" in status_raw or "注销" in status_raw):
                 status = "inactive"
             payload = {
                 "student_id": sid,
@@ -167,8 +271,11 @@ async def import_rosters(data_root: Path, college: College) -> dict[str, int]:
                 "enrollment_year": _to_int(_pick(row, "入学年份")),
                 "education_level": _pick(row, "培养层次") or None,
                 "status": status,
+                "admission_score": _to_decimal(_pick(row, "录取分数")),
+                "source_place": _pick(row, "生源所在地") or None,
+                "native_place": _pick(row, "籍贯") or None,
+                "hmt_status": _pick(row, "港澳台侨外") or None,
             }
-            # 过滤外院
             dept = payload["teaching_department"] or ""
             if dept and COLLEGE_NAME not in dept and "大数据" not in dept and "人工智能" not in dept:
                 stats["skip"] += 1
@@ -218,7 +325,6 @@ async def import_cet(data_root: Path) -> dict[str, int]:
     stats = {"update": 0, "skip": 0}
     root = data_root / "班主任、辅导员、住宿、学生照片、四六级、毕业设计指导老师" / "四六级成绩" / "四六级成绩"
     if not root.exists():
-        # 兼容少一层目录
         root = data_root / "班主任、辅导员、住宿、学生照片、四六级、毕业设计指导老师" / "四六级成绩"
     files = list(root.rglob("*.xls"))
     best4: dict[str, Decimal] = {}
@@ -237,7 +343,6 @@ async def import_cet(data_root: Path) -> dict[str, int]:
                 best4[sid] = max(score, best4.get(sid, Decimal("-1")))
             elif is6:
                 best6[sid] = max(score, best6.get(sid, Decimal("-1")))
-    # 写回：更新该学号所有年级行
     for sid, score in best4.items():
         updated = await StudentAcademicRecord.filter(student_id=sid).update(cet4_score=score)
         stats["update"] += updated
@@ -252,7 +357,6 @@ async def import_cet(data_root: Path) -> dict[str, int]:
 
 
 async def import_dorm_teachers(data_root: Path) -> dict[str, int]:
-    """从本院住宿表回填校区/班主任/辅导员（不含宿舍号等敏感字段到 Agent）。"""
     stats = {"update": 0, "skip": 0}
     base = data_root / "班主任、辅导员、住宿、学生照片、四六级、毕业设计指导老师"
     for path in [
@@ -289,7 +393,7 @@ async def import_dorm_teachers(data_root: Path) -> dict[str, int]:
     return stats
 
 
-async def import_employment(data_root: Path) -> dict[str, int]:
+async def import_employment(data_root: Path, college: College) -> dict[str, int]:
     stats = {"create": 0, "update": 0, "skip": 0}
     path = data_root / "就业信息20260623.xlsx"
     if not path.exists():
@@ -301,9 +405,13 @@ async def import_employment(data_root: Path) -> dict[str, int]:
         if not sid:
             stats["skip"] += 1
             continue
-        # 不入库联系电话/邮箱
         payload = {
+            "college_id": college.id,
             "name": _pick(row, "姓名") or None,
+            "education_level": _pick(row, "学历") or None,
+            "education_status": _pick(row, "学历状况") or None,
+            "major_name": _pick(row, "专业名称") or None,
+            "class_name": _pick(row, "班级名称") or None,
             "destination": _pick(row, "毕业去向") or None,
             "unit_name": _pick(
                 row,
@@ -333,27 +441,37 @@ async def import_employment(data_root: Path) -> dict[str, int]:
     return stats
 
 
-async def import_research(data_root: Path) -> dict[str, int]:
-    stats = {"projects": 0, "papers": 0, "ips": 0, "skip": 0}
-    # 文件名可能略有变化
-    candidates = list(data_root.glob("科研成果*.xls")) + list(data_root.glob("科研成果*.xlsx"))
-    if not candidates:
+async def import_research(data_root: Path, college: College) -> dict[str, int]:
+    stats = {
+        "projects": 0,
+        "papers": 0,
+        "ips": 0,
+        "platforms": 0,
+        "achievements": 0,
+        "skip": 0,
+    }
+    path = _research_workbook(data_root)
+    if not path:
         return {"missing": 1}
-    path = candidates[0]
     print(f"[research] {path.name} sheets={list_sheet_names(path)}")
 
-    # 清空后重导，避免重复
-    await ResearchProject.all().delete()
-    await ResearchPaper.all().delete()
-    await ResearchIp.all().delete()
+    await ResearchProject.filter(college_id=college.id).delete()
+    await ResearchProject.filter(college_id__isnull=True).delete()
+    await ResearchPaper.filter(college_id=college.id).delete()
+    await ResearchPaper.filter(college_id__isnull=True).delete()
+    await ResearchIp.filter(college_id=college.id).delete()
+    await ResearchIp.filter(college_id__isnull=True).delete()
+    await ResearchPlatform.filter(college_id=college.id).delete()
+    await AchievementItem.filter(college_id=college.id).delete()
 
-    # 纵向
-    try:
-        for row in read_tabular(path, sheet_name="纵向项目"):
+    vertical = _find_sheet(path, "纵向项目", "科研项目")
+    if vertical:
+        for row in read_tabular(path, sheet_name=vertical):
             title = _pick(row, "项目名称")
             if not title:
                 continue
             await ResearchProject.create(
+                college=college,
                 kind="vertical",
                 project_no=_pick(row, "项目编号") or None,
                 title=title,
@@ -366,15 +484,27 @@ async def import_research(data_root: Path) -> dict[str, int]:
                 source_file=path.name,
             )
             stats["projects"] += 1
-    except Exception as e:
-        print("  vertical fail:", e)
+            await AchievementItem.create(
+                college=college,
+                section="topic",
+                name=title,
+                category=_pick(row, "项目类别") or None,
+                level=_pick(row, "项目级别") or None,
+                leader=_pick(row, "负责人") or None,
+                occurred_on=_pick(row, "立项日期") or None,
+                note=_pick(row, "项目编号") or None,
+                source_file=path.name,
+            )
+            stats["achievements"] += 1
 
-    try:
-        for row in read_tabular(path, sheet_name="横向项目"):
+    horizontal = _find_sheet(path, "横向项目", "社会服务")
+    if horizontal:
+        for row in read_tabular(path, sheet_name=horizontal):
             title = _pick(row, "项目名称")
             if not title:
                 continue
             await ResearchProject.create(
+                college=college,
                 kind="horizontal",
                 project_no=_pick(row, "项目编号") or None,
                 title=title,
@@ -386,15 +516,26 @@ async def import_research(data_root: Path) -> dict[str, int]:
                 source_file=path.name,
             )
             stats["projects"] += 1
-    except Exception as e:
-        print("  horizontal fail:", e)
+            await AchievementItem.create(
+                college=college,
+                section="service",
+                name=title,
+                category=_pick(row, "项目类别") or None,
+                leader=_pick(row, "负责人") or None,
+                org=_pick(row, "项目来源单位") or None,
+                occurred_on=_pick(row, "立项日期") or None,
+                source_file=path.name,
+            )
+            stats["achievements"] += 1
 
-    try:
-        for row in read_tabular(path, sheet_name="科研论文"):
+    papers = _find_sheet(path, "科研论文", "科研成果")
+    if papers:
+        for row in read_tabular(path, sheet_name=papers):
             title = _pick(row, "论文名称")
             if not title:
                 continue
             await ResearchPaper.create(
+                college=college,
                 category=_pick(row, "类别") or None,
                 title=title,
                 authors=_pick(row, "作者") or None,
@@ -404,15 +545,27 @@ async def import_research(data_root: Path) -> dict[str, int]:
                 source_file=path.name,
             )
             stats["papers"] += 1
-    except Exception as e:
-        print("  papers fail:", e)
+            await AchievementItem.create(
+                college=college,
+                section="paper",
+                name=title,
+                category=_pick(row, "类别") or None,
+                level=_pick(row, "论文级别") or None,
+                leader=_pick(row, "作者") or None,
+                org=_pick(row, "刊物名称") or None,
+                occurred_on=_pick(row, "发表/出版时间") or None,
+                source_file=path.name,
+            )
+            stats["achievements"] += 1
 
-    try:
-        for row in read_tabular(path, sheet_name="知识产权"):
+    ips = _find_sheet(path, "知识产权")
+    if ips:
+        for row in read_tabular(path, sheet_name=ips):
             title = _pick(row, "专利名称")
             if not title:
                 continue
             await ResearchIp.create(
+                college=college,
                 patent_type=_pick(row, "专利类型") or None,
                 title=title,
                 inventor=_pick(row, "第一发明人") or None,
@@ -422,13 +575,82 @@ async def import_research(data_root: Path) -> dict[str, int]:
                 source_file=path.name,
             )
             stats["ips"] += 1
-    except Exception as e:
-        print("  ip fail:", e)
+            await AchievementItem.create(
+                college=college,
+                section="output",
+                name=title,
+                category=_pick(row, "专利类型") or None,
+                leader=_pick(row, "第一发明人") or None,
+                occurred_on=_pick(row, "授权公告日") or None,
+                note=_pick(row, "专利号") or None,
+                source_file=path.name,
+            )
+            stats["achievements"] += 1
+
+    platforms = _find_sheet(path, "教学成果", "科研平台", "科研团队")
+    if platforms:
+        current_team_label = ""
+        for row in read_tabular(path, sheet_name=platforms):
+            typ = _pick(row, "类型")
+            name = _pick(row, "平台名称")
+            # 分组标题行：类型有值、平台名为空
+            if typ and not name:
+                current_team_label = typ
+                continue
+            if not name:
+                continue
+            category = typ or current_team_label or None
+            await ResearchPlatform.create(
+                college=college,
+                name=name,
+                category=category,
+                leader=_pick(row, "负责人") or None,
+                founded_at=_pick(row, "批准时间") or None,
+                approved_by=_pick(row, "批准部门") or None,
+                eval_passed_at=_pick(row, "动态评估通过时间") or None,
+                source_file=path.name,
+            )
+            stats["platforms"] += 1
+            section = "platform"
+            if category and ("奖" in category or "教学成果" in category):
+                section = "award"
+            elif category and "团队" in category:
+                section = "collective"
+            await AchievementItem.create(
+                college=college,
+                section=section,
+                name=name,
+                category=category,
+                leader=_pick(row, "负责人") or None,
+                org=_pick(row, "批准部门") or None,
+                occurred_on=_pick(row, "批准时间") or None,
+                note=_pick(row, "动态评估通过时间") or None,
+                source_file=path.name,
+            )
+            stats["achievements"] += 1
+
+    reports = _find_sheet(path, "学术报告")
+    if reports:
+        for row in read_tabular(path, sheet_name=reports):
+            name = _pick(row, "会议名称")
+            if not name:
+                continue
+            await AchievementItem.create(
+                college=college,
+                section="service",
+                name=name,
+                category=_pick(row, "会议类型") or "学术报告",
+                leader=_pick(row, "主讲人") or None,
+                org=_pick(row, "主讲人单位及职称") or None,
+                occurred_on=_pick(row, "举办时间") or None,
+                source_file=path.name,
+            )
+            stats["achievements"] += 1
 
     return stats
 
 
-async def import_thesis(data_root: Path) -> dict[str, int]:
+async def import_thesis(data_root: Path, college: College) -> dict[str, int]:
     stats = {"create": 0, "update": 0, "skip": 0}
     base = data_root / "班主任、辅导员、住宿、学生照片、四六级、毕业设计指导老师"
     files = list(base.glob("*毕业设计指导*.xls")) + list(base.glob("*毕业设计指导*.xlsx"))
@@ -443,6 +665,7 @@ async def import_thesis(data_root: Path) -> dict[str, int]:
             stats["skip"] += 1
             continue
         payload = {
+            "college_id": college.id,
             "student_name": _pick(row, "学生姓名", "姓名") or None,
             "major_name": _pick(row, "专业") or None,
             "class_name": _pick(row, "班级") or None,
@@ -456,14 +679,298 @@ async def import_thesis(data_root: Path) -> dict[str, int]:
             for k, v in payload.items():
                 setattr(existing, k, v)
             await existing.save()
-            # 同步导师到学籍
-            await StudentAcademicRecord.filter(student_id=sid).update()
             stats["update"] += 1
         else:
             await ThesisAdvisor.create(student_id=sid, **payload)
             stats["create"] += 1
-        # 有导师名则写到学籍（若模型有扩展字段则更好；当前写不到 supervisor，跳过）
+        if payload.get("advisor_name"):
+            await upsert_teacher(
+                college,
+                name=str(payload["advisor_name"]),
+                teacher_no=payload.get("advisor_no"),
+                source="thesis",
+            )
     return stats
+
+
+async def import_teachers(data_root: Path, college: College) -> dict[str, int]:
+    stats = {"create": 0, "update": 0, "skip": 0}
+    photo_dir = (
+        data_root
+        / "班主任、辅导员、住宿、学生照片、四六级、毕业设计指导老师"
+        / "教师个人照合集"
+    )
+    if photo_dir.exists():
+        for path in sorted(photo_dir.glob("*.jpg")):
+            name = path.stem.replace("-", "").strip()
+            if not name:
+                stats["skip"] += 1
+                continue
+            rel = str(path.relative_to(data_root)).replace("\\", "/")
+            action = await upsert_teacher(
+                college,
+                name=name,
+                photo_path=rel,
+                source="photo",
+            )
+            stats[action] = stats.get(action, 0) + 1
+
+    # 从科研负责人补齐
+    for leader in await ResearchProject.filter(college_id=college.id).values_list("leader", flat=True):
+        if not leader:
+            continue
+        # 可能有多负责人用顿号分隔
+        for part in re.split(r"[、,，/]", str(leader)):
+            action = await upsert_teacher(college, name=part.strip(), source="research")
+            stats[action] = stats.get(action, 0) + 1
+
+    for inventor in await ResearchIp.filter(college_id=college.id).values_list("inventor", flat=True):
+        if inventor:
+            action = await upsert_teacher(college, name=str(inventor).strip(), source="ip")
+            stats[action] = stats.get(action, 0) + 1
+
+    return stats
+
+
+async def sync_classes(college: College) -> dict[str, int]:
+    stats = {"create": 0, "update": 0, "link": 0, "skip": 0}
+    records = await StudentAcademicRecord.filter(college_id=college.id).all()
+    for rec in records:
+        if not rec.major_id or not rec.class_name:
+            stats["skip"] += 1
+            continue
+        major = await Major.get_or_none(id=rec.major_id)
+        klass = await ensure_class(
+            major=major,
+            class_name=rec.class_name,
+            grade=rec.grade,
+            counselor=rec.counselor,
+        )
+        if not klass:
+            stats["skip"] += 1
+            continue
+        if rec.school_class_id != klass.id:
+            rec.school_class_id = klass.id
+            await rec.save(update_fields=["school_class_id", "updated_at"])
+            stats["link"] += 1
+        else:
+            stats["update"] += 1
+    stats["classes"] = await SchoolClass.filter(major__college_id=college.id).count()
+    return stats
+
+
+async def normalize_students_from_wide(college: College) -> dict[str, Any]:
+    """宽表 → students / student_admission / academic_snapshots，并回填附属表 student_pk。"""
+    stats = {
+        "profiles_upsert": 0,
+        "admissions_upsert": 0,
+        "snapshots_upsert": 0,
+        "employment_linked": 0,
+        "thesis_linked": 0,
+        "wide_rows": 0,
+        "distinct_student_nos": 0,
+        "admission_score_nonzero": 0,
+    }
+    rows = await StudentAcademicRecord.filter(college_id=college.id).order_by("-grade", "student_id")
+    if not rows:
+        rows = await StudentAcademicRecord.all().order_by("-grade", "student_id")
+    stats["wide_rows"] = len(rows)
+
+    latest_by_no: dict[str, StudentAcademicRecord] = {}
+    rows_by_no: dict[str, list[StudentAcademicRecord]] = {}
+    for rec in rows:
+        sid = rec.student_id
+        if not sid:
+            continue
+        rows_by_no.setdefault(sid, []).append(rec)
+        if sid not in latest_by_no:
+            latest_by_no[sid] = rec
+
+    stats["distinct_student_nos"] = len(latest_by_no)
+    profile_by_no: dict[str, StudentProfile] = {}
+
+    for sid, latest in latest_by_no.items():
+        profile = await StudentProfile.get_or_none(student_no=sid)
+        payload = {
+            "name": latest.name,
+            "gender": latest.gender,
+            "status": latest.status or "active",
+            "college_id": latest.college_id or college.id,
+            "major_id": latest.major_id,
+            "school_class_id": latest.school_class_id,
+            "campus": latest.campus,
+            "education_level": latest.education_level,
+            "enrollment_year": latest.enrollment_year,
+            "teaching_department": latest.teaching_department,
+            "major_name": latest.major_name,
+            "major_direction_name": latest.major_direction_name,
+            "class_name": latest.class_name,
+            "student_picture_path": latest.student_picture_path,
+        }
+        if profile:
+            for k, v in payload.items():
+                setattr(profile, k, v)
+            await profile.save()
+        else:
+            profile = await StudentProfile.create(student_no=sid, **payload)
+        profile_by_no[sid] = profile
+        stats["profiles_upsert"] += 1
+
+        # 录取信息：优先取有分数的行
+        adm_src = latest
+        for r in rows_by_no.get(sid, []):
+            if r.admission_score is not None:
+                adm_src = r
+                break
+        adm = await StudentAdmission.get_or_none(student_id=profile.id)
+        adm_payload = {
+            "admission_score": adm_src.admission_score,
+            "source_place": adm_src.source_place,
+            "native_place": adm_src.native_place,
+            "hmt_status": adm_src.hmt_status,
+        }
+        if adm:
+            for k, v in adm_payload.items():
+                setattr(adm, k, v)
+            await adm.save()
+        else:
+            await StudentAdmission.create(student=profile, **adm_payload)
+        stats["admissions_upsert"] += 1
+        if adm_src.admission_score is not None:
+            stats["admission_score_nonzero"] += 1
+
+    for sid, recs in rows_by_no.items():
+        profile = profile_by_no.get(sid)
+        if not profile:
+            continue
+        for rec in recs:
+            if rec.grade is None:
+                continue
+            snap = await AcademicSnapshot.get_or_none(student_id=profile.id, grade=rec.grade)
+            snap_payload = {
+                "college_id": rec.college_id or college.id,
+                "major_id": rec.major_id,
+                "major_name": rec.major_name,
+                "class_name": rec.class_name,
+                "major_course_count": rec.major_course_count,
+                "major_course_avg_score": rec.major_course_avg_score,
+                "subject_basic_course_count": rec.subject_basic_course_count,
+                "subject_basic_course_avg_score": rec.subject_basic_course_avg_score,
+                "general_course_count": rec.general_course_count,
+                "general_course_avg_score": rec.general_course_avg_score,
+                "required_course_count": rec.required_course_count,
+                "required_course_avg_score": rec.required_course_avg_score,
+                "elective_course_count": rec.elective_course_count,
+                "elective_course_avg_score": rec.elective_course_avg_score,
+                "all_course_count": rec.all_course_count,
+                "all_course_avg_score": rec.all_course_avg_score,
+                "absent_exam_count": rec.absent_exam_count,
+                "makeup_exam_count": rec.makeup_exam_count,
+                "retake_count": rec.retake_count,
+                "required_credits": rec.required_credits,
+                "elective_credits": rec.elective_credits,
+                "earned_total_credits": rec.earned_total_credits,
+                "failed_total_credits": rec.failed_total_credits,
+                "average_credit_gpa": rec.average_credit_gpa,
+                "cet4_score": rec.cet4_score,
+                "cet6_score": rec.cet6_score,
+                "class_teacher": rec.class_teacher,
+                "counselor": rec.counselor,
+                "competition_award_count": rec.competition_award_count,
+                "competition_award_detail": rec.competition_award_detail,
+            }
+            if snap:
+                for k, v in snap_payload.items():
+                    setattr(snap, k, v)
+                await snap.save()
+            else:
+                await AcademicSnapshot.create(student=profile, grade=rec.grade, **snap_payload)
+            stats["snapshots_upsert"] += 1
+
+    # 回填就业 / 毕设 student_pk
+    for emp in await EmploymentRecord.all():
+        profile = profile_by_no.get(emp.student_id) or await StudentProfile.get_or_none(
+            student_no=emp.student_id
+        )
+        if profile:
+            emp.profile = profile
+            await emp.save()
+            stats["employment_linked"] += 1
+
+    for th in await ThesisAdvisor.all():
+        profile = profile_by_no.get(th.student_id) or await StudentProfile.get_or_none(
+            student_no=th.student_id
+        )
+        if profile:
+            th.profile = profile
+            await th.save()
+            stats["thesis_linked"] += 1
+
+    # 校验
+    stats["verify_profiles"] = await StudentProfile.all().count()
+    stats["verify_snapshots"] = await AcademicSnapshot.all().count()
+    stats["verify_admissions"] = await StudentAdmission.all().count()
+    stats["verify_view_hint"] = (
+        f"profiles={stats['verify_profiles']} ~= distinct={stats['distinct_student_nos']}; "
+        f"snapshots={stats['verify_snapshots']} ~= wide={stats['wide_rows']}"
+    )
+    return stats
+
+
+async def rebuild_kpi_snapshot(college: College) -> dict[str, Any]:
+    students = await StudentAcademicRecord.filter(college_id=college.id, status="active").count()
+    teachers = await Teacher.filter(college_id=college.id, status="active").count()
+    courses = 0  # 课程建设明细未导入
+    try:
+        from Utils.DB.Models import Course
+
+        courses = await Course.filter(college_id=college.id).count()
+    except Exception:
+        courses = 0
+    papers = await ResearchPaper.filter(college_id=college.id).count()
+    projects = await ResearchProject.filter(college_id=college.id).count()
+    patents = await ResearchIp.filter(college_id=college.id).count()
+    platforms = await ResearchPlatform.filter(college_id=college.id).count()
+    ratio = round(students / teachers, 2) if teachers else None
+    payload = {
+        "teachers": teachers,
+        "studentRatio": ratio,
+        "courses": courses,
+        "topPapers": papers,
+        "projects": projects,
+        "patents": patents,
+        "platforms": platforms,
+        "teams": await ResearchPlatform.filter(college_id=college.id, category__contains="团队").count(),
+        "students": students,
+        "employment": await EmploymentRecord.filter(college_id=college.id).count(),
+        "achievements": await AchievementItem.filter(college_id=college.id).count(),
+    }
+    # 简易发展指数：有数项归一化累加（占位，非官方口径）
+    score = 0.0
+    score += min(teachers / 80, 1) * 15
+    score += min((papers or 0) / 100, 1) * 20
+    score += min((projects or 0) / 80, 1) * 20
+    score += min((platforms or 0) / 10, 1) * 15
+    score += min((students or 0) / 3000, 1) * 15
+    score += min((patents or 0) / 10, 1) * 15
+    development_index = round(score, 2)
+
+    existing = await CollegeKpiSnapshot.get_or_none(
+        college_id=college.id, academic_year="2024-2025", semester=None
+    )
+    if existing:
+        existing.payload = payload
+        existing.development_index = Decimal(str(development_index))
+        await existing.save()
+    else:
+        await CollegeKpiSnapshot.create(
+            college=college,
+            academic_year="2024-2025",
+            semester=None,
+            payload=payload,
+            development_index=Decimal(str(development_index)),
+        )
+    return {"payload": payload, "development_index": development_index}
 
 
 async def run(data_root: Path, only: set[str]) -> None:
@@ -491,31 +998,41 @@ async def run(data_root: Path, only: set[str]) -> None:
             if "dorm" in only:
                 results["dorm"] = await import_dorm_teachers(data_root)
             if "employment" in only:
-                results["employment"] = await import_employment(data_root)
+                results["employment"] = await import_employment(data_root, college)
             if "research" in only:
-                results["research"] = await import_research(data_root)
+                results["research"] = await import_research(data_root, college)
             if "thesis" in only:
-                results["thesis"] = await import_thesis(data_root)
+                results["thesis"] = await import_thesis(data_root, college)
+            if "teachers" in only:
+                results["teachers"] = await import_teachers(data_root, college)
+            if "classes" in only:
+                results["classes"] = await sync_classes(college)
+            if "tags" in only:
+                results["tags"] = await rebuild_student_tags(college)
+            if "normalize-students" in only or "normalize_students" in only:
+                results["normalize_students"] = await normalize_students_from_wide(college)
+            if "kpi" in only:
+                results["kpi"] = await rebuild_kpi_snapshot(college)
 
-            # 汇总
-            student_n = await StudentAcademicRecord.all().count()
-            emp_n = await EmploymentRecord.all().count()
-            proj_n = await ResearchProject.all().count()
-            paper_n = await ResearchPaper.all().count()
-            ip_n = await ResearchIp.all().count()
-            thesis_n = await ThesisAdvisor.all().count()
+            counts = {
+                "students": await StudentAcademicRecord.all().count(),
+                "student_profiles": await StudentProfile.all().count(),
+                "academic_snapshots": await AcademicSnapshot.all().count(),
+                "student_admission": await StudentAdmission.all().count(),
+                "classes": await SchoolClass.all().count(),
+                "employment": await EmploymentRecord.all().count(),
+                "research_projects": await ResearchProject.all().count(),
+                "research_papers": await ResearchPaper.all().count(),
+                "research_ips": await ResearchIp.all().count(),
+                "research_platforms": await ResearchPlatform.all().count(),
+                "achievements": await AchievementItem.all().count(),
+                "teachers": await Teacher.all().count(),
+                "thesis": await ThesisAdvisor.all().count(),
+                "student_tags": await StudentTag.all().count(),
+                "kpi_snapshots": await CollegeKpiSnapshot.all().count(),
+            }
             print("RESULTS", results)
-            print(
-                "COUNTS",
-                {
-                    "students": student_n,
-                    "employment": emp_n,
-                    "research_projects": proj_n,
-                    "research_papers": paper_n,
-                    "research_ips": ip_n,
-                    "thesis": thesis_n,
-                },
-            )
+            print("COUNTS", counts)
     finally:
         await Tortoise.close_connections()
 
@@ -526,13 +1043,12 @@ def main() -> None:
     parser.add_argument(
         "--only",
         type=str,
-        default="students,gpa,cet,dorm,employment,research,thesis",
+        default="students,gpa,cet,dorm,employment,research,thesis,teachers,classes,tags,kpi",
         help="comma-separated steps",
     )
     args = parser.parse_args()
     only = {x.strip() for x in args.only.split(",") if x.strip()}
-    # 明确未导入：课程成绩明细大表、带照片学籍、教师写真、docx 获奖
-    print("NOTE: skip course-score detail sheets / photo xls / teacher jpgs / awards docx")
+    print("NOTE: skip course-score detail sheets / photo xls / awards docx (no structured parser)")
     print("NOTE: sensitive columns (phone/id/bank) are never persisted")
     asyncio.run(run(args.data_root, only))
 

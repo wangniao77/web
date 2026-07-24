@@ -144,7 +144,7 @@ useAutoRefresh(loadAll)
           icon="students"
           panel-class="panel--talent-overview"
           module-id="talent-overview"
-          :simulated="true"
+          :simulated="false"
         >
           <template #actions>
             <button

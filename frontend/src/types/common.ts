@@ -12,6 +12,10 @@ export interface FilterParams {
 
 export interface CollegeScope extends FilterParams {
   collegeId?: string
+  /** 就业分析：签约届次年份 */
+  year?: string
+  /** 就业分析：专业名（全部专业可不传） */
+  major?: string
 }
 
 export interface StudentScope extends FilterParams {

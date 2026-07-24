@@ -4,12 +4,9 @@
  */
 export const COLLEGE_SIMULATED_MODULE_IDS = [
   'key-tasks',
-  'student-dev-quality',
-  'talent-overview',
   'benchmark-achievements',
   'professional-support',
   'faculty-atlas',
-  'enrollment-employment',
   'teacher-analytics',
   'discipline-overview',
 ] as const
@@ -38,13 +35,9 @@ export function isCollegeSimulatedWarning(
 }
 
 const simulatedDetailKindSet = new Set<string>([
-  'student-flow',
-  'student-evaluation',
-  'student-dev-detail',
   'benchmark-detail',
   'teacher-detail',
   'discipline-detail',
-  'enrollment-employment',
 ])
 
 export function isCollegeSimulatedDetailKind(kind: string | null | undefined): boolean {
@@ -53,3 +46,14 @@ export function isCollegeSimulatedDetailKind(kind: string | null | undefined): b
 
 export const COLLEGE_SIMULATED_DATA_HINT =
   '接口尚未对接，当前为模拟演示数据，非真实业务数据'
+
+/** 图表 / 数字示意色：缺源 mock 必须使用此红色 */
+export const COLLEGE_MOCK_DATA_COLOR = '#ff4d4f'
+export const COLLEGE_MOCK_CHART_COLORS = [
+  '#ff4d4f',
+  '#ff7875',
+  '#cf1322',
+  '#a8071a',
+  '#ff9c6e',
+  '#ff85c0',
+] as const

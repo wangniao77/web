@@ -31,6 +31,7 @@ export interface EnrollmentEmploymentOverviewDTO {
     nodes: Array<{ name: string }>
     links: Array<{ source: string; target: string; value: number }>
   }
+  mockFields?: string[]
 }
 
 export interface EnrollmentEmploymentInsightItem {
@@ -41,8 +42,16 @@ export interface EnrollmentEmploymentInsightItem {
 
 export interface EnrollmentEmploymentDrillSample {
   name: string
+  /** 学号 */
+  studentId?: string
   major: string
+  /** 班级 */
+  className?: string
+  /** 学历（本科/硕士等，来自就业表） */
+  educationLevel?: string
   detail: string
+  /** 月薪展示；升学类不下发 */
+  salary?: string | null
   tag?: string
 }
 
@@ -50,6 +59,8 @@ export interface EnrollmentEmploymentDetailDTO extends EnrollmentEmploymentOverv
   filters: {
     years: string[]
     majors: string[]
+    selectedYear?: string | null
+    selectedMajor?: string
   }
   admission: {
     scale: {
@@ -87,7 +98,13 @@ export interface EnrollmentEmploymentDetailDTO extends EnrollmentEmploymentOverv
       highQualityEmploymentRate: number
     }
     highQualityDest: Array<{
-      key: 'big-tech' | 'domestic-grad' | 'abroad' | 'civil-service'
+      key:
+        | 'key-employer'
+        | 'gov-institution'
+        | 'domestic-grad'
+        | 'abroad-grad'
+        | 'grassroots'
+        | 'startup'
       label: string
       count: number
       ratio: number
@@ -98,8 +115,14 @@ export interface EnrollmentEmploymentDetailDTO extends EnrollmentEmploymentOverv
       region: Array<{ name: string; count: number; ratio: number }>
       salary: Array<{ name: string; count: number; ratio: number }>
     }
+    /** 就业行业词云（真实 industry） */
+    industryCloud?: Array<{ name: string; weight: number }>
+    /** 岗位词云（真实 job_title；替代无源的技能词云） */
+    jobCloud?: Array<{ name: string; weight: number }>
     majorCompare: Array<{
       major: string
+      /** 该专业本届人数 */
+      count?: number
       placementRate: number
       highQualityRate: number
     }>
@@ -107,6 +130,13 @@ export interface EnrollmentEmploymentDetailDTO extends EnrollmentEmploymentOverv
       years: string[]
       placementRate: number[]
       highQualityRate: number[]
+      /** 各届入统人数，供趋势图 tooltip */
+      cohortCounts?: number[]
+    }
+    cohort?: {
+      year?: string | null
+      count: number
+      outcomes?: Array<{ key: string; label: string; count: number; ratio: number }>
     }
     insights: EnrollmentEmploymentInsightItem[]
     actions: string[]

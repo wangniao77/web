@@ -20,6 +20,8 @@ export interface SankeyLinkDTO {
   source: string
   target: string
   value: number
+  /** 出口桑基下钻 key，如「软工→其他就业」 */
+  drillKey?: string
 }
 
 export interface MajorAvgGpaDTO {
@@ -87,11 +89,26 @@ export interface StudentDevQualityDTO {
     unit?: string
     trend?: TrendInfo
   }>
+  mockFields?: string[]
 }
 
 export interface StudentFlowSankeyDTO {
   entrance: { nodes: SankeyNodeDTO[]; links: SankeyLinkDTO[] }
   outcome: { nodes: SankeyNodeDTO[]; links: SankeyLinkDTO[] }
+  /** 出口桑基连线学生样本，key 形如「软工→其他就业」 */
+  outcomeDrillSamples?: Record<
+    string,
+    Array<{
+      name: string
+      studentId?: string
+      major: string
+      className?: string
+      educationLevel?: string
+      detail: string
+      salary?: string | null
+      tag?: string
+    }>
+  >
   summary: {
     entranceTotal: number
     graduateTotal: number
@@ -102,6 +119,7 @@ export interface StudentFlowSankeyDTO {
     topEntranceRegions: Array<{ name: string; count: number }>
     topOutcomes: Array<{ name: string; count: number }>
   }
+  mockFields?: string[]
 }
 
 export interface StudentEvaluationDetailDTO {
@@ -153,6 +171,8 @@ export interface StudentDevDetailDTO {
     byMajor: Array<{ name: string; count: number }>
     byGrade: Array<{ name: string; count: number }>
   }
+  /** 示意/缺源字段路径，前端用红色字体标注 */
+  mockFields?: string[]
 }
 
 export interface StudentDevQualityScope {

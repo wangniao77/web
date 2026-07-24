@@ -2,10 +2,23 @@
 
 export type AgentInsightTone = 'good' | 'warn' | 'info'
 
+export interface AgentEvidenceDTO {
+  source: 'db' | 'openviking' | 'web'
+  label: string
+  value: string
+  ref?: string
+}
+
 export interface AgentInsightDTO {
   title: string
   detail: string
   tone: AgentInsightTone
+  evidence?: AgentEvidenceDTO[]
+}
+
+export interface AgentReportSectionDTO {
+  title: string
+  bullets: string[]
 }
 
 export interface AgentAnalyzeContextDTO {
@@ -31,6 +44,11 @@ export interface AgentAnalyzeResponseDTO {
   sessionId: string
   traceId: string
   source: 'agent' | 'rule' | 'mock'
+  headline?: string
+  dataFingerprint?: string
+  filters?: Record<string, unknown>
+  sections?: AgentReportSectionDTO[]
+  generatedAt?: string
 }
 
 export interface AgentChatMessageDTO {

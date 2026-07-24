@@ -3,6 +3,7 @@ import {
   buildAcademicRiskRuleAnalysis,
   type AcademicRiskSnapshot,
 } from '@/utils/agent/academic-risk-insights'
+import { mockEmploymentAnalysisReport } from '@/utils/agent/employment-insights'
 import { buildKeyTasksRuleAnalysis } from '@/utils/agent/key-tasks-insights'
 import type { KeyTasksDetailVM } from '@/types/college/view/details'
 
@@ -16,12 +17,30 @@ function isAcademicRiskSnapshot(snapshot: unknown): snapshot is AcademicRiskSnap
 export function mockAgentAnalyze(req: AgentAnalyzeRequestDTO): AgentAnalyzeResponseDTO {
   const sessionId = req.sessionId || `mock-session-${Date.now()}`
   const snapshot = req.context.summarySnapshot
+  const page = req.context.page
 
-  if (
-    req.context.page === 'academic-risk' ||
-    req.context.page === 'warning' ||
-    isAcademicRiskSnapshot(snapshot)
-  ) {
+  if (page === 'enrollment-employment' || page === 'employment') {
+    const report = mockEmploymentAnalysisReport(
+      (req.context.filters?.year as string) ||
+        (snapshot && typeof snapshot === 'object' && 'year' in snapshot
+          ? String((snapshot as { year?: string }).year || '2026')
+          : '2026'),
+    )
+    return {
+      insights: report.insights,
+      actions: report.actions,
+      sessionId,
+      traceId: `mock-emp-${Date.now()}`,
+      source: 'mock',
+      headline: report.headline,
+      dataFingerprint: report.dataFingerprint,
+      filters: report.filters as Record<string, unknown>,
+      sections: report.sections,
+      generatedAt: report.generatedAt,
+    }
+  }
+
+  if (page === 'academic-risk' || page === 'warning' || isAcademicRiskSnapshot(snapshot)) {
     if (isAcademicRiskSnapshot(snapshot)) {
       const vm = buildAcademicRiskRuleAnalysis(snapshot, sessionId)
       return {
@@ -79,5 +98,8 @@ export function mockAgentChatReply(req: AgentChatRequestDTO): string {
   if (page === 'academic-risk' || page === 'warning') {
     return `（Mock）已结合「${page}」学业风险聚合理解：「${req.message}」。建议先看预警率最高的年级与专业，安排辅导员双周跟进，不对外点名。`
   }
-  return `（Mock）已结合「${page}」页面上下文理解你的问题：「${req.message}」。建议先核对需关注任务的责任人与下一里程碑节点，再安排双周督导。`
+  if (page === 'enrollment-employment' || page === 'employment') {
+    return `（Mock）已结合就业分析快照理解：「${req.message}」。可从落实率、高质量六类、专业差距与待就业四方面继续追问。`
+  }
+  return `（Mock）已结合「${page}」上下文理解：「${req.message}」。建议先核对低进度任务责任人与补救节点。`
 }

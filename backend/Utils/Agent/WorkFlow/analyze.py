@@ -7,19 +7,28 @@ import uuid
 from typing import Any
 
 from Routers.Models.req.agent_model import AgentAnalyzeContext
-from Routers.Models.resp.agent_model import AgentAnalyzeData, AgentInsight
+from Routers.Models.resp.agent_model import AgentAnalyzeData, AgentEvidence, AgentInsight, AgentReportSection
 from Services.college_service import CollegeService
 from Utils.Agent.API.llm import LLMClient
 from Utils.Agent.OpenViking import get_openviking_client
 from Utils.Agent.OpenViking.paths import (
     ACADEMIC_RISK_SKILL_DOC,
+    EMPLOYMENT_SKILL_DOC,
     KEY_TASKS_SKILL_DOC,
     resource_academic_risk,
+    resource_enrollment_employment,
+    resource_enrollment_employment_report,
     resource_key_tasks,
     skill_academic_risk_analysis,
+    skill_enrollment_employment_analysis,
     skill_key_tasks_analysis,
 )
 from Utils.Analytics.academic_risk_aggregate import rule_insights_from_academic_risk
+from Utils.Analytics.employment_analysis import (
+    report_to_agent_payload,
+    rule_insights_from_employment,
+    validate_agent_report,
+)
 
 
 def _rule_insights_from_key_tasks(snapshot: dict[str, Any]) -> AgentAnalyzeData:
@@ -118,8 +127,55 @@ def _rule_insights_academic_risk(snapshot: dict[str, Any]) -> AgentAnalyzeData:
     )
 
 
+def _payload_to_analyze_data(payload: dict[str, Any]) -> AgentAnalyzeData:
+    insights: list[AgentInsight] = []
+    for item in payload.get("insights") or []:
+        evidence = [
+            AgentEvidence(
+                source=e.get("source") if e.get("source") in {"db", "openviking", "web"} else "db",  # type: ignore[arg-type]
+                label=str(e.get("label") or ""),
+                value=str(e.get("value") or ""),
+                ref=str(e["ref"]) if e.get("ref") else None,
+            )
+            for e in (item.get("evidence") or [])
+            if isinstance(e, dict) and e.get("label") and e.get("value")
+        ]
+        tone = item.get("tone") if item.get("tone") in {"good", "warn", "info"} else "info"
+        insights.append(
+            AgentInsight(
+                title=str(item.get("title") or "洞察"),
+                detail=str(item.get("detail") or ""),
+                tone=tone,  # type: ignore[arg-type]
+                evidence=evidence,
+            )
+        )
+    sections = None
+    if payload.get("sections"):
+        sections = [
+            AgentReportSection(title=str(s.get("title") or ""), bullets=[str(b) for b in (s.get("bullets") or [])])
+            for s in payload["sections"]
+            if isinstance(s, dict) and s.get("title")
+        ]
+    return AgentAnalyzeData(
+        insights=insights,
+        actions=[str(a) for a in (payload.get("actions") or []) if a],
+        sessionId=str(payload.get("sessionId") or ""),
+        traceId=str(payload.get("traceId") or ""),
+        source=payload.get("source") if payload.get("source") in {"agent", "rule", "mock"} else "rule",  # type: ignore[arg-type]
+        headline=payload.get("headline"),
+        dataFingerprint=payload.get("dataFingerprint"),
+        filters=payload.get("filters"),
+        sections=sections,
+        generatedAt=payload.get("generatedAt"),
+    )
+
+
 def _is_academic_risk_page(page: str) -> bool:
     return page in {"academic-risk", "warning", "warnings"}
+
+
+def _is_employment_page(page: str) -> bool:
+    return page in {"enrollment-employment", "employment"}
 
 
 async def _load_snapshot(context: AgentAnalyzeContext, college_service: CollegeService) -> dict[str, Any]:
@@ -132,6 +188,13 @@ async def _load_snapshot(context: AgentAnalyzeContext, college_service: CollegeS
         return await college_service.get_academic_risk_aggregate(
             college_id=context.collegeId,
             warning_type=warning_type,
+        )
+    if _is_employment_page(context.page):
+        filters = context.filters or {}
+        return await college_service.get_enrollment_employment_analysis_snapshot(
+            college_id=context.collegeId,
+            year=filters.get("year") or None,
+            major=filters.get("major") or None,
         )
     if context.page == "key-tasks":
         return await college_service.get_key_tasks_detail(college_id=context.collegeId)
@@ -155,11 +218,21 @@ async def run_analyze(
     college_id = context.collegeId or "default"
     snapshot = await _load_snapshot(context, college_service)
 
+    employment_report: dict[str, Any] | None = None
+
     if _is_academic_risk_page(context.page):
         skill_path = skill_academic_risk_analysis()
         resource_path = resource_academic_risk(college_id)
         skill_doc = ACADEMIC_RISK_SKILL_DOC
         result = _rule_insights_academic_risk(snapshot)
+    elif _is_employment_page(context.page):
+        skill_path = skill_enrollment_employment_analysis()
+        resource_path = resource_enrollment_employment(college_id)
+        skill_doc = EMPLOYMENT_SKILL_DOC
+        employment_report = rule_insights_from_employment(snapshot)
+        result = _payload_to_analyze_data(
+            report_to_agent_payload(employment_report, session_id=sid, trace_id=trace_id)
+        )
     else:
         skill_path = skill_key_tasks_analysis()
         resource_path = resource_key_tasks(college_id)
@@ -182,11 +255,19 @@ async def run_analyze(
 
     source = "rule"
     if llm.enabled:
-        system = (
-            "你是高校治理驾驶舱分析助手。严格按技能说明输出 JSON，"
-            "字段仅限 insights/actions，tone 只能是 good|warn|info。"
-            "禁止输出任何学生姓名或学号。"
-        )
+        if _is_employment_page(context.page):
+            system = (
+                "你是高校治理驾驶舱就业分析助手。严格按技能说明输出 JSON，"
+                "必须包含 headline/insights/actions，insights 中每条须带 evidence；"
+                "tone 只能是 good|warn|info；evidence.source 为 db|openviking|web。"
+                "禁止输出任何学生姓名或学号；数值须来自快照。"
+            )
+        else:
+            system = (
+                "你是高校治理驾驶舱分析助手。严格按技能说明输出 JSON，"
+                "字段仅限 insights/actions，tone 只能是 good|warn|info。"
+                "禁止输出任何学生姓名或学号。"
+            )
         user = (
             f"技能说明:\n{skill_text}\n\n"
             f"页面: {context.scope}/{context.page}\n"
@@ -194,33 +275,52 @@ async def run_analyze(
         )
         parsed = await llm.complete_json(system, user)
         if parsed and isinstance(parsed.get("insights"), list):
-            insights = []
-            for item in parsed["insights"][:5]:
-                if not isinstance(item, dict):
-                    continue
-                tone = item.get("tone") if item.get("tone") in {"good", "warn", "info"} else "info"
-                insights.append(
-                    AgentInsight(
-                        title=str(item.get("title") or "洞察"),
-                        detail=str(item.get("detail") or ""),
-                        tone=tone,
+            if _is_employment_page(context.page) and employment_report is not None:
+                validated = validate_agent_report(parsed, employment_report)
+                if validated:
+                    employment_report = validated
+                    result = _payload_to_analyze_data(
+                        report_to_agent_payload(employment_report, session_id=sid, trace_id=trace_id)
                     )
-                )
-            actions = [str(a) for a in (parsed.get("actions") or []) if a][:5]
-            if insights:
-                result = AgentAnalyzeData(
-                    insights=insights,
-                    actions=actions or result.actions,
-                    sessionId=sid,
-                    traceId=trace_id,
-                    source="agent",
-                )
-                source = "agent"
+                    source = "agent"
+            else:
+                insights = []
+                for item in parsed["insights"][:5]:
+                    if not isinstance(item, dict):
+                        continue
+                    tone = item.get("tone") if item.get("tone") in {"good", "warn", "info"} else "info"
+                    insights.append(
+                        AgentInsight(
+                            title=str(item.get("title") or "洞察"),
+                            detail=str(item.get("detail") or ""),
+                            tone=tone,
+                        )
+                    )
+                actions = [str(a) for a in (parsed.get("actions") or []) if a][:5]
+                if insights:
+                    result = AgentAnalyzeData(
+                        insights=insights,
+                        actions=actions or result.actions,
+                        sessionId=sid,
+                        traceId=trace_id,
+                        source="agent",
+                    )
+                    source = "agent"
 
     if source != "agent":
         result.sessionId = sid
         result.traceId = trace_id
         result.source = "rule"
+
+    if _is_employment_page(context.page) and employment_report is not None:
+        employment_report["source"] = result.source
+        employment_report["sessionId"] = sid
+        employment_report["traceId"] = trace_id
+        await viking.store(
+            resource_enrollment_employment_report(college_id),
+            employment_report,
+            metadata={"page": context.page, "scope": context.scope, "kind": "analysis-report"},
+        )
 
     await viking.add_session_message(
         sid,
@@ -232,6 +332,7 @@ async def run_analyze(
                 "source": result.source,
                 "insights": [i.title for i in result.insights],
                 "actions": result.actions,
+                "headline": result.headline,
             },
             ensure_ascii=False,
         ),
