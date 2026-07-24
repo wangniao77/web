@@ -101,7 +101,11 @@ def build_frontend() -> None:
     target = frontend / ".env.production.local"
     shutil.copyfile(ENV_PROD, target)
     print(f"Copied {ENV_PROD.name} -> frontend/.env.production.local")
-    run_local(["npm", "run", "build"], cwd=frontend)
+    # Prefer vite directly: avoids vue-tsc gate and works when npm.cmd needs shell on Windows
+    try:
+        run_local(["npx", "--yes", "vite", "build"], cwd=frontend)
+    except FileNotFoundError:
+        run_local(["npm.cmd", "run", "build"], cwd=frontend)
 
 
 def main() -> None:
