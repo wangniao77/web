@@ -5,6 +5,7 @@ import StudentTplCard from './StudentTplCard.vue'
 import StuHint from './StuHint.vue'
 import { ROUTES } from '@/constants/routes'
 import type {
+  AcademicDevVM,
   AiAssistantVM,
   AiPortraitVM,
   CareerDevVM,
@@ -12,6 +13,7 @@ import type {
   EmploymentVM,
   GrowthOverviewVM,
   HighlightItemVM,
+  InternshipVM,
   PersonalInfoVM,
   QualityVM,
 } from '@/types/student/view'
@@ -20,12 +22,14 @@ const props = defineProps<{
   assistant: AiAssistantVM
   portrait: AiPortraitVM
   employment: EmploymentVM
+  academic?: AcademicDevVM
   competition?: CompetitionVM
   highlights?: HighlightItemVM[]
   profile?: PersonalInfoVM
   careerDev?: CareerDevVM
   quality?: QualityVM
   growthOverview?: GrowthOverviewVM
+  internship?: InternshipVM
 }>()
 
 defineEmits<{ open: [id: string] }>()
@@ -42,17 +46,18 @@ function goAiPortrait() {
   router.push({ path: ROUTES.student.aiPortrait, query: studentId ? { studentId } : undefined })
 }
 
-type TabId = 'panorama' | 'risk' | 'coach' | 'chance' | 'path'
+type PageId = 'judge' | 'action'
 
-const tabs: Array<{ id: TabId; label: string; tip: string }> = [
-  { id: 'panorama', label: '全景研判', tip: '总体描述 + 优势/关注两端词云。' },
-  { id: 'risk', label: '风险雷达', tip: '需优先跟进的风险与预警事项。角标=本页展示条数（无风险显示 0）。' },
-  { id: 'coach', label: '育人智策', tip: '辅导员本周/本月可执行的育人任务。角标=本页展示条数。' },
-  { id: 'chance', label: '机会雷达', tip: '竞赛、实习、活动等近期可把握的机会。角标=本页展示条数。' },
-  { id: 'path', label: '发展规划', tip: '考研 / 考公 / 就业适配度进度条，点击展开说明。' },
+const pages: Array<{ id: PageId; label: string; tip: string }> = [
+  { id: 'judge', label: '全景研判', tip: '全景研判 + 发展规划。' },
+  {
+    id: 'action',
+    label: '育人智策',
+    tip: '风险雷达 + 育人智策 + 机会雷达。角标：红=重要，黄=一般，绿=好的。',
+  },
 ]
 
-const activeTab = ref<TabId>('panorama')
+const activePage = ref<PageId>('judge')
 const AUTOPLAY_INTERVAL = 9000
 let autoplayTimer: ReturnType<typeof setInterval> | null = null
 
@@ -219,7 +224,15 @@ const developmentPlans = computed(() => {
   const volunteer = props.quality?.volunteerHours ?? 0
   const cadre = props.quality?.cadreRoles?.length ?? 0
   const jobReady = props.employment.jobReadiness || 60
-  const firstAward = props.competition?.highlights?.find((h) => h.label && !h.label.includes('暂无'))?.label
+  const rawAward = props.competition?.highlights?.find((h) => h.label && !h.label.includes('暂无'))?.label || ''
+  const awardShort = (() => {
+    if (!rawAward) return ''
+    if (/数学建模/.test(rawAward)) return '数学建模省赛一等奖'
+    if (/蓝桥杯/.test(rawAward) && /全国|国家/.test(rawAward)) return '蓝桥杯国赛二等奖'
+    if (/蓝桥杯/.test(rawAward)) return '蓝桥杯省赛一等奖'
+    const cleaned = rawAward.replace(/（[^）]+）/g, '').replace(/，.+$/, '').trim()
+    return cleaned.length > 14 ? cleaned.slice(0, 14) : cleaned
+  })()
   const overallPct = props.growthOverview?.overallPercent || ''
   const dest = props.careerDev?.employmentDestination || ''
 
@@ -233,16 +246,17 @@ const developmentPlans = computed(() => {
       label: '考研适配度',
       score: postScore,
       detail:
-        `英语与专业课基础支撑升学路径；竞赛/科研 ${awards + research} 项${firstAward ? `（含「${firstAward}」）` : ''}。` +
-        (dest.includes('考研') ? '当前画像与学术型发展路径高度契合。' : '可作为备选升学路径持续补齐材料。'),
+        `英语与专业课基础支撑升学；竞赛/科研 ${awards + research} 项` +
+        `${awardShort ? `（含「${awardShort}」）` : ''}。` +
+        (dest.includes('考研') ? '与学术型路径高度契合。' : '可作为备选升学路径持续补齐材料。'),
     },
     {
       id: 'public' as PlanId,
       label: '考公适配度',
       score: publicScore,
       detail:
-        (cadre ? `学生干部任职经历 ${cadre} 项，` : '干部经历待补充，') +
-        `志愿服务累计 ${volunteer || 0}+ 小时，组织协调与服务意识可迁移。` +
+        (cadre ? `学生干部经历 ${cadre} 项，` : '干部经历待补充，') +
+        `志愿服务 ${volunteer || 0}+ 小时，组织与服务意识可迁移。` +
         (overallPct ? `综测 ${overallPct}。` : '') +
         '公共科目基础尚待评估。',
     },
@@ -251,24 +265,31 @@ const developmentPlans = computed(() => {
       label: '就业适配度',
       score: jobScore,
       detail:
-        (awards ? `竞赛获奖 ${awards} 项${firstAward ? `，代表「${firstAward}」` : ''}，工程实践能力突出。` : '竞赛经历待积累，') +
-        `岗位准备度 ${jobReady.toFixed(0)}。当前画像与互联网/软件开发岗位要求匹配度较高。`,
+        (awards
+          ? `竞赛获奖 ${awards} 项${awardShort ? `，代表「${awardShort}」` : ''}，工程实践突出。`
+          : '竞赛经历待积累，') +
+        `岗位准备度 ${jobReady.toFixed(0)}%。与互联网/软件开发岗位匹配度较高。`,
     },
   ].sort((a, b) => b.score - a.score)
 })
 
-const expandedPlanId = ref<PlanId | null>(null)
+/** 三档规划均展开，占满下方空间且不折叠省略 */
+const expandedPlanId = ref<PlanId | 'all'>('all')
 
 watch(
   developmentPlans,
-  (plans) => {
-    if (!expandedPlanId.value && plans[0]) expandedPlanId.value = plans[0].id
+  () => {
+    expandedPlanId.value = 'all'
   },
   { immediate: true },
 )
 
 function togglePlan(id: PlanId) {
-  expandedPlanId.value = expandedPlanId.value === id ? null : id
+  expandedPlanId.value = expandedPlanId.value === id ? 'all' : id
+}
+
+function isPlanOpen(id: PlanId) {
+  return expandedPlanId.value === 'all' || expandedPlanId.value === id
 }
 
 const opportunities = computed(() => {
@@ -277,7 +298,7 @@ const opportunities = computed(() => {
     : props.portrait.pushes
         .filter((p) => p.type !== 'warn')
         .slice(0, CHANCE_VISIBLE)
-        .map((p) => ({ time: p.time, text: p.text, action: '参考资料' }))
+        .map((p) => ({ time: p.time, text: p.text }))
   return raw.map((item) => ({
     ...item,
     text: item.text,
@@ -286,18 +307,66 @@ const opportunities = computed(() => {
 
 const visibleOpportunities = computed(() => opportunities.value.slice(0, CHANCE_VISIBLE))
 
+type Tone = 'important' | 'normal' | 'good'
+type CoachStatus = 'todo' | 'hold' | 'done'
+
 const coachTasks = ref([
-  { key: 'week', title: '本周优先', badge: '待办', detail: '', status: 'todo' as 'todo' | 'hold' | 'done' },
-  { key: 'month', title: '本月重点', badge: '跟进', detail: '', status: 'todo' as 'todo' | 'hold' | 'done' },
+  { key: 'week', title: '本周优先', badge: '待办', detail: '', status: 'todo' as CoachStatus },
+  { key: 'month', title: '本月重点', badge: '跟进', detail: '', status: 'todo' as CoachStatus },
 ])
 
-/** 角标 = 面板实际展示条数（育人智策为本周+本月两条） */
-const tabBadges = computed<Record<TabId, number | null>>(() => ({
-  panorama: null,
-  risk: visibleRiskItems.value.length,
-  coach: coachTasks.value.length || null,
-  chance: visibleOpportunities.value.length || null,
-  path: null,
+/** 统一色标：红=重要 / 黄=一般 / 绿=好的 */
+function toneOfPriority(priority: string, status?: CoachStatus): Tone {
+  if (status === 'done') return 'good'
+  if (status === 'hold') return 'normal'
+  const p = priority || ''
+  if (/高|待办|优先|重要|warn/i.test(p)) return 'important'
+  if (/低|好|机会|完成|正向/.test(p)) return 'good'
+  if (/中|跟进|一般|提醒/.test(p)) return 'normal'
+  return 'important'
+}
+
+function toneLabel(tone: Tone) {
+  return tone === 'important' ? '重要' : tone === 'good' ? '好的' : '一般'
+}
+
+function riskTone(item: { type?: string }): Tone {
+  return item.type === 'warn' ? 'important' : 'normal'
+}
+
+const coachToneCounts = computed(() => {
+  const counts = { important: 0, normal: 0, good: 0 }
+  for (const t of coachTasks.value) {
+    counts[toneOfPriority(t.badge, t.status)] += 1
+  }
+  return counts
+})
+
+const riskToneCounts = computed(() => {
+  const counts = { important: 0, normal: 0, good: 0 }
+  for (const item of visibleRiskItems.value) {
+    counts[riskTone(item)] += 1
+  }
+  return counts
+})
+
+const chanceToneCounts = computed(() => ({
+  important: 0,
+  normal: 0,
+  good: visibleOpportunities.value.length,
+}))
+
+const planToneCounts = computed(() => ({
+  important: 0,
+  normal: 0,
+  good: developmentPlans.value.length,
+}))
+
+/** 育人智策页签汇总：跨风险/智策/机会统一红黄绿 */
+const actionToneCounts = computed(() => ({
+  important: riskToneCounts.value.important + coachToneCounts.value.important,
+  normal: riskToneCounts.value.normal + coachToneCounts.value.normal,
+  good: chanceToneCounts.value.good + coachToneCounts.value.good,
 }))
 
 watch(
@@ -324,7 +393,7 @@ watch(
   { immediate: true },
 )
 
-function setCoachStatus(key: string, status: 'hold' | 'done') {
+function setCoachStatus(key: string, status: CoachStatus) {
   const hit = coachTasks.value.find((t) => t.key === key)
   if (hit) hit.status = status
 }
@@ -337,23 +406,14 @@ function stopAutoplay() {
 function startAutoplay() {
   stopAutoplay()
   autoplayTimer = setInterval(() => {
-    const idx = tabs.findIndex((t) => t.id === activeTab.value)
-    activeTab.value = tabs[(idx + 1) % tabs.length].id
+    activePage.value = activePage.value === 'judge' ? 'action' : 'judge'
   }, AUTOPLAY_INTERVAL)
 }
 
-function selectTab(id: TabId) {
-  activeTab.value = id
+function selectPage(id: PageId) {
+  activePage.value = id
   startAutoplay()
 }
-
-watch(
-  () => riskItems.value.length,
-  (n) => {
-    if (n > 0 && activeTab.value === 'panorama') activeTab.value = 'risk'
-  },
-  { immediate: true },
-)
 
 onMounted(startAutoplay)
 onBeforeUnmount(stopAutoplay)
@@ -363,176 +423,205 @@ onBeforeUnmount(stopAutoplay)
   <StudentTplCard
     icon="innovation"
     title="智能育航"
-    tip="AI 综合学业与画像，给出研判、风险、机会与成长建议，用于精准育人。"
+    tip="两页切换：全景研判（含发展规划）/ 育人智策（含风险与机会）。"
     class="stu-tpl__ai"
-    @mouseenter="stopAutoplay"
-    @mouseleave="startAutoplay"
   >
-    <template #header-extra>
-      <button type="button" class="stu-tpl__detail-link" @click="goAiPortrait">
-        查看详情 ›
-      </button>
-    </template>
-    <div class="navi">
-      <div class="navi__tabs" role="tablist" aria-label="智能育航功能">
-        <StuHint v-for="tab in tabs" :key="tab.id" :tip="tab.tip">
+    <div class="navi" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
+      <button type="button" class="navi__detail-btn" @click="goAiPortrait">查看详情 ›</button>
+      <div class="navi__tabs navi__tabs--two" role="tablist" aria-label="智能育航分页">
+        <StuHint v-for="page in pages" :key="page.id" :tip="page.tip">
           <button
             type="button"
             role="tab"
-            :aria-selected="activeTab === tab.id"
-            :class="{ active: activeTab === tab.id }"
-            @click="selectTab(tab.id)"
+            :aria-selected="activePage === page.id"
+            :class="{ active: activePage === page.id }"
+            @click="selectPage(page.id)"
           >
-            {{ tab.label }}
-            <i
-              v-if="tabBadges[tab.id] !== null && tabBadges[tab.id] !== undefined"
-              :class="{ 'is-zero': tabBadges[tab.id] === 0 }"
-              :title="'本页展示条数'"
-            >{{ tabBadges[tab.id] }}</i>
+            {{ page.label }}
+            <span v-if="page.id === 'action'" class="navi__badges" aria-label="重要/一般/好的计数">
+              <i class="is-normal" :title="'一般 ' + actionToneCounts.normal">{{ actionToneCounts.normal }}</i>
+              <i class="is-important" :title="'重要 ' + actionToneCounts.important">{{ actionToneCounts.important }}</i>
+              <i class="is-good" :title="'好的 ' + actionToneCounts.good">{{ actionToneCounts.good }}</i>
+            </span>
+            <span v-else class="navi__badges" aria-label="发展规划计数">
+              <i class="is-good" :title="'方案 ' + planToneCounts.good">{{ planToneCounts.good }}</i>
+            </span>
           </button>
         </StuHint>
       </div>
 
       <div class="navi__panel">
-        <!-- 全景研判：总体描述 + 两端 + 词云；不再展示岗位匹配 -->
-        <section v-if="activeTab === 'panorama'" class="navi-card navi-card--panorama">
-          <div class="navi-card__summary-wrap">
-            <StuHint tip="全景总体描述，兼顾优势与短板两端。" block>
-              <p class="navi-card__summary">{{ summaryText }}</p>
+        <!-- 第1页：全景研判 + 发展规划 -->
+        <div v-if="activePage === 'judge'" class="navi-page navi-page--judge">
+          <section class="navi-card navi-card--panorama">
+            <div class="navi-card__summary-wrap">
+              <StuHint tip="全景总体描述，兼顾优势与短板两端。" block>
+                <p class="navi-card__summary">{{ summaryText }}</p>
+              </StuHint>
+            </div>
+            <div class="navi-ends">
+              <p><em>优势端</em><span>{{ dualEnds.good }}</span></p>
+              <p><em>关注端</em><span>{{ dualEnds.weak }}</span></p>
+            </div>
+            <div class="navi-cloud" aria-label="优势与关注词云">
+              <strong class="navi-cloud__title">云词条</strong>
+              <div class="navi-cloud__stage">
+                <span
+                  v-for="(word, idx) in cloudWords"
+                  :key="word.kind + '-' + word.text + '-' + idx"
+                  class="navi-cloud__word"
+                  :style="word.style"
+                  :title="word.kind === 'good' ? '优势侧' : '关注侧'"
+                >{{ word.text }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="navi-card navi-card--plans">
+            <h5 class="navi-sec-title">
+              <span>发展规划</span>
+              <span class="navi-sec-badges">
+                <i class="is-good" :title="'方案 ' + planToneCounts.good">{{ planToneCounts.good }}</i>
+              </span>
+            </h5>
+            <div
+              v-for="plan in developmentPlans"
+              :key="plan.id"
+              class="navi-plan"
+              :class="{ 'is-open': isPlanOpen(plan.id) }"
+            >
+              <button type="button" class="navi-plan__head" @click="togglePlan(plan.id)">
+                <span>{{ plan.label }}</span>
+                <i><em :style="{ width: plan.score + '%' }"></em></i>
+                <b>{{ plan.score }}%</b>
+              </button>
+              <p v-if="isPlanOpen(plan.id)" class="navi-plan__detail">{{ plan.detail }}</p>
+            </div>
+            <StuHint tip="打开完整发展规划与更多建议。" block>
+              <button type="button" class="navi-more" @click="goGrowthPath">完整方案 ›</button>
             </StuHint>
-          </div>
-          <div class="navi-ends">
-            <p><em>优势端</em><span>{{ dualEnds.good }}</span></p>
-            <p><em>关注端</em><span>{{ dualEnds.weak }}</span></p>
-          </div>
-          <div class="navi-cloud" aria-label="优势与关注词云">
-            <strong class="navi-cloud__title">云词条</strong>
-            <div class="navi-cloud__stage">
-              <span
-                v-for="(word, idx) in cloudWords"
-                :key="`${word.kind}-${word.text}-${idx}`"
-                class="navi-cloud__word"
-                :style="word.style"
-                :title="word.kind === 'good' ? '优势侧' : '关注侧'"
-              >{{ word.text }}</span>
+          </section>
+        </div>
+
+        <!-- 第2页：风险雷达 + 育人智策 + 机会雷达 -->
+        <div v-else class="navi-page navi-page--action">
+          <section class="navi-card">
+            <h5 class="navi-sec-title">
+              <span>风险雷达</span>
+              <span class="navi-sec-badges">
+                <i class="is-normal" :title="'一般 ' + riskToneCounts.normal">{{ riskToneCounts.normal }}</i>
+                <i class="is-important" :title="'重要 ' + riskToneCounts.important">{{ riskToneCounts.important }}</i>
+              </span>
+            </h5>
+            <div v-if="!visibleRiskItems.length" class="navi-risk-zero">
+              <strong>0</strong>
+              <span>当前无明显风险事项</span>
             </div>
-          </div>
-        </section>
+            <article v-for="(item, idx) in visibleRiskItems" :key="idx" class="navi-risk">
+              <header>
+                <strong>{{ item.time }}</strong>
+                <StuHint :tip="riskTone(item) === 'important' ? '重要：建议尽快处理。' : '一般：需关注，可择机跟进。'">
+                  <span class="navi-tone-tag" :class="`is-${riskTone(item)}`">
+                    {{ toneLabel(riskTone(item)) }}
+                  </span>
+                </StuHint>
+              </header>
+              <p>{{ item.text }}</p>
+            </article>
+          </section>
 
-        <!-- 风险雷达 -->
-        <section v-else-if="activeTab === 'risk'" class="navi-card">
-          <div class="navi-risk-zero" v-if="!visibleRiskItems.length">
-            <strong>0</strong>
-            <span>当前无明显风险事项</span>
-          </div>
-          <article v-for="(item, idx) in visibleRiskItems" :key="idx" class="navi-risk">
-            <header>
-              <strong>{{ item.time }}</strong>
-              <StuHint :tip="item.type === 'warn' ? '优先：建议尽快处理。' : '提醒：需关注，可择机跟进。'">
-                <span>{{ item.type === 'warn' ? '优先' : '提醒' }}</span>
-              </StuHint>
-            </header>
-            <p>{{ item.text }}</p>
-          </article>
-        </section>
+          <section class="navi-card">
+            <h5 class="navi-sec-title">
+              <span>育人智策</span>
+              <span class="navi-sec-badges">
+                <i class="is-normal" :title="'一般 ' + coachToneCounts.normal">{{ coachToneCounts.normal }}</i>
+                <i class="is-important" :title="'重要 ' + coachToneCounts.important">{{ coachToneCounts.important }}</i>
+                <i class="is-good" :title="'好的 ' + coachToneCounts.good">{{ coachToneCounts.good }}</i>
+              </span>
+            </h5>
+            <article v-for="task in coachTasks" :key="task.key" class="navi-task" :class="`is-${task.status}`">
+              <header>
+                <strong>{{ task.title }}</strong>
+                <span
+                  class="navi-tone-tag"
+                  :class="`is-${toneOfPriority(task.badge, task.status)}`"
+                >
+                  {{
+                    task.status === 'done'
+                      ? '已完成'
+                      : task.status === 'hold'
+                        ? '已暂缓'
+                        : toneLabel(toneOfPriority(task.badge, task.status))
+                  }}
+                </span>
+              </header>
+              <p>{{ task.detail }}</p>
+              <div class="navi-task__actions">
+                <StuHint tip="标记为暂缓跟进（当前仅前端暂存，未写入教务库）。">
+                  <button type="button" @click="setCoachStatus(task.key, 'hold')">暂缓</button>
+                </StuHint>
+                <StuHint tip="标记为已完成（当前仅前端暂存，未写入教务库）。">
+                  <button type="button" class="is-ok" @click="setCoachStatus(task.key, 'done')">完成</button>
+                </StuHint>
+              </div>
+            </article>
+          </section>
 
-        <!-- 育人智策 -->
-        <section v-else-if="activeTab === 'coach'" class="navi-card">
-          <article v-for="task in coachTasks" :key="task.key" class="navi-task" :class="`is-${task.status}`">
-            <header><strong>{{ task.title }}</strong><span>{{ task.status === 'done' ? '已完成' : task.status === 'hold' ? '已暂缓' : task.badge }}</span></header>
-            <p>{{ task.detail }}</p>
-            <div class="navi-task__actions">
-              <StuHint tip="标记为暂缓跟进（当前仅前端暂存，未写入教务库）。">
-                <button type="button" @click="setCoachStatus(task.key, 'hold')">暂缓</button>
-              </StuHint>
-              <StuHint tip="标记为已完成（当前仅前端暂存，未写入教务库）。">
-                <button type="button" class="is-ok" @click="setCoachStatus(task.key, 'done')">完成</button>
-              </StuHint>
+          <section class="navi-card navi-card--chance">
+            <h5 class="navi-sec-title">
+              <span>机会雷达</span>
+              <span class="navi-sec-badges">
+                <i class="is-good" :title="'好的 ' + chanceToneCounts.good">{{ chanceToneCounts.good }}</i>
+              </span>
+            </h5>
+            <div class="navi-timeline" role="list" aria-label="近期机会时间轴">
+              <div class="navi-timeline__track" aria-hidden="true"></div>
+              <div class="navi-timeline__nodes">
+                <article
+                  v-for="(item, idx) in visibleOpportunities"
+                  :key="idx"
+                  class="navi-timeline__node"
+                  :class="{
+                    'is-current': idx === 0,
+                    'is-above': idx % 2 === 0,
+                    'is-below': idx % 2 === 1,
+                  }"
+                  role="listitem"
+                >
+                  <div class="navi-timeline__slot navi-timeline__slot--top">
+                    <StuHint v-if="idx % 2 === 0" block tip="近期可关注的竞赛、实习或活动机会。">
+                      <div class="navi-timeline__body">
+                        <p class="navi-timeline__text">{{ item.text }}</p>
+                      </div>
+                    </StuHint>
+                  </div>
+                  <div class="navi-timeline__axis" aria-hidden="true">
+                    <span class="navi-timeline__dot"></span>
+                  </div>
+                  <time class="navi-timeline__time">{{ item.time }}</time>
+                  <div class="navi-timeline__slot navi-timeline__slot--bottom">
+                    <StuHint v-if="idx % 2 === 1" block tip="近期可关注的竞赛、实习或活动机会。">
+                      <div class="navi-timeline__body">
+                        <p class="navi-timeline__text">{{ item.text }}</p>
+                      </div>
+                    </StuHint>
+                  </div>
+                </article>
+              </div>
             </div>
-          </article>
-        </section>
-
-        <!-- 机会雷达 -->
-        <section v-else-if="activeTab === 'chance'" class="navi-card navi-card--chance">
-          <div class="navi-timeline" role="list" aria-label="近期机会时间轴">
-            <div class="navi-timeline__track" aria-hidden="true" />
-            <div class="navi-timeline__nodes">
-              <article
-                v-for="(item, idx) in visibleOpportunities"
-                :key="idx"
-                class="navi-timeline__node"
-                :class="{
-                  'is-current': idx === 0,
-                  'is-above': idx % 2 === 0,
-                  'is-below': idx % 2 === 1,
-                }"
-                role="listitem"
-              >
-                <div class="navi-timeline__slot navi-timeline__slot--top">
-                  <StuHint
-                    v-if="idx % 2 === 0"
-                    block
-                    tip="近期可关注的竞赛、实习或活动机会。"
-                  >
-                    <div class="navi-timeline__body">
-                      <p class="navi-timeline__text">{{ item.text }}</p>
-                      <span v-if="item.action" class="navi-timeline__tag">{{ item.action }}</span>
-                    </div>
-                  </StuHint>
-                </div>
-
-                <div class="navi-timeline__axis" aria-hidden="true">
-                  <span class="navi-timeline__dot" />
-                </div>
-                <time class="navi-timeline__time">{{ item.time }}</time>
-
-                <div class="navi-timeline__slot navi-timeline__slot--bottom">
-                  <StuHint
-                    v-if="idx % 2 === 1"
-                    block
-                    tip="近期可关注的竞赛、实习或活动机会。"
-                  >
-                    <div class="navi-timeline__body">
-                      <p class="navi-timeline__text">{{ item.text }}</p>
-                      <span v-if="item.action" class="navi-timeline__tag">{{ item.action }}</span>
-                    </div>
-                  </StuHint>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <!-- 发展规划：考研/考公/就业三进度条，文字可折叠 -->
-        <section v-else class="navi-card navi-card--plans">
-          <div
-            v-for="plan in developmentPlans"
-            :key="plan.id"
-            class="navi-plan"
-            :class="{ 'is-open': expandedPlanId === plan.id }"
-          >
-            <button type="button" class="navi-plan__head" @click="togglePlan(plan.id)">
-              <span>{{ plan.label }}</span>
-              <i><em :style="{ width: `${plan.score}%` }" /></i>
-              <b>{{ plan.score }}%</b>
-            </button>
-            <p v-if="expandedPlanId === plan.id" class="navi-plan__detail">{{ plan.detail }}</p>
-          </div>
-          <StuHint tip="打开完整发展规划与更多建议。" block>
-            <button type="button" class="navi-more" @click="goGrowthPath">完整方案 ›</button>
-          </StuHint>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   </StudentTplCard>
 </template>
 
 <style scoped lang="scss">
-/* 统一字阶：正文 19 / 辅文 17 / 标签 16；摘要 18 且不滚动不省略 */
+/* 统一字阶：正文加大，占满模块高度，禁止省略截断 */
 .navi {
-  --fs: 19px;
-  --fs-sm: 17px;
-  --fs-label: 16px;
+  --fs: 20px;
+  --fs-sm: 18px;
+  --fs-label: 17px;
   height: 100%;
   min-height: 0;
   display: flex;
@@ -559,7 +648,7 @@ onBeforeUnmount(stopAutoplay)
     width: 100%;
     min-height: 38px;
     padding: 7px 9px;
-    border: 1px solid rgba(120, 200, 255, 0.22);
+    border: 1px solid rgba(120, 200, 255, 0.28);
     border-radius: 4px;
     background: rgba(0, 40, 80, 0.35);
     color: #9ec9e6;
@@ -567,28 +656,83 @@ onBeforeUnmount(stopAutoplay)
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
+    box-shadow: none;
+    filter: none;
+    text-shadow: none;
 
     &.active {
-      border-color: rgba(0, 220, 255, 0.55);
-      background: rgba(0, 90, 150, 0.45);
+      border-color: rgba(0, 200, 240, 0.65);
+      background: rgba(0, 70, 120, 0.5);
       color: #e8f7ff;
+      box-shadow: none;
+      filter: none;
+      text-shadow: none;
     }
 
     i {
       margin-left: 4px;
+      min-width: 18px;
       padding: 0 5px;
-      border-radius: 8px;
-      background: rgba(255, 120, 80, 0.25);
-      color: #ffb4a0;
+      border-radius: 4px;
+      background: rgba(40, 50, 70, 0.9);
+      color: #facc15;
       font-style: normal;
       font-size: var(--fs-label);
-
-      &.is-zero {
-        background: rgba(85, 233, 149, 0.2);
-        color: #7ef0a8;
-      }
+      font-weight: 800;
+      line-height: 1.35;
+      text-align: center;
+      box-shadow: none;
     }
   }
+}
+
+.navi__badges,
+.navi-sec-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.navi__badges i,
+.navi-sec-badges i,
+.navi-tone-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+
+  &.is-important,
+  &.is-red {
+    background: #e45858;
+    color: #fff;
+  }
+
+  &.is-normal,
+  &.is-yellow,
+  &.is-risk {
+    background: rgba(40, 50, 70, 0.95);
+    color: #facc15;
+  }
+
+  &.is-good,
+  &.is-green {
+    background: #2f9e6a;
+    color: #fff;
+  }
+}
+
+.navi-tone-tag {
+  padding: 1px 7px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
 
 .navi__panel {
@@ -609,37 +753,49 @@ onBeforeUnmount(stopAutoplay)
 
 .navi-card__summary-wrap {
   min-height: 0;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
 
   :deep(.stu-hint--block) {
     display: block;
     max-width: none;
+    background: transparent;
+    box-shadow: none;
+    filter: none;
   }
 }
 
 .navi-card__summary {
   margin: 0;
+  padding: 0;
   color: #d8eeff;
-  font-size: 15px;
-  line-height: 1.45;
+  font-size: 19px;
+  line-height: 1.58;
   white-space: normal;
   word-break: break-word;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+  overflow: visible;
+  display: block;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+  filter: none;
 }
 
 .navi-ends {
   display: grid;
   gap: 4px;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
 
   p {
     margin: 0;
     display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
-    gap: 6px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
     align-items: baseline;
-    font-size: 14px;
+    font-size: 18px;
   }
 
   em {
@@ -650,9 +806,8 @@ onBeforeUnmount(stopAutoplay)
 
   span {
     color: #d8eeff;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
   }
 
   p:first-child em { color: #67e8a3; }
@@ -723,7 +878,7 @@ onBeforeUnmount(stopAutoplay)
     font-size: var(--fs);
 
     strong { color: #eaf6ff; }
-    span { color: #f0b27a; font-size: var(--fs-label); font-weight: 700; }
+    span:not(.navi-tone-tag) { color: #f0b27a; font-size: var(--fs-label); font-weight: 700; }
   }
 
   p {
@@ -798,13 +953,15 @@ onBeforeUnmount(stopAutoplay)
   position: relative;
   height: 100%;
   min-height: 0;
-  padding: 4px 2px;
+  padding: 0 2px 18px;
   overflow: hidden;
+  /* 整体再上移，给下方卡片留出空间 */
+  transform: translateY(-22px);
 }
 
 .navi-timeline__track {
   position: absolute;
-  top: 50%;
+  top: 42%;
   left: 10%;
   right: 10%;
   height: 2px;
@@ -835,13 +992,13 @@ onBeforeUnmount(stopAutoplay)
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) 12px auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1.25fr) 10px auto minmax(0, 0.75fr);
   align-items: stretch;
 
   :deep(.stu-hint--block) {
     width: 100%;
     min-width: 0;
-    height: 100%;
+    height: auto;
     display: flex;
   }
 }
@@ -853,13 +1010,13 @@ onBeforeUnmount(stopAutoplay)
   &--top {
     grid-row: 1;
     align-items: flex-end;
-    padding-bottom: 8px;
+    padding-bottom: 6px;
   }
 
   &--bottom {
     grid-row: 4;
     align-items: flex-start;
-    padding-top: 8px;
+    padding-top: 6px;
   }
 }
 
@@ -912,8 +1069,9 @@ onBeforeUnmount(stopAutoplay)
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
+  justify-content: center;
+  gap: 0;
+  padding: 10px 12px;
   border: 1px solid rgba(30, 214, 255, 0.18);
   border-radius: 6px;
   background:
@@ -923,16 +1081,13 @@ onBeforeUnmount(stopAutoplay)
 
 .navi-timeline__text {
   margin: 0;
-  flex: 1;
-  min-height: 0;
   color: #d8eeff;
-  font-size: 16px;
-  line-height: 1.48;
+  font-size: 17px;
+  line-height: 1.45;
   text-align: left;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
 }
 
 .navi-timeline__tag {
@@ -957,15 +1112,18 @@ onBeforeUnmount(stopAutoplay)
 .navi-card--plans {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  height: 100%;
+  gap: 10px;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .navi-plan {
-  flex: 0 0 auto;
-  padding: 8px 10px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 12px;
   border: 1px solid rgba(0, 180, 255, 0.16);
   border-radius: 6px;
   background: rgba(0, 40, 78, 0.35);
@@ -978,8 +1136,8 @@ onBeforeUnmount(stopAutoplay)
 .navi-plan__head {
   width: 100%;
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 44px;
-  gap: 8px;
+  grid-template-columns: 100px minmax(0, 1fr) 52px;
+  gap: 10px;
   align-items: center;
   padding: 0;
   border: none;
@@ -989,14 +1147,14 @@ onBeforeUnmount(stopAutoplay)
   text-align: left;
 
   span {
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 700;
     white-space: nowrap;
   }
 
   i {
     display: block;
-    height: 8px;
+    height: 10px;
     overflow: hidden;
     border-radius: 99px;
     background: rgba(80, 120, 160, 0.35);
@@ -1011,7 +1169,7 @@ onBeforeUnmount(stopAutoplay)
 
   b {
     color: #7ff6ff;
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 800;
     text-align: right;
     font-variant-numeric: tabular-nums;
@@ -1019,12 +1177,14 @@ onBeforeUnmount(stopAutoplay)
 }
 
 .navi-plan__detail {
-  margin: 8px 0 0;
-  color: #cfe6f8;
-  font-size: 14px;
-  line-height: 1.45;
-  max-height: 72px;
-  overflow: auto;
+  margin: 10px 0 0;
+  color: #d8eeff;
+  font-size: 17px;
+  line-height: 1.55;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  max-height: none;
 }
 
 .navi-more {
@@ -1040,21 +1200,136 @@ onBeforeUnmount(stopAutoplay)
   cursor: pointer;
 }
 
-.stu-tpl__detail-link {
-  padding: 4px 12px;
-  border: 1px solid rgba(0, 200, 255, 0.35);
-  border-radius: 14px;
-  background: rgba(0, 100, 180, 0.22);
-  color: #55dfff;
-  font-size: 12px;
-  font-weight: 700;
+.navi__detail-btn {
+  align-self: flex-end;
+  margin: 0 0 2px;
+  border: 0;
+  background: transparent;
+  color: #7ff6ff;
+  font-size: 13px;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s, box-shadow 0.2s;
+}
 
-  &:hover {
-    background: rgba(0, 130, 220, 0.32);
-    box-shadow: 0 0 10px rgba(0, 200, 255, 0.25);
+.navi__tabs button i.is-important,
+.navi__tabs button i.is-red {
+  background: #e45858 !important;
+  color: #fff !important;
+}
+.navi__tabs button i.is-good,
+.navi__tabs button i.is-green {
+  background: #2f9e6a !important;
+  color: #fff !important;
+}
+.navi__tabs button i.is-normal,
+.navi__tabs button i.is-yellow {
+  background: rgba(40, 50, 70, 0.95) !important;
+  color: #facc15 !important;
+}
+.navi__tabs--deck {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.development-card--ai {
+  --card-accent: #7aa8ff;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 6px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 34%, transparent);
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 10%, transparent), transparent 42%),
+    linear-gradient(160deg, rgba(6, 40, 78, 0.88), rgba(0, 16, 38, 0.9));
+}
+.development-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.development-card__icon {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(120, 210, 255, 0.35);
+  border-radius: 2px;
+  background: linear-gradient(145deg, rgba(0, 120, 200, 0.28), rgba(0, 40, 80, 0.4));
+}
+.development-card__title-wrap {
+  flex: 1;
+  h4 { margin: 0; font-size: 18px; color: #e8f4ff; }
+}
+.development-card--ai .navi {
+  min-height: 0;
+}
+
+.navi__tabs--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.navi-sec-title {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 7px 12px;
+  color: #d8eefc;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  border: 1px solid rgba(100, 180, 230, 0.38);
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgba(0, 90, 150, 0.42), rgba(0, 45, 90, 0.28) 55%, rgba(0, 30, 65, 0.18)),
+    rgba(0, 28, 58, 0.55);
+  box-shadow: inset 0 1px 0 rgba(160, 220, 255, 0.1);
+
+  > span:first-child {
+    min-width: 0;
+  }
+
+  .navi-sec-badges {
+    margin-left: auto;
+    flex-shrink: 0;
   }
 }
+
+.navi-page {
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(90, 180, 240, 0.45) transparent;
+}
+
+.navi-page--judge {
+  overflow: hidden;
+
+  .navi-card--panorama {
+    flex: 0 0 auto;
+    height: auto;
+    grid-template-rows: auto auto minmax(110px, 150px);
+  }
+  .navi-cloud__stage {
+    height: 130px;
+  }
+  .navi-card--plans {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
 </style>

@@ -1,0 +1,96 @@
+# 现在你需要根据以下要求，完成对项目的初始化 
+backend/
+当前项目架构为 Fastapi, tortoise-orm, Pydantic
+
+## 主入口与环境变量:
+main.py(位于后端根目录下)
+.env
+
+## core 初始化
+core/config.py
+core/database.py
+core/logger.py
+
+## 路由规范：
+
+### 路由层
+
+Routers/xxx_router.py
+如:
+Routers/grid_router.py
+Routers/dept_staff_router.py
+...
+
+### 路由模型层 (Pydantic规范接收/返回的schema)
+
+Routers/Models/req/xxx_model.py
+Routers/Models/resp/xxx_model.py
+如:
+Routers/Models/req/grid_model.py
+Routers/Models/req/dept_staff_model.py
+
+Routers/Models/resp/grid_model.py
+Routers/Models/resp/dept_staff_model.py
+...
+
+### 鉴权层(直接使用jwt库，可在.env定义到期时间)
+
+Routers/Auth/xxx_auth.py (如果auth没有太多实现的方法，可以只写在一个文件里: auth.py, Routers/Auth/auth.py)
+
+## 业务规范
+
+### 业务层
+
+Services/xxx(对应的router的名称)_service.py
+如:
+Services/dept_staff_service.py
+
+## 业务层还可以调其他的工具类，如数据库查询/读写 这里为工具层 Utils 
+
+### 工具层(不精准到.py文件，而是工具层可以是不断嵌套其他工具)
+
+Utils/xxx
+如:
+Utils/DB/
+Utils/Excel/
+Utils/Agent/
+Utils/Security
+....
+
+## 数据库层
+在Utils工具类下面
+Tortoise模型层:
+Utils/DB/Models/xxx_models.py (这个是tortoise里面具体定义的表model, 一个表一个model)
+读取层
+Utils/DB/read/xxx_db.py (按表来命名)
+写入层
+Utils/DB/write/xxx_db.py (按表来命名)
+
+## Agent层
+Schema层:
+Utils/Agent/Models/
+工作流编排层(使用langgraph)
+Utils/Agent/WorkFlow/
+API层(直接调用LLM的)
+Utils/Agent/API/
+
+## 链路调用规则:
+路由层统一只负责接受请求跟校验参数合法性，然后将具体的业务调用Services/xxx_service.py里面的方法，业务层返回的结果直接返回给接口
+业务层统一只接受来自Router路由层里面的调用，然后业务层统一调用Utils工具层里面的具体某个工具,返回具体的业务结果给路由层
+工具层统一只接受来自业务层的调用，然后工具层的处理结果返回给业务层
+
+## 注意事项:
+不允许Router路由层直接调用Utils工具层里面的工具方法，必须要经过Service业务层，Service业务层再去调Utils里面具体的方法
+必须遵守！！！：
+Router
+    ↓
+Service
+    ↓
+Utils
+
+绝对禁止！！！:
+Utils -> Service
+Utils -> Router
+Service -> Router
+Router -> Router
+

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import StudentTplCard from './StudentTplCard.vue'
@@ -583,7 +583,7 @@ function goWarningDetail(label: string) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 1.05fr);
   gap: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sid__main {
@@ -619,21 +619,21 @@ function goWarningDetail(label: string) {
   height: 120px;
   padding: 3px;
   border-radius: 50%;
-  transition: background 0.25s ease, box-shadow 0.25s ease;
+  transition: background 0.25s ease;
 
   &--low {
     background: conic-gradient(from 210deg, #7cf4ff, #2a7fd4 35%, #4ade80 70%, #7cf4ff);
-    box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.35), 0 0 28px rgba(40, 180, 120, 0.28);
+    box-shadow: none;
   }
 
   &--medium {
     background: conic-gradient(from 210deg, #fde68a, #f59e0b 40%, #facc15 75%, #fde68a);
-    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 28px rgba(250, 180, 40, 0.32);
+    box-shadow: none;
   }
 
   &--high {
     background: conic-gradient(from 210deg, #fda4af, #ef4444 40%, #f87171 75%, #fda4af);
-    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.5), 0 0 28px rgba(220, 60, 70, 0.35);
+    box-shadow: none;
   }
 
   img,
@@ -681,7 +681,7 @@ function goWarningDetail(label: string) {
     line-height: 1;
     color: #8ed8ff;
     letter-spacing: 0.08em;
-    text-shadow: 0 1px 3px rgba(0, 10, 28, 0.8);
+    text-shadow: none;
   }
 
   em {
@@ -742,18 +742,19 @@ function goWarningDetail(label: string) {
     border-color: rgba(232, 200, 120, 0.55);
     background: linear-gradient(135deg, rgba(150, 110, 30, 0.42), rgba(80, 55, 10, 0.4));
     color: #f5d78a;
-    box-shadow: 0 0 12px rgba(232, 180, 80, 0.2);
+    box-shadow: none;
 
     i { color: #ffe6a8; }
   }
 
   &--potential {
-    border-color: rgba(100, 220, 255, 0.55);
-    background: linear-gradient(135deg, rgba(0, 120, 190, 0.38), rgba(0, 60, 120, 0.4));
-    color: #7ef0ff;
-    box-shadow: 0 0 10px rgba(60, 200, 255, 0.2);
+    border-color: rgba(100, 220, 255, 0.75);
+    background: linear-gradient(135deg, rgba(0, 150, 220, 0.55), rgba(0, 80, 150, 0.5));
+    color: #b8fbff;
+    box-shadow: 0 0 14px rgba(80, 220, 255, 0.5);
+    animation: sid-breath-potential 1.8s ease-in-out infinite;
 
-    i { color: #b8f4ff; }
+    i { color: #e8feff; }
   }
 }
 
@@ -856,7 +857,7 @@ function goWarningDetail(label: string) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sid__panel {
@@ -868,6 +869,13 @@ function goWarningDetail(label: string) {
   background:
     linear-gradient(135deg, rgba(0, 80, 140, 0.2), transparent 55%),
     rgba(0, 28, 58, 0.42);
+  box-shadow: none;
+  filter: none;
+  overflow: visible;
+
+  &--core {
+    overflow: visible;
+  }
 
   &--aid {
     flex: 1 1 auto;
@@ -892,11 +900,14 @@ function goWarningDetail(label: string) {
 .sid__core-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
+  overflow: visible;
+  padding: 2px;
 
   :deep(.stu-hint) {
     min-width: 0;
     display: block;
+    overflow: visible;
   }
 }
 
@@ -914,6 +925,9 @@ function goWarningDetail(label: string) {
   gap: 3px;
   cursor: pointer;
   font: inherit;
+  box-shadow: none;
+  filter: none;
+  text-shadow: none;
 
   span {
     color: #9ed8f5;
@@ -929,24 +943,30 @@ function goWarningDetail(label: string) {
   }
 
   &--low {
-    border-color: rgba(85, 233, 149, 0.4);
-    background: rgba(20, 80, 60, 0.24);
+    border-color: rgba(85, 233, 149, 0.55);
+    background: rgba(20, 90, 65, 0.32);
+    box-shadow: 0 0 12px rgba(85, 233, 149, 0.35);
+    animation: sid-breath-warn-low 2s ease-in-out infinite;
 
-    strong { color: #7ef0a8; }
+    strong { color: #9affc4; }
   }
 
   &--medium {
-    border-color: rgba(250, 204, 21, 0.45);
-    background: rgba(120, 90, 20, 0.22);
+    border-color: rgba(250, 204, 21, 0.7);
+    background: rgba(130, 95, 20, 0.38);
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.45);
+    animation: sid-breath-warn-mid 1.6s ease-in-out infinite;
 
-    strong { color: #ffe066; }
+    strong { color: #ffe566; }
   }
 
   &--high {
-    border-color: rgba(248, 113, 113, 0.5);
-    background: rgba(120, 40, 50, 0.24);
+    border-color: rgba(255, 120, 120, 0.8);
+    background: rgba(140, 40, 50, 0.42);
+    box-shadow: 0 0 18px rgba(255, 90, 90, 0.55);
+    animation: sid-breath-warn-high 1.2s ease-in-out infinite;
 
-    strong { color: #ff9a9a; }
+    strong { color: #ffb0b0; }
   }
 }
 
@@ -1038,6 +1058,76 @@ function goWarningDetail(label: string) {
 @keyframes sid-ticker-marquee {
   0% { transform: translateX(var(--marquee-from, 0)); }
   100% { transform: translateX(var(--marquee-to, -100%)); }
+}
+
+/* 关键信息呼吸灯：高潜 / 预警（仅光晕明暗，不缩放） */
+@keyframes sid-breath-potential {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: rgba(100, 220, 255, 0.5);
+    box-shadow: 0 0 8px rgba(80, 210, 255, 0.28);
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(180, 250, 255, 1);
+    box-shadow:
+      0 0 10px rgba(120, 240, 255, 0.9),
+      0 0 24px rgba(60, 200, 255, 0.55);
+  }
+}
+
+@keyframes sid-breath-warn-low {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: rgba(85, 233, 149, 0.4);
+    box-shadow: 0 0 6px rgba(85, 233, 149, 0.22);
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(140, 255, 190, 1);
+    box-shadow:
+      0 0 12px rgba(100, 255, 170, 0.75),
+      0 0 22px rgba(60, 220, 140, 0.4);
+  }
+}
+
+@keyframes sid-breath-warn-mid {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: rgba(250, 204, 21, 0.45);
+    box-shadow: 0 0 8px rgba(250, 204, 21, 0.25);
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(255, 236, 120, 1);
+    box-shadow:
+      0 0 14px rgba(255, 220, 80, 0.85),
+      0 0 26px rgba(250, 180, 20, 0.5);
+  }
+}
+
+@keyframes sid-breath-warn-high {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: rgba(248, 113, 113, 0.5);
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.28);
+  }
+  50% {
+    opacity: 1;
+    border-color: rgba(255, 170, 170, 1);
+    box-shadow:
+      0 0 16px rgba(255, 100, 100, 0.95),
+      0 0 28px rgba(255, 60, 60, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sid__tag--potential,
+  .sid__core-card--low,
+  .sid__core-card--medium,
+  .sid__core-card--high {
+    animation: none !important;
+  }
 }
 
 .sid__aid-grid {

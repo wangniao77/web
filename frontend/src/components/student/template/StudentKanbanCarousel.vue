@@ -7,14 +7,10 @@ import StudentTplCard from './StudentTplCard.vue'
 import StuHint from './StuHint.vue'
 import type {
   AcademicDevVM,
-  AiPortraitVM,
-  CareerDevVM,
   CompetitionVM,
   CreditProgressVM,
-  EmploymentVM,
   FailedCourseVM,
   GrowthOverviewVM,
-  InternshipVM,
   PersonalInfoVM,
   QualityVM,
 } from '@/types/student/view'
@@ -27,18 +23,12 @@ const props = defineProps<{
   competition: CompetitionVM
   quality: QualityVM
   scholarships: Array<{ name: string; year: string }>
-  careerDev: CareerDevVM
-  internship: InternshipVM
-  employment: EmploymentVM
-  aiPortrait: AiPortraitVM
   profile: PersonalInfoVM
 }>()
 
-const router = useRouter()
+defineEmits<{ open: [id: string] }>()
 
-/** 出口方向 Tab：考研 / 考公 / 就业（全局只声明一次） */
-type CareerPathId = 'postgraduate' | 'public' | 'job'
-const careerActiveId = ref<CareerPathId>('job')
+const router = useRouter()
 
 const creditBuckets = computed(() => {
   if (props.credit.buckets?.length) return props.credit.buckets
@@ -107,7 +97,7 @@ const academicRisk = computed(() => {
 })
 
 const gpaDelta = computed(() => {
-  const values = props.academic.gpaValues
+  const values = props.academic.gpaValues ?? []
   const current = values[values.length - 1] ?? props.academic.gpa
   const previous = values[values.length - 2] ?? current
   return Math.round((current - previous) * 100) / 100
@@ -395,184 +385,6 @@ function goQualityLedger(anchor?: 'reward' | 'discipline') {
     },
   })
 }
-const careerPreference = computed<CareerPathId>(() => {
-  const text = [
-    props.careerDev.employmentDestination,
-    props.careerDev.employmentIntention,
-  ].filter(Boolean).join(' ')
-  if (/考公|公务|事业|编制|选调|公职/.test(text)) return 'public'
-  if (/升学|深造|考研|保研|推免|硕士|高校|研究生/.test(text)) return 'postgraduate'
-  return 'job'
-})
-
-type CareerFact = { label: string; value: string }
-
-function fmtScore(score: number | undefined | null): string {
-  if (score == null || !Number.isFinite(score) || score <= 0) return '未接入'
-  return String(Math.round(score * 10) / 10)
-}
-
-function pickCourseScores(
-  grades: Array<{ name: string; score: number }>,
-  patterns: RegExp[],
-  limit = 2,
-): string {
-  const hits = grades.filter((g) => patterns.some((p) => p.test(g.name)) && g.score > 0)
-  if (!hits.length) return '未接入'
-  return hits
-    .slice(0, limit)
-    .map((g) => `${g.name} ${fmtScore(g.score)}`)
-    .join(' · ')
-}
-
-function avgCourseScore(
-  grades: Array<{ name: string; score: number }>,
-  patterns: RegExp[],
-): string {
-  const hits = grades.filter((g) => patterns.some((p) => p.test(g.name)) && g.score > 0)
-  if (!hits.length) return '未接入'
-  const avg = hits.reduce((s, g) => s + g.score, 0) / hits.length
-  return fmtScore(avg)
-}
-
-/**
- * 出口发展：按路径展示对口事实
- * - 考研：目标院校、数学/英语课、四六级
- * - 考公：政治面貌、思政相关课成绩
- * - 就业：专业课成绩、实习经历
- */
-const careerFactPanels = computed(() => {
-  const schools = (props.careerDev.targetUniversities || []).filter(Boolean)
-  const companies = (props.careerDev.targetCompanies || []).filter(Boolean)
-  const city = props.careerDev.targetCity?.trim() || '未填报'
-  const salary = props.careerDev.expectedSalary?.trim() || '未填报'
-  const grades = props.academic.courseGrades || []
-
-  const mathText = pickCourseScores(grades, [/高等数学|微积分|线性代数|概率论|离散数学/])
-  const englishCourse = pickCourseScores(grades, [/大学英语|英语/], 1)
-  const cet4 = props.profile.cet4Score
-  const cet6 = props.profile.cet6Score
-  const cetText =
-    cet4 || cet6
-      ? [cet4 ? `四级 ${cet4}` : null, cet6 ? `六级 ${cet6}` : null].filter(Boolean).join(' · ')
-      : '未报考/未录入'
-
-  const political = props.profile.politicalStatus?.trim() || '未录入'
-  const politicsCourses = pickCourseScores(
-    grades,
-    [/思想道德|毛泽东|马克思|近现代史|形势与政策|中国特色社会主义|思政/],
-    2,
-  )
-  const politicsAvg = avgCourseScore(
-    grades,
-    [/思想道德|毛泽东|马克思|近现代史|形势与政策|中国特色社会主义|思政/],
-  )
-
-  const majorAvg =
-    grades.find((g) => g.name === '专业课' && g.score > 0)?.score
-      ?? (() => {
-        const majorLike = grades.filter(
-          (g) =>
-            g.score > 0 &&
-            !/高等数学|微积分|线性代数|概率|英语|思想|毛泽|马克思|近现代|形势|通识|选修|必修|学科基础/.test(
-              g.name,
-            ),
-        )
-        if (!majorLike.length) return 0
-        return majorLike.reduce((s, g) => s + g.score, 0) / majorLike.length
-      })()
-  const majorCoreText = pickCourseScores(
-    grades,
-    [/数据结构|操作系统|数据库|计算机网络|软件工程|机器学习|算法|程序设计|Java|Python/],
-    2,
-  )
-  const majorText =
-    majorAvg > 0
-      ? `均分 ${fmtScore(majorAvg)}${majorCoreText !== '未接入' ? ` · ${majorCoreText}` : ''}`
-      : majorCoreText
-
-  const internItems = props.internship.items.filter((x) => /实习/.test(x.type) && x.name)
-  const internBases = (props.careerDev.internshipBases || []).filter(Boolean)
-  const internText =
-    internItems.length
-      ? internItems.slice(0, 2).map((x) => x.name).join('、')
-      : internBases.length
-        ? internBases.slice(0, 2).join('、')
-        : props.internship.internshipCount
-          ? `${props.internship.internshipCount} 次`
-          : '暂无'
-
-  return [
-    {
-      id: 'postgraduate' as const,
-      tab: '考研',
-      facts: [
-        { label: '目标院校', value: schools.slice(0, 2).join('、') || '未填报' },
-        { label: '数学成绩', value: mathText },
-        { label: '英语成绩', value: englishCourse },
-        { label: '四六级', value: cetText },
-        { label: '专业课', value: majorAvg > 0 ? `均分 ${fmtScore(majorAvg)}` : '未接入' },
-      ] as CareerFact[],
-    },
-    {
-      id: 'public' as const,
-      tab: '考公',
-      facts: [
-        { label: '政治面貌', value: political },
-        { label: '思政均分', value: politicsAvg },
-        { label: '思政课程', value: politicsCourses },
-        { label: '意向城市', value: city },
-        { label: '材料状态', value: props.careerDev.resumeStatus?.trim() || '未完善' },
-      ] as CareerFact[],
-    },
-    {
-      id: 'job' as const,
-      tab: '就业',
-      facts: [
-        { label: '专业课', value: majorText },
-        { label: '实习经历', value: internText },
-        { label: '对标企业', value: companies.slice(0, 2).join('、') || '未填报' },
-        { label: '意向城市', value: city },
-        { label: '期望薪资', value: salary },
-      ] as CareerFact[],
-    },
-  ]
-})
-
-const activeCareerPanel = computed(
-  () => careerFactPanels.value.find((p) => p.id === careerActiveId.value) ?? careerFactPanels.value[0]!,
-)
-
-/** 出口求职阶段：简历投递 → 笔试面试 → Offer */
-const careerStageSteps = [
-  { id: 'resume', label: '简历投递' },
-  { id: 'interview', label: '笔试面试' },
-  { id: 'offer', label: 'Offer获取' },
-] as const
-
-const careerStageIndex = computed(() => {
-  const resume = props.careerDev.resumeStatus || ''
-  const dest = String(props.careerDev.employmentDestination || '')
-  const internN = props.internship.internshipCount || 0
-  if (/offer|录用|签约|已获/.test(resume) || /在岗实习/.test(dest)) return 2
-  if (/面试|笔试|已投递|等待/.test(resume) || internN > 0) return 1
-  if (/完善|已完善|已投/.test(resume)) return 0
-  return 0
-})
-
-const careerStagePercent = computed(() => {
-  const idx = careerStageIndex.value
-  return Math.round(((idx + 0.35) / careerStageSteps.length) * 100)
-})
-
-watch(
-  careerPreference,
-  (id) => {
-    careerActiveId.value = id
-  },
-  { immediate: true },
-)
-
 function goGpaDetail() {
   router.push(ROUTES.student.gpaDetail)
 }
@@ -585,23 +397,15 @@ function goCreditProgress() {
   router.push(ROUTES.student.creditProgress)
 }
 
-function selectCareerPath(id: CareerPathId) {
-  careerActiveId.value = id
-}
 
-function goCareerDetail() {
-  router.push({
-    path: ROUTES.student.careerDevelopment,
-    query: { studentId: props.profile.studentId },
-  })
-}
 </script>
 
 <template>
   <StudentTplCard
     icon="map"
     title="学生发展概览"
-    tip="学情轨迹、综合素养与出口发展三大板块一览。"
+    tip="学情轨迹、综合素养与智能育航三大板块一览。"
+    hide-header
     class="stu-kanban-wrap"
   >
     <div class="dev-board">
@@ -771,9 +575,9 @@ function goCareerDetail() {
             </StuHint>
           </div>
           <div class="quality-head-tags">
-            <StuHint tip="奖励记录入口；无记录也可进入二级台账查看。">
+            <StuHint tip="奖项记录入口；无记录也可进入二级台账查看。">
               <button type="button" class="q-reward-tag" @click="goQualityLedger('reward')">
-                奖励{{ rewardCount }}
+                奖项{{ rewardCount }}
               </button>
             </StuHint>
             <StuHint :tip="latestDiscipline ? `${latestDiscipline.type} · ${latestDiscipline.reason}` : '处分记录入口；无记录也可进入二级台账。'">
@@ -851,69 +655,6 @@ function goCareerDetail() {
           查看台账详情 <span aria-hidden="true">›</span>
         </button>
       </article>
-
-      <!-- 出口发展：真实台账事实，不做 AI 研判文案 -->
-      <article class="development-card development-card--career">
-        <header class="development-card__head development-card__head--career">
-          <span class="development-card__icon" aria-hidden="true">
-            <DashIcon kind="employment" :size="20" stroke="#43e7af" />
-          </span>
-          <div class="development-card__title-wrap">
-            <StuHint tip="按路径展示对口事实：考研看院校与数英/四六级；考公看政治面貌与思政课；就业看专业课与实习。">
-              <h4>出口发展</h4>
-            </StuHint>
-          </div>
-          <div class="career-tabs career-tabs--header" role="tablist" aria-label="出口方向切换">
-            <button
-              v-for="panel in careerFactPanels"
-              :key="panel.id"
-              type="button"
-              role="tab"
-              :aria-selected="panel.id === careerActiveId"
-              :class="{ 'is-active': panel.id === careerActiveId }"
-              @click="selectCareerPath(panel.id)"
-            >
-              {{ panel.tab }}
-            </button>
-          </div>
-        </header>
-
-        <StuHint tip="点击查看完整出口台账明细。" block>
-          <button type="button" class="career-facts" @click="goCareerDetail">
-            <div
-              v-for="fact in activeCareerPanel.facts"
-              :key="`${activeCareerPanel.id}-${fact.label}`"
-              class="career-facts__row"
-            >
-              <em>{{ fact.label }}</em>
-              <strong :title="fact.value">{{ fact.value }}</strong>
-            </div>
-          </button>
-        </StuHint>
-
-        <div class="career-funnel" aria-label="求职阶段进度">
-          <div class="career-funnel__bar">
-            <i :style="{ width: `${careerStagePercent}%` }" />
-          </div>
-          <ol class="career-funnel__steps">
-            <li
-              v-for="(step, idx) in careerStageSteps"
-              :key="step.id"
-              :class="{
-                'is-done': idx < careerStageIndex,
-                'is-current': idx === careerStageIndex,
-              }"
-            >
-              <b>{{ idx + 1 }}</b>
-              <span>{{ step.label }}</span>
-            </li>
-          </ol>
-        </div>
-
-        <button type="button" class="development-card__action" @click="goCareerDetail">
-          查看出口台账 <span aria-hidden="true">›</span>
-        </button>
-      </article>
     </div>
   </StudentTplCard>
 </template>
@@ -924,7 +665,7 @@ function goCareerDetail() {
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1.15fr 1.05fr 1fr;
+  grid-template-columns: 1.15fr 1.05fr;
   grid-auto-rows: 1fr;
   align-items: stretch;
   gap: 16px;

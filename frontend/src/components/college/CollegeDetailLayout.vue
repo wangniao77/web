@@ -1,16 +1,42 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ROUTES } from '@/constants/routes'
+import { exportActivePage, hasPageExport } from '@/composables/usePageExport'
+import { collectDomTables } from '@/utils/collectDomTables'
+import { downloadExcel, stampFilename } from '@/utils/exportExcel'
 
-defineProps<{
+const props = defineProps<{
   title: string
   subtitle?: string
 }>()
 
 const router = useRouter()
+const exporting = ref(false)
+const bodyRef = ref<HTMLElement | null>(null)
 
 function goBack() {
   router.push(ROUTES.college.root)
+}
+
+async function exportPageExcel() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    if (hasPageExport()) {
+      await exportActivePage()
+      return
+    }
+    const sheets = collectDomTables(bodyRef.value || document)
+    if (!sheets.length) {
+      throw new Error('当前页暂无可导出的表格数据')
+    }
+    downloadExcel(stampFilename(props.title || '学院明细'), sheets)
+  } catch (e) {
+    window.alert(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    exporting.value = false
+  }
 }
 </script>
 
@@ -23,9 +49,18 @@ function goBack() {
         <h1>{{ title }}</h1>
         <span v-if="subtitle">{{ subtitle }}</span>
       </div>
+      <button
+        type="button"
+        class="college-detail__export"
+        :disabled="exporting"
+        title="导出当前页数据为 Excel"
+        @click="exportPageExcel"
+      >
+        {{ exporting ? '导出中…' : '导出Excel' }}
+      </button>
       <div class="college-detail__header-glow" aria-hidden="true" />
     </header>
-    <main class="college-detail__body">
+    <main ref="bodyRef" class="college-detail__body">
       <slot />
     </main>
   </div>
@@ -132,6 +167,7 @@ function goBack() {
   position: relative;
   z-index: 1;
   min-width: 0;
+  flex: 1 1 auto;
 
   h1 {
     position: relative;
@@ -147,6 +183,33 @@ function goBack() {
   span {
     font-size: $college-fs-label;
     color: rgba(184, 236, 255, 0.74);
+  }
+}
+
+.college-detail__export {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(90, 190, 255, 0.45);
+  background: linear-gradient(180deg, rgba(0, 120, 190, 0.28), rgba(4, 18, 48, 0.58));
+  color: #b8f0ff;
+  cursor: pointer;
+  font-size: $college-fs-label;
+  font-weight: 800;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+
+  &:hover:not(:disabled) {
+    border-color: rgba(120, 230, 255, 0.8);
+    color: #ffffff;
+    background: linear-gradient(180deg, rgba(0, 160, 230, 0.36), rgba(4, 18, 48, 0.7));
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
   }
 }
 

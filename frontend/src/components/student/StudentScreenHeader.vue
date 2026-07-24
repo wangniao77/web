@@ -1,18 +1,63 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { computed, ref } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 import { useClock } from '@/composables/useClock'
 import { ROUTES } from '@/constants/routes'
 import DashIcon from '@/components/college/DashIcon.vue'
 import StuHint from '@/components/student/template/StuHint.vue'
 import collegeLogo from '@/assets/college-logo.png'
+import { exportActivePage, hasPageExport } from '@/composables/usePageExport'
+import { studentService } from '@/api/student/services'
+import { dashboardToExcelSheets } from '@/utils/studentDashboardExport'
+import { downloadExcel, stampFilename } from '@/utils/exportExcel'
 
 /** 领导审定导向条 */
 const principles = [
-  { label: '看画像', tip: '先看学生整体画像与关键指标。' },
-  { label: '深析短板', tip: '再定位学业、素养或就业短板。' },
-  { label: '智育成才', tip: '结合 AI 建议开展精准育人。' },
+  { label: '明晰底数', tip: '摸清学生基础数据与学情底数。' },
+  { label: '诊断学情', tip: '识别学业与发展中的关键问题。' },
+  { label: '守护成长', tip: '跟进预警与帮扶，护航学生成长。' },
+  { label: '发现潜能', tip: '发现优势与高潜方向，精准赋能。' },
+  { label: '引航未来', tip: '结合智能育航，指引生涯与成才路径。' },
 ]
 const { dateStr, timeStr } = useClock()
+const route = useRoute()
+const exporting = ref(false)
+
+const studentId = computed(
+  () => String(route.query.studentId || import.meta.env.VITE_MOCK_STUDENT_ID || ''),
+)
+
+const internshipFillUrl = computed(
+  () => `https://forms.example.edu/internship?sid=${encodeURIComponent(studentId.value)}`,
+)
+
+function openInternshipFill() {
+  window.open(internshipFillUrl.value, '_blank', 'noopener,noreferrer')
+}
+
+async function exportPageExcel() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    if (hasPageExport()) {
+      await exportActivePage()
+      return
+    }
+    // 未单独注册导出时：导出当前学号驾驶舱快照，保证任一学生页可导出
+    const sid = studentId.value
+    if (!sid) throw new Error('缺少学号，无法导出')
+    const dashboard = await studentService.fetchDashboard(sid)
+    const pageTitle = String(route.meta?.title || route.name || '学生页面')
+    downloadExcel(
+      stampFilename(pageTitle, sid),
+      dashboardToExcelSheets(dashboard),
+    )
+  } catch (e) {
+    window.alert(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -31,7 +76,7 @@ const { dateStr, timeStr } = useClock()
         <span class="school-name__title">广东财经大学</span>
         <span class="school-name__school">大数据与人工智能学院</span>
         <StuHint tip="学院院训：韧性成长，志臻卓越。">
-          <span class="school-name__motto">韧　性　成　长，志　臻　卓　越</span>
+          <span class="school-name__motto">韧性成长，志臻卓越</span>
         </StuHint>
       </div>
     </div>
@@ -43,17 +88,34 @@ const { dateStr, timeStr } = useClock()
         <span />
       </div>
       <StuHint tip="学生个人驾驶舱：数智透视学情，呈现学子全息画像。">
-        <h1>——数智透视·学子全息——</h1>
+        <h1>数智透视·学子全息</h1>
       </StuHint>
       <nav class="cockpit-header__tabs" aria-label="学生工作导向">
         <span v-for="(tab, index) in principles" :key="tab.label">
           <StuHint :tip="tab.tip">{{ tab.label }}</StuHint>
-          <b v-if="index < principles.length - 1">｜</b>
+          <b v-if="index < principles.length - 1"> · </b>
         </span>
       </nav>
     </div>
 
     <div class="cockpit-header__meta">
+      <StuHint tip="将当前页关键数据导出为 Excel，便于离线查看与分析。">
+        <button
+          type="button"
+          class="meta-card meta-card--action meta-card--export"
+          :disabled="exporting"
+          @click="exportPageExcel"
+        >
+          <DashIcon kind="innovation" :size="16" />
+          <span>{{ exporting ? '导出中…' : '导出Excel' }}</span>
+        </button>
+      </StuHint>
+      <StuHint tip="学生自行填写/导入实习经历（外链表单）；指导老师可按权限查看所带学生。">
+        <button type="button" class="meta-card meta-card--action" @click="openInternshipFill">
+          <DashIcon kind="employment" :size="16" />
+          <span>导入实习经历</span>
+        </button>
+      </StuHint>
       <div class="meta-card">
         <DashIcon kind="calendar" :size="16" />
         <span>{{ dateStr }}</span>
@@ -163,10 +225,10 @@ const { dateStr, timeStr } = useClock()
 }
 
 .school-name__motto {
-  font-size: 18px !important;
+  font-size: 22px !important;
   font-weight: 700 !important;
   color: #e8c878 !important;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.06em;
   text-shadow: 0 0 10px rgba(232, 200, 120, 0.35);
 }
 
@@ -227,6 +289,39 @@ const { dateStr, timeStr } = useClock()
     width: 14px;
     height: 14px;
     color: #55dfff;
+  }
+}
+
+.meta-card--action {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+  border-color: rgba(85, 233, 149, 0.4);
+  background: linear-gradient(180deg, rgba(0, 110, 90, 0.35), rgba(0, 50, 80, 0.32));
+
+  &:hover:not(:disabled) {
+    border-color: rgba(85, 233, 149, 0.65);
+    color: #b8ffe0;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+}
+
+.meta-card--export {
+  border-color: rgba(90, 190, 255, 0.45);
+  background: linear-gradient(180deg, rgba(0, 90, 150, 0.4), rgba(0, 45, 90, 0.35));
+
+  &:hover:not(:disabled) {
+    border-color: rgba(120, 220, 255, 0.75);
+    color: #c8f4ff;
   }
 }
 

@@ -19,7 +19,7 @@
   height: 100%;
   padding: 0;
   overflow: visible;
-  background: radial-gradient(ellipse at 50% 55%, rgba(0, 180, 255, 0.12) 0, transparent 58%);
+  background: transparent;
 }
 
 .stu-tpl__score .core-hero-stage {
@@ -52,8 +52,8 @@
   }
 
   .core-gauge-square {
-    width: 176px;
-    height: 176px;
+    width: 188px;
+    height: 188px;
     margin: 0 auto;
     overflow: visible;
   }
@@ -63,50 +63,249 @@
   }
 
   .core-hero-platform {
-    width: 176px;
-    margin-top: -14px;
-    transform: scale(0.72);
+    width: 188px;
+    margin-top: -16px;
+    transform: scale(0.7);
     transform-origin: center top;
+    opacity: 0.72;
   }
 
-  .core-hero-stage__glow {
-    top: auto;
-    bottom: 18%;
-    left: 50%;
-    width: min(56%, 250px);
-    height: min(50%, 220px);
-    transform: translate(-50%, 0);
-    opacity: 0.6;
-    pointer-events: none;
-    z-index: 0;
-    animation: none;
-  }
-
-  .core-hero-stage::before {
-    top: auto;
-    bottom: 12%;
-    left: 50%;
-    width: min(64%, 290px);
-    height: min(56%, 250px);
-    transform: translate(-50%, 0);
-    opacity: 0.4;
-    z-index: 0;
-    animation: none;
-  }
-
+  /* 去掉表盘外圈 / 底座过重光晕，保留干净环面 */
+  .core-hero-stage__glow,
+  .core-hero-stage::before,
   .core-hero-stage::after {
-    top: auto;
-    bottom: 6%;
-    left: 50%;
-    width: min(70%, 320px);
-    height: min(62%, 280px);
-    transform: translate(-50%, 0);
+    display: none;
+  }
+
+  .core-gauge.core-gauge--hero {
+    animation: none;
+    box-shadow: none;
+    filter: none;
+  }
+
+  .core-gauge--hero .core-gauge__halo,
+  .core-gauge--hero .core-gauge__scan-ring {
+    display: none;
+  }
+
+  .core-gauge--hero .core-gauge__orbit-ring {
+    box-shadow: none;
+    filter: none;
     opacity: 0.28;
-    z-index: 0;
+    border-color: rgba(120, 200, 230, 0.22);
+  }
+
+  .core-gauge--hero .core-gauge__outer-ring {
+    box-shadow: none;
+    animation: none;
+    border-color: rgba(100, 190, 230, 0.22);
+  }
+
+  .core-gauge--hero .core-gauge__progress {
+    filter: none;
+    background: conic-gradient(
+      from -90deg,
+      #7ff0ff 0deg,
+      #3ec8ff calc(var(--gauge-deg) * 0.72),
+      #1a7fd4 var(--gauge-deg),
+      transparent var(--gauge-deg),
+      transparent 360deg
+    );
+  }
+
+  .core-gauge--hero .core-gauge__track {
+    box-shadow: none;
+    filter: none;
+    background: rgba(20, 60, 100, 0.45);
+  }
+
+  .core-gauge--hero .core-gauge__ticks {
+    opacity: 0.35;
     animation: none;
   }
 
-  /* 四角卡：高度随内容撑开，明细三行完整显示 */
+  .core-gauge--hero .core-gauge__ring--outer,
+  .core-gauge--hero .core-gauge__ring--inner {
+    box-shadow: none;
+    filter: none;
+    animation: none;
+  }
+
+  .core-gauge--hero .core-gauge__ring--inner {
+    border-color: rgba(100, 190, 230, 0.28);
+    background: radial-gradient(circle, rgba(2, 14, 34, 0.96) 0 58%, transparent 60%);
+  }
+
+  .core-gauge--hero .core-gauge__content {
+    width: 66%;
+    height: 66%;
+    padding: 10px 8px 8px;
+    gap: 4px;
+    justify-content: center;
+    border: 1px solid rgba(120, 200, 240, 0.28);
+    background:
+      radial-gradient(circle at 50% 38%, rgba(18, 70, 120, 0.55), transparent 58%),
+      radial-gradient(circle, rgba(4, 22, 48, 0.96), rgba(1, 10, 26, 0.98));
+    box-shadow: none;
+    filter: none;
+
+    .core-gauge__title,
+    span.core-gauge__title {
+      width: auto;
+      max-width: 96%;
+      color: #c8ecff;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0.12em;
+      text-shadow:
+        0 0 8px rgba(120, 220, 255, 0.55),
+        0 0 16px rgba(60, 180, 255, 0.35);
+      animation: none;
+    }
+
+    .core-gauge__score-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    strong {
+      font-family: var(--student-font-number);
+      color: #ffffff;
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 0.95;
+      margin: 0;
+      letter-spacing: -0.02em;
+      text-shadow:
+        0 0 12px rgba(120, 230, 255, 0.85),
+        0 0 28px rgba(50, 180, 255, 0.55),
+        0 0 42px rgba(30, 140, 255, 0.35);
+      animation: stuGaugeScoreGlow 2.8s ease-in-out infinite;
+    }
+
+    .core-gauge__delta {
+      display: inline-flex !important;
+      align-items: center;
+      margin-top: 0;
+      padding: 2px 6px;
+      border: 1px solid rgba(85, 233, 149, 0.5);
+      border-radius: 999px;
+      background: rgba(30, 100, 70, 0.42);
+      color: #9dffc0;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 10px rgba(85, 233, 149, 0.65);
+      box-shadow: 0 0 10px rgba(85, 233, 149, 0.28);
+
+      &.is-down {
+        border-color: rgba(255, 140, 110, 0.5);
+        background: rgba(120, 50, 40, 0.42);
+        color: #ffb09a;
+        text-shadow: 0 0 10px rgba(255, 140, 110, 0.55);
+        box-shadow: 0 0 10px rgba(255, 120, 90, 0.25);
+      }
+    }
+
+    .core-gauge__rank {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      margin-top: 4px;
+      padding: 3px 8px 4px;
+      border: 1px solid rgba(130, 210, 255, 0.42);
+      border-radius: 999px;
+      background: rgba(8, 48, 88, 0.78);
+      box-shadow: 0 0 12px rgba(60, 170, 255, 0.22);
+
+      i {
+        color: #9ed8f5;
+        font-size: 10px;
+        font-style: normal;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        text-shadow: 0 0 8px rgba(100, 200, 255, 0.45);
+      }
+
+      span {
+        width: auto;
+        color: #eaf8ff !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.04em;
+        line-height: 1.1;
+        text-shadow:
+          0 0 8px rgba(140, 230, 255, 0.7),
+          0 0 16px rgba(80, 190, 255, 0.4) !important;
+      }
+    }
+
+    small {
+      display: none;
+    }
+
+    b:not(.core-gauge__rank) {
+      margin-top: 2px;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      line-height: 1.15;
+      text-shadow: 0 0 10px rgba(255, 200, 80, 0.55);
+    }
+  }
+
+  .core-gauge--tone-risk .core-gauge__content strong {
+    color: #ff8e8e;
+    text-shadow:
+      0 0 12px rgba(255, 100, 100, 0.85),
+      0 0 28px rgba(255, 70, 70, 0.45);
+  }
+
+  .core-gauge--tone-warn .core-gauge__content strong {
+    color: #ffe08a;
+    text-shadow:
+      0 0 12px rgba(255, 200, 80, 0.85),
+      0 0 28px rgba(255, 180, 60, 0.45);
+  }
+
+  .core-gauge--tone-good .core-gauge__content strong {
+    color: #ffffff;
+    text-shadow:
+      0 0 12px rgba(120, 230, 255, 0.85),
+      0 0 28px rgba(50, 180, 255, 0.55),
+      0 0 42px rgba(30, 140, 255, 0.35);
+  }
+
+  .core-hero-platform__beam {
+    box-shadow: none;
+    filter: none;
+    animation: none;
+    opacity: 0.4;
+    background: linear-gradient(180deg, rgba(120, 200, 230, 0.55), transparent);
+  }
+
+  .core-hero-platform__disc {
+    box-shadow: none;
+    filter: none;
+    animation: none;
+    background:
+      radial-gradient(ellipse at center, rgba(0, 160, 220, 0.18) 0, transparent 70%),
+      conic-gradient(from 0deg, transparent, rgba(80, 180, 220, 0.16), transparent);
+  }
+
+  .core-hero-platform__city span {
+    box-shadow: none;
+    filter: none;
+    background: linear-gradient(180deg, rgba(150, 210, 235, 0.7), rgba(30, 90, 140, 0.4));
+  }
+
+  /* 四角卡：恢复浮动/呼吸边框；竖条扫光仍关闭 */
   .core-orbit-metric {
     box-sizing: border-box;
     position: absolute;
@@ -118,11 +317,56 @@
     padding: 6px 8px;
     gap: 4px;
     overflow: visible;
+    border-color: rgba(90, 210, 255, 0.55);
+    box-shadow:
+      0 0 18px rgba(0, 180, 255, 0.28),
+      inset 0 0 12px rgba(0, 140, 220, 0.14);
+    filter: none;
+    animation:
+      orbitMetricEnter 0.85s cubic-bezier(0.22, 1, 0.36, 1) both,
+      orbitMetricFloat 5.5s ease-in-out 0.85s infinite,
+      orbitBorderGlow 4s ease-in-out 0.85s infinite;
+    will-change: transform, box-shadow;
+
+    &::after {
+      display: none !important;
+      animation: none !important;
+      content: none !important;
+    }
+
+    &::before {
+      animation: orbitLinkPulse 2.8s ease-in-out infinite;
+    }
 
     &.core-orbit-metric--has-tip:hover {
       overflow: visible;
       z-index: 12;
     }
+  }
+
+  .core-orbit--tl {
+    animation-delay: 0s, 0.85s, 0.85s;
+  }
+
+  .core-orbit--tr {
+    animation-delay: 0.08s, 0.93s, 0.93s;
+  }
+
+  .core-orbit--bl {
+    animation-delay: 0.24s, 1.09s, 1.09s;
+  }
+
+  .core-orbit--br {
+    animation-delay: 0.32s, 1.17s, 1.17s;
+  }
+
+  .core-orbit-metric__icon {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    box-shadow: 0 0 12px rgba(57, 230, 255, 0.4);
+    animation: orbitIconPulse 3.6s ease-in-out infinite;
+    filter: none;
   }
 
   .core-orbit-metric--rich {
@@ -141,12 +385,6 @@
     display: contents;
   }
 
-  .core-orbit-metric__icon {
-    width: 26px;
-    height: 26px;
-    flex: none;
-  }
-
   .core-orbit-metric__label {
     min-width: 0;
     overflow: hidden;
@@ -155,6 +393,7 @@
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-shadow: 0 0 8px rgba(100, 200, 255, 0.35);
   }
 
   .core-orbit-metric__value {
@@ -163,6 +402,21 @@
     line-height: 1.1;
     text-align: right;
     white-space: nowrap;
+    text-shadow: 0 0 10px rgba(120, 220, 255, 0.45);
+  }
+
+  .core-orbit-metric__delta {
+    margin-left: 3px;
+    color: #55e995;
+    font-size: 14px;
+    font-weight: 700;
+    vertical-align: baseline;
+    text-shadow: 0 0 8px rgba(85, 233, 149, 0.55);
+
+    &.is-down {
+      color: #ff9b7a;
+      text-shadow: 0 0 8px rgba(255, 140, 110, 0.5);
+    }
   }
 
   .core-orbit-metric__value--level {
@@ -220,17 +474,19 @@
     width: 8px;
   }
 
-  /* 上排略上移、下排略下移，中间留出空隙 */
+  /* 上排略上移、下排略下移，中间留出空隙；保留浮动动效延时 */
   .core-orbit--tl {
     top: 4%;
     left: 0;
     right: auto;
+    animation-delay: 0s, 0.85s, 0.85s;
   }
 
   .core-orbit--tr {
     top: 4%;
     right: 0;
     left: auto;
+    animation-delay: 0.08s, 0.93s, 0.93s;
   }
 
   .core-orbit--bl {
@@ -238,6 +494,7 @@
     bottom: 10%;
     left: 0;
     right: auto;
+    animation-delay: 0.24s, 1.09s, 1.09s;
   }
 
   .core-orbit--br {
@@ -245,58 +502,22 @@
     bottom: 10%;
     right: 0;
     left: auto;
+    animation-delay: 0.32s, 1.17s, 1.17s;
   }
+}
 
-  .core-gauge--hero .core-gauge__content {
-    width: 62%;
-    height: 62%;
-    padding: 4px 6px;
-    gap: 1px;
-    justify-content: center;
-
-    span {
-      font-size: 15px;
-      line-height: 1.1;
-    }
-
-    strong {
-      font-family: var(--student-font-number);
-      font-size: 40px;
-      line-height: 1;
-      margin: 1px 0 0;
-    }
-
-    small {
-      margin-top: 1px;
-      font-size: 14px;
-      opacity: 0.88;
-    }
-
-    b {
-      margin-top: 1px;
-      font-size: 14px;
-      letter-spacing: 0.5px;
-      line-height: 1.15;
-    }
-
-    .core-gauge__delta {
-      display: block !important;
-      margin-top: 0;
-      font-size: 16px;
-      font-weight: 800;
-    }
-
-    small {
-      display: none;
-    }
+@keyframes stuGaugeScoreGlow {
+  0%, 100% {
+    text-shadow:
+      0 0 12px rgba(120, 230, 255, 0.75),
+      0 0 28px rgba(50, 180, 255, 0.45),
+      0 0 42px rgba(30, 140, 255, 0.28);
   }
-
-  .core-gauge__delta {
-    font-size: 14px;
-  }
-
-  .core-gauge__rank {
-    color: #b8ecff !important;
+  50% {
+    text-shadow:
+      0 0 18px rgba(170, 245, 255, 1),
+      0 0 36px rgba(90, 210, 255, 0.7),
+      0 0 54px rgba(50, 170, 255, 0.45);
   }
 }
 
@@ -469,7 +690,7 @@
 
   span {
     color: #8eb8d4;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 650;
     line-height: 1.25;
     text-align: center;

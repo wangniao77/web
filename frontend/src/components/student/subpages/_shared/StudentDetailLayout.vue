@@ -7,8 +7,13 @@
  *
  * 放在 subpages/_shared/ 下，可被任意二级页面复用。
  */
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ROUTES } from '@/constants/routes'
+import { exportActivePage, hasPageExport } from '@/composables/usePageExport'
+import { studentService } from '@/api/student/services'
+import { dashboardToExcelSheets } from '@/utils/studentDashboardExport'
+import { downloadExcel, stampFilename } from '@/utils/exportExcel'
 
 const props = withDefaults(
   defineProps<{
@@ -36,6 +41,8 @@ const props = withDefaults(
 )
 
 const router = useRouter()
+const route = useRoute()
+const exporting = ref(false)
 
 function goBack() {
   if (props.backTo) {
@@ -46,6 +53,25 @@ function goBack() {
     router.back()
   } else {
     router.push(ROUTES.student.root)
+  }
+}
+
+async function exportPageExcel() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    if (hasPageExport()) {
+      await exportActivePage()
+      return
+    }
+    const sid = String(route.query.studentId || import.meta.env.VITE_MOCK_STUDENT_ID || '')
+    if (!sid) throw new Error('缺少学号，无法导出')
+    const dashboard = await studentService.fetchDashboard(sid)
+    downloadExcel(stampFilename(props.title || '学生页面', sid), dashboardToExcelSheets(dashboard))
+  } catch (e) {
+    window.alert(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    exporting.value = false
   }
 }
 </script>
@@ -61,9 +87,15 @@ function goBack() {
         <h1>{{ title }}<span v-if="mockBadge" class="student-detail__mock-badge">{{ mockBadge }}</span></h1>
         <span v-if="subtitle">{{ subtitle }}</span>
       </div>
-      <div class="student-detail__header-actions">
-        <slot name="header-actions" />
-      </div>
+      <button
+        type="button"
+        class="student-detail__export"
+        :disabled="exporting"
+        title="导出当前页数据为 Excel"
+        @click="exportPageExcel"
+      >
+        {{ exporting ? '导出中…' : '导出Excel' }}
+      </button>
       <div class="student-detail__header-glow" aria-hidden="true" />
     </header>
     <main class="student-detail__body" :class="{ 'student-detail__body--full': full }">
@@ -132,16 +164,6 @@ function goBack() {
   flex-shrink: 0;
 }
 
-.student-detail__header-actions {
-  position: relative;
-  z-index: 1;
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
 .student-detail__header-glow {
   position: absolute;
   left: 16px;
@@ -184,6 +206,7 @@ function goBack() {
   position: relative;
   z-index: 1;
   min-width: 0;
+  flex: 1 1 auto;
 
   h1 {
     position: relative;
@@ -202,14 +225,33 @@ function goBack() {
   }
 }
 
-.student-detail__header-actions {
+.student-detail__export {
   position: relative;
   z-index: 1;
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
   flex-shrink: 0;
+  margin-left: auto;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(90, 190, 255, 0.45);
+  background:
+    linear-gradient(180deg, rgba(0, 120, 190, 0.28), rgba(4, 18, 48, 0.58));
+  color: #b8f0ff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+
+  &:hover:not(:disabled) {
+    border-color: rgba(120, 230, 255, 0.8);
+    color: #ffffff;
+    background:
+      linear-gradient(180deg, rgba(0, 160, 230, 0.36), rgba(4, 18, 48, 0.7));
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
 }
 
 .student-detail__mock-badge {

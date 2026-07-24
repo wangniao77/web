@@ -132,8 +132,34 @@ function sparkValStyle(point: { x: number; y: number }, index: number, total: nu
   return { left: `${left}%`, top: `${top}%`, transform }
 }
 
-const TERM_LABELS = ['大一', '大二', '大三', '大四'] as const
-const indexSparkSemesters = computed(() => [...TERM_LABELS])
+/** 近 4 学期横轴：优先用接口学期名，否则按「大X上/下」回填 */
+const TERM_LABELS = ['大一上', '大一下', '大二上', '大二下'] as const
+
+function normalizeSemesterLabel(raw: string, fallbackIndex: number): string {
+  const t = raw.trim()
+  if (/大[一二三四][上下]/.test(t)) return t.match(/大[一二三四][上下]/)![0]
+  if (/大[一二三四]/.test(t) && /[上下]/.test(t)) {
+    const y = t.match(/大[一二三四]/)![0]
+    const half = t.includes('下') ? '下' : '上'
+    return `${y}${half}`
+  }
+  if (/^[一二三四]年级/.test(t) || /^大[一二三四]$/.test(t)) {
+    const map: Record<string, string> = { 一: '大一', 二: '大二', 三: '大三', 四: '大四' }
+    const key = (t.match(/[一二三四]/) || [])[0]
+    const year = key ? map[key] : TERM_LABELS[fallbackIndex % 4].slice(0, 2)
+    const half = /下|春|第2|第二/.test(t) ? '下' : '上'
+    return `${year}${half}`
+  }
+  return TERM_LABELS[fallbackIndex] ?? `第${fallbackIndex + 1}学期`
+}
+
+const indexSparkSemesters = computed(() => {
+  const fromApi = (props.academic.semesters ?? []).filter(Boolean)
+  if (fromApi.length >= 4) {
+    return fromApi.slice(-4).map((s, i) => normalizeSemesterLabel(s, i))
+  }
+  return [...TERM_LABELS]
+})
 
 const scholarshipCountText = computed(() => `${props.scholarships.length}次`)
 
@@ -190,7 +216,8 @@ const hub = computed<OverviewHubVM>(() => {
     kpis: [
       {
         label: '学业发展',
-        value: `${academicScore.toFixed(1)}${academicDeltaMark.value}`,
+        value: academicScore.toFixed(1),
+        valueDelta: academicDeltaMark.value || undefined,
         icon: 'academic' as IconKind,
         position: 'tl',
         scoreTone: scoreToneFromValue(academicScore),
@@ -208,11 +235,6 @@ const hub = computed<OverviewHubVM>(() => {
               : '—',
             tip: '本专业内相对位置；名次越小越好。',
           },
-          {
-            label: '较上期',
-            value: academicDeltaText.value,
-            tip: '较上期综合指数量化变化（由 GPA 轨迹映射）。',
-          },
         ],
       },
       {
@@ -221,7 +243,7 @@ const hub = computed<OverviewHubVM>(() => {
         icon: 'trophy' as IconKind,
         position: 'tr',
         scoreTone: scoreToneFromValue(qualityScore),
-        tip: '奖学金与竞赛获奖次数概览。',
+        tip: '由综测、奖学金、竞赛综合测算（科研低权重计入，暂不展示）。',
         details: [
           {
             label: '奖学金',
@@ -296,10 +318,10 @@ const centerTip =
       />
 
       <div class="stu-rank-band">
-        <StuHint tip="近 4 学期综合指数折线；每个数据点上方标注具体指数值。Y 轴值域约 40–100。" block class="stu-rank-band__spark-wrap">
+        <StuHint tip="近 4 学期综合指数折线；横轴按学期（大一上/下等）；每个数据点上方标注具体指数值。" block class="stu-rank-band__spark-wrap">
           <div class="stu-rank-band__spark-card">
             <div class="stu-rank-band__spark-head">
-              <span>近4学期综合指数 <small>Y:{{ indexSparkMeta.min }}–{{ indexSparkMeta.max }}</small></span>
+              <span>近4学期综合指数</span>
               <strong :class="`is-${indexTrendArrow.tone}`">{{ indexSparkSummary }}</strong>
             </div>
             <div class="stu-rank-band__legend" aria-label="字色语义">

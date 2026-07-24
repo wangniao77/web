@@ -16,6 +16,8 @@ export interface OverviewHubKpiVM {
   key?: KpiKey
   label: string
   value: string
+  /** 主分旁环比标记，如 ↑0.6（绿色小号展示） */
+  valueDelta?: string
   trend?: TrendInfo
   icon?: IconKind
   position?: CoreOrbitPosition
@@ -34,8 +36,16 @@ export interface OverviewHubVM {
   maxScore: number
   starLevel: number
   kpis: OverviewHubKpiVM[]
-  /** 综合发展指数环比说明，如「较上学期 ↑1.8」 */
+  /** 综合发展指数环比说明，如「↑0.6」 */
   centerDelta?: string
+  /** 学生舱：中心星级改为年级排名文案，如「年级排名 12/120」 */
+  centerRankText?: string
+  /** 学生舱：中心悬浮前后三（示意名单） */
+  rankPeers?: {
+    top: Array<{ name: string; rank: number }>
+    bottom: Array<{ name: string; rank: number }>
+    tip?: string
+  }
 }
 
 export interface KeyTaskVM {

@@ -31,7 +31,6 @@ defineEmits<{ retry: [] }>()
         <template v-else>{{ title }}</template>
       </h3>
       <span v-if="extra" class="ref-panel__extra">{{ extra }}</span>
-      <slot name="header-extra" />
     </header>
     <div v-if="loading" class="ref-panel__body ref-panel__placeholder">加载中…</div>
     <div v-else-if="error" class="ref-panel__body ref-panel__placeholder">

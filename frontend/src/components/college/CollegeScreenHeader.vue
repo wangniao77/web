@@ -1,12 +1,37 @@
 ﻿<script setup lang="ts">
+import { ref } from 'vue'
 import { useClock } from '@/composables/useClock'
 import { useScope } from '@/composables/useScope'
+import { exportActivePage, hasPageExport } from '@/composables/usePageExport'
+import { collectDomTables } from '@/utils/collectDomTables'
+import { downloadExcel, stampFilename } from '@/utils/exportExcel'
 import DashIcon from '@/components/college/DashIcon.vue'
 import collegeLogo from '@/assets/college-logo.png'
 
 const principles = ['看全局', '抓重点', '强治理', '促发展', '提效能']
 const { dateStr, timeStr } = useClock()
 const { termLabel } = useScope()
+const exporting = ref(false)
+
+async function exportPageExcel() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    if (hasPageExport()) {
+      await exportActivePage()
+      return
+    }
+    const sheets = collectDomTables(document)
+    if (!sheets.length) {
+      throw new Error('当前页暂无可导出的表格数据，请进入明细页后再导出')
+    }
+    downloadExcel(stampFilename('学院驾驶舱'), sheets)
+  } catch (e) {
+    window.alert(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -40,6 +65,16 @@ const { termLabel } = useScope()
     </div>
 
     <div class="cockpit-header__meta">
+      <button
+        type="button"
+        class="meta-card meta-card--btn"
+        :disabled="exporting"
+        title="导出当前页数据为 Excel"
+        @click="exportPageExcel"
+      >
+        <DashIcon kind="status" :size="16" />
+        <span>{{ exporting ? '导出中…' : '导出Excel' }}</span>
+      </button>
       <div class="meta-card">
         <DashIcon kind="calendar" :size="16" />
         <span>{{ dateStr }}</span>
@@ -85,5 +120,23 @@ const { termLabel } = useScope()
   height: 14px;
   flex-shrink: 0;
   color: #55dfff;
+}
+
+.meta-card--btn {
+  cursor: pointer;
+  border: 1px solid rgba(90, 190, 255, 0.45);
+  background: linear-gradient(180deg, rgba(0, 120, 190, 0.28), rgba(4, 18, 48, 0.58));
+  color: #b8f0ff;
+  font: inherit;
+
+  &:hover:not(:disabled) {
+    border-color: rgba(120, 230, 255, 0.8);
+    color: #ffffff;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
 }
 </style>

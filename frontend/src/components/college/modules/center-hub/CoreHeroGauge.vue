@@ -19,6 +19,23 @@ const gaugeDeg = computed(() => {
 })
 
 const stars = computed(() => '★'.repeat(props.data.starLevel))
+const rankText = computed(() => props.data.centerRankText?.trim() || '')
+const showRank = computed(() => Boolean(rankText.value))
+const rankLabel = computed(() => {
+  const match = rankText.value.match(/^(.*?)(\d+\s*\/\s*\d+)\s*$/)
+  return match?.[1]?.trim() || ''
+})
+const rankValue = computed(() => {
+  const match = rankText.value.match(/(\d+\s*\/\s*\d+)\s*$/)
+  return match ? match[1].replace(/\s+/g, '') : rankText.value
+})
+const indexText = computed(() => {
+  const value = props.data.developmentIndex
+  if (!Number.isFinite(value)) return String(value ?? '—')
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+})
+const rankPeers = computed(() => props.data.rankPeers)
+const deltaDown = computed(() => /↓|回落|下降/.test(props.data.centerDelta || ''))
 
 const centerTitle = computed(() => props.centerLabel ?? '学院综合发展指数')
 
@@ -46,6 +63,7 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
       :key="kpi.key ?? kpi.label"
       :label="kpi.label"
       :value="kpi.value"
+      :value-delta="kpi.valueDelta"
       :trend="kpi.trend"
       :icon="kpiIcon(kpi)"
       :position="kpiPosition(kpi)"
@@ -59,7 +77,13 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
       <div class="core-gauge-square">
         <div
           class="core-gauge core-gauge--hero"
-          :class="[`core-gauge--tone-${centerTone}`, { 'core-gauge--has-tip': Boolean(centerTip) }]"
+          :class="[
+            `core-gauge--tone-${centerTone}`,
+            {
+              'core-gauge--has-tip': Boolean(centerTip) || Boolean(rankPeers),
+              'core-gauge--has-rank': showRank,
+            },
+          ]"
         >
           <div class="core-gauge__scan-ring" aria-hidden="true" />
           <div class="core-gauge__orbit-ring core-gauge__orbit-ring--1" aria-hidden="true" />
@@ -72,13 +96,50 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
           <div class="core-gauge__ring core-gauge__ring--outer" />
           <div class="core-gauge__ring core-gauge__ring--inner" />
           <div class="core-gauge__content">
-            <span>{{ centerTitle }}</span>
-            <strong>{{ data.developmentIndex }}</strong>
-            <em v-if="data.centerDelta" class="core-gauge__delta">{{ data.centerDelta }}</em>
-            <small>（满分{{ data.maxScore }}）</small>
-            <b>{{ stars }}</b>
+            <span class="core-gauge__title">{{ centerTitle }}</span>
+            <div class="core-gauge__score-row">
+              <strong>{{ indexText }}</strong>
+              <em
+                v-if="data.centerDelta"
+                class="core-gauge__delta"
+                :class="{ 'is-down': deltaDown }"
+              >{{ data.centerDelta }}</em>
+            </div>
+            <div v-if="showRank" class="core-gauge__rank">
+              <i v-if="rankLabel">{{ rankLabel }}</i>
+              <span>{{ rankValue }}</span>
+            </div>
+            <template v-else>
+              <small>（满分{{ data.maxScore }}）</small>
+              <b>{{ stars }}</b>
+            </template>
           </div>
-          <p v-if="centerTip" class="core-gauge__tip" role="tooltip">{{ centerTip }}</p>
+          <div
+            v-if="rankPeers"
+            class="core-gauge__peers"
+            role="tooltip"
+          >
+            <p class="core-gauge__peers-tip">{{ rankPeers.tip || '同专业排名示意（前三 / 后三）' }}</p>
+            <div class="core-gauge__peers-cols">
+              <div>
+                <strong>前三</strong>
+                <ul>
+                  <li v-for="item in rankPeers.top" :key="`t-${item.rank}-${item.name}`">
+                    <em>{{ item.rank }}</em>{{ item.name }}
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <strong>后三</strong>
+                <ul>
+                  <li v-for="item in rankPeers.bottom" :key="`b-${item.rank}-${item.name}`">
+                    <em>{{ item.rank }}</em>{{ item.name }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <p v-else-if="centerTip" class="core-gauge__tip" role="tooltip">{{ centerTip }}</p>
         </div>
       </div>
 
@@ -98,14 +159,55 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
 </template>
 
 <style scoped lang="scss">
-.core-gauge__delta {
-  display: block;
+.core-gauge__score-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
   margin-top: 2px;
+}
+
+.core-gauge__delta {
+  display: inline;
   color: #67e8a3;
-  font-size: 12px;
+  font-size: 14px;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
+  line-height: 1;
+
+  &.is-down {
+    color: #ff9b7a;
+  }
+}
+
+.core-gauge__rank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  margin-top: 4px;
+  color: #9ed8f5;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  line-height: 1.2;
+
+  i {
+    color: #7aa8c4;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+
+  span {
+    color: #c8eefc !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.02em;
+    text-shadow: none !important;
+  }
 }
 
 .core-gauge--tone-risk .core-gauge__content strong {
@@ -127,13 +229,14 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
   overflow: visible;
 }
 
-.core-gauge__tip {
+.core-gauge__tip,
+.core-gauge__peers {
   position: absolute;
   z-index: 8;
   left: 50%;
   bottom: calc(100% - 18px);
   width: max-content;
-  max-width: 240px;
+  max-width: 280px;
   padding: 8px 10px;
   border: 1px solid rgba(120, 200, 255, 0.35);
   border-radius: 6px;
@@ -154,7 +257,49 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
     visibility 0s linear 0.45s;
 }
 
-.core-gauge--has-tip:hover .core-gauge__tip {
+.core-gauge__peers-tip {
+  margin: 0 0 6px;
+  color: #9ed8f5;
+  font-size: 11px;
+}
+
+.core-gauge__peers-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+
+  strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #7ec8ff;
+    font-size: 11px;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 2px;
+    color: #d7eefc;
+    font-size: 12px;
+    white-space: nowrap;
+
+    em {
+      color: #55e995;
+      font-style: normal;
+      font-weight: 700;
+      min-width: 1.4em;
+    }
+  }
+}
+
+.core-gauge--has-tip:hover .core-gauge__tip,
+.core-gauge--has-tip:hover .core-gauge__peers {
   opacity: 1;
   visibility: visible;
   transition-delay: 0.45s, 0.45s;
