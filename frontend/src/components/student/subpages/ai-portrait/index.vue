@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ROUTES } from '@/constants/routes'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import { useScope } from '@/composables/useScope'
@@ -9,6 +10,7 @@ import type { StudentDashboardVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
 
 const route = useRoute()
+const router = useRouter()
 const { studentScope } = useScope()
 const activeStudentId = computed(
   () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
@@ -76,55 +78,10 @@ const compositeScore = computed(() => {
 const selectedAbility = ref<string | null>(null)
 const selectedAbilityInfo = computed(() => abilities.value.find(a => a.key === selectedAbility.value) || null)
 
-const ringOption = computed<EChartsOption>(() => {
-  const score = compositeScore.value.score
-  return {
-    series: [{
-      type: 'gauge',
-      center: ['50%', '54%'],
-      radius: '82%',
-      startAngle: 210,
-      endAngle: -30,
-      min: 0,
-      max: 100,
-      axisLine: {
-        roundCap: true,
-        lineStyle: {
-          width: 14,
-          color: [
-            [score / 100, '#43e7af'],
-            [1, 'rgba(120,160,200,0.22)'],
-          ],
-        },
-      },
-      progress: { show: false },
-      pointer: { show: false },
-      axisTick: { show: false },
-      splitLine: { show: false },
-      axisLabel: { show: false },
-      anchor: { show: false },
-      detail: {
-        valueAnimation: true,
-        fontSize: 40,
-        fontWeight: 'bolder',
-        color: '#f6fbff',
-        offsetCenter: [0, '-4%'],
-        formatter: '{value}',
-      },
-      data: [{ value: score }],
-    }],
-    graphic: [{
-      type: 'text',
-      left: 'center',
-      top: '63%',
-      style: {
-        text: '综合发展指数',
-        fill: '#b8ecff',
-        fontSize: 13,
-        fontWeight: 'bold',
-      },
-    }],
-  }
+/* 环形仪表颜色 */
+const ringScoreColor = computed(() => {
+  const s = compositeScore.value.score
+  return s >= 88 ? '#43e7af' : s >= 70 ? '#38bdf8' : '#fbbf24'
 })
 
 /* AI学生画像 */
@@ -217,11 +174,21 @@ const aiDecision = computed(() => {
   const action =
     d.aiAssistant.shortTermSuggestions?.[0] ||
     (studentPortrait.value.weaknesses[0] ? `未来3个月补强：${studentPortrait.value.weaknesses[0]}` : '保持当前发展节奏')
+  const recommendations = [
+    action,
+    `围绕最强项「${top.label}」制定纵深发展计划，形成个人优势标签`,
+    d.internship.projectCount < 5
+      ? '3 个月内新增 1–2 个企业级项目，丰富作品集与简历亮点'
+      : '持续提升项目质量，争取行业竞赛或科研成果产出',
+    '结合目标岗位 JD，补强缺失能力并完善求职材料',
+    '保持 GPA 与核心课程稳定，按节奏推进升学 / 就业目标',
+  ]
   return {
     status: aiJudgment.value.status,
     advantage,
     risk: mainRisk,
     action,
+    recommendations,
     confidence: aiJudgment.value.confidence,
     sources: aiJudgment.value.sources,
   }
@@ -237,19 +204,25 @@ const capabilityDiagnostics = computed(() => {
   const award = d.competition.awardCount
   const proj = d.internship.projectCount
   const peerAvgProj = 5.3
+  const intern = d.internship.internshipCount
+  const cert = d.internship.certificateCount
   return [
     { idx: '①', title: '学业优势', items: [
       { k: 'GPA', v: gpa.toFixed(2) },
       { k: '专业排名', v: `${rk}/${tot}` },
-    ], suggest: '' },
+    ], suggest: '保持核心课程成绩稳定，争取进入专业前 20%' },
     { idx: '②', title: '技术优势', items: [
       { k: '竞赛', v: `${award} 项` },
       { k: '专业前', v: `${Math.round((rk / tot) * 100)}%` },
-    ], suggest: '' },
+    ], suggest: '将竞赛成果沉淀为项目作品，丰富技术作品集' },
     { idx: '③', title: '能力短板', items: [
       { k: '项目经验', v: `当前 ${proj} 项` },
       { k: '优秀学生平均', v: `${peerAvgProj} 项` },
-    ], suggest: '增加企业项目经历' },
+    ], suggest: '补齐企业项目至 5 项以上，提升实战与协作能力' },
+    { idx: '④', title: '实践与认证', items: [
+      { k: '实习', v: `${intern} 次` },
+      { k: '证书', v: `${cert} 项` },
+    ], suggest: '补充 1 段企业实习与 1 项行业认证，强化就业竞争力' },
   ]
 })
 
@@ -334,9 +307,12 @@ const capabilityBars = computed(() => abilities.value)
 const aiSummary = computed(() => {
   const d = dashboard.value
   if (!d) return '—'
-  const top = [...abilities.value].sort((a, b) => b.value - a.value)[0]
-  const low = [...abilities.value].sort((a, b) => a.value - b.value)[0]
-  return `该生综合发展指数 ${compositeScore.value.score}（${compositeScore.value.level}）。最强项为「${top.label}」（${top.value}），最需补强的是「${low.label}」（${low.value}）。建议优先提升实践能力与项目积累，巩固就业竞争力。`
+  const sorted = [...abilities.value].sort((a, b) => b.value - a.value)
+  const top = sorted[0]
+  const low = sorted[sorted.length - 1]
+  const sortedRisk = [...riskDims.value].sort((a, b) => b.value - a.value)
+  const mainRisk = sortedRisk[0]?.reason ?? '暂无显著风险'
+  return `该生综合发展指数 ${compositeScore.value.score}（${compositeScore.value.level}）。最强项为「${top.label}」（${top.value} 分），建议向该方向纵深发展、打造个人优势标签；最需补强的是「${low.label}」（${low.value} 分），是当前成长的主要约束，应优先投入。结合雷达对比，实践能力与项目积累是拉开差距的关键，建议尽快补齐企业项目与实习经历以巩固就业竞争力。主要风险：${mainRisk}。`
 })
 
 /* ════════════ 3. AI机会雷达 ════════════ */
@@ -524,14 +500,34 @@ const pathOptions = [
   { key: 'job' as const, label: '直接就业' },
   { key: 'civil' as const, label: '考公' },
 ]
+/* 各方向匹配度（占比代理），用于默认优先展示占比最高的方向 */
+const pathScore = (key: 'postgrad' | 'job' | 'civil'): number => {
+  const gpa = dashboard.value?.academic.gpa ?? 3
+  const jobReady = dashboard.value?.employment.jobReadiness ?? 70
+  if (key === 'postgrad') return clamp(60 + (gpa - 3) * 30)
+  if (key === 'job') return clamp(jobReady + 5)
+  return 68
+}
+/* 占比最高的方向优先默认展示（数据加载后仅应用一次） */
+const priorityPath = computed<'postgrad' | 'job' | 'civil'>(() => {
+  const ranked = [...pathOptions].sort((a, b) => pathScore(b.key) - pathScore(a.key))
+  return ranked[0].key
+})
+let priorityApplied = false
+watch(
+  () => dashboard.value,
+  (val) => {
+    if (!priorityApplied && val) {
+      simPath.value = priorityPath.value
+      priorityApplied = true
+    }
+  },
+)
 const pathResult = computed(() => {
-  const d = dashboard.value
-  const gpa = d?.academic.gpa ?? 3
-  const jobReady = d?.employment.jobReadiness ?? 70
   if (simPath.value === 'postgrad') {
     return {
       type: 'postgrad',
-      headline: `成功概率 ${clamp(60 + (gpa - 3) * 30)}%`,
+      headline: `成功概率 ${pathScore('postgrad')}%`,
       strengths: ['GPA 较高', '专业基础扎实'],
       weakness: '数学模块需补强',
       suggest: '补强数学课程 · 准备目标院校',
@@ -540,7 +536,7 @@ const pathResult = computed(() => {
   if (simPath.value === 'job') {
     return {
       type: 'job',
-      headline: `岗位匹配 ${clamp(jobReady + 5)}%`,
+      headline: `岗位匹配 ${pathScore('job')}%`,
       roles: ['Java开发', '后端工程师'],
       salary: '12–18K',
       strengths: ['专业技能突出'],
@@ -549,12 +545,34 @@ const pathResult = computed(() => {
   }
   return {
     type: 'civil',
-    headline: '匹配度 68%',
+    headline: `匹配度 ${pathScore('civil')}%`,
     strengths: ['综合成绩较好'],
     weakness: '行政能力模块不足',
     suggest: '加强申论与行测训练',
   }
 })
+const currentPathLabel = computed(
+  () => pathOptions.find(o => o.key === simPath.value)?.label ?? '',
+)
+
+/* ── 发展路径规划：三个方向各自的二级详情页 ── */
+const pathRouteMap: Record<string, string> = {
+  postgrad: ROUTES.student.careerPathPostgrad,
+  job: ROUTES.student.careerPathJob,
+  civil: ROUTES.student.careerPathCivil,
+}
+const pathTabMap: Record<string, string> = {
+  postgrad: 'graduate',
+  job: 'employment',
+  civil: 'civil',
+}
+function goCareerPath(key: 'postgrad' | 'job' | 'civil') {
+  const studentId = route.query.studentId as string | undefined
+  router.push({
+    path: pathRouteMap[key],
+    query: studentId ? { studentId, tab: pathTabMap[key] } : { tab: pathTabMap[key] },
+  })
+}
 
 /* ════════════ 6. 同专业成长比较 ════════════ */
 const peerDims = computed(() => {
@@ -636,8 +654,20 @@ onMounted(load)
           <!-- 左：综合发展指数 -->
           <div class="cockpit-left">
             <h4 class="panel-label">综合发展指数</h4>
-            <div class="cockpit-ring">
-              <ChartContainer :option="ringOption" style="height:200px" />
+            <div class="cockpit-ring-score">
+              <svg class="ring-svg" viewBox="0 0 120 120">
+                <circle class="ring-svg__bg" cx="60" cy="60" r="50" />
+                <circle
+                  class="ring-svg__fill"
+                  cx="60" cy="60" r="50"
+                  :stroke="ringScoreColor"
+                  :stroke-dashoffset="314 - 314 * compositeScore.score / 100"
+                />
+              </svg>
+              <div class="ring-svg__center">
+                <div class="ring-svg__score">{{ compositeScore.score }}</div>
+                <div class="ring-svg__level" :style="{ color: ringScoreColor }">{{ compositeScore.level }}</div>
+              </div>
             </div>
             <div class="stage-block">
               <div class="stage-block__label">发展阶段</div>
@@ -682,13 +712,13 @@ onMounted(load)
               <div class="portrait-section">
                 <div class="portrait-section__title portrait-section__title--good">优势</div>
                 <div class="tag-row">
-                  <span v-for="s in studentPortrait.strengths" :key="s" class="tag tag--good">✓ {{ s }}</span>
+                  <span v-for="s in studentPortrait.strengths" :key="s" class="tag tag--good">{{ s }}</span>
                 </div>
               </div>
               <div class="portrait-section">
                 <div class="portrait-section__title portrait-section__title--warn">待提升</div>
                 <div class="tag-row">
-                  <span v-for="w in studentPortrait.weaknesses" :key="w" class="tag tag--warn">⚠ {{ w }}</span>
+                  <span v-for="w in studentPortrait.weaknesses" :key="w" class="tag tag--warn">{{ w }}</span>
                 </div>
               </div>
               <div class="portrait-section">
@@ -724,7 +754,9 @@ onMounted(load)
               </div>
               <div class="ai-decision__block">
                 <div class="ai-decision__label">推荐动作</div>
-                <div class="ai-decision__text">{{ aiDecision.action }}</div>
+                <ul class="ai-decision__list">
+                  <li v-for="(r, i) in aiDecision.recommendations" :key="i">{{ r }}</li>
+                </ul>
               </div>
               <div class="ai-decision__confidence">
                 <span>AI 可信度</span>
@@ -750,7 +782,7 @@ onMounted(load)
             <div class="cap-cell__title">能力雷达（本人 vs 专业平均）</div>
             <ChartContainer :option="radarOption" style="height:300px" />
           </div>
-          <!-- 中：能力指数排行 -->
+          <!-- 右：能力指数排行 -->
           <div class="cap-cell">
             <div class="cap-cell__title">能力指数排行</div>
             <div class="cap-bars">
@@ -758,27 +790,30 @@ onMounted(load)
                 <span class="cap-bar__label">{{ b.label }}</span>
                 <span class="cap-bar__value">{{ b.value }}</span>
                 <div class="cap-bar__track">
-                  <div class="cap-bar__fill" :style="{ width: b.value + '%', background: b.color }" />
+                  <div class="cap-bar__fill" :style="{ width: b.value + '%', background: 'linear-gradient(90deg, #1d6fb8, #38bdf8)' }" />
                 </div>
               </div>
             </div>
           </div>
-          <!-- 右：AI 能力诊断 -->
-          <div class="cap-cell">
-            <div class="cap-cell__title">AI 能力诊断</div>
-            <div class="diag-list">
-              <div v-for="item in capabilityDiagnostics" :key="item.idx" class="diag-item">
-                <div class="diag-item__title">{{ item.idx }} {{ item.title }}</div>
-                <div class="diag-item__rows">
-                  <div v-for="it in item.items" :key="it.k" class="diag-row">
-                    <span class="diag-row__k">{{ it.k }}</span>
-                    <span class="diag-row__v">{{ it.v }}</span>
-                  </div>
+        </div>
+        <!-- AI 能力诊断（横向） -->
+        <div class="cap-diag-section">
+          <div class="cap-cell__title">AI 能力诊断</div>
+          <div class="diag-list">
+            <div v-for="item in capabilityDiagnostics" :key="item.idx" class="diag-item">
+              <div class="diag-item__title">{{ item.idx }} {{ item.title }}</div>
+              <div class="diag-item__rows">
+                <div v-for="it in item.items" :key="it.k" class="diag-row">
+                  <span class="diag-row__k">{{ it.k }}</span>
+                  <span class="diag-row__v">{{ it.v }}</span>
                 </div>
-                <div v-if="item.suggest" class="diag-item__suggest">提升建议：{{ item.suggest }}</div>
               </div>
+              <div v-if="item.suggest" class="diag-item__suggest">提升建议：{{ item.suggest }}</div>
             </div>
           </div>
+        </div>
+        <div class="cap-summary-box">
+          <p class="cap-summary"><b class="cap-summary__tag">AI 综合研判</b>{{ aiSummary }}</p>
         </div>
       </section>
 
@@ -893,7 +928,7 @@ onMounted(load)
             </div>
           </div>
           <div class="forecast-sim">
-            <div class="cap-cell__title">学生发展路径模拟</div>
+            <div class="cap-cell__title">学生发展路径规划</div>
             <div class="sim-btns">
               <button
                 v-for="opt in pathOptions"
@@ -915,6 +950,7 @@ onMounted(load)
               <div class="sim-result__row"><span>优势</span><em>{{ pathResult.strengths.join('、') }}</em></div>
               <div class="sim-result__row"><span>短板</span><em>{{ pathResult.weakness }}</em></div>
               <div v-if="pathResult.suggest" class="sim-result__suggest">建议：{{ pathResult.suggest }}</div>
+              <button type="button" class="sim-detail-btn" @click="goCareerPath(simPath)">查看{{ currentPathLabel }}详情 ›</button>
             </div>
           </div>
         </div>
@@ -937,8 +973,8 @@ onMounted(load)
               <span>{{ d.top }}</span>
             </div>
             <div class="peer-concl">
-              <span class="tag tag--good">✓ 竞赛领先</span>
-              <span class="tag tag--warn">⚠ 项目不足</span>
+              <span class="tag tag--good">竞赛领先</span>
+              <span class="tag tag--warn">项目不足</span>
             </div>
           </div>
         </div>
@@ -999,7 +1035,7 @@ onMounted(load)
 
 .deep-card__title {
   margin: 0 0 16px;
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: .04em;
@@ -1019,7 +1055,7 @@ onMounted(load)
 
 .panel-label {
   margin: 0 0 12px;
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 700;
   color: #6cdfff;
   padding-bottom: 8px;
@@ -1027,7 +1063,7 @@ onMounted(load)
 }
 
 .cap-cell__title {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   color: #8eb8d8;
   margin-bottom: 10px;
@@ -1039,7 +1075,7 @@ onMounted(load)
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr) minmax(0, 1.1fr);
   gap: 18px;
-  align-items: stretch;
+  align-items: start;
 }
 
 /* 三栏统一为面板卡片，视觉层级一致、顶端对齐 */
@@ -1055,22 +1091,69 @@ onMounted(load)
   box-shadow: inset 0 0 20px rgba(0, 184, 255, .05);
 }
 
-.cockpit-ring {
-  max-width: 240px;
-  margin: 0 auto 4px;
+.cockpit-left {
+  justify-content: flex-start;
+  padding-top: 10px;
+}
+
+/* 环形仪表（主环，SVG 渲染，中心数字 + 等级） */
+.cockpit-ring-score {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: -2px auto 0;
+}
+
+.ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+
+  &__bg {
+    fill: none;
+    stroke: rgba(120, 160, 200, .15);
+    stroke-width: 10;
+    stroke-linecap: round;
+  }
+  &__fill {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 314;
+    transition: stroke-dashoffset .8s ease;
+  }
+  &__center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  &__score {
+    font-size: 36px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+  }
+  &__level {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
 }
 
 .stage-block {
-  margin-top: auto;
+  margin-top: 12px;
   padding: 14px;
   border-radius: 10px;
   background: rgba(0, 30, 60, .28);
   border: 1px solid rgba(0, 184, 255, .12);
 
-  &__label { color: #7aa4c0; font-size: 14px; margin-bottom: 6px; }
+  &__label { color: #7aa4c0; font-size: 16px; margin-bottom: 6px; }
   &__stage { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-  &__stars { color: #facc15; font-size: 17px; letter-spacing: 2px; }
-  &__text { color: #7ff6ff; font-size: 16px; font-weight: 700; }
+  &__stars { color: #facc15; font-size: 20px; letter-spacing: 2px; }
+  &__text { color: #7ff6ff; font-size: 19px; font-weight: 700; }
 }
 
 .stage-progress {
@@ -1080,11 +1163,11 @@ onMounted(load)
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-size: 14px;
+    font-size: 16px;
     color: #8eb8d8;
     margin-bottom: 6px;
 
-    em { color: #7ff6ff; font-weight: 800; font-style: normal; font-size: 16px; }
+    em { color: #7ff6ff; font-weight: 800; font-style: normal; font-size: 19px; }
   }
   &__bar {
     height: 11px;
@@ -1110,15 +1193,15 @@ onMounted(load)
   background: rgba(0, 30, 60, .3);
   border: 1px solid rgba(102, 217, 255, .1);
 
-  &__label { display: block; color: #7aa4c0; font-size: 13px; margin-bottom: 4px; }
-  &__value { color: #7ff6ff; font-size: 19px; font-weight: 800; }
+  &__label { display: block; color: #7aa4c0; font-size: 15px; margin-bottom: 4px; }
+  &__value { color: #7ff6ff; font-size: 22px; font-weight: 800; }
 }
 
 .ability-break {
   margin-top: 8px;
 
   &__hint {
-    font-size: 11px;
+    font-size: 15px;
     color: #6a8db0;
     text-align: center;
     margin-bottom: 8px;
@@ -1131,7 +1214,7 @@ onMounted(load)
     background: rgba(0, 100, 180, .12);
     border: 1px solid rgba(0, 184, 255, .18);
     color: #b8ecff;
-    font-size: 12px;
+    font-size: 16px;
     text-align: center;
   }
 }
@@ -1147,7 +1230,7 @@ onMounted(load)
   border: 1px solid rgba(102, 217, 255, .12);
   background: rgba(0, 30, 60, .28);
   color: #d8eeff;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all .2s;
@@ -1201,13 +1284,13 @@ onMounted(load)
   background: rgba(0, 184, 255, .14);
   border: 1px solid rgba(0, 184, 255, .32);
 
-  &__icon { font-size: 19px; }
-  &__label { color: #8ef6ff; font-size: 15px; font-weight: 800; }
+  &__icon { font-size: 22px; }
+  &__label { color: #8ef6ff; font-size: 18px; font-weight: 800; }
 }
 
 .portrait-section {
   &__title {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     color: #7aa4c0;
     margin-bottom: 8px;
@@ -1246,7 +1329,7 @@ onMounted(load)
   color: #f6fbff;
   text-shadow: 0 0 14px rgba(0, 242, 255, .28);
 }
-.portrait-meta { color: #8eb8d8; font-size: 15px; }
+.portrait-meta { color: #8eb8d8; font-size: 17px; }
 
 .portrait-stage {
   display: flex;
@@ -1263,7 +1346,7 @@ onMounted(load)
   margin-bottom: 12px;
 
   &__title {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     color: #7aa4c0;
     margin-bottom: 7px;
@@ -1282,7 +1365,7 @@ onMounted(load)
 .tag {
   padding: 4px 11px;
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   border: 1px solid transparent;
 
@@ -1367,6 +1450,16 @@ onMounted(load)
   &__label { color: #6cdfff; font-size: 14px; font-weight: 700; margin-bottom: 5px; }
   &__text { color: #d8eeff; font-size: 15px; line-height: 1.55; }
 
+  &__list {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    li { color: #d8eeff; font-size: 14px; line-height: 1.55; }
+  }
+
   &__confidence {
     display: flex;
     align-items: center;
@@ -1384,9 +1477,16 @@ onMounted(load)
 /* ── 2. 能力画像分析 ── */
 .capability-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 22px;
   align-items: stretch;
+}
+
+/* AI 能力诊断（横向，放下面） */
+.cap-diag-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(102, 217, 255, .08);
 }
 
 .cap-summary-box {
@@ -1398,20 +1498,23 @@ onMounted(load)
 /* AI 能力诊断 */
 .diag-list {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 .diag-item {
-  padding: 12px 14px;
+  flex: 1 1 220px;
+  min-width: 200px;
+  padding: 14px 16px;
   border-radius: 8px;
   background: rgba(0, 30, 60, .24);
   border: 1px solid rgba(102, 217, 255, .1);
 
   &__title {
     color: #8ef6ff;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 800;
-    margin-bottom: 9px;
+    margin-bottom: 10px;
   }
   &__rows {
     display: flex;
@@ -1419,11 +1522,11 @@ onMounted(load)
     gap: 6px;
   }
   &__suggest {
-    margin-top: 9px;
-    padding-top: 9px;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px dashed rgba(102, 217, 255, .12);
     color: #f7d774;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
   }
 }
@@ -1431,7 +1534,7 @@ onMounted(load)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 15px;
+  font-size: 16px;
 
   &__k { color: #8eb8d8; }
   &__v { color: #eaf6ff; font-weight: 700; }
@@ -1468,6 +1571,8 @@ onMounted(load)
   color: #d8eeff;
   font-size: 13px;
   line-height: 1.6;
+
+  &__tag { color: #7ff6ff; font-weight: 800; margin-right: 4px; }
 }
 .cap-ability-list {
   display: flex;
@@ -1519,7 +1624,7 @@ onMounted(load)
   border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
   background: rgba(0, 30, 60, .28);
   color: #d8eeff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all .2s;
@@ -1545,9 +1650,9 @@ onMounted(load)
     margin-bottom: 14px;
   }
   &__icon { font-size: 26px; }
-  &__name { margin: 0; color: #eaf6ff; font-size: 16px; font-weight: 800; }
-  &__reco { color: #facc15; font-size: 13px; }
-  &__reco strong { color: #7ff6ff; font-size: 15px; margin-left: 4px; }
+  &__name { margin: 0; color: #eaf6ff; font-size: 18px; font-weight: 800; }
+  &__reco { color: #facc15; font-size: 15px; }
+  &__reco strong { color: #7ff6ff; font-size: 17px; margin-left: 4px; }
 }
 
 .oppo-compare {
@@ -1562,26 +1667,26 @@ onMounted(load)
     padding: 7px 10px;
     border-radius: 6px;
     background: rgba(0, 30, 60, .25);
-    span { color: #8eb8d8; font-size: 12px; }
-    em { color: #d8eeff; font-style: normal; font-size: 13px; font-weight: 600; }
+    span { color: #8eb8d8; font-size: 14px; }
+    em { color: #d8eeff; font-style: normal; font-size: 15px; font-weight: 600; }
     .hl { color: #7ff6ff; }
   }
 }
 
 .oppo-block {
   margin-bottom: 12px;
-  &__title { font-size: 12px; font-weight: 700; color: #7aa4c0; margin-bottom: 7px; }
+  &__title { font-size: 14px; font-weight: 700; color: #7aa4c0; margin-bottom: 7px; }
 }
 .oppo-res {
   margin: 0; padding-left: 18px;
-  li { color: #d8eeff; font-size: 13px; margin-bottom: 4px; }
+  li { color: #d8eeff; font-size: 15px; margin-bottom: 4px; }
 }
 .oppo-improve {
   display: flex;
   flex-direction: column;
   gap: 6px;
   &__item {
-    color: #cfe6f8; font-size: 13px;
+    color: #cfe6f8; font-size: 15px;
     b { color: #d8eeff; }
     .hl { color: #43e7af; }
   }
@@ -1612,10 +1717,10 @@ onMounted(load)
     align-items: center;
     margin-bottom: 4px;
   }
-  &__name { color: #eaf6ff; font-size: 14px; font-weight: 700; }
-  &__val { color: #7fe3ff; font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
-  &__reason { margin: 0 0 2px; color: #cfe6f8; font-size: 12px; }
-  &__suggest { margin: 0; color: #8eb8d8; font-size: 12px; }
+  &__name { color: #eaf6ff; font-size: 16px; font-weight: 700; }
+  &__val { color: #7fe3ff; font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  &__reason { margin: 0 0 2px; color: #cfe6f8; font-size: 14px; }
+  &__suggest { margin: 0; color: #8eb8d8; font-size: 14px; }
 }
 
 /* ── 5. 成长预测 + 路径模拟 ── */
@@ -1646,7 +1751,7 @@ onMounted(load)
   border: 1px solid rgba(0, 200, 255, .25);
   background: rgba(0, 30, 60, .3);
   color: #d8eeff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   transition: all .2s;
@@ -1674,8 +1779,8 @@ onMounted(load)
     border-radius: 6px;
     background: rgba(0, 30, 60, .25);
     margin-bottom: 8px;
-    span { color: #8eb8d8; font-size: 12px; }
-    em { color: #d8eeff; font-style: normal; font-size: 13px; font-weight: 600; }
+    span { color: #8eb8d8; font-size: 14px; }
+    em { color: #d8eeff; font-style: normal; font-size: 15px; font-weight: 600; }
     .hl { color: #43e7af; }
   }
   &__suggest {
@@ -1685,7 +1790,27 @@ onMounted(load)
     background: rgba(0, 100, 180, .12);
     border: 1px solid rgba(0, 184, 255, .18);
     color: #b8ecff;
-    font-size: 12px;
+    font-size: 14px;
+  }
+}
+.sim-detail-btn {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 0;
+  border-radius: 8px;
+  border: 1px solid rgba(120, 210, 255, .35);
+  background: rgba(0, 60, 110, .35);
+  color: #8ee9ff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+
+  &:hover {
+    border-color: #00e5ff;
+    background: rgba(0, 120, 190, .45);
+    box-shadow: 0 0 12px rgba(0, 200, 255, .35);
   }
 }
 
@@ -1707,7 +1832,7 @@ onMounted(load)
   align-items: center;
   padding: 10px 12px;
   border-bottom: 1px solid rgba(102, 217, 255, .06);
-  font-size: 13px;
+  font-size: 15px;
 
   span:first-child { color: #cfe6f8; }
   span:nth-child(2) { color: #7ff6ff; font-weight: 800; text-align: center; }
@@ -1715,7 +1840,7 @@ onMounted(load)
 
   &--head {
     border-bottom: 1px solid rgba(102, 217, 255, .15);
-    span { color: #7aa4c0; font-size: 12px; font-weight: 700; }
+    span { color: #7aa4c0; font-size: 14px; font-weight: 700; }
   }
 }
 .peer-concl {
@@ -1738,7 +1863,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 12px;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 800;
     padding-left: 10px;
     border-left: 3px solid;
@@ -1758,7 +1883,7 @@ onMounted(load)
     align-items: flex-start;
     gap: 8px;
     color: #d8eeff;
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.5;
     padding: 8px 0;
     border-bottom: 1px solid rgba(102, 217, 255, .05);

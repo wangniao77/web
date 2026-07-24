@@ -211,6 +211,10 @@ export interface JobMatchVM {
   salary?: string
   requirements?: string
   reason?: string
+  /** 该岗位相对学生的优势能力（具体、按岗位区分） */
+  strengths?: string[]
+  /** 该岗位相对学生的缺失/待补能力（具体、按岗位区分） */
+  gaps?: string[]
 }
 
 export interface EmploymentVM {

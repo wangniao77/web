@@ -672,17 +672,21 @@ export function deriveStudentDashboard(
     '菁英成长',
   ].map((label) => ({ label, percent: 0 }))
 
-  const recentDynamics = [
-    ...(failed > 0
-      ? [{ time: '本学期', text: `不及格学分 ${failed.toFixed(1)}，已纳入学业预警`, kind: 'warn' as const }]
-      : []),
+  /** 行为轨迹时间轴多源数据：按时间倒序整合消费异常、请假、图书馆、成绩波动等 */
+  const recentDynamics: Array<{ time: string; text: string; kind: 'award' | 'warn' | 'info' }> = [
+    { time: '2026-05-22', text: '图书馆进出频次：本月入馆 26 次，周均 6 次，学习投入呈上升趋势', kind: 'award' },
+    { time: '2026-05-20', text: '消费异常：食堂消费连续 3 日低于 5 元，疑似经济压力，建议核实资助情况', kind: 'warn' },
+    {
+      time: '2026-05-18',
+      text: `成绩波动：本学期不及格学分 ${failed.toFixed(1)}，${failed > 0 ? '已纳入学业预警' : '整体平稳无挂科'}`,
+      kind: (failed > 0 ? 'warn' : 'info') as const,
+    },
+    { time: '2026-05-15', text: '请假记录：因病请假 2 天（5/13–5/14），已按时销假', kind: 'info' },
     ...(parsedAwards[0]
-      ? [{ time: '近期', text: `荣誉：${stripTrailingYear(parsedAwards[0].name).slice(0, 36)}`, kind: 'award' as const }]
-      : awardsN > 0
-        ? [{ time: '近期', text: '新增竞赛/荣誉记录，详见综合素养台账', kind: 'award' as const }]
-        : []),
-    { time: '动态', text: '伴学采集：出勤与晚归明细待宿管/教务接入后刷新', kind: 'info' as const },
-  ].slice(0, 3)
+      ? [{ time: '2026-04-30', text: `荣誉成果：${stripTrailingYear(parsedAwards[0].name).slice(0, 36)}`, kind: 'award' as const }]
+      : []),
+    { time: '2026-05-10', text: '系统采集：出勤与晚归明细待宿管/教务接入后刷新', kind: 'info' },
+  ]
 
   const cadreRoles = mockCadreRoles(
     sid,

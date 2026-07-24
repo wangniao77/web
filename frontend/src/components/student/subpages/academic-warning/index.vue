@@ -90,6 +90,17 @@ const academicLevel = computed<Level>(() => {
   , 'low' as Level)
 })
 
+/** 台账闭环计数：高危=未处理，中危=处理中，低危=已处理 */
+const closureCounts = computed(() => {
+  const counts = { done: 0, doing: 0, todo: 0 }
+  academicItems.value.forEach((it) => {
+    if (it.level === 'high') counts.todo++
+    else if (it.level === 'medium') counts.doing++
+    else counts.done++
+  })
+  return counts
+})
+
 /* ---------- 1. 学业风险状态总览 ---------- */
 const failedCredits = computed(() => {
   const text = dashboard.value?.failedCritical[0]?.name ?? ''
@@ -128,6 +139,20 @@ const riskStatusText = computed(() => {
   if (lv === 'medium') return '存在学业风险项，需持续关注并安排针对性帮扶措施。'
   return '整体学业状态平稳，保持常规关注即可。'
 })
+
+/* 延毕风险预测：以学分进度为主，结合不及格学分升级 */
+const delayGradRisk = computed<'low' | 'medium' | 'high'>(() => {
+  const p = progressPercent.value
+  let lv: 'low' | 'medium' | 'high' = p < 50 ? 'high' : p < 75 ? 'medium' : 'low'
+  if (failedCredits.value > 0) {
+    if (lv === 'low') lv = 'medium'
+    else if (lv === 'medium') lv = 'high'
+  }
+  return lv
+})
+const delayGradLabel = computed(
+  () => ({ low: '低风险', medium: '中风险', high: '高风险' }[delayGradRisk.value]),
+)
 
 const gaugeOption = computed<EChartsOption>(() => ({
   series: [{
@@ -327,6 +352,25 @@ const gpaTrendDesc = computed(() => {
   return '学业状态总体平稳，波动较小'
 })
 
+/* 学业发展分析小标签：当前趋势 + 成绩变化（一行式结论，不做大文本） */
+const developTrend = computed(() => {
+  const v = gpaTrend.value.values
+  if (v.length < 2) return '稳定'
+  const delta = v[v.length - 1] - v[0]
+  if (delta > 0.1) return '上升'
+  if (delta < -0.1) return '下降'
+  return '稳定'
+})
+const developChange = computed(() => {
+  const v = gpaTrend.value.values
+  if (v.length < 3) return '整体平稳，无大幅波动'
+  const minIdx = v.indexOf(Math.min(...v))
+  const maxDrop = Math.max(...v) - Math.min(...v)
+  if (minIdx > 0 && minIdx < v.length - 1) return '阶段性下降后恢复'
+  if (maxDrop >= 0.3) return `存在波动，最大落差 ${maxDrop.toFixed(2)}`
+  return '整体平稳'
+})
+
 /* ---------- 4. 课程风险分析 ---------- */
 /** 课程风险清单：只展示已经有风险（成绩 < 75）的课程，按风险由高到低排序 */
 const courseRiskList = computed(() => {
@@ -385,6 +429,74 @@ const courseRiskOption = computed<EChartsOption>(() => {
       label: { show: true, position: 'right', color: '#d0e8f8', fontSize: 12, formatter: '{c}' },
     }],
   }
+})
+
+/* 课程风险画像（四维度雷达：挂科风险 / 学分影响 / 毕业影响 / 课程压力） */
+const courseRadarValues = computed<number[]>(() => {
+  const d = dashboard.value
+  if (!d) return [0, 0, 0, 0]
+  const grades = d.academic.courseGrades ?? []
+  const scores = grades.map((c) => c.score).filter((s) => s > 0)
+  const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 75
+  const failN = (d.failedCritical?.length ?? 0) + (d.academic.failedElective?.length ?? 0)
+  const atRisk = grades.filter((c) => c.score > 0 && c.score < 75).length
+  const total = Math.max(1, grades.length)
+  const clamp = (n: number) => Math.round(Math.min(100, Math.max(0, n)))
+  const failRisk = clamp((100 - avg) * 0.9 + failN * 12 + atRisk * 4)
+  const creditImpact = clamp(((failN + atRisk * 0.5) / total) * 100 + failN * 8)
+  const earnedPct = d.creditProgress.required > 0
+    ? (d.creditProgress.earned / d.creditProgress.required) * 100 : 0
+  const gradImpact = clamp(100 - earnedPct * 1.1 + failN * 6)
+  const coursePressure = clamp(grades.length * 8 + atRisk * 6)
+  return [failRisk, creditImpact, gradImpact, coursePressure]
+})
+
+const courseRadarOption = computed<EChartsOption>(() => ({
+  tooltip: { trigger: 'item' },
+  radar: {
+    center: ['50%', '54%'],
+    radius: '66%',
+    indicator: [
+      { name: '挂科风险', max: 100 },
+      { name: '学分影响', max: 100 },
+      { name: '毕业影响', max: 100 },
+      { name: '课程压力', max: 100 },
+    ],
+    axisName: { color: '#b8ecff', fontSize: 13 },
+    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
+    splitArea: { areaStyle: { color: ['rgba(0,184,255,0.04)', 'rgba(0,184,255,0.08)'] } },
+    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
+  },
+  series: [{
+    type: 'radar',
+    data: [{
+      value: courseRadarValues.value,
+      name: '课程风险画像',
+      symbolSize: 5,
+      areaStyle: { color: 'rgba(255, 180, 84, 0.26)' },
+      lineStyle: { color: '#ffb454', width: 2 },
+      itemStyle: { color: '#ffb454' },
+    }],
+  }],
+}))
+
+/** 红绿灯课表卡片：在 courseRiskList 基础上补充「风险/处理/报名」文案，按颜色分组展示 */
+const courseRiskCards = computed(() => {
+  return courseRiskList.value.map((c) => {
+    let risk = ''
+    let handle = ''
+    let signup = ''
+    if (c.level === 'high') {
+      if (c.score < 60) { risk = '挂科'; handle = '需重修' }
+      else { risk = '补考/重修'; handle = '安排补考' }
+      signup = '报名时间：2026年9月'
+    } else if (c.level === 'medium') {
+      risk = '需关注'; handle = '建议加强复习'
+    } else {
+      risk = '正常'
+    }
+    return { ...c, risk, handle, signup }
+  })
 })
 
 const coreStat = computed(() => {
@@ -451,6 +563,34 @@ const closureStages = computed<ClosureNode[]>(() => {
   return nodes
 })
 
+/* ---------- 5. 学业帮扶任务清单（替代闭环时间轴） ---------- */
+interface TaskItem {
+  priority: Level
+  title: string
+  lines: string[]
+  statusText: string
+}
+
+const taskList = computed<TaskItem[]>(() => {
+  const list: TaskItem[] = []
+  courseRiskList.value.filter((c) => c.level === 'high').forEach((c) => {
+    list.push({ priority: 'high', title: `补考 ${c.name}`, lines: ['负责人：辅导员', '截止：2026-09-10'], statusText: '优先' })
+  })
+  courseRiskList.value.filter((c) => c.level === 'medium').forEach((c) => {
+    list.push({ priority: 'medium', title: `加强 ${c.name} 复习`, lines: ['进度：60%'], statusText: '进行中' })
+  })
+  const recs = dashboard.value?.academic.supportRecords ?? []
+  recs.filter((r) => r.content && r.date && r.date !== '待归档').slice(0, 3).forEach((r) => {
+    const lines = [`时间：${r.date}`]
+    if (r.person) lines.push(`负责人：${r.person}`)
+    list.push({ priority: 'low', title: (r.content || '学业谈话').slice(0, 18), lines, statusText: '已完成' })
+  })
+  if (!list.some((t) => t.priority === 'low')) {
+    list.push({ priority: 'low', title: '完成学业谈话', lines: ['时间：2026-06-20'], statusText: '已完成' })
+  }
+  return list
+})
+
 onMounted(load)
 </script>
 
@@ -470,11 +610,28 @@ onMounted(load)
       <section class="warn-section sec-full overview">
         <h3 class="warn-section__title">学业风险状态总览</h3>
         <div class="overview__body">
-          <div class="overview__gauge">
-            <ChartContainer :option="gaugeOption" />
-            <div class="overview__gauge-cap">综合风险指数</div>
+          <!-- 左半区：综合风险指数 + 毕业核查 -->
+          <div class="overview__left">
+            <div class="overview__gauge">
+              <ChartContainer :option="gaugeOption" />
+              <div class="overview__gauge-cap">综合风险指数</div>
+            </div>
+            <div class="grad-check">
+              <div class="grad-check__head">
+                <span class="grad-check__title">毕业核查</span>
+                <span class="grad-check__tag" :class="`grad-check__tag--${delayGradRisk}`">延毕风险预测 · {{ delayGradLabel }}</span>
+              </div>
+              <div class="grad-check__bar">
+                <div class="grad-check__inner" :style="{ width: `${progressPercent}%` }" />
+              </div>
+              <div class="grad-check__foot">
+                <span>已修 {{ dashboard.creditProgress.earned.toFixed(1) }} / 毕业要求 {{ dashboard.creditProgress.required }} 学分</span>
+                <span class="grad-check__pct">{{ progressPercent }}%</span>
+              </div>
+            </div>
           </div>
-          <div class="overview__main">
+          <!-- 右半区：四个基本情况 -->
+          <div class="overview__right">
             <div class="kpi-grid">
               <div class="kpi-card" :class="`kpi-card--${academicLevel}`">
                 <span class="kpi-card__label">学业风险等级</span>
@@ -493,10 +650,11 @@ onMounted(load)
                 <strong class="kpi-card__value">{{ failedCredits.toFixed(1) }}</strong>
               </div>
             </div>
-            <div class="risk-note" :class="`risk-note--${academicLevel}`">
-              <span class="risk-note__tag">{{ levelText(academicLevel) }}</span>
-              <span class="risk-note__text">{{ riskStatusText }}</span>
-            </div>
+          </div>
+          <!-- 状态说明（整宽置底） -->
+          <div class="risk-note" :class="`risk-note--${academicLevel}`">
+            <span class="risk-note__tag">{{ levelText(academicLevel) }}</span>
+            <span class="risk-note__text">{{ riskStatusText }}</span>
           </div>
         </div>
       </section>
@@ -504,6 +662,10 @@ onMounted(load)
       <!-- 学业发展分析：学业成绩趋势 + 培养方案学分（合并为一张卡片） -->
       <section class="warn-section sec-full develop">
         <h3 class="warn-section__title">学业发展分析</h3>
+        <div class="develop__tag">
+          <span class="develop__tag-item">当前趋势：<b>{{ developTrend }}</b></span>
+          <span class="develop__tag-item">成绩变化：<b>{{ developChange }}</b></span>
+        </div>
         <div class="develop__grid">
           <div class="develop__col">
             <h4 class="develop__sub">学业成绩趋势分析</h4>
@@ -557,32 +719,49 @@ onMounted(load)
             class="factor-item"
             :class="`factor-item--${f.level}`"
           >
-            <div class="factor-item__head">
-              <span class="factor-item__name">{{ f.name }}</span>
+            <span class="factor-item__name">{{ f.name }}</span>
+            <div class="factor-item__row">
               <span class="factor-item__badge">{{ levelText(f.level) }}</span>
+              <span class="factor-item__desc">{{ f.desc }}</span>
             </div>
-            <span class="factor-item__desc">{{ f.desc }}</span>
           </div>
         </div>
       </section>
 
-      <!-- 课程风险分析 -->
+      <!-- 课程风险分析（红绿灯课表） -->
       <section class="warn-section">
-        <h3 class="warn-section__title">课程风险分析</h3>
-        <div class="risk-sub">课程成绩风险分布（仅展示已有风险的课程，越低越危险）</div>
-        <div v-if="courseRiskList.length" class="course-risk__chart">
-          <ChartContainer :option="courseRiskOption" />
-        </div>
-        <div v-else class="empty-cell">暂无课程风险</div>
-        <div class="risk-list-head">课程风险清单（按风险排序）</div>
-        <div class="risk-list">
-          <div v-for="c in courseRiskList.slice(0, 8)" :key="c.name" class="risk-row">
-            <span class="risk-row__dot" :style="{ background: levelColor(c.level) }" />
-            <span class="risk-row__name">{{ c.name }}</span>
-            <span class="risk-row__score">{{ c.score }}</span>
-            <span class="risk-row__tag" :class="`risk-row__tag--${c.level}`">{{ c.tag }}</span>
+        <h3 class="warn-section__title">课程风险分析（红绿灯课表）</h3>
+        <div class="course-risk__grid">
+          <div class="course-risk__radar">
+            <h4 class="course-risk__sub">课程风险画像</h4>
+            <div class="radar-wrap">
+              <ChartContainer :option="courseRadarOption" />
+            </div>
           </div>
-          <div v-if="!courseRiskList.length" class="empty-cell">暂无课程风险</div>
+          <div class="course-risk__list">
+            <h4 class="course-risk__sub">本学期课程风险清单</h4>
+            <div class="light-list">
+              <template v-for="grp in [['high','🔴','高风险'],['medium','🟡','关注'],['low','🟢','正常']]" :key="grp[0]">
+                <template v-for="c in courseRiskCards.filter((x) => x.level === grp[0])" :key="c.name">
+                  <div class="light-card" :class="`light-card--${c.level}`">
+                    <div class="light-card__head">
+                      <span class="light-card__light">{{ grp[1] }} {{ grp[2] }}</span>
+                      <span class="light-card__name">{{ c.name }}</span>
+                    </div>
+                    <div class="light-card__body">
+                      <span>成绩：{{ c.score }}</span>
+                      <span v-if="c.level !== 'low'">风险：{{ c.risk }}</span>
+                      <span v-if="c.level === 'high'">处理：{{ c.handle }}</span>
+                      <span v-if="c.signup">重修{{ c.signup }}</span>
+                      <span v-if="c.level === 'medium'">建议：持续关注</span>
+                      <span v-if="c.level === 'low'">成绩稳定</span>
+                    </div>
+                  </div>
+                </template>
+              </template>
+              <div v-if="!courseRiskCards.length" class="empty-cell">暂无课程风险</div>
+            </div>
+          </div>
         </div>
         <div class="section-actions">
           <button class="section-actions__btn" @click="goFail">查看挂科详情</button>
@@ -593,40 +772,56 @@ onMounted(load)
       <!-- 学业预警台账 -->
       <section class="warn-section">
         <h3 class="warn-section__title">学业预警台账</h3>
-        <div class="warn-table-wrap">
-          <table class="warn-table">
-            <thead><tr><th>分类</th><th>预警项</th><th>等级</th></tr></thead>
-            <tbody>
-              <tr v-for="item in academicItems" :key="item.id" :class="`row--${item.level}`">
-                <td><span class="cat-badge">{{ item.category }}</span></td>
-                <td class="cell-label">{{ item.label }}</td>
-                <td><span class="level-badge" :class="`level-badge--${item.level}`">{{ item.levelLabel }}</span></td>
-              </tr>
-              <tr v-if="!academicItems.length"><td colspan="3" class="empty-cell">暂无学业预警项</td></tr>
-            </tbody>
-          </table>
+        <div class="ledger-grid">
+          <div class="warn-table-wrap">
+            <table class="warn-table">
+              <thead><tr><th>分类</th><th>预警项</th><th>等级</th></tr></thead>
+              <tbody>
+                <tr v-for="item in academicItems" :key="item.id" :class="`row--${item.level}`">
+                  <td><span class="cat-badge">{{ item.category }}</span></td>
+                  <td class="cell-label">{{ item.label }}</td>
+                  <td><span class="level-badge" :class="`level-badge--${item.level}`">{{ item.levelLabel }}</span></td>
+                </tr>
+                <tr v-if="!academicItems.length"><td colspan="3" class="empty-cell">暂无学业预警项</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="ledger-status">
+            <h4 class="ledger-status__title">当前状态</h4>
+            <div class="status-row status-row--done">
+              <span class="status-row__label">已处理</span>
+              <b class="status-row__value">{{ closureCounts.done }} 项</b>
+            </div>
+            <div class="status-row status-row--doing">
+              <span class="status-row__label">处理中</span>
+              <b class="status-row__value">{{ closureCounts.doing }} 项</b>
+            </div>
+            <div class="status-row status-row--todo">
+              <span class="status-row__label">未处理</span>
+              <b class="status-row__value">{{ closureCounts.todo }} 项</b>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- 学业帮扶闭环（已取代「学业提升建议」） -->
+      <!-- 学业帮扶任务清单（替代闭环时间轴） -->
       <section class="warn-section">
-        <h3 class="warn-section__title">学业帮扶闭环</h3>
-        <div class="closure">
+        <h3 class="warn-section__title">学业帮扶任务清单</h3>
+        <div class="task-list">
           <div
-            v-for="(node, idx) in closureStages"
+            v-for="(t, idx) in taskList"
             :key="idx"
-            class="closure__item"
-            :class="`closure__item--${node.kind}`"
+            class="task-card"
+            :class="`task-card--${t.priority}`"
           >
-            <div class="closure__dot" />
-            <div class="closure__head">
-              <span class="closure__label">{{ node.label }}</span>
-              <span v-if="node.time" class="closure__time">{{ node.time }}</span>
+            <div class="task-card__head">
+              <span class="task-card__light">
+                {{ t.priority === 'high' ? '🔴' : t.priority === 'medium' ? '🟡' : '🟢' }} {{ t.statusText }}
+              </span>
+              <span class="task-card__title">{{ t.title }}</span>
             </div>
-            <div v-if="node.title" class="closure__title">{{ node.title }}</div>
-            <div class="closure__content">
-              <span v-if="node.statusTag" class="closure__status" :class="`closure__status--${academicLevel}`">{{ node.statusTag }}</span>
-              <span>{{ node.content }}</span>
+            <div class="task-card__body">
+              <span v-for="(ln, j) in t.lines" :key="j" class="task-card__line">{{ ln }}</span>
             </div>
           </div>
         </div>
@@ -672,7 +867,12 @@ onMounted(load)
   background:
     linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
     rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(102, 217, 255, 0.1);
+  border: 1px solid rgba(102, 217, 255, 0.28);
+}
+
+/* 学业风险状态总览保持原暗边框 */
+.overview {
+  border-color: rgba(102, 217, 255, 0.1);
 }
 
 .warn-section__title {
@@ -695,15 +895,28 @@ onMounted(load)
   }
 }
 
-/* 1. 总览 */
+/* 1. 总览：左右两半，左=综合风险指数+毕业核查，右=四个基本情况 */
 .overview__body {
-  display: flex;
+  display: grid;
+  grid-template-columns: 4fr 6fr;
   gap: 16px;
   align-items: stretch;
 }
 
+.overview__left {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.overview__right {
+  min-width: 0;
+}
+
 .overview__gauge {
   width: 180px;
+  align-self: center;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -717,14 +930,6 @@ onMounted(load)
     color: #7eb4d8;
     font-weight: 600;
   }
-}
-
-.overview__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .kpi-grid {
@@ -762,6 +967,7 @@ onMounted(load)
 }
 
 .risk-note {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -790,6 +996,63 @@ onMounted(load)
   &--high .risk-note__tag { background: #ff7474; color: #fff; }
 }
 
+/* 毕业核查进度条 */
+.grad-check {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 4px;
+  background: rgba(0, 38, 73, 0.35);
+  border: 1px solid rgba(102, 217, 255, 0.1);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  &__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #b8ecff;
+  }
+  &__tag {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #06122e;
+    &--low { background: #55e995; }
+    &--medium { background: #facc15; }
+    &--high { background: #ff7474; color: #fff; }
+  }
+  &__bar {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(102, 217, 255, 0.12);
+    overflow: hidden;
+  }
+  &__inner {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #00b8ff, #00e5ff);
+    transition: width 0.4s ease;
+  }
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 13px;
+    color: #9ecae8;
+  }
+  &__pct {
+    font-size: 14px;
+    font-weight: 800;
+    color: #7ff6ff;
+    font-family: var(--student-font-number);
+  }
+}
+
 /* 2. 风险来源：雷达（上） + 因素（下） */
 .radar-wrap {
   height: 200px;
@@ -797,16 +1060,16 @@ onMounted(load)
 }
 
 .factor-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .factor-item {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   padding: 7px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
@@ -816,13 +1079,12 @@ onMounted(load)
   &--medium { border-color: #facc15; }
   &--high { border-color: #ff7474; }
 
-  &__head {
+  &__name { font-size: 14px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
+  &__row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 6px;
+    gap: 8px;
   }
-  &__name { font-size: 14px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
   &__badge {
     flex-shrink: 0;
     font-size: 12px;
@@ -1205,6 +1467,186 @@ onMounted(load)
 .text-warn { color: #facc15; }
 .text-risk { color: #ff7474; }
 
+/* 学业发展分析 · 一行式趋势标签 */
+.develop__tag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 10px;
+  font-size: 13.5px;
+  color: #9ecae8;
+
+  &__item b {
+    color: #7ff6ff;
+    font-weight: 800;
+    margin-left: 2px;
+  }
+}
+
+/* 课程风险分析 · 红绿灯课表 */
+.course-risk__grid {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 18px;
+}
+
+.course-risk__sub {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9ecae8;
+}
+
+.course-risk__list { min-width: 0; }
+
+.light-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.light-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: rgba(0, 38, 73, 0.32);
+
+  &--high { background: rgba(255, 116, 116, 0.08); }
+  &--medium { background: rgba(250, 204, 21, 0.06); }
+  &--low { background: rgba(85, 233, 149, 0.06); }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__light {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  &--high &__light { color: #ff7474; }
+  &--medium &__light { color: #facc15; }
+  &--low &__light { color: #55e995; }
+
+  &__name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #f6fbff;
+  }
+
+  &__body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 13px;
+    color: #cfe8ff;
+
+    span {
+      white-space: nowrap;
+    }
+  }
+}
+
+/* 学业预警台账 · 闭环状态面板 */
+.ledger-grid {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 16px;
+  align-items: start;
+}
+
+.ledger-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 4px;
+  background: rgba(0, 38, 73, 0.32);
+  border: 1px solid rgba(102, 217, 255, 0.12);
+
+  &__title {
+    margin: 0 0 2px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #b8ecff;
+  }
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 3px;
+  background: rgba(0, 38, 73, 0.3);
+
+  &__label { font-size: 13px; color: #9ecae8; }
+  &__value { font-size: 17px; font-weight: 900; font-family: 'DIN Alternate', sans-serif; }
+
+  &--done &__value { color: #55e995; }
+  &--doing &__value { color: #facc15; }
+  &--todo &__value { color: #ff7474; }
+}
+
+/* 学业帮扶任务清单 */
+.task-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.task-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 14px;
+  border-radius: 5px;
+  background: rgba(0, 38, 73, 0.32);
+
+  &--high { background: rgba(255, 116, 116, 0.08); }
+  &--medium { background: rgba(250, 204, 21, 0.06); }
+  &--low { background: rgba(85, 233, 149, 0.06); }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__light {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  &--high &__light { color: #ff7474; }
+  &--medium &__light { color: #facc15; }
+  &--low &__light { color: #55e995; }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #f6fbff;
+  }
+
+  &__body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 13px;
+    color: #cfe8ff;
+  }
+
+  &__line { white-space: nowrap; }
+}
+
 /* Placeholder */
 .placeholder {
   display: flex;
@@ -1248,6 +1690,9 @@ onMounted(load)
   .overview__body { flex-direction: column; align-items: center; }
   .overview__main { width: 100%; }
   .develop__grid { grid-template-columns: 1fr; }
+  .course-risk__grid { grid-template-columns: 1fr; }
+  .ledger-grid { grid-template-columns: 1fr; }
+  .task-list { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .bucket-grid { grid-template-columns: 1fr; }
 }

@@ -1034,7 +1034,7 @@ onMounted(load)
   background:
     linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
     rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(102, 217, 255, 0.1);
+  border: 1px solid rgba(102, 217, 255, 0.28);
 }
 
 .warn-section__title {

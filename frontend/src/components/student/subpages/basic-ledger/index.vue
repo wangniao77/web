@@ -110,6 +110,163 @@ const levelColor = (level: RiskLevel) => ({
   high: '#ff7474',
 }[level])
 
+type HoloLevel = 'red' | 'yellow' | 'green' | 'white' | 'blue'
+const riskToHolo = (l: RiskLevel): HoloLevel => (l === 'high' ? 'red' : l === 'medium' ? 'yellow' : 'green')
+
+/** 一、全息标签云：分为 核心 / 能力 / 发展 / 关注 四组标签 */
+interface HoloGroup { title: string; star: boolean; color: 'green' | 'white' | 'blue' | 'yellow'; tags: string[] }
+const holoGroups = computed<HoloGroup[]>(() => {
+  const d = dashboard.value
+  if (!d) return []
+  const p = d.profile
+  const gp = d.growthPortrait as any
+  const dims: Array<{ name: string; personal: number }> =
+    gp?.dimensions ??
+    (gp?.indicators ?? []).map((it: any, i: number) => ({ name: it.name, personal: gp?.personal?.[i] ?? 0 })) ??
+    []
+  const uniq = (arr: string[]) => Array.from(new Set(arr.filter(Boolean)))
+  const core: string[] = []
+  const ability: string[] = []
+  const develop: string[] = []
+  const focus: string[] = []
+
+  /* 核心标签（亮点 / 优势，带 ⭐） */
+  const go = d.growthOverview
+  if (go?.overallPercent) core.push(`专业排名前${String(go.overallPercent).replace('%', '')}%`)
+  if (d.academic?.gpa && d.academic.gpa >= 3.5) core.push('GPA优秀')
+  dims
+    .slice()
+    .sort((a: any, b: any) => b.personal - a.personal)
+    .slice(0, 2)
+    .forEach((t: any) => core.push(`${t.name}强`))
+  if (d.competition?.awardCount) core.push('竞赛成果突出')
+  ;(d.aiPortrait?.strengthTags ?? []).forEach((t) => core.push(t))
+
+  /* 能力标签 */
+  dims.forEach((t) => ability.push(t.name))
+  ;(p.highPotentialTags ?? []).forEach((t) => ability.push(t))
+  ;(d.quality?.softSkills ?? []).forEach((s: any) => ability.push(s.name))
+
+  /* 发展标签 */
+  if (d.careerDev?.employmentDestination) develop.push(d.careerDev.employmentDestination)
+  if (d.aiAssistant?.recommendedDirection) develop.push(d.aiAssistant.recommendedDirection)
+  if (d.careerDev?.targetCity) develop.push(d.careerDev.targetCity)
+  if (d.careerDev?.targetCompanies?.[0]) develop.push(d.careerDev.targetCompanies[0])
+  else if (d.careerDev?.targetUniversities?.[0]) develop.push(d.careerDev.targetUniversities[0])
+  ;(d.employment?.careerDirections ?? []).forEach((c) => develop.push(c))
+
+  /* 关注标签（待提升） */
+  ;(d.aiPortrait?.focusTags ?? []).forEach((t) => focus.push(t))
+  if (d.careerDev?.resumeStatus && !/已|签约|完善/.test(d.careerDev.resumeStatus)) focus.push('职业材料完善')
+  if (d.internship && d.internship.projectCount === 0) focus.push('企业实践提升')
+
+  return [
+    { title: '核心标签', star: true, color: 'green', tags: uniq(core) },
+    { title: '能力标签', star: false, color: 'white', tags: uniq(ability) },
+    { title: '发展标签', star: false, color: 'blue', tags: uniq(develop) },
+    { title: '关注标签', star: false, color: 'yellow', tags: uniq(focus) },
+  ]
+})
+
+/** 扁平化为标签云使用的一维列表（核心 → 能力 → 发展 → 关注 顺序，跨分组去重 + 同义近重去重，取前 40 个） */
+const holoLevelOf = (c: HoloGroup['color']): HoloLevel =>
+  (c === 'green' ? 'green' : c === 'yellow' ? 'yellow' : c === 'blue' ? 'blue' : 'white')
+const normalizeTag = (s: string) => s.replace(/[\s%·、，。,.]/g, '').toLowerCase()
+/** 是否为同义/近义重复：完全相同，或一个完整包含另一个且较短者不少于较长者的一半 */
+function isHoloDup(n: string, kept: string[]): boolean {
+  return kept.some((s) => {
+    if (n === s) return true
+    const minL = Math.min(n.length, s.length)
+    const maxL = Math.max(n.length, s.length)
+    if (minL < 2) return false
+    if (minL / maxL < 0.5) return false
+    return n.includes(s) || s.includes(n)
+  })
+}
+const holoTags = computed<Array<{ text: string; level: HoloLevel }>>(() => {
+  const kept: string[] = []
+  const tags: Array<{ text: string; level: HoloLevel }> = []
+  for (const g of holoGroups.value) {
+    const lvl = holoLevelOf(g.color)
+    for (const raw of g.tags) {
+      const t = (raw ?? '').trim()
+      if (!t) continue
+      const n = normalizeTag(t)
+      if (isHoloDup(n, kept)) continue
+      kept.push(n)
+      tags.push({ text: t, level: lvl })
+    }
+  }
+  return tags.slice(0, 40)
+})
+
+/** 全息云布局：程序化生成——中心核心大词 + 同心环绕，各圈角度均匀分布并相互错开以减少遮挡，整体向中心收拢 */
+interface HoloSlot { top: number; left: number; size: number; rotate: number; weight: number }
+function buildHoloLayout(): HoloSlot[] {
+  const slots: HoloSlot[] = [{ top: 50, left: 50, size: 22, rotate: 0, weight: 800 }]
+  const rings = [
+    { count: 6, radius: 13, size: 16, weight: 700 },
+    { count: 12, radius: 20, size: 13, weight: 600 },
+    { count: 21, radius: 26, size: 11, weight: 600 },
+  ]
+  let base = -90
+  rings.forEach((ring, ri) => {
+    for (let i = 0; i < ring.count; i++) {
+      const ang = ((base + (360 / ring.count) * i + ri * 9) * Math.PI) / 180
+      const top = 50 + ring.radius * Math.sin(ang)
+      const left = 50 + ring.radius * Math.cos(ang)
+      slots.push({
+        top: Math.round(top * 10) / 10,
+        left: Math.round(left * 10) / 10,
+        size: ring.size,
+        rotate: Math.round(Math.cos(ang) * 4),
+        weight: ring.weight,
+      })
+    }
+    base += 17
+  })
+  return slots
+}
+const holoLayout: HoloSlot[] = buildHoloLayout()
+const holoStyle = (idx: number) => {
+  const s = holoLayout[idx] ?? { top: 50, left: 50, size: 16, rotate: 0, weight: 600 }
+  return {
+    top: `${s.top}%`,
+    left: `${s.left}%`,
+    fontSize: `${s.size}px`,
+    fontWeight: s.weight,
+    transform: `translate(-50%, -50%) rotate(${s.rotate}deg)`,
+  }
+}
+
+/** 版面高度随词条数量收放：词条少则不占太多空间 */
+const holoMinHeight = computed(() => {
+  const n = holoTags.value.length
+  if (n === 0) return 80
+  if (n <= 6) return 120
+  if (n <= 14) return 160
+  if (n <= 24) return 200
+  return 220
+})
+
+/** 三、行为轨迹时间轴：整合多源行为数据，按时间倒序排列 */
+const behaviorTimeline = computed(() => {
+  const list = dashboard.value?.profile.recentDynamics ?? []
+  const catOf = (text: string) => {
+    if (text.includes('成绩波动')) return '成绩波动'
+    if (text.includes('消费异常')) return '消费异常'
+    if (text.includes('请假记录')) return '请假记录'
+    if (text.includes('图书馆')) return '图书馆'
+    if (text.includes('荣誉')) return '荣誉成果'
+    if (text.includes('系统采集') || text.includes('伴学')) return '系统采集'
+    return '动态'
+  }
+  const lvlOf = (kind: string): HoloLevel => (kind === 'award' ? 'green' : kind === 'warn' ? 'yellow' : 'white')
+  return [...list]
+    .map((d) => ({ time: d.time, text: d.text, category: catOf(d.text), level: lvlOf(d.kind) }))
+    .sort((a, b) => (a.time < b.time ? 1 : a.time > b.time ? -1 : 0))
+})
+
 onMounted(load)
 </script>
 
@@ -131,13 +288,27 @@ onMounted(load)
     </div>
 
     <div v-else-if="dashboard" class="basic-ledger">
+      <!-- ═══ 〇、全息标签云（置顶，姓名下方） ═══ -->
+      <section class="ledger-section section--holo">
+        <h3 class="section-title">全息标签云<span class="section-mock-tag">动态生成</span></h3>
+        <div class="holo-cloud" :style="{ minHeight: holoMinHeight + 'px' }">
+          <span
+            v-for="(t, idx) in holoTags"
+            :key="t.text"
+            class="holo-tag"
+            :class="`holo--${t.level}`"
+            :style="holoStyle(idx)"
+          >{{ t.text }}</span>
+        </div>
+      </section>
+
       <!-- ═══ 一、学籍与家庭信息 ═══ -->
       <section class="ledger-section section--basic">
         <h3 class="section-title">学籍与家庭信息<span class="section-mock-tag">部分模拟</span></h3>
         <div class="info-cols">
-          <!-- 第一列：学籍班级年级相关 -->
+          <!-- 第一列：学籍信息 -->
           <div class="info-col">
-            <h4 class="info-col__title">学籍班级年级相关</h4>
+            <h4 class="info-col__title">学籍信息</h4>
             <ul class="info-col__list">
               <li class="info-field"><span class="info-lbl">姓名</span><span class="info-val">{{ dashboard.profile.name }}</span></li>
               <li class="info-field"><span class="info-lbl">性别</span><span class="info-val">{{ dashboard.profile.gender || '男' }}</span></li>
@@ -149,20 +320,13 @@ onMounted(load)
             </ul>
           </div>
 
-          <!-- 第二列：辅导员、班主任相关 -->
+          <!-- 第二列：管理信息 -->
           <div class="info-col">
-            <h4 class="info-col__title">辅导员、班主任相关</h4>
+            <h4 class="info-col__title">管理信息</h4>
             <ul class="info-col__list">
               <li class="info-field"><span class="info-lbl">辅导员</span><span class="info-val">{{ dashboard.profile.counselor || '—' }}</span></li>
               <li class="info-field"><span class="info-lbl">班主任</span><span class="info-val">{{ dashboard.profile.mentor || '—' }}</span></li>
               <li class="info-field"><span class="info-lbl">联系电话</span><span class="info-val">{{ dashboard.profile.phone || '—' }}</span></li>
-            </ul>
-          </div>
-
-          <!-- 第三列：其余在校个人信息 -->
-          <div class="info-col">
-            <h4 class="info-col__title">其余在校个人信息</h4>
-            <ul class="info-col__list">
               <li class="info-field"><span class="info-lbl">政治面貌</span><span class="info-val">{{ dashboard.profile.politicalStatus || '—' }}</span></li>
               <li class="info-field"><span class="info-lbl">宿舍</span><span class="info-val">{{ dashboard.profile.dormitory || '—' }}</span></li>
               <li class="info-field" v-if="dashboard.profile.classCadreRole || dashboard.profile.highPotentialTags?.length">
@@ -174,30 +338,26 @@ onMounted(load)
               </li>
             </ul>
           </div>
-        </div>
 
-        <div class="info-section-divider" />
-
-        <div class="info-table info-table--family">
-          <div class="info-row">
-            <div class="info-cell info-cell--wide"><span class="info-lbl">家庭住址</span><span class="info-val">{{ dashboard.profile.address || '—' }}</span></div>
+          <!-- 第三列：家庭信息 -->
+          <div class="info-col">
+            <h4 class="info-col__title">家庭信息</h4>
+            <ul class="info-col__list">
+              <li class="info-field"><span class="info-lbl">家庭住址</span><span class="info-val">{{ dashboard.profile.address || '—' }}</span></li>
+              <li class="info-field"><span class="info-lbl">家长姓名</span><span class="info-val">{{ dashboard.profile.guardianName || '—' }}</span></li>
+              <li class="info-field"><span class="info-lbl">家长联系方式</span><span class="info-val">{{ dashboard.profile.guardianPhone || '—' }}</span></li>
+              <li class="info-field"><span class="info-lbl">家庭经济情况</span><span class="info-val">{{ dashboard.profile.economicHardship ? '困难认定' : '一般' }}</span></li>
+              <li class="info-field"><span class="info-lbl">家庭成员</span><span class="info-val">{{ dashboard.profile.familyMembers?.join('、') || '暂无记录' }}</span></li>
+            </ul>
+            <div class="info-note info-note--inline" v-if="dashboard.profile.familySituation">
+              <span class="info-note__label">家庭情况备注：</span>
+              {{ dashboard.profile.familySituation }}
+            </div>
+            <div class="info-note info-note--inline" v-if="dashboard.profile.difficultyDetail">
+              <span class="info-note__label">详细困难情况：</span>
+              {{ dashboard.profile.difficultyDetail }}
+            </div>
           </div>
-          <div class="info-row">
-            <div class="info-cell"><span class="info-lbl">家长姓名</span><span class="info-val">{{ dashboard.profile.guardianName || '—' }}</span></div>
-            <div class="info-cell"><span class="info-lbl">家长联系方式</span><span class="info-val">{{ dashboard.profile.guardianPhone || '—' }}</span></div>
-          </div>
-          <div class="info-row">
-            <div class="info-cell"><span class="info-lbl">家庭经济情况</span><span class="info-val">{{ dashboard.profile.economicHardship ? '困难认定' : '一般' }}</span></div>
-            <div class="info-cell"><span class="info-lbl">家庭成员</span><span class="info-val">{{ dashboard.profile.familyMembers?.join('、') || '暂无记录' }}</span></div>
-          </div>
-        </div>
-        <div class="info-note" v-if="dashboard.profile.familySituation">
-          <span class="info-note__label">家庭情况备注：</span>
-          {{ dashboard.profile.familySituation }}
-        </div>
-        <div class="info-note" v-if="dashboard.profile.difficultyDetail">
-          <span class="info-note__label">详细困难情况：</span>
-          {{ dashboard.profile.difficultyDetail }}
         </div>
       </section>
 
@@ -239,17 +399,20 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- ═══ 三、近期动态 ═══ -->
-      <section class="ledger-section section--dynamics" v-if="dashboard.profile.recentDynamics?.length">
-        <h3 class="section-title">近期动态<span class="section-mock-tag">部分模拟</span></h3>
-        <div class="dynamic-list">
+      <!-- ═══ 三、行为轨迹时间轴 ═══ -->
+      <section class="ledger-section section--dynamics" v-if="behaviorTimeline.length">
+        <h3 class="section-title">行为轨迹时间轴<span class="section-mock-tag">多源整合</span></h3>
+        <div class="timeline">
           <div
-            v-for="(d, idx) in dashboard.profile.recentDynamics"
+            v-for="(item, idx) in [...behaviorTimeline].reverse()"
             :key="idx"
-            class="dynamic-item"
-            :class="`dynamic-item--${d.kind}`"
+            class="timeline-item"
+            :class="`tl--${item.level}`"
           >
-            <span class="dynamic-text">{{ d.text }}</span>
+            <span class="timeline-time">{{ item.time }}</span>
+            <span class="timeline-track"><span class="timeline-dot" /></span>
+            <span class="timeline-cat" :class="`tl-cat--${item.level}`">{{ item.category }}</span>
+            <p class="timeline-text">{{ item.text }}</p>
           </div>
         </div>
       </section>
@@ -328,18 +491,36 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- ═══ 五、学业生活 ═══ -->
+      <!-- ═══ 五、高频功能矩阵 ═══ -->
       <section class="ledger-section section--actions">
-        <h3 class="section-title">学业生活</h3>
-        <div class="action-grid">
+        <h3 class="section-title">高频功能矩阵</h3>
+        <div class="func-matrix">
           <button
             type="button"
-            class="action-card"
-            @click="router.push({ name: 'student-semester-schedule', query: { studentId: activeStudentId } })"
+            class="func-card"
+            @click="router.push({ name: 'student-gpa-detail', query: { studentId: activeStudentId } })"
           >
-            <span class="action-card__icon">📅</span>
-            <span class="action-card__label">本学期课表</span>
-            <span class="action-card__arrow">&rsaquo;</span>
+            <span class="func-card__icon">📊</span>
+            <span class="func-card__label">查看成绩单</span>
+            <span class="func-card__arrow">&rsaquo;</span>
+          </button>
+          <button
+            type="button"
+            class="func-card"
+            @click="router.push({ name: 'student-psy-warning', query: { studentId: activeStudentId } })"
+          >
+            <span class="func-card__icon">💬</span>
+            <span class="func-card__label">谈心谈话记录</span>
+            <span class="func-card__arrow">&rsaquo;</span>
+          </button>
+          <button
+            type="button"
+            class="func-card"
+            @click="router.push({ name: 'student-comprehensive-ledger', query: { studentId: activeStudentId } })"
+          >
+            <span class="func-card__icon">🏅</span>
+            <span class="func-card__label">奖惩助贷详情</span>
+            <span class="func-card__arrow">&rsaquo;</span>
           </button>
         </div>
       </section>
@@ -365,9 +546,10 @@ onMounted(load)
   border: 1px solid rgba(102, 217, 255, 0.1);
 }
 
-.ledger-section:nth-child(1) { grid-column: 1 / -1; }
-.ledger-section.section--status { grid-column: 1; }
-.ledger-section.section--dynamics { grid-column: 2; }
+.ledger-section.section--holo { grid-column: 1 / -1; }
+.ledger-section.section--basic { grid-column: 1 / -1; }
+.ledger-section.section--status { grid-column: 1 / -1; }
+.ledger-section.section--dynamics { grid-column: 1 / -1; }
 .ledger-section.section--warning,
 .ledger-section.section--actions { grid-column: 1 / -1; }
 
@@ -398,6 +580,130 @@ onMounted(load)
   color: #9edcff;
   letter-spacing: 0.03em;
 }
+
+/* ═══ 全息标签云（散落全息云） ═══ */
+.holo-cloud {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+}
+
+.holo-tag {
+  position: absolute;
+  white-space: nowrap;
+  cursor: default;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  transform-origin: center;
+  transition: filter 0.15s ease;
+
+  &:hover {
+    filter: brightness(1.18);
+    z-index: 6;
+  }
+
+  &.holo--red { color: #ff8a8a; }
+  &.holo--yellow { color: #ffd95e; }
+  &.holo--green { color: #5dffa6; }
+  &.holo--white { color: #e8f4ff; }
+  &.holo--blue { color: #6fd0ff; }
+}
+
+/* ═══ 行为轨迹时间轴（横向） ═══ */
+.timeline {
+  display: flex;
+  align-items: flex-start;
+  padding: 6px 4px 2px;
+  overflow-x: auto;
+
+  &::-webkit-scrollbar { height: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0, 184, 255, 0.2); border-radius: 2px; }
+}
+
+.timeline-item {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2px 6px 6px;
+  border-radius: 4px;
+
+  &:hover { background: rgba(0, 184, 255, 0.05); }
+}
+
+/* 圆点所在的轨道行：连线由左右两段拼成 */
+.timeline-track {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0 6px;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    height: 2px;
+    width: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(90deg, rgba(0, 184, 255, 0.45), rgba(0, 184, 255, 0.45));
+  }
+
+  &::before { left: 0; }
+  &::after { right: 0; }
+}
+
+.timeline-item:first-child .timeline-track::before { display: none; }
+.timeline-item:last-child .timeline-track::after { display: none; }
+
+.timeline-dot {
+  position: relative;
+  z-index: 1;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #8ef6ff;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+}
+
+.timeline-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7eb4d8;
+  white-space: nowrap;
+}
+
+.timeline-cat {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+
+.timeline-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #d0e8f8;
+}
+
+.tl--red .timeline-dot { background: #ff7474; box-shadow: 0 0 8px rgba(248, 91, 91, 0.6); }
+.tl--red .timeline-cat { color: #ff8a8a; border-color: rgba(248, 91, 91, 0.5); background: rgba(185, 43, 55, 0.16); }
+.tl--yellow .timeline-dot { background: #facc15; box-shadow: 0 0 8px rgba(250, 204, 21, 0.6); }
+.tl--yellow .timeline-cat { color: #ffd95e; border-color: rgba(250, 204, 21, 0.5); background: rgba(174, 121, 10, 0.16); }
+.tl--green .timeline-dot { background: #55e995; box-shadow: 0 0 8px rgba(74, 222, 128, 0.6); }
+.tl--green .timeline-cat { color: #5dffa6; border-color: rgba(74, 222, 128, 0.5); background: rgba(38, 151, 92, 0.16); }
+.tl--white .timeline-dot { background: #8ef6ff; box-shadow: 0 0 8px rgba(0, 212, 255, 0.6); }
+.tl--white .timeline-cat { color: #cfe9ff; border-color: rgba(160, 220, 255, 0.45); background: rgba(0, 60, 110, 0.22); }
 
 /* ═══ Info Table — 紧凑行内布局 ═══ */
 .info-table {
@@ -550,6 +856,14 @@ onMounted(load)
   padding: 6px 12px;
   border-radius: 3px;
   background: rgba(0, 45, 84, 0.16);
+
+  &--inline {
+    display: block;
+    margin-top: 6px;
+    padding: 5px 8px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
   border: 1px solid rgba(0, 180, 255, 0.06);
   font-size: 14px;
   color: #b0d4e8;
@@ -919,31 +1233,31 @@ onMounted(load)
   to { transform: rotate(360deg); }
 }
 
-.action-grid {
+.func-matrix {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 8px;
 }
 
-.action-card {
+.func-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px;
-  border-radius: 4px;
-  border: 1px solid rgba(102, 217, 255, 0.15);
-  background: rgba(0, 38, 73, 0.4);
+  padding: 16px;
+  border-radius: 5px;
+  border: 1px solid rgba(102, 217, 255, 0.16);
+  background: linear-gradient(135deg, rgba(0, 50, 95, 0.5), rgba(0, 28, 60, 0.4));
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 184, 255, 0.14);
+    box-shadow: 0 8px 20px rgba(0, 184, 255, 0.18);
     border-color: rgba(0, 212, 255, 0.55);
   }
 
   &__icon {
-    font-size: 22px;
+    font-size: 24px;
     flex-shrink: 0;
   }
 
@@ -951,7 +1265,7 @@ onMounted(load)
     flex: 1;
     font-size: 16px;
     font-weight: 700;
-    color: #d0e8f8;
+    color: #d8f0ff;
   }
 
   &__arrow {

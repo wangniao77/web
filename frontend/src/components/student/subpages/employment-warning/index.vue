@@ -22,7 +22,6 @@ import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, JobMatchVM, AttentionItemVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
-import { AXIS_LABEL } from '@/styles/echarts-theme'
 
 const route = useRoute()
 const router = useRouter()
@@ -132,7 +131,7 @@ const readinessGaugeOption = computed<EChartsOption>(() => ({
       valueAnimation: true,
       formatter: '{value}',
       color: '#f6fbff',
-      fontSize: 30,
+      fontSize: 26,
       fontWeight: 'bolder',
       offsetCenter: [0, '36%'],
     },
@@ -150,26 +149,108 @@ const employmentStatusText = computed(() => {
 const jobMatches = computed(() => {
   const list = dashboard.value?.aiPortrait?.jobMatches ?? []
   const fallback = [
-    { role: 'Java后端开发工程师', match: 92, city: '杭州', salary: '15-25K', requirements: '熟悉 Java 基础、Spring Boot、MySQL，了解 Redis 和消息队列', reason: '专业课程匹配度高，Java 核心课程成绩优秀，项目经验丰富' },
-    { role: '前端开发工程师', match: 85, city: '上海', salary: '14-22K', requirements: '熟练掌握 HTML/CSS/JavaScript，熟悉 Vue 或 React 框架', reason: '前端技术栈掌握扎实，有个人项目作品展示' },
-    { role: '数据分析师', match: 78, city: '北京', salary: '16-28K', requirements: '掌握 Python/R，熟悉 SQL 和数据分析工具，具备统计学基础', reason: '数学与统计学基础良好，有数据分析相关课程与项目经历' },
-    { role: '测试工程师', match: 72, city: '深圳', salary: '12-20K', requirements: '了解软件测试理论，熟悉自动化测试工具，有编程基础', reason: '代码能力达标，学习意愿强，适合从测试切入技术岗位' },
-    { role: '产品经理（技术方向）', match: 68, city: '杭州', salary: '15-24K', requirements: '具备良好的逻辑思维与沟通能力，熟悉产品开发流程', reason: '综合素养较高，学生干部经历锻炼沟通与协调能力' },
-    { role: '运维工程师', match: 65, city: '成都', salary: '10-18K', requirements: '熟悉 Linux 系统，了解网络协议与服务器配置', reason: '系统管理课程基础良好，动手能力强' },
-    { role: 'AI算法工程师', match: 60, city: '北京', salary: '20-35K', requirements: '熟悉机器学习算法，掌握 Python 与深度学习框架，数学功底扎实', reason: '数学与编程基础良好，但算法相关项目经历不足' },
-    { role: '全栈开发工程师', match: 55, city: '上海', salary: '18-30K', requirements: '前后端技术均有一定掌握，能独立完成小型项目开发', reason: '技术栈覆盖面广但深度不足，需加强专项能力' },
-    { role: '嵌入式开发工程师', match: 82, city: '苏州', salary: '13-22K', requirements: '熟悉 C/C++，了解 STM32、RTOS 与串口通信', reason: '嵌入式课程成绩优秀，有单片机竞赛与硬件项目经历' },
-    { role: '游戏客户端开发', match: 76, city: '广州', salary: '16-26K', requirements: '掌握 C++/C# 与 Unity/Unreal 引擎，了解图形渲染基础', reason: '计算机图形学基础扎实，课余参与独立游戏开发' },
-    { role: '网络安全工程师', match: 70, city: '南京', salary: '14-24K', requirements: '了解网络协议、渗透测试与安全防护，掌握至少一门脚本语言', reason: '信息安全课程兴趣浓厚，参与过 CTF 竞赛' },
-    { role: '数据库管理员（DBA）', match: 66, city: '武汉', salary: '12-20K', requirements: '熟悉 MySQL/PostgreSQL，了解备份、调优与高可用架构', reason: '数据库课程表现突出，有运维与调优实践' },
-    { role: '云计算工程师', match: 63, city: '深圳', salary: '18-30K', requirements: '熟悉 Docker/K8s，了解 AWS/阿里云等云平台与 CI/CD', reason: '云原生课程基础良好，动手部署过个人服务' },
-    { role: '技术文档工程师', match: 58, city: '成都', salary: '10-16K', requirements: '文字表达清晰，具备技术理解力，熟悉 Markdown 与文档工具', reason: '写作能力强，适合走技术传播方向作为起步' },
-    { role: '区块链开发工程师', match: 52, city: '杭州', salary: '20-32K', requirements: '了解 Solidity 与智能合约，熟悉密码学与分布式系统', reason: '对 Web3 方向有兴趣，但工程实践经验尚少' },
-    { role: '产品经理（C 端方向）', match: 50, city: '北京', salary: '14-26K', requirements: '具备用户洞察与数据分析能力，熟悉需求管理与原型工具', reason: '沟通与策划能力突出，可作为非技术岗备选方向' },
+    { role: 'Java后端开发工程师', match: 92, city: '杭州', salary: '15-25K', requirements: '熟悉 Java 基础、Spring Boot、MySQL，了解 Redis 和消息队列', reason: '专业课程匹配度高，Java 核心课程成绩优秀，项目经验丰富',
+      strengths: ['Java 基础扎实', 'Spring Boot 熟练', 'MySQL 数据库熟练'], gaps: ['Redis 缓存与高并发', '消息队列(MQ)实战', '微服务架构经验'] },
+    { role: '前端开发工程师', match: 85, city: '上海', salary: '14-22K', requirements: '熟练掌握 HTML/CSS/JavaScript，熟悉 Vue 或 React 框架', reason: '前端技术栈掌握扎实，有个人项目作品展示',
+      strengths: ['HTML/CSS/JS 基础', 'Vue 框架', '个人作品集'], gaps: ['React 框架', '工程化与构建工具', '性能优化经验'] },
+    { role: '数据分析师', match: 78, city: '北京', salary: '16-28K', requirements: '掌握 Python/R，熟悉 SQL 和数据分析工具，具备统计学基础', reason: '数学与统计学基础良好，有数据分析相关课程与项目经历',
+      strengths: ['数学统计基础', 'SQL 能力', 'Python/R 熟练'], gaps: ['业务分析经验', '可视化工具(Tableau)', 'AB 实验设计'] },
+    { role: '测试工程师', match: 72, city: '深圳', salary: '12-20K', requirements: '了解软件测试理论，熟悉自动化测试工具，有编程基础', reason: '代码能力达标，学习意愿强，适合从测试切入技术岗位',
+      strengths: ['代码能力达标', '学习意愿强'], gaps: ['自动化测试框架', '接口/性能测试', '缺陷管理流程'] },
+    { role: '产品经理（技术方向）', match: 68, city: '杭州', salary: '15-24K', requirements: '具备良好的逻辑思维与沟通能力，熟悉产品开发流程', reason: '综合素养较高，学生干部经历锻炼沟通与协调能力',
+      strengths: ['逻辑思维强', '沟通协调', '学生干部经历'], gaps: ['产品需求文档(PRD)', '数据分析能力', '原型工具(Axure)'] },
+    { role: '运维工程师', match: 65, city: '成都', salary: '10-18K', requirements: '熟悉 Linux 系统，了解网络协议与服务器配置', reason: '系统管理课程基础良好，动手能力强',
+      strengths: ['Linux 基础', '系统管理课程'], gaps: ['网络协议深入', 'K8s/容器', '监控与告警体系'] },
+    { role: 'AI算法工程师', match: 60, city: '北京', salary: '20-35K', requirements: '熟悉机器学习算法，掌握 Python 与深度学习框架，数学功底扎实', reason: '数学与编程基础良好，但算法相关项目经历不足',
+      strengths: ['数学功底扎实', 'Python 熟练', '机器学习理论'], gaps: ['深度学习项目', '算法竞赛经历', '框架(TF/PyTorch)实战'] },
+    { role: '全栈开发工程师', match: 55, city: '上海', salary: '18-30K', requirements: '前后端技术均有一定掌握，能独立完成小型项目开发', reason: '技术栈覆盖面广但深度不足，需加强专项能力',
+      strengths: ['技术栈覆盖面广'], gaps: ['前端专项深度', '后端专项深度', '完整项目架构'] },
+    { role: '嵌入式开发工程师', match: 82, city: '苏州', salary: '13-22K', requirements: '熟悉 C/C++，了解 STM32、RTOS 与串口通信', reason: '嵌入式课程成绩优秀，有单片机竞赛与硬件项目经历',
+      strengths: ['C/C++ 基础', 'STM32/RTOS', '单片机竞赛'], gaps: ['Linux 驱动开发', '通信协议深入', '项目管理经验'] },
+    { role: '游戏客户端开发', match: 76, city: '广州', salary: '16-26K', requirements: '掌握 C++/C# 与 Unity/Unreal 引擎，了解图形渲染基础', reason: '计算机图形学基础扎实，课余参与独立游戏开发',
+      strengths: ['C++/C# 基础', '图形学基础', '独立游戏经历'], gaps: ['Unity/Unreal 深入', '渲染优化', '上线项目经验'] },
+    { role: '网络安全工程师', match: 70, city: '南京', salary: '14-24K', requirements: '了解网络协议、渗透测试与安全防护，掌握至少一门脚本语言', reason: '信息安全课程兴趣浓厚，参与过 CTF 竞赛',
+      strengths: ['信息安全兴趣', 'CTF 经历'], gaps: ['渗透测试实战', '安全合规知识', '脚本语言深入'] },
+    { role: '数据库管理员（DBA）', match: 66, city: '武汉', salary: '12-20K', requirements: '熟悉 MySQL/PostgreSQL，了解备份、调优与高可用架构', reason: '数据库课程表现突出，有运维与调优实践',
+      strengths: ['MySQL/PG 基础', '调优实践', '数据库课程'], gaps: ['高可用架构', '备份容灾方案', '云数据库运维'] },
+    { role: '云计算工程师', match: 63, city: '深圳', salary: '18-30K', requirements: '熟悉 Docker/K8s，了解 AWS/阿里云等云平台与 CI/CD', reason: '云原生课程基础良好，动手部署过个人服务',
+      strengths: ['Docker/K8s 基础', '云原生课程'], gaps: ['CI/CD 流水线', '云平台深度', '生产环境运维'] },
+    { role: '技术文档工程师', match: 58, city: '成都', salary: '10-16K', requirements: '文字表达清晰，具备技术理解力，熟悉 Markdown 与文档工具', reason: '写作能力强，适合走技术传播方向作为起步',
+      strengths: ['文字表达清晰', '技术理解力'], gaps: ['Markdown/文档工具', 'API 文档经验', '技术传播项目'] },
+    { role: '区块链开发工程师', match: 52, city: '杭州', salary: '20-32K', requirements: '了解 Solidity 与智能合约，熟悉密码学与分布式系统', reason: '对 Web3 方向有兴趣，但工程实践经验尚少',
+      strengths: ['Web3 兴趣'], gaps: ['Solidity 与智能合约', '密码学基础', '分布式系统经验'] },
+    { role: '产品经理（C 端方向）', match: 50, city: '北京', salary: '14-26K', requirements: '具备用户洞察与数据分析能力，熟悉需求管理与原型工具', reason: '沟通与策划能力突出，可作为非技术岗备选方向',
+      strengths: ['用户洞察', '数据分析', '沟通策划'], gaps: ['原型工具', '需求管理流程', 'C 端项目经验'] },
   ] as JobMatchVM[]
   if (list.length >= 4) return list
   return [...list, ...fallback].slice(0, 4)
 })
+
+/* ---------- 当前选中岗位的优势 / 缺失能力（按岗位区分、具体化） ---------- */
+const jobAbility = computed<{ role: string; strengths: string[]; gaps: string[] }>(() => {
+  const job = jobMatches.value[selectedJob.value]
+  if (!job) return { role: '', strengths: [], gaps: [] }
+  if (Array.isArray(job.strengths) && job.strengths.length) {
+    return { role: job.role, strengths: job.strengths, gaps: job.gaps ?? [] }
+  }
+  // 真实数据无字段时，由岗位要求派生：匹配学生能力画像者为优势，其余为缺失
+  const reqs = (job.requirements || '').split(/[、，,；;]/).map((s: string) => s.trim()).filter(Boolean)
+  const strongNames = abilityFactorList.value.filter((f) => f.level !== 'high').map((f) => f.name)
+  const strengths = reqs.filter((r: string) => strongNames.some((n: string) => r.includes(n) || n.includes(r.slice(0, 2))))
+  const gaps = reqs.filter((r: string) => !strengths.includes(r))
+  return {
+    role: job.role,
+    strengths: strengths.length ? strengths : reqs.slice(0, 3),
+    gaps: gaps.length ? gaps : ['补充与目标岗位相关的项目与实习经历'],
+  }
+})
+
+/* ---------- 当前招聘阶段（按当前月份动态判断） ---------- */
+type RecruitStage = '暑期实习' | '秋招备战' | '秋招进行' | '春招备战' | '春招进行'
+const recruitStage = computed<RecruitStage>(() => {
+  const m = new Date().getMonth() + 1
+  if (m === 6) return '暑期实习'
+  if (m === 7 || m === 8) return '秋招备战'
+  if (m >= 9 && m <= 11) return '秋招进行'
+  if (m === 12 || m <= 2) return '春招备战'
+  return '春招进行'
+})
+
+/* 各阶段「必做 / 建议」事项，随当前阶段动态高亮 */
+const STAGE_PLANS: Record<RecruitStage, Array<{ time: string; action: string; tag: '必做' | '建议'; focus: boolean }>> = {
+  暑期实习: [
+    { time: '本月', action: '争取 1 段暑期实习，积累企业实战与岗位认知', tag: '必做', focus: true },
+    { time: '本月', action: '参与企业夏令营 / 开放日，拓展内推与校友渠道', tag: '必做', focus: true },
+    { time: '假期', action: '结合实习复盘，初步锁定秋招目标方向', tag: '建议', focus: false },
+  ],
+  秋招备战: [
+    { time: '本周', action: '定稿简历，按目标岗位 JD 打磨项目与技能关键词', tag: '必做', focus: true },
+    { time: '本周', action: '系统复习专业知识，完成 2-3 次笔试 / 刷题模拟', tag: '必做', focus: true },
+    { time: '本月', action: '关注目标企业秋招日历，提前注册网申账号', tag: '必做', focus: true },
+    { time: '本月', action: '参加暑期实习或企业开放日，积累实战经历', tag: '建议', focus: false },
+  ],
+  秋招进行: [
+    { time: '本周', action: '按秋招日程批量投递，保持每周 ≥10 份有效投递', tag: '必做', focus: true },
+    { time: '本周', action: '准备自我介绍与技术问答，参加模拟面试', tag: '必做', focus: true },
+    { time: '本周', action: '跟进笔试 / 面试结果，及时复盘与迭代', tag: '必做', focus: true },
+    { time: '本月', action: '已拿 offer 优先对比薪资与发展后决策锁定', tag: '建议', focus: false },
+  ],
+  春招备战: [
+    { time: '本周', action: '复盘秋招得失，针对性补齐项目 / 技能短板', tag: '必做', focus: true },
+    { time: '本月', action: '完善简历并准备春招版作品集', tag: '必做', focus: true },
+    { time: '假期', action: '关注寒假实习 / 科研，持续积累经历', tag: '必做', focus: true },
+    { time: '本月', action: '提前了解春招企业名单与时间线', tag: '建议', focus: false },
+  ],
+  春招进行: [
+    { time: '本周', action: '紧跟春招节奏投递，重点补秋招未覆盖岗位', tag: '必做', focus: true },
+    { time: '本周', action: '持续面试训练，提升表达与项目阐述', tag: '必做', focus: true },
+    { time: '本月', action: '已拿 offer 尽快确认，规避违约风险', tag: '必做', focus: true },
+    { time: '本月', action: '同步推进毕业设计与答辩准备', tag: '建议', focus: false },
+  ],
+}
+
+/* ---------- 求职行动计划（按当前招聘阶段动态显示必做事项） ---------- */
+const actionPlan = computed(() => STAGE_PLANS[recruitStage.value] ?? [])
 
 /* ---------- 3. 就业能力画像（雷达图） ---------- */
 const abilityRadarValues = computed<number[]>(() => {
@@ -196,7 +277,7 @@ const abilityRadarOption = computed<EChartsOption>(() => ({
       { name: '技能证书', max: 100 },
       { name: '面试能力', max: 100 },
     ],
-    axisName: { color: '#b8ecff', fontSize: 15 },
+    axisName: { color: '#b8ecff', fontSize: 13 },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
     splitArea: { areaStyle: { color: ['rgba(0,184,255,0.04)', 'rgba(0,184,255,0.08)'] } },
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
@@ -223,58 +304,8 @@ const abilityFactorList = computed(() => {
   }))
 })
 
-/* ---------- 4. 就业风险原因分析（风险矩阵） ---------- */
-interface RiskMatrixItem { name: string; x: number; y: number; level: Level }
-const riskMatrix = computed<RiskMatrixItem[]>(() => {
-  const d = dashboard.value
-  const intern = d?.internship.internshipCount ?? 1
-  const proj = d?.internship.projectCount ?? 2
-  const certR = d?.employment?.certificateReadiness ?? 50
-  const resumeBad = (d?.careerDev?.resumeStatus ?? '').includes('未完善')
-  const mk = (name: string, x: number, y: number): RiskMatrixItem => {
-    const level: Level = (x >= 70 || y >= 70) ? 'high' : (x >= 50 || y >= 50) ? 'medium' : 'low'
-    return { name, x: Math.round(x), y: Math.round(y), level }
-  }
-  return [
-    mk('实践经历不足', Math.max(20, 90 - intern * 30), 82),
-    mk('项目经验不足', Math.max(20, 88 - proj * 24), 70),
-    mk('简历准备不足', resumeBad ? 72 : 38, resumeBad ? 60 : 35),
-    mk('技能匹配不足', Math.max(20, 92 - certR), 62),
-  ]
-})
-
-const riskMatrixOption = computed<EChartsOption>(() => ({
-  grid: { top: 18, bottom: 28, left: 38, right: 16 },
-  tooltip: {
-    trigger: 'item',
-    formatter: (params: unknown) => {
-      const p = params as { data: { name: string; value: number[] } }
-      return `${p.data.name}<br/>发生可能性：${p.data.value[0]}<br/>影响程度：${p.data.value[1]}`
-    },
-  },
-  xAxis: {
-    type: 'value', min: 0, max: 100, name: '可能性',
-    nameTextStyle: { color: '#7eb4d8', fontSize: 14 },
-    axisLabel: { ...AXIS_LABEL, fontSize: 14 },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
-  },
-  yAxis: {
-    type: 'value', min: 0, max: 100, name: '影响程度',
-    nameTextStyle: { color: '#7eb4d8', fontSize: 14 },
-    axisLabel: { ...AXIS_LABEL, fontSize: 14 },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
-  },
-  series: [{
-    type: 'scatter',
-    data: riskMatrix.value.map((r) => ({
-      name: r.name,
-      value: [r.x, r.y],
-      symbolSize: 20 + (r.x + r.y) / 8,
-      itemStyle: { color: LEVEL_COLOR[r.level], opacity: 0.85 },
-      label: { show: true, formatter: r.name, position: 'top', color: '#d0e8f8', fontSize: 14 },
-    })),
-  }],
-}))
+/* 选中岗位详情（点击对应推荐岗位才展开） */
+const showJobDetail = ref(false)
 
 /* ---------- 5. 求职进展跟踪（流程图） ---------- */
 interface ProgressStep { name: string; value: number; unit: string; status: 'done' | 'active' | 'pending' }
@@ -289,47 +320,6 @@ const jobProgress = computed<ProgressStep[]>(() => {
     { name: '面试情况', value: interviews, unit: '场', status: interviews > 0 ? 'active' : 'pending' },
     { name: '企业沟通', value: companies, unit: '家', status: companies > 0 ? 'done' : 'pending' },
     { name: 'Offer 状态', value: offers, unit: '个', status: offers > 0 ? 'done' : 'pending' },
-  ]
-})
-
-/* ---------- 就业能力短板分析（保留） ---------- */
-const weaknesses = computed(() => {
-  const d = dashboard.value
-  if (!d) return []
-  const list: { label: string; level: Level; desc: string }[] = []
-  if (d.internship?.internshipCount === 0) {
-    list.push({ label: '实习经历', level: 'high', desc: '暂无企业实习记录，建议利用假期补充' })
-  }
-  if (d.careerDev?.resumeStatus?.includes('未完善')) {
-    list.push({ label: '简历完善度', level: 'medium', desc: '简历状态未完善，缺少项目与技能亮点' })
-  }
-  if (!d.profile?.cet4Score) {
-    list.push({ label: '英语四级', level: 'high', desc: 'CET-4 未通过，多数企业设有门槛' })
-  } else if (!d.profile?.cet6Score) {
-    list.push({ label: '英语六级', level: 'medium', desc: 'CET-6 未通过，优质岗位竞争力受限' })
-  }
-  if (d.academic?.gpa > 0 && d.academic?.gpa < 2.5) {
-    list.push({ label: '学业成绩', level: 'medium', desc: 'GPA 偏低，可能影响部分企业简历筛选' })
-  }
-  if (list.length === 0) {
-    list.push({ label: '综合条件', level: 'low', desc: '整体就业准备度尚可，持续积累即可' })
-  }
-  list.push({ label: '项目经历', level: 'medium', desc: '技术项目较少，建议补充开源项目或课程设计' })
-  list.push({ label: '面试准备', level: 'medium', desc: '缺乏面试经验，建议参加模拟面试训练' })
-  return list
-})
-
-/* ---------- 求职行动计划（保留） ---------- */
-const actionPlan = computed(() => {
-  const d = dashboard.value
-  if (!d) return []
-  return [
-    { time: '本周', action: '完善个人简历，补充项目经历与技能关键词', tag: '高优' },
-    { time: '本月', action: `锁定目标方向「${d.employment?.careerDirections?.[0] || '待定'}」，梳理岗位 JD 技能要求`, tag: '重点' },
-    { time: '本学期', action: '参加至少 1 场专业对口双选会或企业宣讲', tag: '建议' },
-    { time: '本学期', action: '联系校友或导师获取目标岗位内推机会', tag: '建议' },
-    { time: '假期', action: '争取 1 段企业实习或项目实践经历', tag: '长期' },
-    { time: '长期', action: '持续提升英语水平，争取通过 CET-6 考试', tag: '长期' },
   ]
 })
 
@@ -396,11 +386,11 @@ onMounted(load)
             class="factor-item"
             :class="`factor-item--${f.level}`"
           >
-            <div class="factor-item__head">
-              <span class="factor-item__name">{{ f.name }}</span>
+            <span class="factor-item__name">{{ f.name }}</span>
+            <div class="factor-item__row">
               <span class="factor-item__badge">{{ levelText(f.level) }}</span>
+              <span class="factor-item__desc">{{ f.desc }}</span>
             </div>
-            <span class="factor-item__desc">{{ f.desc }}</span>
           </div>
         </div>
       </section>
@@ -427,27 +417,6 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 4. 就业风险原因分析（风险分析放上面） -->
-      <section class="warn-section">
-        <h3 class="warn-section__title">就业风险原因分析</h3>
-        <div class="risk-sub">风险矩阵（横轴=发生可能性，纵轴=影响程度，越靠右上风险越高）</div>
-        <div class="matrix-wrap">
-          <ChartContainer :option="riskMatrixOption" />
-        </div>
-        <div class="risk-tag-list">
-          <div
-            v-for="r in riskMatrix"
-            :key="r.name"
-            class="risk-tag"
-            :class="`risk-tag--${r.level}`"
-          >
-            <span class="risk-tag__dot" :style="{ background: levelColor(r.level) }" />
-            <span class="risk-tag__name">{{ r.name }}</span>
-            <span class="risk-tag__val">{{ levelText(r.level) }}</span>
-          </div>
-        </div>
-      </section>
-
       <!-- 岗位适配雷达图 + 推荐目标岗位 / 优势 / 缺失能力 -->
       <section class="warn-section sec-full">
         <h3 class="warn-section__title">岗位适配雷达图 <i class="mock-tag">模拟数据</i></h3>
@@ -458,7 +427,7 @@ onMounted(load)
               <ChartContainer :option="abilityRadarOption" />
             </div>
           </div>
-          <!-- 右侧：岗位标签 / 优势 / 缺失能力 -->
+          <!-- 右侧：岗位标签 / 优势 / 缺失能力（常显） -->
           <div class="job-radar-right">
             <!-- 推荐目标岗位标签（顶部） -->
             <div v-if="jobMatches.length" class="job-tags-top">
@@ -469,7 +438,7 @@ onMounted(load)
                   :key="idx"
                   class="job-tag-chip"
                   :class="{ 'is-active': selectedJob === idx }"
-                  @click="selectedJob = idx"
+                  @click="selectedJob = idx; showJobDetail = true"
                 >
                   <span class="job-tag-chip__rank">TOP{{ idx + 1 }}</span>
                   {{ job.role }}
@@ -477,38 +446,37 @@ onMounted(load)
                 </span>
               </div>
             </div>
-            <!-- 优势（能力画像因子） -->
+            <!-- 优势（按当前选中岗位区分） -->
             <div class="job-ability-section">
-              <label class="job-section-label job-section-label--good">优势能力</label>
+              <label class="job-section-label job-section-label--good">优势能力<span class="job-section-role">{{ jobAbility.role }}</span></label>
               <div class="job-ability-grid">
                 <div
-                  v-for="f in abilityFactorList.filter(a => a.level === 'low')"
-                  :key="f.name"
+                  v-for="s in jobAbility.strengths"
+                  :key="s"
                   class="job-ability-chip job-ability-chip--good"
                 >
-                  <span class="job-ability-chip__name">{{ f.name }}</span>
-                  <span class="job-ability-chip__val">{{ f.desc.split(' ')[1] }}</span>
+                  <span class="job-ability-chip__name">{{ s }}</span>
                 </div>
-                <div v-if="!abilityFactorList.filter(a => a.level === 'low').length" class="job-ability-empty">暂无突出优势</div>
+                <div v-if="!jobAbility.strengths.length" class="job-ability-empty">暂无突出优势</div>
               </div>
             </div>
-            <!-- 缺失能力 -->
+            <!-- 缺失能力（按当前选中岗位区分） -->
             <div class="job-ability-section">
-              <label class="job-section-label job-section-label--warn">缺失能力</label>
+              <label class="job-section-label job-section-label--warn">缺失能力<span class="job-section-role">{{ jobAbility.role }}</span></label>
               <div class="job-weakness-list">
-                <div v-for="(w, idx) in weaknesses" :key="idx" class="job-weakness-chip" :class="`job-weakness-chip--${w.level}`">
-                  <span class="job-weakness-chip__dot" :style="{ background: levelColor(w.level) }" />
-                  <span class="job-weakness-chip__label">{{ w.label }}</span>
-                  <span class="job-weakness-chip__level" :style="{ color: levelColor(w.level) }">{{ { low: '良好', medium: '需关注', high: '短板' }[w.level] }}</span>
+                <div v-for="(g, idx) in jobAbility.gaps" :key="idx" class="job-weakness-chip job-weakness-chip--medium">
+                  <span class="job-weakness-chip__dot" :style="{ background: '#facc15' }" />
+                  <span class="job-weakness-chip__label">{{ g }}</span>
                 </div>
+                <div v-if="!jobAbility.gaps.length" class="job-ability-empty">无明显能力缺口</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 选中岗位详情 -->
-      <section v-if="jobMatches.length" class="warn-section sec-full">
+      <!-- 选中岗位详情（点击推荐岗位才展开） -->
+      <section v-if="showJobDetail && jobMatches.length" class="warn-section sec-full">
         <h3 class="warn-section__title">岗位详情 · {{ jobMatches[selectedJob]?.role }}</h3>
         <div class="job-detail-row">
           <div class="job-detail-kv"><label>匹配度</label><strong :style="{ color: jobMatches[selectedJob].match >= 80 ? '#55e995' : jobMatches[selectedJob].match >= 60 ? '#facc15' : '#ff7474' }">{{ jobMatches[selectedJob].match }}%</strong></div>
@@ -518,6 +486,9 @@ onMounted(load)
           <div class="job-detail-kv"><label>岗位要求</label><span>{{ jobMatches[selectedJob].requirements }}</span></div>
         </div>
       </section>
+      <div v-if="!showJobDetail && jobMatches.length" class="job-detail-hint">
+        👆 点击上方「推荐目标岗位」，查看对应岗位详情（匹配度 / 城市 / 薪资 / 要求）
+      </div>
 
       <!-- 就业预警台账 -->
       <section class="warn-section">
@@ -537,14 +508,19 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 求职行动计划（保留） -->
+      <!-- 求职行动计划（按当前招聘阶段动态显示必做事项） -->
       <section class="warn-section">
         <h3 class="warn-section__title">求职行动计划</h3>
+        <div class="stage-banner">
+          <span class="stage-banner__label">当前阶段</span>
+          <strong class="stage-banner__stage">{{ recruitStage }}</strong>
+          <span class="stage-banner__hint">以下为本期必做 / 建议事项</span>
+        </div>
         <div class="action-list">
-          <div v-for="(a, idx) in actionPlan" :key="idx" class="action-item">
+          <div v-for="(a, idx) in actionPlan" :key="idx" class="action-item" :class="{ 'action-item--focus': a.focus }">
             <span class="action-item__time">{{ a.time }}</span>
             <span class="action-item__text">{{ a.action }}</span>
-            <span class="action-item__tag">{{ a.tag }}</span>
+            <span class="action-item__tag" :class="{ 'action-item__tag--must': a.tag === '必做' }">{{ a.tag }}</span>
           </div>
         </div>
       </section>
@@ -578,7 +554,7 @@ onMounted(load)
 
 .warn-section__title {
   margin: 0 0 12px;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -610,7 +586,7 @@ onMounted(load)
 /* 合并卡片内的二级小标题 */
 .combine__sub {
   margin: 14px 0 8px;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   color: #9ecae8;
 
@@ -635,7 +611,7 @@ onMounted(load)
 
   &-cap {
     margin-top: -6px;
-    font-size: 16px;
+    font-size: 14px;
     color: #7eb4d8;
     font-weight: 600;
   }
@@ -669,18 +645,18 @@ onMounted(load)
   &--high { border-color: #ff7474; }
 
   &__label {
-    font-size: 17px;
+    font-size: 15px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 900;
     color: #f6fbff;
 
     &--small {
-      font-size: 18px;
+      font-size: 16px;
       line-height: 1.3;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -702,13 +678,13 @@ onMounted(load)
     flex-shrink: 0;
     padding: 4px 14px;
     border-radius: 999px;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 800;
     color: #06122e;
   }
 
   &__text {
-    font-size: 17px;
+    font-size: 15px;
     color: #d0e8f8;
     line-height: 1.6;
   }
@@ -725,35 +701,29 @@ onMounted(load)
 }
 
 .factor-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .factor-item {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   padding: 8px 12px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
-  border-left: 3px solid #65dfff;
 
-  &--low { border-color: #55e995; }
-  &--medium { border-color: #facc15; }
-  &--high { border-color: #ff7474; }
-
-  &__head {
+  &__name { font-size: 15px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
+  &__row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 6px;
+    gap: 8px;
   }
-  &__name { font-size: 17px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
   &__badge {
     flex-shrink: 0;
-    font-size: 15px;
+    font-size: 13px;
     padding: 2px 8px;
     border-radius: 999px;
     font-weight: 700;
@@ -764,7 +734,7 @@ onMounted(load)
   &--high &__badge { background: rgba(255, 116, 116, 0.14); color: #ff7474; }
 
   &__desc {
-    font-size: 16px;
+    font-size: 14px;
     color: #9ecae8;
     line-height: 1.4;
   }
@@ -772,7 +742,7 @@ onMounted(load)
 
 /* 风险矩阵 + 标签 */
 .risk-sub {
-  font-size: 16px;
+  font-size: 14px;
   color: #7eb4d8;
   margin-bottom: 8px;
 }
@@ -794,10 +764,10 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 10px;
-  border-radius: 3px;
-  background: rgba(0, 38, 73, 0.3);
-  font-size: 16px;
+    padding: 7px 10px;
+    border-radius: 3px;
+    background: rgba(0, 38, 73, 0.3);
+    font-size: 14px;
 
   &__dot {
     width: 7px;
@@ -854,20 +824,20 @@ onMounted(load)
   &--pending &__dot { background: #5a7d96; }
 
   &__name {
-    font-size: 16px;
+    font-size: 14px;
     color: #b8ecff;
     font-weight: 700;
   }
 
   &__value {
-    font-size: 25px;
+    font-size: 22px;
     font-weight: 900;
     color: #f6fbff;
     font-variant-numeric: tabular-nums;
   }
 
   &__unit {
-    font-size: 14px;
+    font-size: 12px;
     color: #7eb4d8;
     margin-left: 2px;
     font-weight: 600;
@@ -880,7 +850,7 @@ onMounted(load)
   align-items: center;
   justify-content: center;
   color: #3b6e92;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 900;
 }
 
@@ -933,7 +903,7 @@ onMounted(load)
   }
 
   &__role {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     color: #d0e8f8;
     overflow: hidden;
@@ -942,7 +912,7 @@ onMounted(load)
   }
 
   &__match {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 900;
     white-space: nowrap;
   }
@@ -958,7 +928,7 @@ onMounted(load)
   gap: 10px;
 
   &__role {
-    font-size: 21px;
+    font-size: 18px;
     font-weight: 800;
     color: #f6fbff;
     padding-bottom: 8px;
@@ -980,19 +950,19 @@ onMounted(load)
     gap: 2px;
 
     label {
-      font-size: 15px;
+      font-size: 13px;
       color: #7eb4d8;
       font-weight: 600;
     }
 
     strong {
-      font-size: 21px;
+      font-size: 18px;
       font-weight: 900;
       color: #f6fbff;
     }
 
     span {
-      font-size: 17px;
+      font-size: 15px;
       font-weight: 700;
       color: #d0e8f8;
     }
@@ -1001,7 +971,7 @@ onMounted(load)
   &__section {
     label {
       display: block;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
       color: #7eb4d8;
       margin-bottom: 4px;
@@ -1009,7 +979,7 @@ onMounted(load)
 
     p {
       margin: 0;
-      font-size: 16px;
+      font-size: 14px;
       color: #c8dff0;
       line-height: 1.5;
     }
@@ -1031,7 +1001,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 16px;
+  font-size: 14px;
 
   &__dot {
     width: 7px;
@@ -1045,7 +1015,7 @@ onMounted(load)
   }
 
   &__level {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 800;
   }
 
@@ -1069,7 +1039,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 16px;
+  font-size: 14px;
 
   &__time {
     width: 56px;
@@ -1085,7 +1055,7 @@ onMounted(load)
   }
 
   &__tag {
-    font-size: 17px;
+    font-size: 15px;
     padding: 2px 8px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.12);
@@ -1106,7 +1076,7 @@ onMounted(load)
 .warn-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 16px;
+  font-size: 14px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
@@ -1167,7 +1137,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 /* Info grid */
@@ -1216,6 +1186,18 @@ onMounted(load)
   flex: 1;
   min-height: 340px;
   :deep(.chart-container) { height: 340px; }
+}
+
+.job-detail-hint {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  background: rgba(0, 38, 73, 0.32);
+  border: 1px dashed rgba(102, 217, 255, 0.22);
+  font-size: 13px;
+  color: #9ecae8;
+  text-align: center;
 }
 
 .job-radar-right {
@@ -1269,7 +1251,7 @@ onMounted(load)
   }
 
   &__rank {
-    font-size: 14px;
+    font-size: 12px;
     padding: 1px 6px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.14);
@@ -1292,11 +1274,18 @@ onMounted(load)
 }
 
 .job-section-label {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
 
   &--good { color: #55e995; }
   &--warn { color: #facc15; }
+}
+
+.job-section-role {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7eb4d8;
 }
 
 .job-ability-grid {
@@ -1313,10 +1302,9 @@ onMounted(load)
   padding: 8px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.35);
-  font-size: 17px;
+  font-size: 15px;
 
   &--good {
-    border-left: 3px solid #55e995;
     background: rgba(52, 211, 153, 0.06);
   }
 
@@ -1333,7 +1321,7 @@ onMounted(load)
 }
 
 .job-ability-empty {
-  font-size: 16px;
+  font-size: 14px;
   color: #5a7d96;
   padding: 6px 0;
 }
@@ -1351,11 +1339,7 @@ onMounted(load)
   padding: 7px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.35);
-  font-size: 17px;
-
-  &--high { border-left: 3px solid #ff7474; }
-  &--medium { border-left: 3px solid #facc15; }
-  &--low { border-left: 3px solid #55e995; }
+  font-size: 15px;
 
   &__dot {
     width: 8px;
@@ -1375,7 +1359,7 @@ onMounted(load)
   }
 
   &__level {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 800;
     flex-shrink: 0;
   }
@@ -1399,20 +1383,20 @@ onMounted(load)
   background: rgba(0, 38, 73, 0.35);
 
   label {
-    font-size: 16px;
+    font-size: 14px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   strong {
-    font-size: 23px;
+    font-size: 20px;
     font-weight: 900;
     color: #f6fbff;
     font-family: 'DIN Alternate', sans-serif;
   }
 
   span {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     color: #d0e8f8;
     line-height: 1.5;
@@ -1432,7 +1416,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
 
@@ -1450,7 +1434,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 17px;
+  font-size: 15px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -1462,7 +1446,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 17px;
+    font-size: 15px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }

@@ -356,18 +356,7 @@ const chanceToneCounts = computed(() => ({
   good: visibleOpportunities.value.length,
 }))
 
-const planToneCounts = computed(() => ({
-  important: 0,
-  normal: 0,
-  good: developmentPlans.value.length,
-}))
 
-/** 育人智策页签汇总：跨风险/智策/机会统一红黄绿 */
-const actionToneCounts = computed(() => ({
-  important: riskToneCounts.value.important + coachToneCounts.value.important,
-  normal: riskToneCounts.value.normal + coachToneCounts.value.normal,
-  good: chanceToneCounts.value.good + coachToneCounts.value.good,
-}))
 
 watch(
   () => [props.assistant.shortTermSuggestions[0], props.assistant.longTermSuggestions[0], props.portrait.coachingTasks],
@@ -427,32 +416,28 @@ onBeforeUnmount(stopAutoplay)
     class="stu-tpl__ai"
   >
     <div class="navi" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
-      <button type="button" class="navi__detail-btn" @click="goAiPortrait">查看详情 ›</button>
-      <div class="navi__tabs navi__tabs--two" role="tablist" aria-label="智能育航分页">
-        <StuHint v-for="page in pages" :key="page.id" :tip="page.tip">
+      <div class="navi__top">
+        <div class="navi__dots" role="tablist" aria-label="切换全景研判 / 育人智策">
           <button
+            v-for="p in pages"
+            :key="p.id"
             type="button"
-            role="tab"
-            :aria-selected="activePage === page.id"
-            :class="{ active: activePage === page.id }"
-            @click="selectPage(page.id)"
-          >
-            {{ page.label }}
-            <span v-if="page.id === 'action'" class="navi__badges" aria-label="重要/一般/好的计数">
-              <i class="is-normal" :title="'一般 ' + actionToneCounts.normal">{{ actionToneCounts.normal }}</i>
-              <i class="is-important" :title="'重要 ' + actionToneCounts.important">{{ actionToneCounts.important }}</i>
-              <i class="is-good" :title="'好的 ' + actionToneCounts.good">{{ actionToneCounts.good }}</i>
-            </span>
-            <span v-else class="navi__badges" aria-label="发展规划计数">
-              <i class="is-good" :title="'方案 ' + planToneCounts.good">{{ planToneCounts.good }}</i>
-            </span>
-          </button>
-        </StuHint>
+            class="navi__dot"
+            :class="{ 'is-active': activePage === p.id }"
+            :title="p.label"
+            :aria-label="p.label"
+            @click="selectPage(p.id)"
+          ></button>
+        </div>
+        <button type="button" class="navi__detail-btn" @click="goAiPortrait">查看详情 ›</button>
       </div>
 
       <div class="navi__panel">
         <!-- 第1页：全景研判 + 发展规划 -->
         <div v-if="activePage === 'judge'" class="navi-page navi-page--judge">
+          <h4 class="navi-page-title">
+            <span>全景研判</span>
+          </h4>
           <section class="navi-card navi-card--panorama">
             <div class="navi-card__summary-wrap">
               <StuHint tip="全景总体描述，兼顾优势与短板两端。" block>
@@ -480,9 +465,6 @@ onBeforeUnmount(stopAutoplay)
           <section class="navi-card navi-card--plans">
             <h5 class="navi-sec-title">
               <span>发展规划</span>
-              <span class="navi-sec-badges">
-                <i class="is-good" :title="'方案 ' + planToneCounts.good">{{ planToneCounts.good }}</i>
-              </span>
             </h5>
             <div
               v-for="plan in developmentPlans"
@@ -503,42 +485,18 @@ onBeforeUnmount(stopAutoplay)
           </section>
         </div>
 
-        <!-- 第2页：风险雷达 + 育人智策 + 机会雷达 -->
+        <!-- 第2页：育人智策 + 风险雷达 + 机会雷达 -->
         <div v-else class="navi-page navi-page--action">
-          <section class="navi-card">
-            <h5 class="navi-sec-title">
-              <span>风险雷达</span>
-              <span class="navi-sec-badges">
-                <i class="is-normal" :title="'一般 ' + riskToneCounts.normal">{{ riskToneCounts.normal }}</i>
-                <i class="is-important" :title="'重要 ' + riskToneCounts.important">{{ riskToneCounts.important }}</i>
-              </span>
-            </h5>
-            <div v-if="!visibleRiskItems.length" class="navi-risk-zero">
-              <strong>0</strong>
-              <span>当前无明显风险事项</span>
-            </div>
-            <article v-for="(item, idx) in visibleRiskItems" :key="idx" class="navi-risk">
-              <header>
-                <strong>{{ item.time }}</strong>
-                <StuHint :tip="riskTone(item) === 'important' ? '重要：建议尽快处理。' : '一般：需关注，可择机跟进。'">
-                  <span class="navi-tone-tag" :class="`is-${riskTone(item)}`">
-                    {{ toneLabel(riskTone(item)) }}
-                  </span>
-                </StuHint>
-              </header>
-              <p>{{ item.text }}</p>
-            </article>
-          </section>
+          <h4 class="navi-page-title">
+            <span>育人智策</span>
+            <span class="navi-sec-badges">
+              <i class="is-normal" :title="'一般 ' + coachToneCounts.normal">{{ coachToneCounts.normal }}</i>
+              <i class="is-important" :title="'重要 ' + coachToneCounts.important">{{ coachToneCounts.important }}</i>
+              <i class="is-good" :title="'好的 ' + coachToneCounts.good">{{ coachToneCounts.good }}</i>
+            </span>
+          </h4>
 
           <section class="navi-card">
-            <h5 class="navi-sec-title">
-              <span>育人智策</span>
-              <span class="navi-sec-badges">
-                <i class="is-normal" :title="'一般 ' + coachToneCounts.normal">{{ coachToneCounts.normal }}</i>
-                <i class="is-important" :title="'重要 ' + coachToneCounts.important">{{ coachToneCounts.important }}</i>
-                <i class="is-good" :title="'好的 ' + coachToneCounts.good">{{ coachToneCounts.good }}</i>
-              </span>
-            </h5>
             <article v-for="task in coachTasks" :key="task.key" class="navi-task" :class="`is-${task.status}`">
               <header>
                 <strong>{{ task.title }}</strong>
@@ -564,6 +522,31 @@ onBeforeUnmount(stopAutoplay)
                   <button type="button" class="is-ok" @click="setCoachStatus(task.key, 'done')">完成</button>
                 </StuHint>
               </div>
+            </article>
+          </section>
+
+          <section class="navi-card">
+            <h5 class="navi-sec-title">
+              <span>风险雷达</span>
+              <span class="navi-sec-badges">
+                <i class="is-normal" :title="'一般 ' + riskToneCounts.normal">{{ riskToneCounts.normal }}</i>
+                <i class="is-important" :title="'重要 ' + riskToneCounts.important">{{ riskToneCounts.important }}</i>
+              </span>
+            </h5>
+            <div v-if="!visibleRiskItems.length" class="navi-risk-zero">
+              <strong>0</strong>
+              <span>当前无明显风险事项</span>
+            </div>
+            <article v-for="(item, idx) in visibleRiskItems" :key="idx" class="navi-risk">
+              <header>
+                <strong>{{ item.time }}</strong>
+                <StuHint :tip="riskTone(item) === 'important' ? '重要：建议尽快处理。' : '一般：需关注，可择机跟进。'">
+                  <span class="navi-tone-tag" :class="`is-${riskTone(item)}`">
+                    {{ toneLabel(riskTone(item)) }}
+                  </span>
+                </StuHint>
+              </header>
+              <p>{{ item.text }}</p>
             </article>
           </section>
 
@@ -622,6 +605,7 @@ onBeforeUnmount(stopAutoplay)
   --fs: 20px;
   --fs-sm: 18px;
   --fs-label: 17px;
+  --fs-title: 22px;
   height: 100%;
   min-height: 0;
   display: flex;
@@ -631,59 +615,6 @@ onBeforeUnmount(stopAutoplay)
   font-size: var(--fs);
   line-height: 1.5;
   color: #d8eeff;
-}
-
-.navi__tabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  overflow: visible;
-
-  :deep(.stu-hint) {
-    min-width: 0;
-    display: block;
-  }
-
-  button {
-    width: 100%;
-    min-height: 38px;
-    padding: 7px 9px;
-    border: 1px solid rgba(120, 200, 255, 0.28);
-    border-radius: 4px;
-    background: rgba(0, 40, 80, 0.35);
-    color: #9ec9e6;
-    font-size: var(--fs-sm);
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    box-shadow: none;
-    filter: none;
-    text-shadow: none;
-
-    &.active {
-      border-color: rgba(0, 200, 240, 0.65);
-      background: rgba(0, 70, 120, 0.5);
-      color: #e8f7ff;
-      box-shadow: none;
-      filter: none;
-      text-shadow: none;
-    }
-
-    i {
-      margin-left: 4px;
-      min-width: 18px;
-      padding: 0 5px;
-      border-radius: 4px;
-      background: rgba(40, 50, 70, 0.9);
-      color: #facc15;
-      font-style: normal;
-      font-size: var(--fs-label);
-      font-weight: 800;
-      line-height: 1.35;
-      text-align: center;
-      box-shadow: none;
-    }
-  }
 }
 
 .navi__badges,
@@ -696,7 +627,6 @@ onBeforeUnmount(stopAutoplay)
 }
 
 .navi__badges i,
-.navi-sec-badges i,
 .navi-tone-tag {
   display: inline-flex;
   align-items: center;
@@ -711,8 +641,8 @@ onBeforeUnmount(stopAutoplay)
 
   &.is-important,
   &.is-red {
-    background: #e45858;
-    color: #fff;
+    background: transparent;
+    color: #ff6b6b;
   }
 
   &.is-normal,
@@ -724,8 +654,41 @@ onBeforeUnmount(stopAutoplay)
 
   &.is-good,
   &.is-green {
-    background: #2f9e6a;
-    color: #fff;
+    background: transparent;
+    color: #43e7af;
+  }
+}
+
+/* 标题旁的角标数字：仅放大字号，颜色与斜体保持原样 */
+.navi-sec-badges i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: 5px;
+  font-style: normal;
+  font-size: var(--fs-title);
+  font-weight: 800;
+  line-height: 1.25;
+
+  &.is-important,
+  &.is-red {
+    background: transparent;
+    color: #ff6b6b;
+  }
+
+  &.is-normal,
+  &.is-yellow,
+  &.is-risk {
+    background: rgba(40, 50, 70, 0.95);
+    color: #facc15;
+  }
+
+  &.is-good,
+  &.is-green {
+    background: transparent;
+    color: #43e7af;
   }
 }
 
@@ -1200,9 +1163,49 @@ onBeforeUnmount(stopAutoplay)
   cursor: pointer;
 }
 
+.navi__top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+}
+
+.navi__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.navi__dot {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 200, 255, 0.85);
+  background: rgba(20, 78, 130, 0.85);
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    background: rgba(40, 120, 180, 0.95);
+    border-color: #9fe9ff;
+  }
+
+  &.is-active {
+    background: #7ff6ff;
+    border-color: #7ff6ff;
+    box-shadow: 0 0 12px rgba(30, 214, 255, 0.75);
+    transform: scale(1.2);
+  }
+}
+
 .navi__detail-btn {
-  align-self: flex-end;
-  margin: 0 0 2px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
   border: 0;
   background: transparent;
   color: #7ff6ff;
@@ -1210,23 +1213,27 @@ onBeforeUnmount(stopAutoplay)
   cursor: pointer;
 }
 
-.navi__tabs button i.is-important,
-.navi__tabs button i.is-red {
-  background: #e45858 !important;
-  color: #fff !important;
-}
-.navi__tabs button i.is-good,
-.navi__tabs button i.is-green {
-  background: #2f9e6a !important;
-  color: #fff !important;
-}
-.navi__tabs button i.is-normal,
-.navi__tabs button i.is-yellow {
-  background: rgba(40, 50, 70, 0.95) !important;
-  color: #facc15 !important;
-}
-.navi__tabs--deck {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.navi-page-title {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 14px;
+  color: #d8eefc;
+  font-size: var(--fs-title);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  border: 1px solid rgba(100, 180, 230, 0.42);
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, rgba(0, 90, 150, 0.48), rgba(0, 45, 90, 0.32) 55%, rgba(0, 30, 65, 0.22)),
+    rgba(0, 28, 58, 0.6);
+  box-shadow: inset 0 1px 0 rgba(160, 220, 255, 0.12);
 }
 
 .development-card--ai {
@@ -1276,8 +1283,9 @@ onBeforeUnmount(stopAutoplay)
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
   margin: 0 0 8px;
   padding: 7px 12px;
   color: #d8eefc;
@@ -1286,7 +1294,8 @@ onBeforeUnmount(stopAutoplay)
   letter-spacing: 0.06em;
   line-height: 1.2;
   border: 1px solid rgba(100, 180, 230, 0.38);
-  border-radius: 3px;
+  border-radius: 4px;
+  font-size: var(--fs-title);
   background:
     linear-gradient(90deg, rgba(0, 90, 150, 0.42), rgba(0, 45, 90, 0.28) 55%, rgba(0, 30, 65, 0.18)),
     rgba(0, 28, 58, 0.55);
@@ -1297,7 +1306,7 @@ onBeforeUnmount(stopAutoplay)
   }
 
   .navi-sec-badges {
-    margin-left: auto;
+    margin-left: 0;
     flex-shrink: 0;
   }
 }

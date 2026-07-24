@@ -182,6 +182,24 @@ const router = createRouter({
       meta: { title: '出口发展详情', isStudentSubpage: true },
     },
     {
+      path: ROUTES.student.careerPathPostgrad,
+      name: 'student-career-path-postgrad',
+      component: () => import('@/components/student/subpages/career-development/index.vue'),
+      meta: { title: '升学考研详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.careerPathJob,
+      name: 'student-career-path-job',
+      component: () => import('@/components/student/subpages/career-development/index.vue'),
+      meta: { title: '就业详情', isStudentSubpage: true },
+    },
+    {
+      path: ROUTES.student.careerPathCivil,
+      name: 'student-career-path-civil',
+      component: () => import('@/components/student/subpages/career-development/index.vue'),
+      meta: { title: '考公考编详情', isStudentSubpage: true },
+    },
+    {
       path: ROUTES.student.academicDetail,
       name: 'student-academic-detail',
       component: () => import('@/components/student/subpages/academic-detail/index.vue'),

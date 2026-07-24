@@ -6,7 +6,7 @@
  * 四个标签页：
  *   综合画像 · 升学考研 · 就业 · 考公考编
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import ChartCard from '../academic-detail/components/ChartCard.vue'
@@ -24,6 +24,15 @@ const activeStudentId = computed(
   () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
 )
 
+/* ────── 返回目标：智能育航详情（二级页）────── */
+const studentIdQuery = computed(() => route.query.studentId as string | undefined)
+const backText = computed(() => '← 返回智能育航')
+const backTo = computed(() =>
+  studentIdQuery.value
+    ? { name: 'student-ai-portrait', query: { studentId: studentIdQuery.value } }
+    : { name: 'student-ai-portrait' },
+)
+
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
@@ -36,7 +45,18 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'employment', label: '就业' },
   { key: 'civil', label: '考公考编' },
 ]
-const activeTab = ref<TabKey>('overview')
+function resolveInitialTab(): TabKey {
+  const t = route.query.tab as TabKey | undefined
+  if (t === 'overview' || t === 'graduate' || t === 'employment' || t === 'civil') return t
+  return 'overview'
+}
+const activeTab = ref<TabKey>(resolveInitialTab())
+watch(
+  () => route.fullPath,
+  () => {
+    activeTab.value = resolveInitialTab()
+  },
+)
 
 async function load() {
   loading.value = true
@@ -325,17 +345,40 @@ const resumeStatus = computed(() => dashboard.value?.careerDev.resumeStatus || '
 /* ═══════════ 升学考研 ═══════════ */
 const gradIndex = computed(() => 88)
 
-interface AbilityBar {
-  name: string
-  value: number
-}
-const gradAbilities = computed<AbilityBar[]>(() => [
-  { name: 'GPA', value: 95 },
-  { name: '专业排名', value: 95 },
-  { name: '竞赛成果', value: 85 },
-  { name: '科研经历', value: 65 },
-  { name: '英语能力', value: 80 },
-])
+const gradRadarOption = computed<EChartsOption>(() => ({
+  tooltip: {},
+  radar: {
+    center: ['50%', '52%'],
+    radius: '64%',
+    indicator: [
+      { name: 'GPA基础', max: 100 },
+      { name: '专业排名', max: 100 },
+      { name: '英语能力', max: 100 },
+      { name: '数学能力', max: 100 },
+      { name: '科研经历', max: 100 },
+      { name: '项目经历', max: 100 },
+    ],
+    axisName: { color: '#889ec2', fontSize: 11, padding: [2, 4] },
+    splitArea: { areaStyle: { color: ['rgba(167,139,250,0.02)', 'rgba(167,139,250,0.05)', 'rgba(167,139,250,0.02)', 'rgba(167,139,250,0.05)', 'rgba(167,139,250,0.02)'] } },
+    splitLine: { lineStyle: { color: 'rgba(167,139,250,0.15)' } },
+    axisLine: { lineStyle: { color: 'rgba(167,139,250,0.2)' } },
+  },
+  series: [{
+    type: 'radar',
+    data: [{
+      value: [95, 95, 80, 70, 65, 78],
+      name: '考研竞争力',
+      areaStyle: { color: 'rgba(167,139,250,0.16)' },
+      lineStyle: { color: '#a78bfa', width: 2 },
+      itemStyle: { color: '#a78bfa' },
+      symbol: 'circle',
+      symbolSize: 6,
+    }],
+  }],
+}))
+
+const gradStrengths = computed(() => ['GPA 专业前5%', '数据结构基础扎实', '有竞赛经历'])
+const gradWeakness = computed(() => ['科研论文不足', '算法训练不足', '夏令营经历缺失'])
 
 interface SchoolTarget {
   tier: string
@@ -344,58 +387,115 @@ interface SchoolTarget {
   match: number
 }
 const schoolTargets = computed<SchoolTarget[]>(() => [
-  { tier: '冲刺', tierClass: 'rush', name: '中山大学', match: 78 },
-  { tier: '目标', tierClass: 'target', name: '华南理工大学', match: 91 },
-  { tier: '保底', tierClass: 'safe', name: '暨南大学', match: 95 },
+  { tier: '冲刺院校', tierClass: 'rush', name: '中山大学', match: 78 },
+  { tier: '稳妥院校', tierClass: 'target', name: '华南理工大学', match: 91 },
+  { tier: '保底院校', tierClass: 'safe', name: '暨南大学', match: 95 },
 ])
 
-const gradStrengths = computed(() => ['专业排名前3%', 'GPA优秀', '竞赛经历丰富'])
-const gradWeakness = computed(() => ['科研论文不足', '英语成绩提升空间'])
-const gradSuggestions = computed(() => ['联系目标导师', '完善科研经历', '准备复试材料'])
+/* ── 考研准备度进度 ── */
+interface PrepItem { name: string; value: number }
+const prepItems = computed<PrepItem[]>(() => [
+  { name: '数学基础', value: 80 },
+  { name: '专业课', value: 90 },
+  { name: '英语', value: 70 },
+  { name: '政治', value: 30 },
+  { name: '科研经历', value: 40 },
+])
+const prepOverall = computed(() => Math.round(prepItems.value.reduce((s, i) => s + i.value, 0) / prepItems.value.length))
+const prepGap = computed(() => 100 - prepOverall.value)
+
+/* ── 目标院校竞争分析：本人 vs 录取平均 ── */
+interface CompeteItem { skill: string; self: number; avg: number }
+const competeItems = computed<CompeteItem[]>(() => [
+  { skill: '数学能力', self: 75, avg: 85 },
+  { skill: '专业课', self: 90, avg: 88 },
+  { skill: '科研经历', self: 40, avg: 70 },
+])
+
+/* ── 考研风险预测 ── */
+const gradRiskItems = computed<RiskItem[]>(() => [
+  { name: '目标院校竞争激烈', level: 'high', probability: 82, impact: 88 },
+  { name: '数学基础不足', level: 'medium', probability: 58, impact: 65 },
+  { name: '科研经历不足', level: 'medium', probability: 60, impact: 55 },
+  { name: '英语成绩波动', level: 'medium', probability: 50, impact: 50 },
+  { name: '复试经验不足', level: 'low', probability: 35, impact: 45 },
+  { name: '夏令营经历缺失', level: 'low', probability: 30, impact: 40 },
+])
+
+/* ── AI 考研任务清单 ── */
+interface TaskItem { text: string }
+interface TaskGroup { period: string; cls: 'recent' | 'mid' | 'long'; tasks: TaskItem[] }
+const gradTaskGroups = computed<TaskGroup[]>(() => [
+  { period: '近期任务（1个月）', cls: 'recent', tasks: [
+    { text: '完成数据结构二轮复习' },
+    { text: '数学刷题 300 题' },
+    { text: '联系目标导师' },
+  ] },
+  { period: '中期任务（3个月）', cls: 'mid', tasks: [
+    { text: '完成专业课真题' },
+    { text: '补充科研经历' },
+    { text: '完成英语作文模板' },
+  ] },
+  { period: '长期目标', cls: 'long', tasks: [
+    { text: '冲刺目标院校' },
+    { text: '准备复试材料' },
+    { text: '完成导师沟通' },
+  ] },
+])
 
 function gradBarColor(pct: number): string {
   if (pct >= 90) return 'linear-gradient(90deg, #20c997, #34d399)'
   if (pct >= 80) return 'linear-gradient(90deg, #00b8ff, #66d9ff)'
-  return 'linear-gradient(90deg, #f0c040, #facc15)'
+  if (pct >= 50) return 'linear-gradient(90deg, #f0c040, #facc15)'
+  return 'linear-gradient(90deg, #f87171, #ef4444)'
 }
+
+/* 考研准备度进度条统一蓝绿配色 */
+const PREP_BAR_BG = 'linear-gradient(90deg, #00b8ff, #34d399)'
 
 /* ═══════════ 考公考编 ═══════════ */
-const civilIndex = computed(() => 76)
+const civilIndex = computed(() => 82)
+const civilStarLevel = computed(() => {
+  const v = civilIndex.value
+  if (v >= 90) return '★★★★★'
+  if (v >= 80) return '★★★★☆'
+  if (v >= 70) return '★★★☆☆'
+  if (v >= 60) return '★★☆☆☆'
+  return '★☆☆☆☆'
+})
 
-interface CivilPost {
-  name: string
-  match: number
-}
-const civilPosts = computed<CivilPost[]>(() => [
-  { name: '信息技术岗', match: 95 },
-  { name: '数据管理岗', match: 85 },
-  { name: '综合管理岗', match: 70 },
+/* 模块一：考公发展画像 KPI */
+const civilKpis = computed(() => [
+  { label: '目标类型', value: '省考公务员' },
+  { label: '意向地区', value: '广东省' },
+  { label: '报考方向', value: '计算机类岗位' },
+  { label: '当前状态', value: '备考中' },
 ])
 
+/* 模块二：五维能力雷达（数据来源学校已有数据） */
 const civilRadarOption = computed<EChartsOption>(() => ({
   tooltip: {},
   radar: {
     center: ['50%', '52%'],
-    radius: '62%',
+    radius: '64%',
     indicator: [
-      { name: '专业优势', max: 100 },
-      { name: '学历优势', max: 100 },
-      { name: '成绩优势', max: 100 },
-      { name: '政治基础', max: 100 },
-      { name: '考试准备', max: 100 },
+      { name: '学历背景', max: 100 },
+      { name: '专业匹配', max: 100 },
+      { name: '成绩基础', max: 100 },
+      { name: '综合素质', max: 100 },
       { name: '实践经历', max: 100 },
     ],
-    axisName: { color: '#889ec2', fontSize: 11, padding: [2, 4] },
-    splitArea: { areaStyle: { color: ['rgba(0,184,255,0.02)', 'rgba(0,184,255,0.05)', 'rgba(0,184,255,0.02)', 'rgba(0,184,255,0.05)', 'rgba(0,184,255,0.02)'] } },
-    splitLine: { lineStyle: { color: 'rgba(102,217,255,0.15)' } },
-    axisLine: { lineStyle: { color: 'rgba(102,217,255,0.2)' } },
+    axisName: { color: '#9fe9c9', fontSize: 11, padding: [2, 4] },
+    splitArea: { areaStyle: { color: ['rgba(52,211,153,0.02)', 'rgba(52,211,153,0.05)', 'rgba(52,211,153,0.02)', 'rgba(52,211,153,0.05)', 'rgba(52,211,153,0.02)'] } },
+    splitLine: { lineStyle: { color: 'rgba(52,211,153,0.15)' } },
+    axisLine: { lineStyle: { color: 'rgba(52,211,153,0.2)' } },
   },
   series: [{
     type: 'radar',
     data: [{
-      value: [90, 85, 88, 45, 30, 55],
+      value: [95, 80, 92, 78, 65],
       name: '公考能力',
-      areaStyle: { color: 'rgba(52,211,153,0.14)' },
+      areaStyle: { color: 'rgba(52,211,153,0.16)' },
       lineStyle: { color: '#34d399', width: 2 },
       itemStyle: { color: '#34d399' },
       symbol: 'circle',
@@ -404,15 +504,78 @@ const civilRadarOption = computed<EChartsOption>(() => ({
   }],
 }))
 
-const civilStage = computed(() => '未开始')
-const civilStrengths = computed(() => ['专业限制少', '岗位选择多'])
-const civilWeakness = computed(() => ['行测训练不足', '考试经验不足'])
+const civilRadarSource = computed(() => [
+  { dim: '学历背景', source: '专业、学历' },
+  { dim: '专业匹配', source: '岗位专业要求匹配' },
+  { dim: '成绩基础', source: 'GPA、排名' },
+  { dim: '综合素质', source: '奖项、学生干部、竞赛' },
+  { dim: '实践经历', source: '项目、实习、志愿' },
+])
 
-function civilBarColor(pct: number): string {
-  if (pct >= 90) return 'linear-gradient(90deg, #20c997, #34d399)'
-  if (pct >= 80) return 'linear-gradient(90deg, #00b8ff, #66d9ff)'
+/* 模块三：岗位匹配分析 */
+interface CivilMatchPost {
+  name: string
+  match: number
+  advantages: string[]
+  limits: string[]
+}
+const civilMatchPosts = computed<CivilMatchPost[]>(() => [
+  { name: '广东省考 信息技术类', match: 92, advantages: ['专业符合', 'GPA优秀'], limits: ['缺少基层经历'] },
+  { name: '深圳市直 综合管理类', match: 85, advantages: ['综合素质强', '学生干部经历'], limits: ['申论需提升'] },
+  { name: '广州基层公务员', match: 78, advantages: ['专业对口', '实践经历足'], limits: ['竞争偏激烈'] },
+  { name: '选调生', match: 70, advantages: ['成绩基础好'], limits: ['基层经历不足', '名额有限'] },
+])
+
+function civilMatchColor(pct: number): string {
+  if (pct >= 85) return 'linear-gradient(90deg, #20c997, #34d399)'
+  if (pct >= 70) return 'linear-gradient(90deg, #00b8ff, #34d399)'
   return 'linear-gradient(90deg, #f0c040, #facc15)'
 }
+
+/* 模块四：报考风险分析（X：岗位竞争程度 Y：个人匹配程度） */
+const civilRiskItems = computed<RiskItem[]>(() => [
+  { name: '岗位竞争压力高', level: 'high', probability: 85, impact: 35 },
+  { name: '备考时间不足', level: 'medium', probability: 55, impact: 50 },
+  { name: '岗位选择范围窄', level: 'medium', probability: 40, impact: 55 },
+  { name: '材料准备不足', level: 'low', probability: 30, impact: 45 },
+])
+
+/* 模块五：考公准备度分析（六项，数据可获取） */
+interface CivilPrepItem { name: string; value: number }
+const civilPrepItems = computed<CivilPrepItem[]>(() => [
+  { name: '报名准备', value: 90 },
+  { name: '政策了解', value: 75 },
+  { name: '岗位筛选', value: 85 },
+  { name: '材料准备', value: 70 },
+  { name: '考试规划', value: 60 },
+  { name: '实践经历', value: 80 },
+])
+const civilPrepOverall = computed(() => Math.round(civilPrepItems.value.reduce((s, i) => s + i.value, 0) / civilPrepItems.value.length))
+
+/* 模块六：考公备考时间轴 */
+interface CivilTimelineNode { date: string; event: string; detail: string; status: 'done' | 'doing' | 'todo'; probability: number }
+const civilTimeline = computed<CivilTimelineNode[]>(() => [
+  { date: '2026-06', event: '完成岗位筛选', detail: '明确目标岗位与报考方向', status: 'done', probability: 100 },
+  { date: '2026-08', event: '关注广东省考公告', detail: '留意报名时间与报考条件', status: 'doing', probability: 90 },
+  { date: '2026-09', event: '完成报名材料准备', detail: '整理学历、证明等材料', status: 'todo', probability: 80 },
+  { date: '2026-11', event: '参加笔试', detail: '行测与申论', status: 'todo', probability: 70 },
+  { date: '2027-01', event: '准备面试', detail: '结构化面试训练', status: 'todo', probability: 60 },
+])
+
+/* 模块七：备考任务（底部闭环） */
+interface CivilTask { text: string; meta: string; state: string }
+interface CivilTaskGroup { period: string; cls: 'recent' | 'mid' | 'long'; tasks: CivilTask[] }
+const civilTaskGroups = computed<CivilTaskGroup[]>(() => [
+  { period: '近期任务', cls: 'recent', tasks: [
+    { text: '完成岗位筛选', meta: '截止：2026-08', state: '未完成' },
+  ] },
+  { period: '中期任务', cls: 'mid', tasks: [
+    { text: '参加公务员考试培训', meta: '目标：提升考试准备度', state: '进行中' },
+  ] },
+  { period: '长期任务', cls: 'long', tasks: [
+    { text: '积累基层实践经历', meta: '提升岗位竞争力', state: '计划中' },
+  ] },
+])
 
 /* ═══════════ 综合画像（出口趋势分析）═══════════ */
 interface ExitDirection {
@@ -470,8 +633,8 @@ onMounted(load)
   <StudentDetailLayout
     title="出口发展详情"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId}` : ''"
-    back-text="← 返回学生发展概览"
-    :back-to="{ name: 'student', query: { studentId: activeStudentId } }"
+    :back-text="backText"
+    :back-to="backTo"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载...
@@ -522,33 +685,72 @@ onMounted(load)
 
       <!-- ═══════════ 升学考研 ═══════════ -->
       <div v-else-if="activeTab === 'graduate'" class="detail-grid">
-        <div class="section-title section-title--full">升学发展画像</div>
+        <!-- ① 考研竞争力画像（雷达 + 能力拆解）并排 考研准备度进度 -->
+        <div class="section-title section-title--full">考研竞争力画像 · 考研准备度进度</div>
 
-        <!-- 左：升学竞争力评分 -->
-        <ChartCard title="升学竞争力评分" sub="综合评估">
-          <ChartContainer :option="makeGauge(gradIndex, '#a78bfa', '#a78bfa')" style="height: 200px" />
-          <template #footer>
-            <div class="ability-bars">
-              <div v-for="a in gradAbilities" :key="a.name" class="ability-bar">
-                <span class="ability-bar__name">{{ a.name }}</span>
-                <div class="ability-bar__track">
-                  <div class="ability-bar__inner" :style="{ width: `${a.value}%`, background: gradBarColor(a.value) }" />
-                </div>
-                <span class="ability-bar__val">{{ a.value }}</span>
-              </div>
-            </div>
-          </template>
-        </ChartCard>
-
-        <!-- 右：院校匹配分析 -->
-        <section class="panel-card">
+        <!-- 左：考研竞争力画像（雷达在上，能力拆解在下） -->
+        <section class="panel-card grad-profile">
           <div class="panel-card__head">
             <span class="panel-card__bar" aria-hidden="true" />
-            <h3 class="panel-card__title">院校匹配分析</h3>
-            <span class="panel-card__sub">目标院校梯度</span>
+            <h3 class="panel-card__title">考研竞争力画像</h3>
+            <span class="panel-card__sub">六维评估</span>
           </div>
-          <div class="school-list">
-            <div v-for="s in schoolTargets" :key="s.name" class="school-item">
+          <ChartContainer :option="gradRadarOption" style="height: 280px" />
+          <div class="grad-profile__split">
+            <div class="ability-split">
+              <div class="ability-split__col">
+                <h4 class="ability-split__title ability-split__title--good">优势能力</h4>
+                <ul class="ability-split__list">
+                  <li v-for="s in gradStrengths" :key="s" class="ability-split__item ability-split__item--good">{{ s }}</li>
+                </ul>
+              </div>
+              <div class="ability-split__col">
+                <h4 class="ability-split__title ability-split__title--gap">短板能力</h4>
+                <ul class="ability-split__list">
+                  <li v-for="w in gradWeakness" :key="w" class="ability-split__item ability-split__item--gap">{{ w }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 右：考研准备度进度 -->
+        <div class="grad-prep">
+          <div class="grad-prep__head-title">
+            <span class="panel-card__bar" aria-hidden="true" />
+            <span class="grad-prep__title">考研准备度进度</span>
+          </div>
+          <div class="grad-prep__bars">
+            <div v-for="p in prepItems" :key="p.name" class="grad-prep__item">
+              <div class="grad-prep__head">
+                <span class="grad-prep__name">{{ p.name }}</span>
+                <span class="grad-prep__val">{{ p.value }}%</span>
+              </div>
+              <div class="grad-prep__bar">
+                <div class="grad-prep__bar-inner" :style="{ width: `${p.value}%`, background: PREP_BAR_BG }" />
+              </div>
+            </div>
+          </div>
+          <div class="grad-prep__overall">
+            <div class="grad-prep__overall-num">{{ prepOverall }}%</div>
+            <div class="grad-prep__overall-meta">
+              <span class="grad-prep__overall-label">整体准备度</span>
+              <span class="grad-prep__gap">距离目标院校要求：还差 {{ prepGap }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ② 院校梯度分析 并排 目标院校竞争分析 -->
+        <div class="section-title section-title--full">院校梯度分析 · 目标院校竞争分析</div>
+
+        <!-- 左：院校梯度分析（冲稳保） -->
+        <div class="grad-school-section">
+          <div class="grad-school-section__head">
+            <span class="panel-card__bar" aria-hidden="true" />
+            <span class="grad-school-section__title">院校梯度分析</span>
+          </div>
+          <div class="grad-school-list">
+            <div v-for="s in schoolTargets" :key="s.name" class="school-item" :class="`school-item--${s.tierClass}`">
               <div class="school-item__head">
                 <span class="school-tier" :class="`school-tier--${s.tierClass}`">{{ s.tier }}</span>
                 <span class="school-item__name">{{ s.name }}</span>
@@ -559,27 +761,92 @@ onMounted(load)
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        <!-- 下：升学风险 -->
-        <div class="risk-cards">
-          <div class="risk-card risk-card--good">
-            <h4 class="risk-card__title">优势</h4>
-            <ul class="risk-card__list">
-              <li v-for="s in gradStrengths" :key="s"><span class="risk-card__icon">✓</span>{{ s }}</li>
-            </ul>
+        <!-- 右：目标院校竞争分析 -->
+        <div class="grad-compete">
+          <div class="grad-compete__head">
+            <span class="panel-card__bar" aria-hidden="true" />
+            <span class="grad-compete__title">目标院校竞争分析</span>
           </div>
-          <div class="risk-card risk-card--warn">
-            <h4 class="risk-card__title">不足</h4>
-            <ul class="risk-card__list">
-              <li v-for="w in gradWeakness" :key="w"><span class="risk-card__icon">⚠</span>{{ w }}</li>
-            </ul>
+          <div class="grad-compete__legend">
+            <span class="grad-compete__legend-item"><i class="grad-compete__dot grad-compete__dot--self" />本人</span>
+            <span class="grad-compete__legend-item"><i class="grad-compete__dot grad-compete__dot--avg" />录取学生平均</span>
           </div>
-          <div class="risk-card risk-card--tip">
-            <h4 class="risk-card__title">建议</h4>
-            <ol class="risk-card__list risk-card__list--ol">
-              <li v-for="(t, i) in gradSuggestions" :key="t"><span class="risk-card__num">{{ i + 1 }}</span>{{ t }}</li>
-            </ol>
+          <div class="grad-compete__list">
+            <div v-for="c in competeItems" :key="c.skill" class="grad-compete__item">
+              <span class="grad-compete__skill">{{ c.skill }}</span>
+              <div class="grad-compete__bars">
+                <div class="grad-compete__row">
+                  <div class="grad-compete__track">
+                    <div class="grad-compete__bar grad-compete__bar--self" :style="{ width: `${c.self}%` }" />
+                  </div>
+                  <span class="grad-compete__num">{{ c.self }}</span>
+                </div>
+                <div class="grad-compete__row">
+                  <div class="grad-compete__track">
+                    <div class="grad-compete__bar grad-compete__bar--avg" :style="{ width: `${c.avg}%` }" />
+                  </div>
+                  <span class="grad-compete__num">{{ c.avg }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑤ 考研风险预测 -->
+        <div class="section-title section-title--full">考研风险预测</div>
+        <div class="risk-section">
+          <div class="risk-matrix risk-matrix--grad">
+            <div class="risk-matrix__axes">
+              <span class="risk-matrix__ylabel">影响程度 ↑</span>
+              <span class="risk-matrix__xlabel">发生概率 →</span>
+            </div>
+            <div class="risk-matrix__grid">
+              <div
+                v-for="item in gradRiskItems"
+                :key="item.name"
+                class="risk-bubble"
+                :style="{
+                  left: `${(item.probability / 100) * 88}%`,
+                  bottom: `${(item.impact / 100) * 88}%`,
+                  background: LX_COLOR[item.level],
+                  boxShadow: `0 0 10px ${LX_COLOR[item.level]}44`,
+                }"
+                :title="`${item.name} | 概率${item.probability}% | 影响${item.impact}%`"
+              >
+                <span class="risk-bubble__label">{{ item.name }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="risk-table">
+            <div class="risk-table__head">
+              <span class="risk-table__th risk-table__th--name">风险项</span>
+              <span class="risk-table__th risk-table__th--lv">等级</span>
+              <span class="risk-table__th risk-table__th--prob">发生概率</span>
+              <span class="risk-table__th risk-table__th--impact">影响程度</span>
+            </div>
+            <div v-for="item in gradRiskItems" :key="item.name" class="risk-table__row">
+              <span class="risk-table__cell risk-table__cell--name">{{ item.name }}</span>
+              <span class="risk-table__cell risk-table__cell--lv" :style="{ color: LX_COLOR[item.level], background: LV_BG[item.level] }">{{ LX_LABEL[item.level] }}</span>
+              <span class="risk-table__cell risk-table__cell--prob">{{ item.probability }}%</span>
+              <span class="risk-table__cell risk-table__cell--impact">{{ item.impact }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑥ AI 考研任务清单 -->
+        <div class="section-title section-title--full">AI 考研任务清单</div>
+        <div class="grad-tasks">
+          <div v-for="g in gradTaskGroups" :key="g.period" class="grad-task" :class="`grad-task--${g.cls}`">
+            <div class="grad-task__head">
+              <span class="grad-task__period">{{ g.period }}</span>
+            </div>
+            <ul class="grad-task__list">
+              <li v-for="t in g.tasks" :key="t.text" class="grad-task__item">
+                <span class="grad-task__text">{{ t.text }}</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -678,7 +945,7 @@ onMounted(load)
                 <h4 class="match-col__title match-col__title--good">匹配优势</h4>
                 <ul class="match-list">
                   <li v-for="a in selectedJob.advantages" :key="a" class="match-item match-item--good">
-                    <span class="match-item__icon">✔</span>{{ a }}
+                    {{ a }}
                   </li>
                 </ul>
               </div>
@@ -686,7 +953,7 @@ onMounted(load)
                 <h4 class="match-col__title match-col__title--gap">缺失能力</h4>
                 <ul class="match-list">
                   <li v-for="g in selectedJob.gaps" :key="g" class="match-item match-item--gap">
-                    <span class="match-item__icon">⚠</span>{{ g }}
+                    {{ g }}
                   </li>
                 </ul>
               </div>
@@ -790,53 +1057,178 @@ onMounted(load)
 
       <!-- ═══════════ 考公考编 ═══════════ -->
       <div v-else-if="activeTab === 'civil'" class="detail-grid">
-        <div class="section-title section-title--full">公职发展画像</div>
+        <!-- 模块一：考公发展画像 -->
+        <div class="section-title section-title--full">考公发展画像</div>
+        <section class="warn-section">
+          <div class="kpi-grid">
+            <div v-for="k in civilKpis" :key="k.label" class="kpi-card">
+              <span class="kpi-card__label">{{ k.label }}</span>
+              <strong class="kpi-card__value">{{ k.value }}</strong>
+            </div>
+          </div>
+        </section>
 
-        <!-- 公考适配度 + 岗位树 -->
-        <ChartCard title="公考适配度" sub="岗位匹配">
-          <ChartContainer :option="makeGauge(civilIndex, '#34d399', '#34d399')" style="height: 200px" />
+        <!-- 模块二：考公竞争力画像（仪表盘 + 五维雷达） -->
+        <div class="section-title section-title--full">考公竞争力画像</div>
+
+        <ChartCard title="考公竞争力指数" :sub="civilStarLevel" compact>
+          <ChartContainer :option="makeGauge(civilIndex, '#34d399', '#34d399')" style="height: 190px" />
           <template #footer>
-            <div class="post-tree">
-              <div class="post-tree__root">计算机专业</div>
-              <div class="post-tree__list">
-                <div v-for="p in civilPosts" :key="p.name" class="post-node">
-                  <div class="post-node__head">
-                    <span class="post-node__name">{{ p.name }}</span>
-                    <span class="post-node__pct">{{ p.match }}%</span>
-                  </div>
-                  <div class="post-node__bar">
-                    <div class="post-node__bar-inner" :style="{ width: `${p.match}%`, background: civilBarColor(p.match) }" />
-                  </div>
-                </div>
-              </div>
+            <div class="civil-gauge-foot">
+              <span class="civil-gauge-foot__num">{{ civilIndex }}</span>
+              <span class="civil-gauge-foot__tag">具备竞争优势</span>
             </div>
           </template>
         </ChartCard>
 
-        <!-- 公考能力分析雷达 -->
-        <ChartCard title="公考能力分析" sub="六维评估">
-          <ChartContainer :option="civilRadarOption" style="height: 300px" />
-        </ChartCard>
-
-        <!-- 当前状态 -->
-        <div class="civil-status">
-          <div class="civil-status__stage">
-            <span class="civil-status__stage-label">备考阶段</span>
-            <span class="civil-status__stage-value">{{ civilStage }}</span>
+        <section class="panel-card">
+          <div class="panel-card__head">
+            <span class="panel-card__bar" aria-hidden="true" />
+            <h3 class="panel-card__title">五维能力雷达</h3>
+            <span class="panel-card__sub">学校数据</span>
           </div>
-          <div class="risk-cards risk-cards--two">
-            <div class="risk-card risk-card--good">
-              <h4 class="risk-card__title">优势</h4>
-              <ul class="risk-card__list">
-                <li v-for="s in civilStrengths" :key="s"><span class="risk-card__icon">✓</span>{{ s }}</li>
-              </ul>
+          <ChartContainer :option="civilRadarOption" style="height: 300px" />
+        </section>
+
+        <!-- 能力维度数据来源 -->
+        <div class="civil-source">
+          <div class="civil-source__head">
+            <span class="panel-card__bar" aria-hidden="true" />
+            <span class="civil-source__title">能力维度数据来源</span>
+          </div>
+          <div class="civil-source__table">
+            <div class="civil-source__row civil-source__row--head">
+              <span class="civil-source__th">维度</span>
+              <span class="civil-source__th">数据来源</span>
             </div>
-            <div class="risk-card risk-card--warn">
-              <h4 class="risk-card__title">短板</h4>
-              <ul class="risk-card__list">
-                <li v-for="w in civilWeakness" :key="w"><span class="risk-card__icon">⚠</span>{{ w }}</li>
-              </ul>
+            <div v-for="s in civilRadarSource" :key="s.dim" class="civil-source__row">
+              <span class="civil-source__dim">{{ s.dim }}</span>
+              <span class="civil-source__val">{{ s.source }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- 模块三：岗位匹配分析 -->
+        <div class="section-title section-title--full">岗位匹配分析</div>
+        <div class="civil-match">
+          <div v-for="p in civilMatchPosts" :key="p.name" class="civil-match__item">
+            <div class="civil-match__head">
+              <span class="civil-match__name">{{ p.name }}</span>
+              <span class="civil-match__pct">匹配 {{ p.match }}%</span>
+            </div>
+            <div class="civil-match__bar">
+              <div class="civil-match__bar-inner" :style="{ width: `${p.match}%`, background: civilMatchColor(p.match) }" />
+            </div>
+            <div class="civil-match__tags">
+              <span v-for="a in p.advantages" :key="a" class="civil-match__tag civil-match__tag--good">✓ {{ a }}</span>
+              <span v-for="l in p.limits" :key="l" class="civil-match__tag civil-match__tag--gap">△ {{ l }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模块四：报考风险分析 -->
+        <div class="section-title section-title--full">报考风险分析</div>
+        <div class="risk-section">
+          <div class="risk-matrix risk-matrix--civil">
+            <div class="risk-matrix__axes">
+              <span class="risk-matrix__ylabel">个人匹配程度 ↑</span>
+              <span class="risk-matrix__xlabel">岗位竞争程度 →</span>
+            </div>
+            <div class="risk-matrix__grid">
+              <div
+                v-for="item in civilRiskItems"
+                :key="item.name"
+                class="risk-bubble"
+                :style="{
+                  left: `${(item.probability / 100) * 88}%`,
+                  bottom: `${(item.impact / 100) * 88}%`,
+                  background: LX_COLOR[item.level],
+                  boxShadow: `0 0 10px ${LX_COLOR[item.level]}44`,
+                }"
+                :title="`${item.name} | 竞争${item.probability}% | 匹配${item.impact}%`"
+              >
+                <span class="risk-bubble__label">{{ item.name }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="risk-table">
+            <div class="risk-table__head">
+              <span class="risk-table__th risk-table__th--name">风险项</span>
+              <span class="risk-table__th risk-table__th--lv">等级</span>
+              <span class="risk-table__th risk-table__th--prob">竞争程度</span>
+              <span class="risk-table__th risk-table__th--impact">匹配程度</span>
+            </div>
+            <div v-for="item in civilRiskItems" :key="item.name" class="risk-table__row">
+              <span class="risk-table__cell risk-table__cell--name">{{ item.name }}</span>
+              <span class="risk-table__cell risk-table__cell--lv" :style="{ color: LX_COLOR[item.level], background: LV_BG[item.level] }">{{ LX_LABEL[item.level] }}</span>
+              <span class="risk-table__cell risk-table__cell--prob">{{ item.probability }}%</span>
+              <span class="risk-table__cell risk-table__cell--impact">{{ item.impact }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模块五：考公准备度分析 -->
+        <div class="section-title section-title--full">考公准备度分析</div>
+        <div class="grad-prep">
+          <div class="grad-prep__head-title">
+            <span class="panel-card__bar" aria-hidden="true" />
+            <span class="grad-prep__title">考公准备度分析</span>
+          </div>
+          <div class="grad-prep__bars">
+            <div v-for="p in civilPrepItems" :key="p.name" class="grad-prep__item">
+              <div class="grad-prep__head">
+                <span class="grad-prep__name">{{ p.name }}</span>
+                <span class="grad-prep__val">{{ p.value }}%</span>
+              </div>
+              <div class="grad-prep__bar">
+                <div class="grad-prep__bar-inner" :style="{ width: `${p.value}%`, background: PREP_BAR_BG }" />
+              </div>
+            </div>
+          </div>
+          <div class="grad-prep__overall">
+            <div class="grad-prep__overall-num">{{ civilPrepOverall }}%</div>
+            <div class="grad-prep__overall-meta">
+              <span class="grad-prep__overall-label">整体准备度</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模块六：考公备考时间轴 -->
+        <div class="section-title section-title--full">考公备考时间轴</div>
+        <div class="timeline-section">
+          <div class="timeline">
+            <div
+              v-for="(node, idx) in civilTimeline"
+              :key="node.date"
+              class="timeline-node"
+              :class="{ 'timeline-node--last': idx === civilTimeline.length - 1 }"
+            >
+              <div class="timeline-node__marker" :class="`timeline-node__marker--${node.status}`">
+                <span class="timeline-node__dot" />
+              </div>
+              <div class="timeline-node__content">
+                <span class="timeline-node__date">{{ node.date }}</span>
+                <strong class="timeline-node__event">{{ node.event }}</strong>
+                <p class="timeline-node__detail">{{ node.detail }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模块七：备考任务（底部闭环） -->
+        <div class="section-title section-title--full">备考任务</div>
+        <div class="grad-tasks">
+          <div v-for="g in civilTaskGroups" :key="g.period" class="grad-task" :class="`grad-task--${g.cls}`">
+            <div class="grad-task__head">
+              <span class="grad-task__period">{{ g.period }}</span>
+            </div>
+            <ul class="grad-task__list">
+              <li v-for="t in g.tasks" :key="t.text" class="grad-task__item">
+                <span class="grad-task__text">{{ t.text }}</span>
+                <span class="grad-task__meta">{{ t.meta }}</span>
+                <span class="grad-task__state" :class="`grad-task__state--${g.cls}`">{{ t.state }}</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -1433,6 +1825,30 @@ onMounted(load)
     line-height: 1.2;
     word-break: break-all;
   }
+
+  /* 考研 / 考公风险：完整文字，改为胶囊气泡 */
+  .risk-matrix--grad &,
+  .risk-matrix--civil & {
+    width: auto;
+    height: auto;
+    min-width: 56px;
+    min-height: 40px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    transform: translate(-50%, 50%);
+
+    &:hover {
+      transform: translate(-50%, 50%) scale(1.08);
+      z-index: 2;
+    }
+  }
+
+  .risk-matrix--grad &__label,
+  .risk-matrix--civil &__label {
+    font-size: 12px;
+    white-space: nowrap;
+    word-break: normal;
+  }
 }
 
 .risk-table {
@@ -1606,6 +2022,553 @@ onMounted(load)
   &--rush { color: #f87171; background: rgba(248, 113, 113, 0.14); border: 1px solid rgba(248, 113, 113, 0.3); }
   &--target { color: #66d9ff; background: rgba(102, 217, 255, 0.14); border: 1px solid rgba(102, 217, 255, 0.3); }
   &--safe { color: #34d399; background: rgba(52, 211, 153, 0.14); border: 1px solid rgba(52, 211, 153, 0.3); }
+}
+
+/* ── 考研竞争力画像（雷达 + 能力拆解合并）── */
+.grad-profile {
+  &__split {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(102, 217, 255, 0.14);
+  }
+}
+
+/* ── 能力拆解（升学竞争力画像右侧）── */
+.ability-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__title {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+
+    &--good { color: #34d399; }
+    &--gap { color: #f0c040; }
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: #d0e8f8;
+    line-height: 1.5;
+    padding: 5px 9px;
+    border-radius: 5px;
+
+    &--good { background: rgba(52, 211, 153, 0.06); }
+    &--gap { background: rgba(240, 192, 64, 0.06); }
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    font-weight: 800;
+
+    .ability-split__item--good & { color: #34d399; }
+    .ability-split__item--gap & { color: #f0c040; }
+  }
+}
+
+/* ── 院校梯度分析 ── */
+.grad-school-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
+    rgba(6, 17, 52, 0.32);
+  border: 1px solid rgba(0, 206, 255, 0.42);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 24px rgba(0, 184, 255, 0.12);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f4fbff;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.school-item {
+  &--rush { background: rgba(248, 113, 113, 0.04); border-radius: 6px; padding: 8px 10px; border: 1px solid rgba(248, 113, 113, 0.15); }
+  &--target { background: rgba(102, 217, 255, 0.04); border-radius: 6px; padding: 8px 10px; border: 1px solid rgba(102, 217, 255, 0.15); }
+  &--safe { background: rgba(52, 211, 153, 0.04); border-radius: 6px; padding: 8px 10px; border: 1px solid rgba(52, 211, 153, 0.15); }
+}
+
+/* ── 考研准备度进度 ── */
+.grad-prep {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
+    rgba(6, 17, 52, 0.32);
+  border: 1px solid rgba(0, 206, 255, 0.42);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 24px rgba(0, 184, 255, 0.12);
+
+  &__head-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f4fbff;
+  }
+
+  &__bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #d0e8f8;
+  }
+
+  &__val {
+    margin-left: auto;
+    font-size: 15px;
+    font-weight: 800;
+    color: #7ff6ff;
+    font-family: 'DIN Alternate', sans-serif;
+  }
+
+  &__bar {
+    height: 9px;
+    border-radius: 999px;
+    background: rgba(0, 60, 120, 0.45);
+    overflow: hidden;
+  }
+
+  &__bar-inner {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s ease;
+  }
+
+  &__overall {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(0, 38, 73, 0.4);
+    border: 1px solid rgba(102, 217, 255, 0.18);
+  }
+
+  &__overall-num {
+    font-size: 32px;
+    font-weight: 900;
+    color: #7ff6ff;
+    font-family: 'DIN Alternate', sans-serif;
+    text-shadow: 0 0 12px rgba(0, 212, 255, 0.35);
+    line-height: 1;
+  }
+
+  &__overall-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    text-align: right;
+  }
+
+  &__overall-label {
+    font-size: 12px;
+    color: #7eb4d8;
+  }
+
+  &__gap {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f0c040;
+  }
+}
+
+/* ── 目标院校竞争分析 ── */
+.grad-compete {
+  padding: 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
+    rgba(6, 17, 52, 0.32);
+  border: 1px solid rgba(0, 206, 255, 0.42);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 24px rgba(0, 184, 255, 0.12);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f4fbff;
+  }
+
+  &__legend {
+    display: flex;
+    gap: 18px;
+    margin: 10px 0 12px;
+  }
+
+  &__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #b8d6ec;
+  }
+
+  &__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+
+    &--self { background: #00b8ff; }
+    &--avg { background: #facc15; }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__skill {
+    flex-shrink: 0;
+    width: 80px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #d0e8f8;
+  }
+
+  &__bars {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__track {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__bar {
+    height: 14px;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+
+    &--self { background: linear-gradient(90deg, #0090e0, #00b8ff); }
+    &--avg { background: linear-gradient(90deg, #e0b020, #facc15); }
+  }
+
+  &__num {
+    flex-shrink: 0;
+    width: 34px;
+    text-align: right;
+    font-size: 14px;
+    font-weight: 800;
+    color: #f6fbff;
+    font-family: 'DIN Alternate', sans-serif;
+  }
+}
+
+/* ── AI 考研任务清单 ── */
+.grad-tasks {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.grad-task {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  background: rgba(6, 17, 52, 0.32);
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  overflow: hidden;
+
+  &--recent { border-color: rgba(248, 113, 113, 0.35); }
+  &--mid { border-color: rgba(240, 192, 64, 0.35); }
+  &--long { border-color: rgba(52, 211, 153, 0.35); }
+
+  &__head {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(102, 217, 255, 0.12);
+  }
+
+  &--recent .grad-task__head { background: rgba(248, 113, 113, 0.1); }
+  &--mid .grad-task__head { background: rgba(240, 192, 64, 0.1); }
+  &--long .grad-task__head { background: rgba(52, 211, 153, 0.1); }
+
+  &__period {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f4fbff;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 13px;
+    color: #d0e8f8;
+    line-height: 1.5;
+  }
+
+  &__text {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #f0fbff;
+  }
+
+  &__meta {
+    font-size: 12px;
+    color: #9fc4e0;
+  }
+
+  &__state {
+    align-self: flex-end;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 999px;
+
+    &--recent { color: #f87171; background: rgba(248, 113, 113, 0.14); }
+    &--mid { color: #f0c040; background: rgba(240, 192, 64, 0.14); }
+    &--long { color: #34d399; background: rgba(52, 211, 153, 0.14); }
+  }
+}
+
+/* ── 考公：竞争力仪表 footer ── */
+.civil-gauge-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  &__num {
+    font-size: 28px;
+    font-weight: 900;
+    color: #7ff6ff;
+    font-family: 'DIN Alternate', sans-serif;
+  }
+
+  &__tag {
+    font-size: 13px;
+    font-weight: 700;
+    color: #34d399;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(52, 211, 153, 0.12);
+  }
+}
+
+/* ── 考公：能力维度数据来源 ── */
+.civil-source {
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
+    rgba(6, 17, 52, 0.32);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 24px rgba(52, 211, 153, 0.08);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  &__title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f4fbff;
+  }
+
+  &__table {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 12px;
+    padding: 7px 6px;
+    border-bottom: 1px solid rgba(102, 217, 255, 0.08);
+
+    &:last-child { border-bottom: none; }
+
+    &--head {
+      border-bottom: 1px solid rgba(102, 217, 255, 0.18);
+    }
+  }
+
+  &__th {
+    font-size: 12px;
+    font-weight: 700;
+    color: #7eb4d8;
+  }
+
+  &__dim {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #d0e8f8;
+  }
+
+  &__val {
+    font-size: 13px;
+    color: #b8d6ec;
+  }
+}
+
+/* ── 考公：岗位匹配分析 ── */
+.civil-match {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
+    rgba(6, 17, 52, 0.32);
+  border: 1px solid rgba(0, 206, 255, 0.42);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 24px rgba(0, 184, 255, 0.12);
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f6fbff;
+  }
+
+  &__pct {
+    margin-left: auto;
+    font-size: 14px;
+    font-weight: 800;
+    color: #7ff6ff;
+    font-family: 'DIN Alternate', sans-serif;
+  }
+
+  &__bar {
+    height: 9px;
+    border-radius: 999px;
+    background: rgba(0, 60, 120, 0.45);
+    overflow: hidden;
+  }
+
+  &__bar-inner {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s ease;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__tag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+
+    &--good { color: #34d399; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.25); }
+    &--gap { color: #f0c040; background: rgba(240, 192, 64, 0.1); border: 1px solid rgba(240, 192, 64, 0.25); }
+  }
 }
 
 /* ── 风险卡片（优势/不足/建议）── */
@@ -1934,5 +2897,11 @@ onMounted(load)
   .exit-summary { grid-column: 1; }
 
   .exit-dir-list { grid-template-columns: 1fr; }
+
+  .grad-prep { grid-column: 1; grid-template-columns: 1fr; }
+
+  .grad-tasks { grid-column: 1; grid-template-columns: 1fr; }
+
+  .ability-split { grid-column: 1; }
 }
 </style>
