@@ -171,8 +171,32 @@ export interface StudentDevDetailDTO {
     byMajor: Array<{ name: string; count: number }>
     byGrade: Array<{ name: string; count: number }>
   }
+  /** 研究生培养结构（与 AI 分析快照同构） */
+  graduateCultivation?: GraduateCultivationDTO
   /** 示意/缺源字段路径，前端用红色字体标注 */
   mockFields?: string[]
+}
+
+export interface GraduateCultivationDTO {
+  graduateCount: number
+  undergradCount: number
+  graduateShareOfEnrolled: number
+  majors: Array<{ name: string; count: number; ratio: number }>
+  byEnrollmentYear: Array<{ year: string; count: number }>
+  advisorCoverage: number
+  advisorCount: number
+  paperStudentCount: number
+  projectStudentCount: number
+  researchStudentCount: number
+  researchParticipationRate: number
+  employment: {
+    year?: string | null
+    cohortCount: number
+    placementRate: number
+    highQualityRate: number
+  }
+  dataFingerprint?: string
+  filters?: Record<string, unknown>
 }
 
 export interface StudentDevQualityScope {

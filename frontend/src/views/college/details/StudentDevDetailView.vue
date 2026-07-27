@@ -447,8 +447,11 @@ function breakdownBarOption(
     }
   }
 
-  function undergradPieOption(items: Array<{ name: string; count: number }>): EChartsOption {
-    const palette = ['#00e5ff', '#1f8bff', '#36f1cd']
+  function undergradPieOption(
+    items: Array<{ name: string; count: number }>,
+    centerSubtext = '本科生总数',
+  ): EChartsOption {
+    const palette = ['#00e5ff', '#1f8bff', '#36f1cd', '#7c5cff', '#ffb347']
     const total = items.reduce((s, i) => s + i.count, 0) || 1
     return {
       color: palette,
@@ -461,7 +464,7 @@ function breakdownBarOption(
       },
       title: {
         text: String(total),
-        subtext: '本科生总数',
+        subtext: centerSubtext,
         left: 'center',
         top: 'center',
         textStyle: { color: '#5ff4ff', fontSize: 30, fontWeight: 'bolder', textShadowColor: '#00e5ff', textShadowBlur: 18 },
@@ -511,6 +514,33 @@ function breakdownBarOption(
   const undergradByGradeOption = computed(() => {
     if (!data.value?.undergradDistribution?.byGrade?.length) return {}
     return undergradBarOption(data.value.undergradDistribution.byGrade)
+  })
+
+  const graduateCultivation = computed(() => data.value?.graduateCultivation)
+
+  const graduateByMajorOption = computed(() => {
+    const majors = graduateCultivation.value?.majors
+    if (!majors?.length) return {}
+    return undergradPieOption(
+      majors.map((m) => ({ name: m.name, count: m.count })),
+      '研究生总数',
+    )
+  })
+
+  const graduateByYearOption = computed(() => {
+    const years = graduateCultivation.value?.byEnrollmentYear
+    if (!years?.length) return {}
+    // 入学年过长时只展示最近若干届，避免柱图过密
+    const recent = years.length > 8 ? years.slice(-8) : years
+    return undergradBarOption(
+      recent.map((y) => ({ name: `${y.year}级`, count: y.count })),
+    )
+  })
+
+  const graduateSnapshot = computed(() => {
+    const gc = graduateCultivation.value
+    if (!gc) return null
+    return gc as unknown as Record<string, unknown>
   })
 
 const hpBarOption = computed(() => {
@@ -664,14 +694,85 @@ function goEmploymentPage() {
         </section>
 
         <section id="graduate" class="resource-section" :class="{ 'resource-section--active': activeSection === 'graduate' }">
-          <h2 class="resource-section__title"><span class="resource-section__title-icon">🎓</span>研究生培养<span class="resource-section__badge resource-section__badge--accent"><MockText :mock="isMock('summary.enrolledGraduate')">{{ data.summary.enrolledGraduate }}</MockText> 人</span></h2>
-          <p class="resource-section__desc">研究生规模体现学院科研育人与学科支撑能力。结合高潜学生结构，可观察拔尖创新人才从本科到研究生阶段的衔接情况。</p>
-          <div class="resource-card">
-            <div class="resource-card__note">
-              <p>可切换至「高潜分析」查看按类型 / 专业 / 年级的细分结构，支撑精准培养策略。</p>
+          <h2 class="resource-section__title"><span class="resource-section__title-icon">🎓</span>研究生培养<span class="resource-section__badge resource-section__badge--accent">{{ graduateCultivation?.graduateCount ?? data.summary.enrolledGraduate }} 人</span></h2>
+          <p class="resource-section__desc">研究生规模、专业与入学年结构、导师与科研参与、就业出口，与下方 AI 分析共用同一份聚合快照，便于核对。</p>
+
+          <div class="resource-section__grid resource-section__grid--4">
+            <div class="resource-card resource-card--talent">
+              <div class="resource-card__talent-icon">📊</div>
+              <strong class="resource-card__talent-count">
+                {{ graduateCultivation?.graduateShareOfEnrolled ?? 0 }}<small>%</small>
+              </strong>
+              <span class="resource-card__talent-label">占在校生比</span>
+              <p class="resource-card__talent-desc">
+                研 {{ graduateCultivation?.graduateCount ?? data.summary.enrolledGraduate }} /
+                本 {{ graduateCultivation?.undergradCount ?? data.summary.enrolledUndergrad }}
+              </p>
+            </div>
+            <div class="resource-card resource-card--talent">
+              <div class="resource-card__talent-icon">👨‍🏫</div>
+              <strong class="resource-card__talent-count">
+                {{ graduateCultivation?.advisorCoverage ?? 0 }}<small>%</small>
+              </strong>
+              <span class="resource-card__talent-label">导师覆盖率</span>
+              <p class="resource-card__talent-desc">已填导师 {{ graduateCultivation?.advisorCount ?? 0 }} 人</p>
+            </div>
+            <div class="resource-card resource-card--talent">
+              <div class="resource-card__talent-icon">🔬</div>
+              <strong class="resource-card__talent-count">
+                {{ graduateCultivation?.researchParticipationRate ?? 0 }}<small>%</small>
+              </strong>
+              <span class="resource-card__talent-label">科研参与率</span>
+              <p class="resource-card__talent-desc">
+                论文 {{ graduateCultivation?.paperStudentCount ?? 0 }} · 课题 {{ graduateCultivation?.projectStudentCount ?? 0 }}
+              </p>
+            </div>
+            <div class="resource-card resource-card--talent">
+              <div class="resource-card__talent-icon">💼</div>
+              <strong class="resource-card__talent-count">
+                {{ graduateCultivation?.employment?.placementRate ?? 0 }}<small>%</small>
+              </strong>
+              <span class="resource-card__talent-label">就业落实率</span>
+              <p class="resource-card__talent-desc">
+                <template v-if="graduateCultivation?.employment?.cohortCount">
+                  {{ graduateCultivation.employment.year || '最新届' }} ·
+                  样本 {{ graduateCultivation.employment.cohortCount }} ·
+                  高质量 {{ graduateCultivation.employment.highQualityRate }}%
+                </template>
+                <template v-else>暂无研究生就业样本</template>
+              </p>
             </div>
           </div>
-          <GraduateCultivationAnalysisPanel :auto="false" />
+
+          <div class="resource-section__grid resource-section__grid--2" style="margin-top: 14px">
+            <div class="resource-card">
+              <h3>专业分布</h3>
+              <div class="resource-card__chart resource-card__chart--tall">
+                <ChartContainer v-if="graduateCultivation?.majors?.length" :option="graduateByMajorOption" />
+                <p v-else class="resource-card__note"><span>暂无研究生专业分布数据</span></p>
+              </div>
+            </div>
+            <div class="resource-card">
+              <h3>入学年结构</h3>
+              <div class="resource-card__chart resource-card__chart--tall">
+                <ChartContainer v-if="graduateCultivation?.byEnrollmentYear?.length" :option="graduateByYearOption" />
+                <p v-else class="resource-card__note"><span>暂无入学年分布数据</span></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="resource-card" style="margin-top: 14px">
+            <div class="resource-card__insight">
+              <span class="resource-card__insight-icon">💡</span>
+              <p>
+                可切换至「高潜分析」查看本科拔尖结构；研究生出口亦可对照
+                <button type="button" class="inline-link" @click="switchTab('employment', { focus: 'exit-quality' })">就业分析</button>
+                （筛选研究生学历）。
+              </p>
+            </div>
+          </div>
+
+          <GraduateCultivationAnalysisPanel :snapshot="graduateSnapshot" :auto="false" />
         </section>
 
         <section id="employment-rate" class="resource-section" :class="{ 'resource-section--active': activeSection === 'employment-rate' }">
@@ -1068,6 +1169,7 @@ function goEmploymentPage() {
     gap: 14px;
     &--2 { grid-template-columns: 1fr 1fr; }
     &--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    &--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
 }
 
@@ -1252,7 +1354,8 @@ function goEmploymentPage() {
   .resource-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .resource-summary--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .resource-section__grid--2,
-  .resource-section__grid--3 { grid-template-columns: 1fr; }
+  .resource-section__grid--3,
+  .resource-section__grid--4 { grid-template-columns: 1fr; }
 }
 .hp-roster-tip {
   margin: 0;

@@ -430,5 +430,36 @@ export function mockStudentDevDetail(): StudentDevDetailDTO {
         { name: '2025级', count: 1258 },
       ],
     },
+    graduateCultivation: {
+      graduateCount: 818,
+      undergradCount: 4862,
+      graduateShareOfEnrolled: 14.4,
+      majors: [
+        { name: '计算机科学与技术', count: 286, ratio: 35.0 },
+        { name: '软件工程', count: 214, ratio: 26.2 },
+        { name: '人工智能', count: 178, ratio: 21.8 },
+        { name: '大数据管理与应用', count: 140, ratio: 17.1 },
+      ],
+      byEnrollmentYear: [
+        { year: '2022', count: 168 },
+        { year: '2023', count: 196 },
+        { year: '2024', count: 224 },
+        { year: '2025', count: 230 },
+      ],
+      advisorCoverage: 96.2,
+      advisorCount: 787,
+      paperStudentCount: 142,
+      projectStudentCount: 186,
+      researchStudentCount: 248,
+      researchParticipationRate: 30.3,
+      employment: {
+        year: '2026',
+        cohortCount: 210,
+        placementRate: 92.4,
+        highQualityRate: 48.6,
+      },
+      dataFingerprint: 'mock-graduate-818',
+      filters: { education: 'graduate', year: '2026' },
+    },
   }
 }

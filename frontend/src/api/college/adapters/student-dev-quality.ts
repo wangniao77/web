@@ -79,6 +79,7 @@ export function adaptStudentEvaluationDetail(dto: StudentEvaluationDetailDTO): S
 }
 
 export function adaptStudentDevDetail(dto: StudentDevDetailDTO): StudentDevDetailVM {
+  const gc = dto.graduateCultivation
   return {
     summary: { ...dto.summary },
     outcomes: dto.outcomes.map((o) => ({ ...o })),
@@ -101,6 +102,15 @@ export function adaptStudentDevDetail(dto: StudentDevDetailDTO): StudentDevDetai
       byMajor: dto.undergradDistribution.byMajor.map((i) => ({ ...i })),
       byGrade: dto.undergradDistribution.byGrade.map((i) => ({ ...i })),
     },
+    graduateCultivation: gc
+      ? {
+          ...gc,
+          majors: (gc.majors || []).map((m) => ({ ...m })),
+          byEnrollmentYear: (gc.byEnrollmentYear || []).map((y) => ({ ...y })),
+          employment: { ...gc.employment },
+          filters: gc.filters ? { ...gc.filters } : undefined,
+        }
+      : undefined,
     mockFields: dto.mockFields ? [...dto.mockFields] : [],
   }
 }
