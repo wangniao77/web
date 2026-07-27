@@ -39,7 +39,7 @@ def index_tags_by_student(tags: list[StudentTag]) -> dict[str, list[StudentTag]]
 
 async def rebuild_student_tags(college: College, *, rule_version: str = "v1") -> dict[str, Any]:
     stats: dict[str, Any] = {"warning": 0, "high_potential": 0, "rule_run_id": 0, "skipped_keys": 0}
-    await StudentTag.filter(college_id=college.id).delete()
+    await StudentTag.filter(college_id=college.id).exclude(source="import").delete()
 
     run = await AnalysisRuleRun.create(
         college=college,

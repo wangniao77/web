@@ -60,6 +60,24 @@ ALTER_STATEMENTS = [
     "ALTER TABLE student_tags ADD COLUMN IF NOT EXISTS source VARCHAR(32) NULL",
     "ALTER TABLE employment_records ADD COLUMN IF NOT EXISTS student_pk INT NULL",
     "ALTER TABLE thesis_advisors ADD COLUMN IF NOT EXISTS student_pk INT NULL",
+    # 联系信息（手机/地址/宿舍）
+    "ALTER TABLE students ADD COLUMN IF NOT EXISTS phone VARCHAR(64) NULL",
+    "ALTER TABLE students ADD COLUMN IF NOT EXISTS address VARCHAR(512) NULL",
+    "ALTER TABLE students ADD COLUMN IF NOT EXISTS dormitory VARCHAR(128) NULL",
+    "ALTER TABLE students ADD COLUMN IF NOT EXISTS political_status VARCHAR(64) NULL",
+    "ALTER TABLE students ADD COLUMN IF NOT EXISTS advisor_name VARCHAR(64) NULL",
+    "ALTER TABLE student_academic_records ADD COLUMN IF NOT EXISTS phone VARCHAR(64) NULL",
+    "ALTER TABLE student_academic_records ADD COLUMN IF NOT EXISTS address VARCHAR(512) NULL",
+    "ALTER TABLE student_academic_records ADD COLUMN IF NOT EXISTS dormitory VARCHAR(128) NULL",
+    "ALTER TABLE student_academic_records ADD COLUMN IF NOT EXISTS political_status VARCHAR(64) NULL",
+    "ALTER TABLE student_academic_records ADD COLUMN IF NOT EXISTS advisor_name VARCHAR(64) NULL",
+    # 荣誉：幂等键 / 队友角色
+    "ALTER TABLE competition_awards ADD COLUMN IF NOT EXISTS member_role VARCHAR(16) NULL DEFAULT 'primary'",
+    "ALTER TABLE competition_awards ADD COLUMN IF NOT EXISTS primary_student_id VARCHAR(32) NULL",
+    "ALTER TABLE competition_awards ADD COLUMN IF NOT EXISTS dedupe_key VARCHAR(640) NULL",
+    "ALTER TABLE student_projects ADD COLUMN IF NOT EXISTS member_role VARCHAR(16) NULL DEFAULT 'leader'",
+    "ALTER TABLE student_projects ADD COLUMN IF NOT EXISTS dedupe_key VARCHAR(640) NULL",
+    "ALTER TABLE student_papers ADD COLUMN IF NOT EXISTS dedupe_key VARCHAR(640) NULL",
 ]
 
 INDEX_STATEMENTS = [
@@ -71,6 +89,35 @@ INDEX_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_student_tags_student_pk ON student_tags (student_pk)",
     "CREATE INDEX IF NOT EXISTS idx_employment_student_pk ON employment_records (student_pk)",
     "CREATE INDEX IF NOT EXISTS idx_thesis_student_pk ON thesis_advisors (student_pk)",
+    "CREATE INDEX IF NOT EXISTS idx_competition_awards_primary_sid ON competition_awards (primary_student_id)",
+    "CREATE INDEX IF NOT EXISTS idx_competition_awards_member_role ON competition_awards (college_id, member_role)",
+    """
+    DO $$ BEGIN
+      CREATE UNIQUE INDEX uq_competition_awards_dedupe
+        ON competition_awards (college_id, dedupe_key)
+        WHERE dedupe_key IS NOT NULL;
+    EXCEPTION WHEN duplicate_table THEN NULL;
+              WHEN duplicate_object THEN NULL;
+    END $$;
+    """,
+    """
+    DO $$ BEGIN
+      CREATE UNIQUE INDEX uq_student_projects_dedupe
+        ON student_projects (college_id, dedupe_key)
+        WHERE dedupe_key IS NOT NULL;
+    EXCEPTION WHEN duplicate_table THEN NULL;
+              WHEN duplicate_object THEN NULL;
+    END $$;
+    """,
+    """
+    DO $$ BEGIN
+      CREATE UNIQUE INDEX uq_student_papers_dedupe
+        ON student_papers (college_id, dedupe_key)
+        WHERE dedupe_key IS NOT NULL;
+    EXCEPTION WHEN duplicate_table THEN NULL;
+              WHEN duplicate_object THEN NULL;
+    END $$;
+    """,
 ]
 
 # 兼容视图：主档 ⋈ 招生 ⋈ 每人最新年级快照，列名对齐宽表
@@ -136,6 +183,64 @@ INNER JOIN (
 LEFT JOIN student_admission adm ON adm.student_id = sp.id
 """
 
+# 荣誉时间线：竞赛 / 课题 / 论文统一视图
+HONORS_VIEW_SQL = """
+CREATE OR REPLACE VIEW v_student_honors AS
+SELECT
+  'competition'::text AS honor_type,
+  ca.id AS source_id,
+  ca.college_id AS college_id,
+  ca.student_id AS student_id,
+  ca.name AS student_name,
+  ca.contest_name AS title,
+  ca.award_level AS level_label,
+  ca.award_rank AS rank_label,
+  ca.awarded_on AS occurred_on,
+  ca.member_role AS member_role,
+  ca.primary_student_id AS primary_student_id,
+  ca.organizer AS org_or_venue,
+  ca.advisor AS advisor,
+  ca.source_file AS source_file,
+  ca.created_at AS created_at
+FROM competition_awards ca
+UNION ALL
+SELECT
+  'project'::text AS honor_type,
+  sp.id AS source_id,
+  sp.college_id AS college_id,
+  sp.student_id AS student_id,
+  sp.name AS student_name,
+  sp.title AS title,
+  sp.project_level AS level_label,
+  sp.result_grade AS rank_label,
+  NULL::varchar AS occurred_on,
+  sp.member_role AS member_role,
+  NULL::varchar AS primary_student_id,
+  sp.project_type AS org_or_venue,
+  sp.advisor AS advisor,
+  sp.source_file AS source_file,
+  sp.created_at AS created_at
+FROM student_projects sp
+UNION ALL
+SELECT
+  'paper'::text AS honor_type,
+  pp.id AS source_id,
+  pp.college_id AS college_id,
+  pp.student_id AS student_id,
+  pp.name AS student_name,
+  pp.title AS title,
+  pp.indexed_in AS level_label,
+  pp.author_order AS rank_label,
+  pp.published_on AS occurred_on,
+  'author'::text AS member_role,
+  NULL::varchar AS primary_student_id,
+  pp.journal AS org_or_venue,
+  NULL::varchar AS advisor,
+  pp.source_file AS source_file,
+  pp.created_at AS created_at
+FROM student_papers pp
+"""
+
 
 async def main() -> None:
     await Tortoise.init(config=TORTOISE_ORM, _enable_global_fallback=True)
@@ -162,6 +267,12 @@ async def main() -> None:
         print("VIEW v_student_academic_records ok")
     except Exception as exc:
         print("VIEW skip", exc)
+
+    try:
+        await conn.execute_script(HONORS_VIEW_SQL)
+        print("VIEW v_student_honors ok")
+    except Exception as exc:
+        print("VIEW v_student_honors skip", exc)
 
     fk_sqls = [
         """

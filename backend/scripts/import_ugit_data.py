@@ -17,7 +17,9 @@ from pathlib import Path
 from typing import Any
 
 BACKEND = Path(__file__).resolve().parents[1]
+SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND))
+sys.path.insert(0, str(SCRIPTS))
 
 from tortoise import Tortoise
 from tortoise.transactions import in_transaction
@@ -30,6 +32,7 @@ from Utils.DB.Models import (
     AcademicSnapshot,
     College,
     CollegeKpiSnapshot,
+    CompetitionAward,
     EmploymentRecord,
     Major,
     ResearchIp,
@@ -39,12 +42,25 @@ from Utils.DB.Models import (
     SchoolClass,
     StudentAcademicRecord,
     StudentAdmission,
+    StudentLeadershipRole,
+    StudentPaper,
     StudentProfile,
+    StudentProject,
     StudentTag,
     Teacher,
+    TeachingCourseHour,
     ThesisAdvisor,
+    StudentInternship,
 )
 from Utils.Excel import list_sheet_names, read_tabular
+from importers_supplement import (
+    import_awards,
+    import_employment_flexible,
+    import_graduates,
+    import_internships,
+    import_leadership,
+    import_teaching_hours,
+)
 
 COLLEGE_NAME = "大数据与人工智能学院"
 COLLEGE_CODE = "big-data-ai"
@@ -394,51 +410,8 @@ async def import_dorm_teachers(data_root: Path) -> dict[str, int]:
 
 
 async def import_employment(data_root: Path, college: College) -> dict[str, int]:
-    stats = {"create": 0, "update": 0, "skip": 0}
-    path = data_root / "就业信息20260623.xlsx"
-    if not path.exists():
-        return {"skip": 0, "missing": 1}
-    rows = read_tabular(path)
-    print(f"[employment] {path.name} rows={len(rows)}")
-    for row in rows:
-        sid = _pick(row, "学号")
-        if not sid:
-            stats["skip"] += 1
-            continue
-        payload = {
-            "college_id": college.id,
-            "name": _pick(row, "姓名") or None,
-            "education_level": _pick(row, "学历") or None,
-            "education_status": _pick(row, "学历状况") or None,
-            "major_name": _pick(row, "专业名称") or None,
-            "class_name": _pick(row, "班级名称") or None,
-            "destination": _pick(row, "毕业去向") or None,
-            "unit_name": _pick(
-                row,
-                "就业单位名称/征兵办名称/项目名称/创业单位名称/升学院校名称/境外单位名称",
-                "就业单位名称",
-            )
-            or None,
-            "unit_type": _pick(row, "单位类型") or None,
-            "industry": _pick(row, "单位所属行业") or None,
-            "region": _pick(row, "单位/征兵办/项目/院校所属地区", "所属地区") or None,
-            "job_title": _pick(row, "岗位名称/专业名称/工作内容") or None,
-            "occupation_type": _pick(row, "职业类型") or None,
-            "salary": _pick(row, "薪酬") or None,
-            "relevance": _pick(row, "专业与就业相关度") or None,
-            "signed_at": _pick(row, "签约时间/入伍时间/创业时间/就业时间/入学、入职时间") or None,
-            "source_file": path.name,
-        }
-        existing = await EmploymentRecord.get_or_none(student_id=sid)
-        if existing:
-            for k, v in payload.items():
-                setattr(existing, k, v)
-            await existing.save()
-            stats["update"] += 1
-        else:
-            await EmploymentRecord.create(student_id=sid, **payload)
-            stats["create"] += 1
-    return stats
+    """兼容旧固定文件名 + 新目录 glob。"""
+    return await import_employment_flexible(data_root, college)
 
 
 async def import_research(data_root: Path, college: College) -> dict[str, int]:
@@ -999,6 +972,16 @@ async def run(data_root: Path, only: set[str]) -> None:
                 results["dorm"] = await import_dorm_teachers(data_root)
             if "employment" in only:
                 results["employment"] = await import_employment(data_root, college)
+            if "graduates" in only:
+                results["graduates"] = await import_graduates(data_root, college)
+            if "leadership" in only:
+                results["leadership"] = await import_leadership(data_root, college)
+            if "awards" in only:
+                results["awards"] = await import_awards(data_root, college)
+            if "teaching_hours" in only or "teaching-hours" in only:
+                results["teaching_hours"] = await import_teaching_hours(data_root, college)
+            if "internships" in only or "internship" in only:
+                results["internships"] = await import_internships(data_root, college)
             if "research" in only:
                 results["research"] = await import_research(data_root, college)
             if "thesis" in only:
@@ -1030,6 +1013,12 @@ async def run(data_root: Path, only: set[str]) -> None:
                 "thesis": await ThesisAdvisor.all().count(),
                 "student_tags": await StudentTag.all().count(),
                 "kpi_snapshots": await CollegeKpiSnapshot.all().count(),
+                "leadership_roles": await StudentLeadershipRole.all().count(),
+                "competition_awards": await CompetitionAward.all().count(),
+                "student_projects": await StudentProject.all().count(),
+                "student_papers": await StudentPaper.all().count(),
+                "teaching_course_hours": await TeachingCourseHour.all().count(),
+                "student_internships": await StudentInternship.all().count(),
             }
             print("RESULTS", results)
             print("COUNTS", counts)
@@ -1044,12 +1033,12 @@ def main() -> None:
         "--only",
         type=str,
         default="students,gpa,cet,dorm,employment,research,thesis,teachers,classes,tags,kpi",
-        help="comma-separated steps",
+        help="comma-separated steps; supplement: graduates,leadership,awards,teaching_hours,internships",
     )
     args = parser.parse_args()
     only = {x.strip() for x in args.only.split(",") if x.strip()}
     print("NOTE: skip course-score detail sheets / photo xls / awards docx (no structured parser)")
-    print("NOTE: sensitive columns (phone/id/bank) are never persisted")
+    print("NOTE: id-card/bank never persisted; phone/address/dormitory ARE persisted when present")
     asyncio.run(run(args.data_root, only))
 
 

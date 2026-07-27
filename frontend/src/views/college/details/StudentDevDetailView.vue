@@ -6,6 +6,7 @@ import ChartContainer from '@/components/charts/ChartContainer.vue'
 import MockText from '@/components/common/MockText.vue'
 import EnrollmentEmploymentDetailContent from '@/components/college/modules/enrollment-employment/EnrollmentEmploymentDetailContent.vue'
 import StudentRosterPanel from '@/components/college/modules/student-dev/StudentRosterPanel.vue'
+import GraduateCultivationAnalysisPanel from '@/components/college/modules/student-dev/GraduateCultivationAnalysisPanel.vue'
 import type { RosterStudentDTO } from '@/api/college/details'
 import { collegeDetailService } from '@/api/college/services/details'
 import { enrollmentEmploymentService } from '@/api/college/services/enrollment-employment'
@@ -230,11 +231,19 @@ onMounted(async () => {
   }
 })
 
-async function onEmploymentFilterChange(payload: { year: string; major: string }) {
+async function onEmploymentFilterChange(payload: {
+  year: string
+  major: string
+  educationLevel?: string
+}) {
   const scope = {
     ...collegeScope.value,
     year: payload.year || undefined,
     major: payload.major && payload.major !== '全部专业' ? payload.major : undefined,
+    educationLevel:
+      payload.educationLevel && payload.educationLevel !== '全部学历'
+        ? payload.educationLevel
+        : undefined,
   }
   try {
     const [enrollment, flow] = await Promise.all([
@@ -662,6 +671,7 @@ function goEmploymentPage() {
               <p>可切换至「高潜分析」查看按类型 / 专业 / 年级的细分结构，支撑精准培养策略。</p>
             </div>
           </div>
+          <GraduateCultivationAnalysisPanel :auto="false" />
         </section>
 
         <section id="employment-rate" class="resource-section" :class="{ 'resource-section--active': activeSection === 'employment-rate' }">
@@ -819,7 +829,7 @@ function goEmploymentPage() {
           :total-hint="data.summary.highPotential"
         >
           <template #headExtra>
-            <p class="hp-roster-tip"><span class="hp-roster-tip__icon">💡</span>当前名单：<strong>{{ selectedHpName }}</strong>。点击柱条切换；也可点顶部摘要卡。</p>
+            <p class="hp-roster-tip"><span class="hp-roster-tip__icon">💡</span>当前名单：<strong>{{ selectedHpName }}</strong>。「入选依据」列展示该维度判定依据（如绩点、竞赛奖项、实习单位等）。点击柱条或顶部摘要卡可切换。</p>
           </template>
         </StudentRosterPanel>
       </div>

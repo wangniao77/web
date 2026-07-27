@@ -127,10 +127,15 @@ async def enrollment_employment_detail(
     collegeId: str | None = None,
     year: str | None = None,
     major: str | None = None,
+    education: str | None = None,
+    educationLevel: str | None = None,
 ) -> ApiResponse:
     return ok(
         await college_service.get_enrollment_employment_detail(
-            college_id=collegeId, year=year, major=major
+            college_id=collegeId,
+            year=year,
+            major=major,
+            education=education or educationLevel,
         )
     )
 
@@ -149,8 +154,20 @@ async def enrollment_employment_analysis_report(
 
 
 @router.get("/students/flow-sankey", response_model=ApiResponse)
-async def student_flow_sankey(collegeId: str | None = None) -> ApiResponse:
-    return ok(await college_service.get_student_flow_sankey(college_id=collegeId))
+async def student_flow_sankey(
+    collegeId: str | None = None,
+    year: str | None = None,
+    major: str | None = None,
+    educationLevel: str | None = None,
+) -> ApiResponse:
+    return ok(
+        await college_service.get_student_flow_sankey(
+            college_id=collegeId,
+            year=year,
+            major=major,
+            education_level=educationLevel,
+        )
+    )
 
 
 @router.get("/students/evaluation/{key}", response_model=ApiResponse)

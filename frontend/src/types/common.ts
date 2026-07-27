@@ -16,6 +16,8 @@ export interface CollegeScope extends FilterParams {
   year?: string
   /** 就业分析：专业名（全部专业可不传） */
   major?: string
+  /** 就业分析：学历（全部学历/本科/研究生） */
+  educationLevel?: string
 }
 
 export interface StudentScope extends FilterParams {

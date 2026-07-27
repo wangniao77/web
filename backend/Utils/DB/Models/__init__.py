@@ -28,6 +28,14 @@ from Utils.DB.Models.major_models import Major
 from Utils.DB.Models.school_class_models import SchoolClass
 from Utils.DB.Models.school_event_models import SchoolEvent
 from Utils.DB.Models.student_academic_record_models import StudentAcademicRecord
+from Utils.DB.Models.student_extra_models import (
+    CompetitionAward,
+    StudentInternship,
+    StudentLeadershipRole,
+    StudentPaper,
+    StudentProject,
+    TeachingCourseHour,
+)
 
 Student = StudentAcademicRecord
 
@@ -57,4 +65,10 @@ __all__ = [
     "EnrollmentCohort",
     "StudentTag",
     "CollegeKpiSnapshot",
+    "StudentLeadershipRole",
+    "CompetitionAward",
+    "StudentProject",
+    "StudentPaper",
+    "TeachingCourseHour",
+    "StudentInternship",
 ]

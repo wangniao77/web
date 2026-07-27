@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter, defaultdict
 from datetime import date
 from typing import Any
@@ -21,12 +22,9 @@ from Utils.DB.read.college_db import (
     to_float,
 )
 
-# —— 缺源字段 mock（招生/研究生/心理/教评等）——
-_MOCK_GRADUATE = 86
+# —— 缺源字段 mock（招生队列 / 心理名单 / 教评等仍缺源）——
 _MOCK_SOURCE_QUALITY = 86.4
 _MOCK_FIRST_CHOICE = 68.4
-_MOCK_PSYCHOLOGICAL = 4
-_MOCK_LEADERSHIP_HP = 42
 
 _HP_LABELS = {
     "academic": "学业卓越",
@@ -136,6 +134,76 @@ def _is_hmt(student: StudentAcademicRecord) -> bool:
     blob = f"{student.hmt_status or ''}|{student.source_place or ''}|{student.native_place or ''}"
     return any(k in blob for k in ("香港", "澳门", "台湾", "港澳台", "台胞", "华侨"))
 
+
+def _is_graduate_record(student: StudentAcademicRecord) -> bool:
+    edu = (student.education_level or "").strip()
+    return any(k in edu for k in ("研究生", "硕士", "博士"))
+
+
+def _partition_students(
+    students: list[StudentAcademicRecord],
+) -> tuple[list[StudentAcademicRecord], list[StudentAcademicRecord]]:
+    """按培养层次拆成本科（含专升本/空）与研究生。"""
+    undergrad: list[StudentAcademicRecord] = []
+    graduate: list[StudentAcademicRecord] = []
+    for s in students:
+        if _is_graduate_record(s):
+            graduate.append(s)
+        else:
+            undergrad.append(s)
+    return undergrad, graduate
+
+
+def _monthly_to_annual_wan(monthly: float) -> float:
+    """就业表薪资多为月薪元 → 年薪万元。"""
+    if monthly >= 500:
+        return round(monthly * 12 / 10000, 1)
+    return round(monthly, 1)
+
+
+def _salary_by_major(
+    rows: list[EmploymentRecord],
+    by_sid: dict[str, StudentAcademicRecord] | None = None,
+    *,
+    top_n: int = 5,
+) -> dict[str, Any]:
+    """按毕业届次 × 专业聚合平均年薪（万元）。"""
+    default_cohort = _infer_default_cohort(rows, by_sid)
+    by_year_major: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
+    for r in rows:
+        sal = _parse_salary(r.salary)
+        if sal is None or sal <= 0:
+            continue
+        y = _emp_cohort_year(r, by_sid, default_cohort=default_cohort)
+        if not y or not y.isdigit() or int(y) > _calendar_year_cap():
+            continue
+        major = _emp_major_name(r, by_sid)
+        if not major or major == "其他":
+            continue
+        by_year_major[y][major].append(_monthly_to_annual_wan(sal))
+
+    years = sorted(by_year_major.keys())
+    if not years:
+        return {"years": [], "series": []}
+
+    major_counts: Counter[str] = Counter()
+    for y in years:
+        for m, vals in by_year_major[y].items():
+            major_counts[m] += len(vals)
+    top_majors = [m for m, _ in major_counts.most_common(top_n)]
+    series: list[dict[str, Any]] = []
+    for major in top_majors:
+        data: list[float] = []
+        for y in years:
+            vals = by_year_major[y].get(major) or []
+            if vals:
+                data.append(round(sum(vals) / len(vals), 1))
+            else:
+                # 缺届次：用该专业全局均值占位，避免折线断裂
+                all_vals = [v for yy in years for v in (by_year_major[yy].get(major) or [])]
+                data.append(round(sum(all_vals) / len(all_vals), 1) if all_vals else 0.0)
+        series.append({"name": major, "data": data})
+    return {"years": years, "series": series}
 
 def _source_bucket(student: StudentAcademicRecord) -> str:
     """入口桑基左侧节点：广东省内 / 省外生源 / 港澳台。"""
@@ -404,6 +472,31 @@ def _emp_signed_year(row: EmploymentRecord) -> str:
     return raw[:4] if len(raw) >= 4 and raw[:4].isdigit() else ""
 
 
+_SOURCE_COHORT_RE = re.compile(r"(?<!\d)(\d{2})届")
+_CLASS_ENROLL_RE = re.compile(r"(20\d{2})")
+
+
+def _emp_cohort_from_source_file(row: EmploymentRecord) -> str:
+    """从文件名解析毕业届次，如「25届就业信息…」→ 2025。"""
+    name = getattr(row, "source_file", None) or ""
+    m = _SOURCE_COHORT_RE.search(str(name))
+    if not m:
+        return ""
+    return str(2000 + int(m.group(1)))
+
+
+def _emp_cohort_from_class_name(row: EmploymentRecord) -> str:
+    """从班级名入学年 + 学制推算届次，如「2022电子商务A3班」本科 → 2026。"""
+    cn = getattr(row, "class_name", None) or ""
+    m = _CLASS_ENROLL_RE.search(str(cn))
+    if not m:
+        return ""
+    try:
+        return str(int(m.group(1)) + _emp_program_years(row, None))
+    except (TypeError, ValueError):
+        return ""
+
+
 # 未落实去向：有文案但不计入毕业去向落实率分子
 _UNPLACED_DESTINATIONS = frozenset(
     {
@@ -443,16 +536,22 @@ def _emp_cohort_year(
     *,
     default_cohort: str | None = None,
 ) -> str:
-    """毕业届次：学籍年级+学制优先；无学籍时归入主导届（同批就业表），再回退签约年。
+    """毕业届次：源文件「XX届」> 学籍年级+学制 > 班级入学年+学制 > 主导届 > 签约年。"""
+    from_src = _emp_cohort_from_source_file(row)
+    if from_src:
+        return from_src
 
-    签约年含脏数据/跨年签约，不能直接当「届次」画历年趋势。
-    """
     stu = (by_sid or {}).get(row.student_id)
     if stu and stu.grade:
         try:
             return str(int(stu.grade) + _emp_program_years(row, stu))
         except (TypeError, ValueError):
             pass
+
+    from_class = _emp_cohort_from_class_name(row)
+    if from_class:
+        return from_class
+
     if default_cohort:
         return default_cohort
     return _emp_signed_year(row)
@@ -462,11 +561,18 @@ def _infer_default_cohort(
     rows: list[EmploymentRecord],
     by_sid: dict[str, StudentAcademicRecord] | None = None,
 ) -> str | None:
-    """由有学籍记录的人数众数推断本批就业表主导毕业届。"""
+    """推断主导毕业届：优先源文件「XX届」，再学籍年级+学制。"""
     counts: Counter[str] = Counter()
     for r in rows:
+        from_src = _emp_cohort_from_source_file(r)
+        if from_src:
+            counts[from_src] += 1
+            continue
         stu = (by_sid or {}).get(r.student_id)
         if not (stu and stu.grade):
+            from_class = _emp_cohort_from_class_name(r)
+            if from_class:
+                counts[from_class] += 1
             continue
         try:
             counts[str(int(stu.grade) + _emp_program_years(r, stu))] += 1
@@ -475,6 +581,39 @@ def _infer_default_cohort(
     if not counts:
         return None
     return counts.most_common(1)[0][0]
+
+
+def _cohort_year_options(
+    rows: list[EmploymentRecord],
+    by_sid: dict[str, StudentAcademicRecord] | None = None,
+) -> list[str]:
+    """筛选项年份：凡有记录的届次均列出（不设趋势图的样本门槛）。"""
+    default_cohort = _infer_default_cohort(rows, by_sid)
+    counts: Counter[str] = Counter()
+    cap = _calendar_year_cap()
+    for r in rows:
+        y = _emp_cohort_year(r, by_sid, default_cohort=default_cohort)
+        if y and y.isdigit() and int(y) <= cap:
+            counts[y] += 1
+    return sorted(counts.keys())
+
+
+def _normalize_education_filter(education: str | None) -> str:
+    s = (education or "").strip()
+    if not s or s in {"全部", "全部学历", "all", "ALL"}:
+        return "all"
+    if s in {"本科", "undergrad", "undergraduate", "学士"}:
+        return "undergrad"
+    if s in {"研究生", "硕士", "博士", "graduate", "master", "硕士/研究生"}:
+        return "graduate"
+    return "all"
+
+
+def _row_education_bucket(row: EmploymentRecord) -> str:
+    edu = f"{row.education_level or ''}{getattr(row, 'education_status', None) or ''}"
+    if any(k in edu for k in ("硕士", "研究生", "博士")):
+        return "graduate"
+    return "undergrad"
 
 
 def _emp_year_min_count(total: int) -> int:
@@ -605,11 +744,15 @@ def _filter_employment_rows(
     *,
     year: str | None = None,
     major: str | None = None,
+    education: str | None = None,
     by_sid: dict[str, StudentAcademicRecord] | None = None,
 ) -> list[EmploymentRecord]:
     out = rows
+    edu_bucket = _normalize_education_filter(education)
+    if edu_bucket != "all":
+        out = [r for r in out if _row_education_bucket(r) == edu_bucket]
     if year and year not in {"", "全部", "全部年份"}:
-        default_cohort = _infer_default_cohort(rows, by_sid)
+        default_cohort = _infer_default_cohort(out, by_sid)
         out = [
             r
             for r in out
@@ -859,6 +1002,7 @@ class TalentOverviewService:
         self,
         students: list[StudentAcademicRecord],
         hp_tags: list[StudentTag],
+        research_ids: set[str] | None = None,
     ) -> tuple[int, list[dict[str, Any]], list[dict[str, Any]]]:
         """从 student_tags 聚合高潜结构（对齐批算结果）。"""
         by_sid = {s.student_id: s for s in students}
@@ -882,13 +1026,16 @@ class TalentOverviewService:
         academic = len(dim_students.get("academic", set()))
         competition = len(dim_students.get("competition", set()))
         internship = len(dim_students.get("internship", set()) | dim_students.get("career", set()))
+        research = set(dim_students.get("rural", set()))
+        if research_ids:
+            research |= {sid for sid in research_ids if sid in by_sid}
         structure = [
             {"key": "competition", "label": "竞赛高潜", "count": competition or 0, "flux": 0},
             {"key": "academic", "label": "学业高潜", "count": academic or 0, "flux": 0},
             {
                 "key": "research",
                 "label": "科研创新",
-                "count": _MOCK_LEADERSHIP_HP // 3,
+                "count": len(research),
                 "flux": 0,
             },
             {
@@ -906,9 +1053,9 @@ class TalentOverviewService:
         students: list[StudentAcademicRecord],
         warn_tags: list[StudentTag],
     ) -> tuple[int, list[dict[str, Any]]]:
-        """从 student_tags 聚合预警；心理仅在库内有名单时用真数，否则示意 mock。"""
+        """从 student_tags 聚合预警；无心理名单时记 0（不再灌入示意人数）。"""
         by_sid = {s.student_id for s in students}
-        academic = credit = psych = 0
+        academic = credit = psych = employment = 0
         warned: set[str] = set()
         for t in warn_tags:
             if not t.student_id or t.student_id not in by_sid:
@@ -921,24 +1068,27 @@ class TalentOverviewService:
                 academic += 1
             elif key == "psychological":
                 psych += 1
+            elif key == "employment":
+                employment += 1
         breakdown = [
             {"key": "academic", "label": "学业预警", "count": academic},
             {"key": "credit", "label": "学分预警", "count": credit},
-            {
-                "key": "psychological",
-                "label": "心理预警",
-                "count": psych if psych > 0 else _MOCK_PSYCHOLOGICAL,
-            },
+            {"key": "psychological", "label": "心理预警", "count": psych},
         ]
+        if employment:
+            breakdown.append({"key": "employment", "label": "就业困难", "count": employment})
         return len(warned), breakdown
 
     def _hp_structure_fallback(
-        self, students: list[StudentAcademicRecord]
+        self,
+        students: list[StudentAcademicRecord],
+        research_ids: set[str] | None = None,
     ) -> tuple[int, list[dict[str, Any]], list[dict[str, Any]]]:
         """标签表空时：内存规则即时聚合。"""
         dim_students: dict[str, set[str]] = defaultdict(set)
         hp_ids: set[str] = set()
         major_counter: Counter[str] = Counter()
+        by_sid = {s.student_id for s in students}
         for s in students:
             tags = build_high_potential_tags(s)
             if not tags:
@@ -951,10 +1101,13 @@ class TalentOverviewService:
         academic = len(dim_students.get("academic", set()))
         competition = len(dim_students.get("competition", set()))
         internship = len(dim_students.get("internship", set()) | dim_students.get("career", set()))
+        research = set(dim_students.get("rural", set()))
+        if research_ids:
+            research |= {sid for sid in research_ids if sid in by_sid}
         structure = [
             {"key": "competition", "label": "竞赛高潜", "count": competition or 0, "flux": 0},
             {"key": "academic", "label": "学业高潜", "count": academic or 0, "flux": 0},
-            {"key": "research", "label": "科研创新", "count": _MOCK_LEADERSHIP_HP // 3, "flux": 0},
+            {"key": "research", "label": "科研创新", "count": len(research), "flux": 0},
             {"key": "practice", "label": "实践高潜", "count": internship, "flux": 0},
         ]
         by_dim = [{"name": name, "count": count} for name, count in major_counter.most_common(8)]
@@ -975,9 +1128,41 @@ class TalentOverviewService:
         breakdown = [
             {"key": "academic", "label": "学业预警", "count": academic},
             {"key": "credit", "label": "学分预警", "count": credit},
-            {"key": "psychological", "label": "心理预警", "count": _MOCK_PSYCHOLOGICAL},
+            {"key": "psychological", "label": "心理预警", "count": 0},
         ]
         return len(warned), breakdown
+
+    async def _research_student_ids(self, college: Any) -> set[str]:
+        """课题/论文/双百相关学号（科研创新结构真数）。"""
+        from Utils.DB.Models.student_extra_models import StudentPaper, StudentProject
+
+        ids: set[str] = set()
+        proj_qs = StudentProject.all()
+        paper_qs = StudentPaper.all()
+        if college is not None:
+            proj_qs = proj_qs.filter(college_id=college.id)
+            paper_qs = paper_qs.filter(college_id=college.id)
+        for sid in await proj_qs.values_list("student_id", flat=True):
+            if sid:
+                ids.add(str(sid))
+        for sid in await paper_qs.values_list("student_id", flat=True):
+            if sid:
+                ids.add(str(sid))
+        return ids
+
+    async def _count_graduates(self, college: Any) -> int:
+        """研究生人数：主档 students（研究生常无学业快照，不在兼容视图内）。"""
+        from Utils.DB.Models.college_student_models import StudentProfile
+
+        qs = StudentProfile.all()
+        if college is not None:
+            qs = qs.filter(college_id=college.id)
+        levels = await qs.values_list("education_level", flat=True)
+        return sum(
+            1
+            for edu in levels
+            if edu and any(k in str(edu) for k in ("研究生", "硕士", "博士"))
+        )
 
     def _outcomes_from_employment(
         self,
@@ -1046,18 +1231,25 @@ class TalentOverviewService:
         college_id: str | None = None,
         dimension: str = "major",
     ) -> dict[str, Any]:
-        college, students, by_sid = await self._ctx(college_id)
+        college, all_students, by_sid_all = await self._ctx(college_id)
+        students, _graduates_in_view = _partition_students(all_students)
+        by_sid = {s.student_id: s for s in students}
         emp_rows = await self._employment_rows(college)
-        outcomes, placement_rate, _hq, _flow = self._outcomes_from_employment(emp_rows, by_sid)
+        outcomes, placement_rate, _hq, _flow = self._outcomes_from_employment(emp_rows, by_sid_all)
+        year_trend = _employment_rates_by_year(emp_rows, by_sid_all)
+        research_ids = await self._research_student_ids(college)
 
         undergrad = len(students)
+        enrolled_graduate = await self._count_graduates(college)
         hp_tags = await load_college_tags(college, tag_type="high_potential")
         warn_tags = await load_college_tags(college, tag_type="warning")
         if not hp_tags and not warn_tags:
-            hp_total, structure, by_dim = self._hp_structure_fallback(students)
+            hp_total, structure, by_dim = self._hp_structure_fallback(students, research_ids)
             warn_total, warn_breakdown = self._warning_stats_fallback(students)
         else:
-            hp_total, structure, by_dim = self._hp_structure_from_tags(students, hp_tags)
+            hp_total, structure, by_dim = self._hp_structure_from_tags(
+                students, hp_tags, research_ids
+            )
             warn_total, warn_breakdown = self._warning_stats_from_tags(students, warn_tags)
         gpa_blocks = self._gpa_by_grade(students)
         avg_gpa = (
@@ -1081,14 +1273,31 @@ class TalentOverviewService:
 
         excellent = sum(1 for s in students if to_float(s.average_credit_gpa) >= 3.5)
 
+        emp_years = year_trend["years"] or []
+        emp_rates = year_trend["placementRate"] or []
+        if not emp_years and placement_rate:
+            emp_years = [str(_calendar_year_cap())]
+            emp_rates = [placement_rate]
+
+        mock_fields = [
+            "highPotential.courseDistribution",
+            "highPotential.trend",
+            "evaluationIndicators.comprehensive",
+            "evaluationIndicators.innovation",
+        ]
+        if not any(
+            b.get("key") == "psychological" and b.get("count", 0) > 0 for b in warn_breakdown
+        ):
+            mock_fields.append("warningBreakdown.psychological")
+
         return {
             "dimension": dimension if dimension in {"major", "grade", "course"} else "major",
             "enrolledUndergrad": undergrad,
-            "enrolledGraduate": _MOCK_GRADUATE,
+            "enrolledGraduate": enrolled_graduate,
             "employmentRate": placement_rate,
             "employmentRateByYear": {
-                "years": ["2022", "2023", "2024", "2025", "2026"],
-                "rates": [74.6, 76.1, 77.8, 78.5, placement_rate or 79.2],
+                "years": emp_years,
+                "rates": emp_rates,
             },
             "outcomesPreview": outcomes,
             "growthValue": {
@@ -1177,7 +1386,9 @@ class TalentOverviewService:
                     "label": "学科竞赛情况",
                     "score": round(
                         min(
-                            sum(s.competition_award_count or 0 for s in students) / max(undergrad, 1) * 40
+                            sum(s.competition_award_count or 0 for s in students)
+                            / max(undergrad, 1)
+                            * 40
                             + 70,
                             95,
                         ),
@@ -1208,26 +1419,16 @@ class TalentOverviewService:
                     "trend": _flat_trend_up(2.0, "分"),
                 },
             ],
-            "mockFields": [
-                "enrolledGraduate",
-                "employmentRateByYear.rates.0",
-                "employmentRateByYear.rates.1",
-                "employmentRateByYear.rates.2",
-                "employmentRateByYear.rates.3",
-                "highPotential.structure.research",
-                "highPotential.courseDistribution",
-                "highPotential.trend",
-                "warningBreakdown.psychological",
-                "evaluationIndicators.comprehensive",
-                "evaluationIndicators.innovation",
-            ],
+            "mockFields": mock_fields,
         }
 
     async def get_student_dev_detail(self, *, college_id: str | None = None) -> dict[str, Any]:
         quality = await self.get_student_dev_quality(college_id=college_id, dimension="major")
-        college, students, by_sid = await self._ctx(college_id)
+        college, all_students, by_sid_all = await self._ctx(college_id)
+        students, _graduates = _partition_students(all_students)
+        by_sid = {s.student_id: s for s in students}
         emp_rows = await self._employment_rows(college)
-        outcomes, placement_rate, _hq, _flow = self._outcomes_from_employment(emp_rows, by_sid)
+        outcomes, placement_rate, _hq, _flow = self._outcomes_from_employment(emp_rows, by_sid_all)
 
         major_c: Counter[str] = Counter()
         grade_c: Counter[str] = Counter()
@@ -1289,30 +1490,40 @@ class TalentOverviewService:
                         key = str(w.get("type") or "academic")
                         warn_by_type[_WARN_LABELS.get(key, key)] += 1
 
-        # 心理关注：无库内名单时示意计入（不写假标签）
-        if warn_by_type.get("心理关注", 0) <= 0:
-            warn_by_type["心理关注"] = _MOCK_PSYCHOLOGICAL
-
+        # 心理关注：仅统计库内真实标签，无名单时保持 0
         gaokao = _gaokao_by_major(students)
         score_stats = _score_stats(students)
+        salary_by_major = _salary_by_major(emp_rows, by_sid_all)
+        graduate_cultivation = await self.build_graduate_cultivation_snapshot(
+            college_id=college_id
+        )
+
+        detail_mock: list[str] = []
+        if not salary_by_major.get("series"):
+            detail_mock.append("salaryByMajor")
+        if warn_by_type.get("心理关注", 0) <= 0:
+            detail_mock.append("warningBreakdown.byType.心理关注")
+
+        grad_count = int(
+            graduate_cultivation.get("graduateCount")
+            or quality["enrolledGraduate"]
+            or 0
+        )
 
         return {
             "summary": {
                 "enrolledUndergrad": quality["enrolledUndergrad"],
-                "enrolledGraduate": quality["enrolledGraduate"],
+                "enrolledGraduate": grad_count,
                 "employmentRate": placement_rate,
                 "highPotential": quality["highPotential"]["total"],
-                # 预警汇总仅用学业/学分真数；心理关注在 breakdown 中单独示意
                 "warning": quality["groups"]["academicWarning"]["count"],
             },
             "outcomes": outcomes,
-            "salaryByMajor": {
-                "years": ["2024", "2025", "2026"],
-                "series": [
-                    {"name": "计算机科学与技术", "data": [9.2, 9.8, 10.4]},
-                    {"name": "软件工程", "data": [8.8, 9.3, 9.9]},
-                    {"name": "人工智能", "data": [9.5, 10.1, 10.8]},
-                ],
+            "salaryByMajor": salary_by_major
+            if salary_by_major.get("series")
+            else {
+                "years": [],
+                "series": [],
             },
             "gaokaoScores": gaokao
             or [
@@ -1337,24 +1548,21 @@ class TalentOverviewService:
                 "byMajor": [{"name": k, "count": v} for k, v in major_c.most_common(10)],
                 "byGrade": [{"name": k, "count": v} for k, v in sorted(grade_c.items())],
             },
-            "mockFields": [
-                "summary.enrolledGraduate",
-                "salaryByMajor",
-                "warningBreakdown.byType.心理关注",
-                "highPotential.structure.research",
-            ],
+            "graduateCultivation": graduate_cultivation,
+            "mockFields": detail_mock,
         }
 
     async def get_enrollment_employment_overview(
         self, *, college_id: str | None = None
     ) -> dict[str, Any]:
-        college, students, by_sid = await self._ctx(college_id)
+        college, all_students, by_sid_all = await self._ctx(college_id)
+        students, _graduates = _partition_students(all_students)
         emp_rows = await self._employment_rows(college)
         # 默认看最新毕业届次
-        year_trend = _employment_rates_by_year(emp_rows, by_sid)
-        latest_year = _primary_employment_year(emp_rows, by_sid)
-        scoped = _filter_employment_rows(emp_rows, year=latest_year, by_sid=by_sid) if latest_year else emp_rows
-        _outcomes, placement_rate, hq_rate, flow = self._outcomes_from_employment(scoped, by_sid)
+        year_trend = _employment_rates_by_year(emp_rows, by_sid_all)
+        latest_year = _primary_employment_year(emp_rows, by_sid_all)
+        scoped = _filter_employment_rows(emp_rows, year=latest_year, by_sid=by_sid_all) if latest_year else emp_rows
+        _outcomes, placement_rate, hq_rate, flow = self._outcomes_from_employment(scoped, by_sid_all)
 
         enrolled = len(students) or 0
 
@@ -1387,18 +1595,36 @@ class TalentOverviewService:
         college_id: str | None = None,
         year: str | None = None,
         major: str | None = None,
+        education: str | None = None,
     ) -> dict[str, Any]:
-        college, students, by_sid = await self._ctx(college_id)
+        college, all_students, by_sid_all = await self._ctx(college_id)
+        students, _graduates = _partition_students(all_students)
+        by_sid = {s.student_id: s for s in students}
         all_emp = await self._employment_rows(college)
-        year_trend = _employment_rates_by_year(all_emp, by_sid)
-        available_years = year_trend["years"] or []
-        latest_year = _primary_employment_year(all_emp, by_sid)
+        edu_scoped = _filter_employment_rows(
+            all_emp, education=education, by_sid=by_sid_all
+        )
+        year_trend = _employment_rates_by_year(edu_scoped, by_sid_all)
+        available_years = _cohort_year_options(edu_scoped, by_sid_all) or (
+            year_trend["years"] or []
+        )
+        latest_year = _primary_employment_year(edu_scoped, by_sid_all)
         effective_year = year if year and year in available_years else latest_year
 
         emp_rows = _filter_employment_rows(
-            all_emp, year=effective_year, major=major, by_sid=by_sid
+            edu_scoped,
+            year=effective_year,
+            major=major,
+            by_sid=by_sid_all,
         )
-        outcomes, placement, hq_rate, flow = self._outcomes_from_employment(emp_rows, by_sid)
+        outcomes, placement, hq_rate, flow = self._outcomes_from_employment(emp_rows, by_sid_all)
+
+        edu_norm = _normalize_education_filter(education)
+        edu_label = {
+            "all": "全部学历",
+            "undergrad": "本科",
+            "graduate": "研究生",
+        }[edu_norm]
 
         overview = {
             "enrolledCount": len(students),
@@ -1409,6 +1635,7 @@ class TalentOverviewService:
             "exitTrend": {
                 "conclusion": (
                     f"就业历年高质量就业率（按毕业届次）；当前筛选届次 {effective_year or '全部'}"
+                    f"；学历 {edu_label}"
                 ),
                 "years": year_trend["years"],
                 "values": year_trend["highQualityRate"],
@@ -1417,10 +1644,10 @@ class TalentOverviewService:
         }
 
         major_c: Counter[str] = Counter(s.major_name for s in students if s.major_name)
-        # 就业侧专业筛选项：优先就业记录可关联到的专业
+        # 就业侧专业筛选项：优先当前学历范围下的就业记录可关联到的专业
         emp_major_c: Counter[str] = Counter()
-        for r in all_emp:
-            m = _emp_major_name(r, by_sid)
+        for r in edu_scoped:
+            m = _emp_major_name(r, by_sid_all)
             if m and m != "其他":
                 emp_major_c[m] += 1
         majors = ["全部专业"] + [
@@ -1455,7 +1682,7 @@ class TalentOverviewService:
             if hq_key:
                 hq_dest[hq_key] += 1
 
-            mname = _emp_major_name(r, by_sid)
+            mname = _emp_major_name(r, by_sid_all)
             major_place[mname][0] += 1
             if _is_placed(r):
                 major_place[mname][1] += 1
@@ -1507,7 +1734,7 @@ class TalentOverviewService:
         salary_dist = _salary_distribution(emp_rows)
         industry_cloud = _cloud_from_counter(industry_c)
         job_cloud = _cloud_from_counter(job_c)
-        drill_samples = _build_emp_drill_samples(emp_rows, by_sid)
+        drill_samples = _build_emp_drill_samples(emp_rows, by_sid_all)
 
         score_stats = _score_stats(students)
         max_enroll = max((x.enrollment_year or x.grade or 0) for x in students) if students else 0
@@ -1544,8 +1771,10 @@ class TalentOverviewService:
             "filters": {
                 "years": filter_years,
                 "majors": majors,
+                "educationLevels": ["全部学历", "本科", "研究生"],
                 "selectedYear": effective_year,
                 "selectedMajor": major if major and major != "全部专业" else "全部专业",
+                "selectedEducation": edu_label,
             },
             "admission": {
                 "scale": {
@@ -1670,18 +1899,20 @@ class TalentOverviewService:
         college_id: str | None = None,
         year: str | None = None,
         major: str | None = None,
+        education: str | None = None,
     ) -> dict[str, Any]:
         """无 PII 就业分析快照，供 Agent / 缓存报告使用。"""
         college, _students, by_sid = await self._ctx(college_id)
         all_emp = await self._employment_rows(college)
-        year_trend = _employment_rates_by_year(all_emp, by_sid)
-        available_years = year_trend["years"] or []
-        latest_year = _primary_employment_year(all_emp, by_sid)
+        edu_scoped = _filter_employment_rows(all_emp, education=education, by_sid=by_sid)
+        year_trend = _employment_rates_by_year(edu_scoped, by_sid)
+        available_years = _cohort_year_options(edu_scoped, by_sid) or (year_trend["years"] or [])
+        latest_year = _primary_employment_year(edu_scoped, by_sid)
         effective_year = year if year and year in available_years else latest_year
         major_filter = major if major and major != "全部专业" else None
 
         emp_rows = _filter_employment_rows(
-            all_emp, year=effective_year, major=major_filter, by_sid=by_sid
+            edu_scoped, year=effective_year, major=major_filter, by_sid=by_sid
         )
         outcomes, placement, hq_rate, flow = self._outcomes_from_employment(emp_rows, by_sid)
 
@@ -1791,6 +2022,7 @@ class TalentOverviewService:
             "filters": {
                 "year": effective_year,
                 "major": major_filter,
+                "education": _normalize_education_filter(education),
             },
         }
 
@@ -1833,28 +2065,64 @@ class TalentOverviewService:
             "filters": snapshot.get("filters") or {},
         }
 
-    async def get_student_flow_sankey(self, *, college_id: str | None = None) -> dict[str, Any]:
-        college, students, by_sid = await self._ctx(college_id)
-        emp_all = await self._employment_rows(college)
-        year_trend = _employment_rates_by_year(emp_all, by_sid)
-        latest_year = _primary_employment_year(emp_all, by_sid)
-        emp_rows = (
-            _filter_employment_rows(emp_all, year=latest_year, by_sid=by_sid)
-            if latest_year
-            else emp_all
-        )
-        outcomes, placement_rate, _hq, flow = self._outcomes_from_employment(emp_rows, by_sid)
+    async def get_student_flow_sankey(
+        self,
+        *,
+        college_id: str | None = None,
+        year: str | None = None,
+        major: str | None = None,
+        education_level: str | None = None,
+    ) -> dict[str, Any]:
+        college, all_students, by_sid_all = await self._ctx(college_id)
 
-        undergrad = len(students) or 1
-        entrance = _entrance_sankey(students)
-        score_stats = _score_stats(students)
+        edu_bucket = _normalize_education_filter(education_level)
+        under_students, grad_students = _partition_students(all_students)
+        if edu_bucket == "undergrad":
+            entrance_students = under_students
+        elif edu_bucket == "graduate":
+            entrance_students = grad_students
+        else:
+            entrance_students = all_students
+
+        major_filter = major if major and major != "全部专业" else None
+        if major_filter and entrance_students:
+            entrance_students = [
+                s for s in entrance_students if (s.major_name or "") == major_filter
+            ]
+
+        emp_all = await self._employment_rows(college)
+        emp_scoped = _filter_employment_rows(
+            emp_all, education=education_level, by_sid=by_sid_all
+        )
+
+        available_years = _cohort_year_options(emp_scoped, by_sid_all)
+        latest_year = _primary_employment_year(emp_scoped, by_sid_all)
+        effective_year = (
+            year if year and year in available_years else latest_year
+        )
+
+        emp_rows = _filter_employment_rows(
+            emp_scoped,
+            year=effective_year,
+            major=major_filter,
+            by_sid=by_sid_all,
+        )
+
+        outcomes, placement_rate, _hq, flow = self._outcomes_from_employment(
+            emp_rows, by_sid_all
+        )
+
+        entrance = _entrance_sankey(entrance_students)
+        score_stats = _score_stats(entrance_students)
 
         further = next((o["count"] for o in outcomes if o["key"] == "furtherStudy"), 0)
-        further_rate = round(further / max(len(emp_rows), 1) * 100, 1) if emp_rows else 18.6
+        further_rate = (
+            round(further / max(len(emp_rows), 1) * 100, 1) if emp_rows else 18.6
+        )
 
         # 出口桑基：用真实就业流向，节点名适配前端文案
-        outcome_nodes = []
-        outcome_links = []
+        outcome_nodes: list[dict[str, Any]] = []
+        outcome_links: list[dict[str, Any]] = []
         seen: set[str] = set()
         for link in flow.get("links") or []:
             src = link["source"]
@@ -1872,36 +2140,142 @@ class TalentOverviewService:
                 }
             )
 
-        drill_samples = _build_emp_drill_samples(emp_rows, by_sid)
+        drill_samples = _build_emp_drill_samples(emp_rows, by_sid_all)
         # 只下发桑基连线样本，减小载荷
-        sankey_drills = {
-            k: v for k, v in drill_samples.items() if "→" in k
-        }
+        sankey_drills = {k: v for k, v in drill_samples.items() if "→" in k}
+
+        entrance_total = len(entrance_students) or 0
+        # graduate 学历在兼容视图中可能没有学业快照，因此用主档计数兜底展示
+        if edu_bucket == "graduate":
+            entrance_total = await self._count_graduates(college)
 
         avg_score = score_stats["avg"]
-
         return {
             "entrance": {"nodes": entrance["nodes"], "links": entrance["links"]},
-            "outcome": {
-                "nodes": outcome_nodes,
-                "links": outcome_links,
-            },
+            "outcome": {"nodes": outcome_nodes, "links": outcome_links},
             "outcomeDrillSamples": sankey_drills,
             "summary": {
-                "entranceTotal": undergrad,
-                "graduateTotal": len(emp_rows) or undergrad,
+                "entranceTotal": entrance_total,
+                "graduateTotal": len(emp_rows) or entrance_total,
                 "avgEntranceScore": avg_score if avg_score is not None else 0,
                 "employmentRate": placement_rate,
                 "firstChoiceRate": _MOCK_FIRST_CHOICE,
                 "furtherRate": further_rate,
                 "topEntranceRegions": entrance["topEntranceRegions"],
                 "topOutcomes": [
-                    {"name": o["label"], "count": o["count"]} for o in outcomes if o["count"] > 0
+                    {"name": o["label"], "count": o["count"]}
+                    for o in outcomes
+                    if o["count"] > 0
                 ],
             },
-            "mockFields": [
-                "summary.firstChoiceRate",
-            ],
+            "mockFields": ["summary.firstChoiceRate"],
+        }
+
+    async def build_graduate_cultivation_snapshot(
+        self,
+        *,
+        college_id: str | None = None,
+    ) -> dict[str, Any]:
+        """无 PII 研究生培养快照，供 Agent / 规则洞察使用。"""
+        from Utils.DB.Models.college_student_models import StudentProfile
+        from Utils.DB.Models.student_extra_models import StudentPaper, StudentProject
+
+        college, all_students, by_sid_all = await self._ctx(college_id)
+        undergrad_students, _ = _partition_students(all_students)
+        undergrad_n = len(undergrad_students)
+
+        qs = StudentProfile.all()
+        if college is not None:
+            qs = qs.filter(college_id=college.id)
+        profiles = await qs
+        grads = [
+            p
+            for p in profiles
+            if p.education_level
+            and any(k in str(p.education_level) for k in ("研究生", "硕士", "博士"))
+        ]
+        grad_sids = {str(p.student_no) for p in grads if p.student_no}
+        total = len(grads)
+        enrolled_total = undergrad_n + total
+        share = round(total / enrolled_total * 100, 1) if enrolled_total else 0.0
+
+        major_c: Counter[str] = Counter()
+        year_c: Counter[str] = Counter()
+        advisor_n = 0
+        for p in grads:
+            if p.major_name:
+                major_c[p.major_name] += 1
+            if p.enrollment_year:
+                year_c[str(p.enrollment_year)] += 1
+            if (p.advisor_name or "").strip():
+                advisor_n += 1
+
+        majors = [
+            {
+                "name": name,
+                "count": count,
+                "ratio": round(count / total * 100, 1) if total else 0.0,
+            }
+            for name, count in major_c.most_common(8)
+        ]
+        by_year = [
+            {"year": y, "count": year_c[y]} for y in sorted(year_c.keys())
+        ]
+
+        paper_ids: set[str] = set()
+        project_ids: set[str] = set()
+        if grad_sids:
+            paper_qs = StudentPaper.filter(student_id__in=list(grad_sids))
+            proj_qs = StudentProject.filter(student_id__in=list(grad_sids))
+            if college is not None:
+                paper_qs = paper_qs.filter(college_id=college.id)
+                proj_qs = proj_qs.filter(college_id=college.id)
+            for sid in await paper_qs.values_list("student_id", flat=True):
+                if sid:
+                    paper_ids.add(str(sid))
+            for sid in await proj_qs.values_list("student_id", flat=True):
+                if sid:
+                    project_ids.add(str(sid))
+        research_ids = paper_ids | project_ids
+        research_rate = round(len(research_ids) / total * 100, 1) if total else 0.0
+        advisor_cov = round(advisor_n / total * 100, 1) if total else 0.0
+
+        emp_all = await self._employment_rows(college)
+        emp_grad = _filter_employment_rows(emp_all, education="graduate", by_sid=by_sid_all)
+        latest_year = _primary_employment_year(emp_grad, by_sid_all)
+        emp_scoped = (
+            _filter_employment_rows(emp_grad, year=latest_year, by_sid=by_sid_all)
+            if latest_year
+            else emp_grad
+        )
+        _outcomes, placement, hq_rate, _flow = self._outcomes_from_employment(
+            emp_scoped, by_sid_all
+        )
+
+        fingerprint = (
+            f"{total}|{undergrad_n}|{len(research_ids)}|{advisor_n}|"
+            f"{len(emp_scoped)}|{latest_year or ''}"
+        )
+        return {
+            "graduateCount": total,
+            "undergradCount": undergrad_n,
+            "graduateShareOfEnrolled": share,
+            "majors": majors,
+            "byEnrollmentYear": by_year,
+            "advisorCoverage": advisor_cov,
+            "advisorCount": advisor_n,
+            "paperStudentCount": len(paper_ids),
+            "projectStudentCount": len(project_ids),
+            "researchStudentCount": len(research_ids),
+            "researchParticipationRate": research_rate,
+            "employment": {
+                "year": latest_year,
+                "cohortCount": len(emp_scoped),
+                "placementRate": placement,
+                "highQualityRate": hq_rate,
+            },
+            "dataFingerprint": fingerprint,
+            "filters": {"education": "graduate", "year": latest_year},
         }
 
     async def get_student_evaluation_detail(

@@ -97,11 +97,19 @@ def latest_records_by_student(records: list[StudentAcademicRecord]) -> list[Stud
     return list(latest.values())
 
 
-def record_to_roster(record: StudentAcademicRecord, *, hp: list[dict], warnings: list[dict]) -> dict[str, Any]:
+def record_to_roster(
+    record: StudentAcademicRecord,
+    *,
+    hp: list[dict],
+    warnings: list[dict],
+    highlight: str | None = None,
+) -> dict[str, Any]:
     """转为前端花名册结构（不含敏感字段）。"""
 
     warn = warnings[0] if warnings else None
     level_map = {"high": "红色预警", "medium": "黄色预警", "low": "蓝色预警"}
+    if highlight is None:
+        highlight = hp[0]["highlight"] if hp else ""
     return {
         "id": str(record.id),
         "name": record.name or "",
@@ -117,7 +125,7 @@ def record_to_roster(record: StudentAcademicRecord, *, hp: list[dict], warnings:
         "phone": "",
         "hp": [t["dimension"] for t in hp],
         "warnings": [w["type"] for w in warnings],
-        "highlight": hp[0]["highlight"] if hp else "",
+        "highlight": highlight or "",
         "warnReason": warn["reason"] if warn else None,
         "warnLevel": level_map.get(warn["level"], "蓝色预警") if warn else None,
     }

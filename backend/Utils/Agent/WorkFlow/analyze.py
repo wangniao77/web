@@ -14,13 +14,16 @@ from Utils.Agent.OpenViking import get_openviking_client
 from Utils.Agent.OpenViking.paths import (
     ACADEMIC_RISK_SKILL_DOC,
     EMPLOYMENT_SKILL_DOC,
+    GRADUATE_CULTIVATION_SKILL_DOC,
     KEY_TASKS_SKILL_DOC,
     resource_academic_risk,
     resource_enrollment_employment,
     resource_enrollment_employment_report,
+    resource_graduate_cultivation,
     resource_key_tasks,
     skill_academic_risk_analysis,
     skill_enrollment_employment_analysis,
+    skill_graduate_cultivation_analysis,
     skill_key_tasks_analysis,
 )
 from Utils.Analytics.academic_risk_aggregate import rule_insights_from_academic_risk
@@ -29,6 +32,7 @@ from Utils.Analytics.employment_analysis import (
     rule_insights_from_employment,
     validate_agent_report,
 )
+from Utils.Analytics.graduate_analysis import rule_insights_from_graduate
 
 
 def _rule_insights_from_key_tasks(snapshot: dict[str, Any]) -> AgentAnalyzeData:
@@ -178,6 +182,15 @@ def _is_employment_page(page: str) -> bool:
     return page in {"enrollment-employment", "employment"}
 
 
+def _is_graduate_page(page: str) -> bool:
+    return page in {"graduate-cultivation", "graduate", "student-dev-graduate"}
+
+
+def _rule_insights_graduate(snapshot: dict[str, Any]) -> AgentAnalyzeData:
+    payload = rule_insights_from_graduate(snapshot)
+    return _payload_to_analyze_data(payload)
+
+
 async def _load_snapshot(context: AgentAnalyzeContext, college_service: CollegeService) -> dict[str, Any]:
     if context.summarySnapshot:
         return context.summarySnapshot
@@ -195,6 +208,10 @@ async def _load_snapshot(context: AgentAnalyzeContext, college_service: CollegeS
             college_id=context.collegeId,
             year=filters.get("year") or None,
             major=filters.get("major") or None,
+        )
+    if _is_graduate_page(context.page):
+        return await college_service.build_graduate_cultivation_snapshot(
+            college_id=context.collegeId
         )
     if context.page == "key-tasks":
         return await college_service.get_key_tasks_detail(college_id=context.collegeId)
@@ -233,6 +250,11 @@ async def run_analyze(
         result = _payload_to_analyze_data(
             report_to_agent_payload(employment_report, session_id=sid, trace_id=trace_id)
         )
+    elif _is_graduate_page(context.page):
+        skill_path = skill_graduate_cultivation_analysis()
+        resource_path = resource_graduate_cultivation(college_id)
+        skill_doc = GRADUATE_CULTIVATION_SKILL_DOC
+        result = _rule_insights_graduate(snapshot)
     else:
         skill_path = skill_key_tasks_analysis()
         resource_path = resource_key_tasks(college_id)
@@ -262,6 +284,13 @@ async def run_analyze(
                 "tone 只能是 good|warn|info；evidence.source 为 db|openviking|web。"
                 "禁止输出任何学生姓名或学号；数值须来自快照。"
             )
+        elif _is_graduate_page(context.page):
+            system = (
+                "你是高校治理驾驶舱研究生培养分析助手。严格按技能说明输出 JSON，"
+                "必须包含 headline/insights/actions，insights 中每条须带 evidence；"
+                "tone 只能是 good|warn|info；evidence.source 为 db|openviking|web。"
+                "禁止输出任何学生姓名或学号；数值须来自快照。"
+            )
         else:
             system = (
                 "你是高校治理驾驶舱分析助手。严格按技能说明输出 JSON，"
@@ -282,6 +311,19 @@ async def run_analyze(
                     result = _payload_to_analyze_data(
                         report_to_agent_payload(employment_report, session_id=sid, trace_id=trace_id)
                     )
+                    source = "agent"
+            elif _is_graduate_page(context.page):
+                merged = {
+                    **rule_insights_from_graduate(snapshot),
+                    **{k: v for k, v in parsed.items() if v is not None},
+                    "dataFingerprint": snapshot.get("dataFingerprint"),
+                    "filters": snapshot.get("filters") or {},
+                    "source": "agent",
+                    "sessionId": sid,
+                    "traceId": trace_id,
+                }
+                if isinstance(merged.get("insights"), list) and merged["insights"]:
+                    result = _payload_to_analyze_data(merged)
                     source = "agent"
             else:
                 insights = []

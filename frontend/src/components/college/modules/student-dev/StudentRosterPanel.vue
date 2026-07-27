@@ -155,7 +155,7 @@ defineExpose({
             </template>
             <template v-else>
               <th>GPA</th>
-              <th>亮点</th>
+              <th>入选依据</th>
             </template>
             <th>联系电话</th>
             <th>宿舍号</th>

@@ -59,8 +59,11 @@ export interface EnrollmentEmploymentDetailDTO extends EnrollmentEmploymentOverv
   filters: {
     years: string[]
     majors: string[]
+    /** 学历筛选项 */
+    educationLevels?: string[]
     selectedYear?: string | null
     selectedMajor?: string
+    selectedEducation?: string
   }
   admission: {
     scale: {

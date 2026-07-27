@@ -68,15 +68,41 @@ def _rows_to_dicts(matrix: list[list[str]]) -> list[dict[str, str]]:
 def _read_xlsx(path: Path, *, sheet_index: int, sheet_name: str | None) -> list[dict[str, str]]:
     from openpyxl import load_workbook
 
-    wb = load_workbook(path, read_only=True, data_only=True)
-    try:
-        ws = wb[sheet_name] if sheet_name else wb.worksheets[sheet_index]
-        matrix: list[list[str]] = []
-        for row in ws.iter_rows(values_only=True):
-            matrix.append([_norm(c) for c in row])
-        return _rows_to_dicts(matrix)
-    finally:
-        wb.close()
+    def _load(*, data_only: bool, read_only: bool) -> list[list[str]]:
+        wb = load_workbook(path, read_only=read_only, data_only=data_only)
+        try:
+            ws = wb[sheet_name] if sheet_name else wb.worksheets[sheet_index]
+            matrix: list[list[str]] = []
+            if read_only:
+                for row in ws.iter_rows(values_only=True):
+                    matrix.append([_norm(c) for c in row])
+            else:
+                max_row = ws.max_row or 0
+                max_col = ws.max_column or 0
+                for r in range(1, max_row + 1):
+                    matrix.append([_norm(ws.cell(r, c).value) for c in range(1, max_col + 1)])
+            return matrix
+        finally:
+            wb.close()
+
+    def _richness(matrix: list[list[str]]) -> tuple[int, int]:
+        if not matrix:
+            return 0, 0
+        # header width + nonempty data cells
+        hi = _detect_header_row(matrix)
+        width = sum(1 for c in matrix[hi] if c)
+        cells = sum(1 for row in matrix[hi + 1 :] for c in row if c)
+        return width, cells
+
+    # 部分导出表（如实习统计）在 data_only/read_only 下会丢共享字符串，需回退
+    matrix = _load(data_only=True, read_only=True)
+    w1, c1 = _richness(matrix)
+    if w1 < 3 or c1 < 10:
+        matrix2 = _load(data_only=False, read_only=False)
+        w2, c2 = _richness(matrix2)
+        if w2 > w1 or c2 > c1:
+            matrix = matrix2
+    return _rows_to_dicts(matrix)
 
 
 def _read_xls(path: Path, *, sheet_index: int, sheet_name: str | None) -> list[dict[str, str]]:

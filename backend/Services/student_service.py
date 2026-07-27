@@ -4,6 +4,11 @@ from typing import Any
 from Utils.Analytics.student_rules import build_academic_warnings, build_high_potential_tags
 from Utils.DB.Models.college_models import College
 from Utils.DB.Models.student_academic_record_models import StudentAcademicRecord
+from Utils.DB.Models.student_extra_models import (
+    CompetitionAward,
+    StudentPaper,
+    StudentProject,
+)
 
 
 def _f(value: Decimal | float | int | None) -> float:
@@ -28,11 +33,60 @@ class StudentService:
         semesters = [f"{r.grade}级" for r in reversed(records[-4:])]
         gpa_values = [_f(r.average_credit_gpa) for r in reversed(records[-4:])]
 
-        awards = []
-        if latest.competition_award_detail:
-            for idx, line in enumerate(latest.competition_award_detail.split("\n")[:5], start=1):
+        award_rows = await CompetitionAward.filter(student_id=student_id).order_by("-id").limit(20)
+        project_rows = await StudentProject.filter(student_id=student_id).order_by("-id").limit(20)
+        paper_rows = await StudentPaper.filter(student_id=student_id).order_by("-id").limit(20)
+
+        awards = [
+            {
+                "name": a.contest_name,
+                "level": a.award_level or a.award_rank or "",
+                "date": a.awarded_on,
+                "role": a.member_role or "primary",
+            }
+            for a in award_rows[:8]
+        ]
+        if not awards and latest.competition_award_detail:
+            for line in latest.competition_award_detail.replace("；", "\n").split("\n")[:5]:
                 if line.strip():
-                    awards.append({"name": line.strip(), "level": "校级", "date": None})
+                    awards.append({"name": line.strip(), "level": "", "date": None, "role": "primary"})
+
+        honor_timeline: list[dict[str, Any]] = []
+        for a in award_rows:
+            honor_timeline.append(
+                {
+                    "type": "competition",
+                    "title": a.contest_name,
+                    "level": a.award_level,
+                    "rank": a.award_rank,
+                    "date": a.awarded_on,
+                    "role": a.member_role or "primary",
+                }
+            )
+        for p in project_rows:
+            honor_timeline.append(
+                {
+                    "type": "project",
+                    "title": p.title,
+                    "level": p.project_level,
+                    "rank": p.result_grade,
+                    "date": None,
+                    "role": p.member_role or "leader",
+                }
+            )
+        for paper in paper_rows:
+            honor_timeline.append(
+                {
+                    "type": "paper",
+                    "title": paper.title,
+                    "level": paper.indexed_in,
+                    "rank": paper.author_order,
+                    "date": paper.published_on,
+                    "role": "author",
+                }
+            )
+
+        award_count = len(award_rows) or (latest.competition_award_count or 0)
 
         return {
             "profile": {
@@ -42,9 +96,9 @@ class StudentService:
                 "major": major.name if major else (latest.major_name or ""),
                 "grade": f"{latest.grade}级" if latest.grade else "",
                 "className": school_class.name if school_class else (latest.class_name or ""),
-                "mentor": latest.class_teacher or "",
+                "mentor": latest.class_teacher or latest.advisor_name or "",
                 "counselor": latest.counselor or "",
-                "dormitory": "",
+                "dormitory": getattr(latest, "dormitory", None) or "",
                 "motto": "持续学习，勇于探索",
                 "avatarUrl": latest.student_picture_path,
                 "awards": awards,
@@ -52,7 +106,7 @@ class StudentService:
             "growthPortrait": {
                 "dimensions": [
                     {"name": "学业能力", "personal": round(gpa * 25, 1), "gradeAvg": 85.0},
-                    {"name": "专业创新", "personal": min(95, 70 + (latest.competition_award_count or 0) * 5), "gradeAvg": 82.5},
+                    {"name": "专业创新", "personal": min(95, 70 + award_count * 5), "gradeAvg": 82.5},
                     {"name": "实践能力", "personal": 80.0, "gradeAvg": 80.8},
                     {"name": "身心素质", "personal": 84.0, "gradeAvg": 84.0},
                     {"name": "组织协调", "personal": 82.0, "gradeAvg": 81.6},
@@ -61,7 +115,7 @@ class StudentService:
             "aiAssistant": {
                 "title": "财宝成长助手 AI",
                 "recommendedDirection": "数据分析工程师" if gpa >= 3.0 else "继续夯实学业基础",
-                "matchBasis": [f"GPA {gpa:.2f}", f"竞赛获奖 {latest.competition_award_count or 0} 项"],
+                "matchBasis": [f"GPA {gpa:.2f}", f"竞赛获奖 {award_count} 项"],
                 "shortTermSuggestions": ["关注薄弱课程，提升核心课成绩"] if warnings else ["保持当前学习节奏"],
                 "longTermSuggestions": ["参与学科竞赛或科研训练"],
             },
@@ -112,10 +166,21 @@ class StudentService:
                 "totalCourses": latest.all_course_count or 0,
             },
             "competition": {
-                "awardCount": latest.competition_award_count or 0,
-                "researchCount": 0,
-                "innovationCount": 0,
-                "highlights": [{"label": latest.competition_award_detail or "暂无竞赛记录"}],
+                "awardCount": award_count,
+                "researchCount": len(paper_rows),
+                "innovationCount": len(project_rows),
+                "highlights": [
+                    {
+                        "label": (
+                            f"{a.contest_name}"
+                            + (f"·{a.award_rank}" if a.award_rank else "")
+                            + ("" if (a.member_role or "primary") == "primary" else "（队友）")
+                        )
+                    }
+                    for a in award_rows[:5]
+                ]
+                or [{"label": latest.competition_award_detail or "暂无竞赛记录"}],
+                "timeline": honor_timeline,
             },
             "quality": {
                 "cadreRoles": [],
@@ -123,7 +188,7 @@ class StudentService:
                 "socialPractices": 0,
                 "softSkills": [],
             },
-            "internship": {"internshipCount": 0, "projectCount": 0, "certificateCount": 0, "items": []},
+            "internship": {"internshipCount": 0, "projectCount": len(project_rows), "certificateCount": 0, "items": []},
             "employment": {
                 "jobReadiness": 75,
                 "certificateReadiness": 60,
@@ -139,6 +204,6 @@ class StudentService:
                 "growthDays": 365,
                 "goalCompletionRate": 72,
                 "milestoneCount": len(highlights),
-                "totalAwards": latest.competition_award_count or 0,
+                "totalAwards": award_count,
             },
         }

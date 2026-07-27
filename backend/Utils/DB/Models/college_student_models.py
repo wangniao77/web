@@ -37,6 +37,11 @@ class StudentProfile(Model):
     major_direction_name = fields.CharField(max_length=128, null=True)
     class_name = fields.CharField(max_length=128, null=True)
     student_picture_path = fields.CharField(max_length=255, null=True)
+    phone = fields.CharField(max_length=64, null=True, description="手机")
+    address = fields.CharField(max_length=512, null=True, description="家庭住址")
+    dormitory = fields.CharField(max_length=128, null=True, description="宿舍号")
+    political_status = fields.CharField(max_length=64, null=True, description="政治面貌")
+    advisor_name = fields.CharField(max_length=64, null=True, description="导师（研究生）")
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)

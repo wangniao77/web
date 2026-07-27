@@ -50,7 +50,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  filterChange: [payload: { year: string; major: string }]
+  filterChange: [payload: { year: string; major: string; educationLevel: string }]
 }>()
 
 const { collegeScope } = useScope()
@@ -61,6 +61,7 @@ type DistTab = 'industry' | 'region' | 'salary'
 const mainTab = ref<MainTab>('admission')
 const year = ref('')
 const major = ref('')
+const educationLevel = ref('全部学历')
 const distTab = ref<DistTab>('industry')
 const showGradSchools = ref(false)
 const syncingFilters = ref(false)
@@ -103,6 +104,10 @@ async function loadEmpAnalysisReport() {
         major.value && major.value !== '全部专业'
           ? major.value
           : undefined,
+      educationLevel:
+        educationLevel.value && educationLevel.value !== '全部学历'
+          ? educationLevel.value
+          : undefined,
     })
     empReport.value = res.report
     empReportStale.value = Boolean(res.stale)
@@ -120,6 +125,8 @@ async function runEmpAnalysis() {
   try {
     const y = year.value || props.data.filters.selectedYear || ''
     const m = major.value && major.value !== '全部专业' ? major.value : ''
+    const edu =
+      educationLevel.value && educationLevel.value !== '全部学历' ? educationLevel.value : ''
     const dto = await analyzePage({
       context: {
         scope: 'college',
@@ -128,6 +135,7 @@ async function runEmpAnalysis() {
         filters: {
           ...(y ? { year: y } : {}),
           ...(m ? { major: m } : {}),
+          ...(edu ? { educationLevel: edu } : {}),
         },
       },
       refresh: true,
@@ -226,6 +234,10 @@ watch(
     syncingFilters.value = true
     year.value = props.data.filters.selectedYear || props.data.filters.years.at(-1) || ''
     major.value = props.data.filters.selectedMajor || props.data.filters.majors[0] || '全部专业'
+    educationLevel.value =
+      props.data.filters.selectedEducation ||
+      props.data.filters.educationLevels?.[0] ||
+      '全部学历'
     syncingFilters.value = false
     showGradSchools.value = focus === 'high-quality-dest'
     if (focus === 'entrance-flow') scrollToFlow('ee-entrance-flow')
@@ -240,17 +252,23 @@ watch(
     syncingFilters.value = true
     year.value = filters.selectedYear || filters.years.at(-1) || year.value
     major.value = filters.selectedMajor || filters.majors[0] || major.value
+    educationLevel.value =
+      filters.selectedEducation || filters.educationLevels?.[0] || educationLevel.value
     syncingFilters.value = false
   },
 )
 
-watch([year, major], ([y, m]) => {
+watch([year, major, educationLevel], ([y, m, edu]) => {
   if (syncingFilters.value) return
   if (!y) return
   const selY = props.data.filters.selectedYear || props.data.filters.years.at(-1) || ''
   const selM = props.data.filters.selectedMajor || props.data.filters.majors[0] || '全部专业'
-  if (y === selY && (m || '全部专业') === selM) return
-  emit('filterChange', { year: y, major: m })
+  const selEdu =
+    props.data.filters.selectedEducation ||
+    props.data.filters.educationLevels?.[0] ||
+    '全部学历'
+  if (y === selY && (m || '全部专业') === selM && (edu || '全部学历') === selEdu) return
+  emit('filterChange', { year: y, major: m, educationLevel: edu || '全部学历' })
 })
 
 const suppressDrillReset = ref(false)
@@ -1053,6 +1071,16 @@ function onDistClick(params: unknown) {
           年份
           <select v-model="year">
             <option v-for="item in data.filters.years" :key="item" :value="item">{{ item }}</option>
+          </select>
+        </label>
+        <label>
+          学历
+          <select v-model="educationLevel">
+            <option
+              v-for="item in data.filters.educationLevels || ['全部学历', '本科', '研究生']"
+              :key="item"
+              :value="item"
+            >{{ item }}</option>
           </select>
         </label>
         <label>

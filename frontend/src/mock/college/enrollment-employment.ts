@@ -57,6 +57,8 @@ export const mockEnrollmentEmploymentDetail: EnrollmentEmploymentDetailDTO = {
   filters: {
     years: ['2024', '2025', '2026'],
     majors: ['全部专业', '计算机科学与技术', '软件工程', '人工智能'],
+    educationLevels: ['全部学历', '本科', '研究生'],
+    selectedEducation: '全部学历',
   },
   admission: {
     scale: {
