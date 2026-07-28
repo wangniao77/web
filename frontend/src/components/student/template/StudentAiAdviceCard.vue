@@ -287,13 +287,13 @@ const developmentPlans = computed(() => {
   ].sort((a, b) => b.score - a.score)
 })
 
-/** 三档规划均展开，占满下方空间且不折叠省略 */
-const expandedPlanId = ref<PlanId | 'all'>('all')
+/** 默认仅展开匹配度最高的规划项（developmentPlans 已按 score 降序，首项即最高） */
+const expandedPlanId = ref<PlanId | 'all'>(developmentPlans.value[0]?.id ?? 'all')
 
 watch(
   developmentPlans,
   () => {
-    expandedPlanId.value = 'all'
+    expandedPlanId.value = developmentPlans.value[0]?.id ?? 'all'
   },
   { immediate: true },
 )
@@ -514,14 +514,7 @@ onBeforeUnmount(stopAutoplay)
               <p class="navi-plan__peer">同辈对标：{{ plan.peerCompare }}</p>
               <p v-if="isPlanOpen(plan.id)" class="navi-plan__detail">{{ plan.detail }}</p>
             </div>
-            <div class="navi-more-group">
-              <StuHint tip="打开完整发展规划与更多建议。" block>
-                <button type="button" class="navi-more" @click="goGrowthPath">成长方案 ›</button>
-              </StuHint>
-              <StuHint tip="进入出口发展详情，查看就业/考研/考公三类路径。" block>
-                <button type="button" class="navi-more navi-more--secondary" @click="goCareerDevelopment('overview')">出口发展 ›</button>
-              </StuHint>
-            </div>
+
           </section>
         </div>
 

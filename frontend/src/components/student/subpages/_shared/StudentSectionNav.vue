@@ -106,20 +106,22 @@ watch(
 }
 
 .stu-sec-nav__item {
-  flex: 1 1 auto;
+  /* 自然宽度、靠左排列，不拉伸占满整行 */
+  flex: 0 0 auto;
   align-self: center;
-  min-width: 96px;
+  min-width: 0;
   height: auto;
   min-height: 0;
-  padding: 12px 16px;
+  padding: 9px 16px;
   border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
   color: #9ec7e0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s;
 

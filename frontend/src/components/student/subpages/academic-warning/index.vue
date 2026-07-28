@@ -13,7 +13,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
+import StudentSectionNav from '../_shared/StudentSectionNav.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import AiAnalysisCard from '@/components/student/template/AiAnalysisCard.vue'
+import StuHint from '@/components/student/template/StuHint.vue'
 import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, AttentionItemVM } from '@/types/student/view'
@@ -60,6 +63,16 @@ const levelColor = (lv: string) => LEVEL_COLOR[(lv as Level)] || '#8fb7cd'
 const levelText = (lv: string) => LEVEL_TEXT[(lv as Level)] || '—'
 const levelOf = (v: number): Level => (v >= 70 ? 'high' : v >= 40 ? 'medium' : 'low')
 
+/** 页面分区导航（点击跳转到对应模块） */
+const sectionNav = [
+  { id: 'sec-overview', label: '学业风险总览' },
+  { id: 'sec-develop', label: '学业发展分析' },
+  { id: 'sec-source', label: '风险来源' },
+  { id: 'sec-course', label: '课程风险' },
+  { id: 'sec-ledger', label: '学业预警台账' },
+  { id: 'sec-task', label: '帮扶任务' },
+]
+
 /* ---------- 学业预警台账（保留） ---------- */
 const academicItems = computed(() => {
   if (!dashboard.value) return []
@@ -82,12 +95,10 @@ const academicItems = computed(() => {
   return [...items, ...fallback].slice(0, 6)
 })
 
+/* 学业风险等级由综合风险指数映射：≥70 高危 / ≥40 需关注 / 其余正常 */
 const academicLevel = computed<Level>(() => {
-  if (!academicItems.value.length) return 'low'
-  const weights: Record<Level, number> = { low: 1, medium: 2, high: 3 }
-  return academicItems.value.reduce((highest, item) =>
-    weights[item.level] > weights[highest] ? (item.level as Level) : highest
-  , 'low' as Level)
+  const idx = riskIndex.value
+  return idx >= 70 ? 'high' : idx >= 40 ? 'medium' : 'low'
 })
 
 /** 台账闭环计数：高危=未处理，中危=处理中，低危=已处理 */
@@ -138,6 +149,15 @@ const riskStatusText = computed(() => {
   if (lv === 'high') return '多重学业风险叠加，已触发高危预警，须立即干预并纳入重点帮扶名单。'
   if (lv === 'medium') return '存在学业风险项，需持续关注并安排针对性帮扶措施。'
   return '整体学业状态平稳，保持常规关注即可。'
+})
+
+/* 状态总览下方的 AI 学业分析结论 */
+const aiAnalysis = computed(() => {
+  const d = dashboard.value
+  if (!d) return ''
+  const gpa = d.academic.gpa
+  const failN = d.failedCritical.length + d.academic.failedElective.length
+  return `该生当前学业风险等级为「${levelText(academicLevel.value)}」，${riskStatusText.value} 综合风险指数 ${riskIndex.value} 分，当前 GPA ${gpa.toFixed(2)}，不及格课程 ${failN} 门。建议优先补齐薄弱课程与学分缺口，结合学业帮扶闭环持续跟踪，防止风险进一步累积。`
 })
 
 /* 延毕风险预测：以学分进度为主，结合不及格学分升级 */
@@ -536,8 +556,10 @@ onMounted(load)
     <div v-else-if="error" class="placeholder error"><span>{{ error }}</span><button @click="load">重试</button></div>
 
     <div v-else-if="dashboard" class="academic-warning">
+      <StudentSectionNav :items="sectionNav" />
+
       <!-- 1. 学业风险状态总览 -->
-      <section class="warn-section sec-full overview">
+      <section id="sec-overview" class="warn-section sec-full overview">
         <h3 class="warn-section__title">学业风险状态总览</h3>
         <div class="overview__body">
           <!-- 左半区：综合风险指数 + 毕业核查 -->
@@ -549,19 +571,21 @@ onMounted(load)
             <div class="grad-check">
               <div class="grad-check__head">
                 <span class="grad-check__title">毕业核查</span>
-                <span class="grad-check__tag" :class="`grad-check__tag--${delayGradRisk}`">延毕风险预测 · {{ delayGradLabel }}</span>
+                <StuHint tip="延毕风险预测">
+                  <span class="grad-check__tag" :class="`grad-check__tag--${delayGradRisk}`">{{ delayGradLabel }}</span>
+                </StuHint>
               </div>
               <div class="grad-check__bar">
                 <div class="grad-check__inner" :style="{ width: `${progressPercent}%` }" />
               </div>
               <div class="grad-check__foot">
-                <span>已修 {{ dashboard.creditProgress.earned.toFixed(1) }} / 毕业要求 {{ dashboard.creditProgress.required }} 学分</span>
+                <span>已修 {{ Math.round(dashboard.creditProgress.earned) }} / 要求 {{ dashboard.creditProgress.required }}</span>
                 <span class="grad-check__pct">{{ progressPercent }}%</span>
               </div>
             </div>
           </div>
-          <!-- 右半区：四个基本情况 -->
-          <div class="overview__right">
+          <!-- 右半区：四个基本情况 + 状态说明（对齐心理预警排版） -->
+          <div class="overview__main">
             <div class="kpi-grid">
               <div class="kpi-card" :class="`kpi-card--${academicLevel}`">
                 <span class="kpi-card__label">学业风险等级</span>
@@ -580,17 +604,20 @@ onMounted(load)
                 <strong class="kpi-card__value">{{ failedCredits.toFixed(1) }}</strong>
               </div>
             </div>
-          </div>
-          <!-- 状态说明（整宽置底） -->
-          <div class="risk-note" :class="`risk-note--${academicLevel}`">
-            <span class="risk-note__tag">{{ levelText(academicLevel) }}</span>
-            <span class="risk-note__text">{{ riskStatusText }}</span>
+            <!-- 状态说明（与心理预警一致，置于指标卡下方） -->
+            <div class="risk-note" :class="`risk-note--${academicLevel}`">
+              <span class="risk-note__tag">{{ levelText(academicLevel) }}</span>
+              <span class="risk-note__text">{{ riskStatusText }}</span>
+            </div>
           </div>
         </div>
-      </section>
+        </section>
+
+      <!-- 状态总览下方：AI 学业分析 -->
+      <AiAnalysisCard title="AI 学业分析" :text="aiAnalysis" class="sec-full" />
 
       <!-- 学业发展分析：学业成绩趋势 + 培养方案学分（合并为一张卡片） -->
-      <section class="warn-section sec-full develop">
+      <section id="sec-develop" class="warn-section sec-full develop">
         <h3 class="warn-section__title">学业发展分析</h3>
         <div class="develop__tag">
           <span class="develop__tag-item">当前趋势：<b>{{ developTrend }}</b></span>
@@ -637,7 +664,7 @@ onMounted(load)
       </section>
 
       <!-- 学业风险来源分析（置于合并卡片之后） -->
-      <section class="warn-section">
+      <section id="sec-source" class="warn-section">
         <h3 class="warn-section__title">学业风险来源分析</h3>
         <div class="radar-wrap">
           <ChartContainer :option="radarOption" />
@@ -659,7 +686,7 @@ onMounted(load)
       </section>
 
       <!-- 课程风险分析（红绿灯课表） -->
-      <section class="warn-section">
+      <section id="sec-course" class="warn-section">
         <h3 class="warn-section__title">课程风险分析（红绿灯课表）</h3>
         <div class="course-risk__grid">
           <div class="course-risk__radar">
@@ -725,7 +752,7 @@ onMounted(load)
       </section>
 
       <!-- 学业预警台账 -->
-      <section class="warn-section">
+      <section id="sec-ledger" class="warn-section">
         <h3 class="warn-section__title">学业预警台账</h3>
         <div class="ledger-grid">
           <div class="warn-table-wrap">
@@ -760,7 +787,7 @@ onMounted(load)
       </section>
 
       <!-- 学业帮扶任务清单（替代闭环时间轴） -->
-      <section class="warn-section">
+      <section id="sec-task" class="warn-section">
         <h3 class="warn-section__title">学业帮扶任务清单</h3>
         <div class="task-list">
           <div
@@ -850,23 +877,28 @@ onMounted(load)
   }
 }
 
-/* 1. 总览：左右两半，左=综合风险指数+毕业核查，右=四个基本情况 */
+/* 1. 总览：左=综合风险指数+毕业核查（固定 180px，对齐心理预警仪表盘宽度），右=四个基本情况+状态说明 */
 .overview__body {
-  display: grid;
-  grid-template-columns: 4fr 6fr;
+  display: flex;
   gap: 16px;
   align-items: stretch;
 }
 
 .overview__left {
+  width: 180px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
 }
 
-.overview__right {
+.overview__main {
+  flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .overview__gauge {
@@ -922,7 +954,6 @@ onMounted(load)
 }
 
 .risk-note {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 10px;

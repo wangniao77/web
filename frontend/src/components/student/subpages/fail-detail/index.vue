@@ -150,16 +150,18 @@ onMounted(load)
             </em>
           </button>
         </div>
-        <div class="risk-bar-chart">
-          <div
+        <ul class="risk-list">
+          <li
             v-for="item in riskDistribution"
             :key="item.label"
-            class="risk-bar-chart__seg"
-            :style="{ width: item.pct + '%', background: item.color }"
+            class="risk-list__item"
           >
-            <span class="risk-bar-chart__label">{{ item.label }} {{ item.count }}门</span>
-          </div>
-        </div>
+            <span class="risk-list__dot" :style="{ background: item.color }" />
+            <span class="risk-list__label">{{ item.label }}</span>
+            <span class="risk-list__count">{{ item.count }} 门</span>
+            <span class="risk-list__pct">{{ item.pct }}%</span>
+          </li>
+        </ul>
       </section>
 
       <!-- ═══ 每学期挂科课程明细 ═══ -->
@@ -238,6 +240,9 @@ onMounted(load)
           >
             <div class="an-header">
               <span class="an-name">{{ c.name }}</span>
+              <span class="an-risk" :class="`an-risk--${c.riskLevel}`">
+                {{ c.riskLevel === 'student' ? '学生侧' : c.riskLevel === 'course' ? '课程侧' : '混合' }}
+              </span>
               <span class="an-score">{{ c.score }} 分</span>
             </div>
             <p class="an-text">{{ c.analysis }}</p>
@@ -390,32 +395,56 @@ onMounted(load)
   }
 }
 
-.risk-bar-chart {
+.risk-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  height: 28px;
-  border-radius: 6px;
-  overflow: hidden;
-  gap: 2px;
-  background: rgba(0, 0, 0, 0.2);
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.risk-bar-chart__seg {
+.risk-list__item {
+  flex: 1;
+  min-width: 160px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 0;
-  transition: width 0.3s;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: rgba(6, 17, 52, 0.4);
+  border: 1px solid rgba(102, 217, 255, 0.28);
 }
 
-.risk-bar-chart__label {
+.risk-list__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.risk-list__label {
+  flex: 1;
   font-size: 14px;
+  color: #d0e8f8;
+  font-weight: 600;
+}
+
+.risk-list__count {
+  font-size: 14px;
+  color: #7ff6ff;
   font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 8px;
+  font-family: 'DIN Alternate', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+}
+
+.risk-list__pct {
+  width: 48px;
+  text-align: right;
+  font-size: 14px;
+  color: rgba(184, 236, 255, 0.7);
+  font-weight: 700;
+  font-family: 'DIN Alternate', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
 }
 
 /* ═══ Fail Table ═══ */
@@ -565,12 +594,8 @@ onMounted(load)
 .analysis-card {
   padding: 14px 16px;
   border-radius: 6px;
-  border-left: 4px solid;
+  border-left: 4px solid rgba(102, 217, 255, 0.2);
   background: rgba(6, 17, 52, 0.4);
-
-  &.an--student { border-color: #fb923c; }
-  &.an--course  { border-color: #60a5fa; }
-  &.an--mixed   { border-color: #a78bfa; }
 }
 
 .an-header {

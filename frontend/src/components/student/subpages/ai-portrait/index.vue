@@ -20,13 +20,12 @@ const activeStudentId = computed(
 /** 页面分区导览（点击跳转到对应模块） */
 const sectionNav = [
   { id: 'sec-cockpit', label: '发展驾驶舱' },
+  { id: 'sec-action', label: '行动建议' },
   { id: 'sec-capability', label: '能力画像' },
   { id: 'sec-trend', label: '成长趋势' },
   { id: 'sec-opportunity', label: '机会雷达' },
   { id: 'sec-risk', label: '风险雷达' },
-  { id: 'sec-forecast', label: '成长预测' },
   { id: 'sec-peer', label: '同专业比较' },
-  { id: 'sec-action', label: '行动建议' },
 ]
 
 const dashboard = ref<StudentDashboardVM | null>(null)
@@ -53,12 +52,6 @@ const clamp = (v: number, min = 0, max = 100) => {
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n)
 
 /* ════════════ 1. 学生发展驾驶舱 ════════════ */
-const profile = computed(() => {
-  const p = dashboard.value?.profile
-  if (!p) return { name: '—', major: '—', grade: '—' }
-  return { name: p.name, major: p.major || '软件工程', grade: p.grade || '2022级' }
-})
-
 const academicScore = computed(() => clamp((dashboard.value?.academic.gpa ?? 3) / 4 * 100))
 const employmentScore = computed(() => clamp(dashboard.value?.employment.jobReadiness ?? 70))
 const qualityScore = computed(() =>
@@ -129,7 +122,7 @@ const studentPortrait = computed(() => {
 /* AI判断依据 */
 const aiJudgment = computed(() => {
   const d = dashboard.value
-  if (!d) return { status: '—', confidence: 0, basis: [], sources: [] }
+  if (!d) return { status: '—', basis: [], sources: [] }
   const gpa = d.academic.gpa ?? 3
   const jobReady = d.employment.jobReadiness ?? 70
   const starOf = (v: number) => Math.max(1, Math.min(5, Math.round(v / 20)))
@@ -140,14 +133,13 @@ const aiJudgment = computed(() => {
     { label: '就业准备', stars: starOf(jobReady) },
   ]
   const status = compositeScore.value.score >= 75 ? '良好' : '需关注'
-  const confidence = clamp(86 + (gpa - 3) * 12)
   const sources: string[] = []
   if (gpa) sources.push('GPA')
   if (d.competition.awardCount) sources.push('竞赛')
   if (d.internship.projectCount) sources.push('项目')
   if (d.internship.certificateCount) sources.push('证书')
   if (jobReady) sources.push('就业记录')
-  return { status, confidence, basis, sources }
+  return { status, basis, sources }
 })
 
 /* ── 驾驶舱增强数据（发展阶段 / 排名 / 学生类型 / AI决策摘要）── */
@@ -159,20 +151,6 @@ const rankPercent = computed(() => {
 })
 const exceedPercent = computed(() => 100 - rankPercent.value)
 
-const studentType = computed(() => {
-  const arr = abilities.value
-  if (!arr.length) return { icon: '🎓', label: '综合发展型' }
-  const top = [...arr].sort((a, b) => b.value - a.value)[0]
-  const map: Record<string, { icon: string; label: string }> = {
-    major: { icon: '🚀', label: '技术成长型' },
-    academic: { icon: '📚', label: '学术潜力型' },
-    quality: { icon: '🌟', label: '综合素养型' },
-    practice: { icon: '🛠️', label: '实践进取型' },
-    career: { icon: '💼', label: '就业导向型' },
-  }
-  return map[top.key] || { icon: '🎓', label: '综合发展型' }
-})
-
 /* 雷达图用的专业平均线 */
 const abilitiesAvg = computed(() =>
   abilities.value.map(a => ({ ...a, value: clamp(a.value * 0.8) })),
@@ -181,7 +159,7 @@ const abilitiesAvg = computed(() =>
 /* 右侧 AI 决策摘要（不展示能力评分，改为结论式） */
 const aiDecision = computed(() => {
   const d = dashboard.value
-  if (!d) return { status: '—', advantage: '—', risk: '—', action: '—', confidence: 0, sources: [] as string[] }
+  if (!d) return { status: '—', advantage: '—', risk: '—', action: '—', sources: [] as string[] }
   const top = [...abilities.value].sort((a, b) => b.value - a.value)[0]
   const advantage = `${top.label} > 同专业 ${exceedPercent.value}% 学生`
   const sortedRisk = [...riskDims.value].sort((a, b) => b.value - a.value)
@@ -204,7 +182,6 @@ const aiDecision = computed(() => {
     risk: mainRisk,
     action,
     recommendations,
-    confidence: aiJudgment.value.confidence,
     sources: aiJudgment.value.sources,
   }
 })
@@ -262,13 +239,24 @@ function trendLine(end: number, startRatio: number): number[] {
     return Math.round(s + (e - s) * eased)
   })
 }
+// 真实绩点（0–4）趋势，保留两位小数
+function trendLineGpa(end: number, startRatio: number): number[] {
+  const e = end
+  const s = e * startRatio
+  const n = trendCats.length
+  return Array.from({ length: n }, (_, i) => {
+    const t = i / (n - 1)
+    const eased = t * t * (3 - 2 * t)
+    return Math.round((s + (e - s) * eased) * 100) / 100
+  })
+}
 const growthTrend = computed(() => {
   const d = dashboard.value
   if (!d) return { gpa: [] as number[], cert: [] as number[], proj: [] as number[] }
   return {
-    gpa: trendLine(academicScore.value, 0.78),
-    cert: trendLine(clamp(d.internship.certificateCount * 25 + 30), 0.32),
-    proj: trendLine(clamp(d.internship.projectCount * 20 + 30), 0.28),
+    gpa: trendLineGpa(d.academic.gpa ?? 3, 0.7),
+    cert: trendLine(clamp(d.internship.certificateCount * 2.2 + 2), 0.3),
+    proj: trendLine(clamp(d.internship.projectCount * 2.6 + 2), 0.28),
   }
 })
 const growthTrendOption = computed<EChartsOption>(() => ({
@@ -286,11 +274,11 @@ const growthTrendOption = computed<EChartsOption>(() => ({
     itemHeight: 10,
     itemGap: 22,
   },
-  grid: { left: 52, right: 28, top: 52, bottom: 56 },
+  grid: { left: 52, right: 56, top: 52, bottom: 56 },
   xAxis: {
     type: 'category',
     data: trendCats,
-    boundaryGap: false,
+    boundaryGap: true,
     axisLabel: {
       color: '#b8d8f0',
       fontSize: 13,
@@ -303,33 +291,68 @@ const growthTrendOption = computed<EChartsOption>(() => ({
     axisLine: { lineStyle: { color: 'rgba(102,217,255,.28)', width: 1.5 } },
     axisTick: { show: false },
   },
-  yAxis: {
-    type: 'value', min: 0, max: 100, splitNumber: 5,
-    axisLabel: { color: '#9ec0dc', fontSize: 14, margin: 10 },
-    axisLine: { show: false },
-    splitLine: { lineStyle: { color: 'rgba(102,217,255,.10)', type: 'dashed' } },
-  },
+  yAxis: [
+    {
+      type: 'value', min: 0, max: 10, splitNumber: 5, position: 'left',
+      name: '次数', nameTextStyle: { color: '#9ec0dc', fontSize: 12 },
+      axisLabel: { color: '#9ec0dc', fontSize: 14, margin: 10 },
+      axisLine: { show: false },
+      splitLine: { lineStyle: { color: 'rgba(102,217,255,.10)', type: 'dashed' } },
+    },
+    {
+      type: 'value', min: 0, max: 4, splitNumber: 4, position: 'right',
+      name: 'GPA', nameTextStyle: { color: '#7fd4ff', fontSize: 12 },
+      axisLabel: { color: '#7fd4ff', fontSize: 14, margin: 10 },
+      axisLine: { show: false },
+      splitLine: { show: false },
+    },
+  ],
   series: [
     {
-      name: 'GPA', type: 'line', smooth: 0.35, symbol: 'circle', symbolSize: 10,
+      name: 'GPA', type: 'line', yAxisIndex: 1, smooth: 0.35, symbol: 'circle', symbolSize: 9,
       data: growthTrend.value.gpa,
-      lineStyle: { color: '#38bdf8', width: 3.5 },
+      label: {
+        show: true, position: 'top', color: '#7fd4ff', fontSize: 12, fontWeight: 600,
+        formatter: (p: any) => `${p.value}`,
+      },
+      lineStyle: { color: '#38bdf8', width: 3 },
       itemStyle: { color: '#38bdf8', borderColor: '#061834', borderWidth: 2 },
-      areaStyle: { color: 'rgba(56,189,248,.18)' },
     },
     {
-      name: '技能证书', type: 'line', smooth: 0.35, symbol: 'circle', symbolSize: 10,
+      name: '技能证书', type: 'bar', yAxisIndex: 0, barMaxWidth: 18,
       data: growthTrend.value.cert,
-      lineStyle: { color: '#43e7af', width: 3.5 },
-      itemStyle: { color: '#43e7af', borderColor: '#061834', borderWidth: 2 },
-      areaStyle: { color: 'rgba(67,231,175,.12)' },
+      label: {
+        show: true, position: 'top', color: '#b8d8f0', fontSize: 12, fontWeight: 600,
+        formatter: (p: any) => `${p.value}`,
+      },
+      itemStyle: {
+        borderRadius: [4, 4, 0, 0],
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: '#43e7af' },
+            { offset: 1, color: 'rgba(67,231,175,.25)' },
+          ],
+        },
+      },
     },
     {
-      name: '项目经历', type: 'line', smooth: 0.35, symbol: 'circle', symbolSize: 10,
+      name: '项目经历', type: 'bar', yAxisIndex: 0, barMaxWidth: 18,
       data: growthTrend.value.proj,
-      lineStyle: { color: '#facc15', width: 3.5 },
-      itemStyle: { color: '#facc15', borderColor: '#061834', borderWidth: 2 },
-      areaStyle: { color: 'rgba(250,204,21,.12)' },
+      label: {
+        show: true, position: 'top', color: '#b8d8f0', fontSize: 12, fontWeight: 600,
+        formatter: (p: any) => `${p.value}`,
+      },
+      itemStyle: {
+        borderRadius: [4, 4, 0, 0],
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: '#facc15' },
+            { offset: 1, color: 'rgba(250,204,21,.25)' },
+          ],
+        },
+      },
     },
   ],
 }))
@@ -385,131 +408,69 @@ const aiSummary = computed(() => {
 })
 
 /* ════════════ 3. AI机会雷达 ════════════ */
-const opportunities = computed(() => {
+const opportunityTimeline = computed(() => {
   const d = dashboard.value
-  if (!d) return []
-  const pc = d.internship.projectCount
+  const certGap = Math.max(1, 2 - (d?.internship.certificateCount ?? 0))
+  const projGap = Math.max(1, 5 - (d?.internship.projectCount ?? 0))
+  const internGap = Math.max(1, 1 - (d?.internship.internshipCount ?? 0))
   return [
-    { id: 'project', name: '项目补强', icon: '●', color: '#ff7474', match: 78, value: 86, urgency: 42, recommend: 92, starN: 5,
-      labelPos: 'right' as const,
-      current: `项目 ${pc} 项`, avg: '优秀生均 5.3 项', gap: `+${Math.max(1, 5 - pc)} 项`,
-      resources: ['校级创新项目', '开源项目贡献', '企业实训'],
-      improve: [{ label: '实践能力', from: 90, to: 95 }, { label: '就业竞争力', from: 89, to: 94 }] },
-    { id: 'intern', name: '企业实习', icon: '●', color: '#facc15', match: 58, value: 90, urgency: 36, recommend: 85, starN: 4,
-      labelPos: 'top' as const,
-      current: `实习 ${d.internship.internshipCount} 次`, avg: '目标 1 段实习', gap: '+1 段',
-      resources: ['校企合作基地', '暑期实训', '名企开放日'],
-      improve: [{ label: '就业准备', from: 70, to: 85 }, { label: '专业技能', from: 89, to: 93 }] },
-    { id: 'cert', name: '技能认证', icon: '●', color: '#38bdf8', match: 68, value: 58, urgency: 30, recommend: 78, starN: 4,
-      labelPos: 'bottom' as const,
-      current: `证书 ${d.internship.certificateCount} 项`, avg: '主流认证 2 项', gap: '+1 项',
-      resources: ['软考中级', '云架构认证', '英语证书'],
-      improve: [{ label: '专业能力', from: 89, to: 92 }, { label: '就业竞争力', from: 89, to: 91 }] },
-    { id: 'postgrad', name: '考研冲刺', icon: '●', color: '#43e7af', match: 88, value: 72, urgency: 34, recommend: 88, starN: 5,
-      labelPos: 'left' as const,
-      current: d.careerDev.targetUniversities?.[0] || '目标待定', avg: '对标专业前 20%', gap: '冲刺 985/211',
-      resources: ['数学强化', '专业课复习', '导师联络'],
-      improve: [{ label: '学业能力', from: 84, to: 90 }, { label: '研究能力', from: 70, to: 85 }] },
-  ]
-})
-
-const selectedOpportunityId = ref<string | null>(null)
-const selectedOpportunity = computed(() => {
-  const list = opportunities.value
-  if (!list.length) return null
-  return list.find(o => o.id === selectedOpportunityId.value) || list[0]
-})
-function onOpportunityClick(params: unknown) {
-  const name = (params as { name?: string })?.name
-  const opp = opportunities.value.find(o => o.name === name)
-  if (opp) selectedOpportunityId.value = opp.id
-}
-
-const opportunityMapOption = computed<EChartsOption>(() => ({
-  tooltip: {
-    trigger: 'item',
-    textStyle: { fontSize: 15 },
-    backgroundColor: 'rgba(6, 24, 52, 0.92)',
-    borderColor: 'rgba(0, 184, 255, 0.35)',
-    formatter: (p: any) => {
-      if (!p?.data?.name || p.data.name === '当前学生') return '学生当前位置'
-      return `${p.data.name}<br/>匹配度 ${p.data.value[0]} · 收益价值 ${p.data.value[1]}`
-    },
-  },
-  grid: { left: 56, right: 36, top: 28, bottom: 48 },
-  xAxis: {
-    name: '匹配度 →', min: 40, max: 100, nameLocation: 'middle', nameGap: 30,
-    nameTextStyle: { color: '#b8d8f0', fontSize: 15, fontWeight: 700 },
-    axisLabel: { color: '#9ec0dc', fontSize: 14 },
-    axisLine: { lineStyle: { color: 'rgba(102,217,255,0.28)', width: 1.5 } },
-    splitLine: { lineStyle: { color: 'rgba(102,217,255,0.08)', type: 'dashed' } },
-  },
-  yAxis: {
-    name: '收益价值 →', min: 45, max: 100, nameLocation: 'middle', nameGap: 36,
-    nameTextStyle: { color: '#b8d8f0', fontSize: 15, fontWeight: 700 },
-    axisLabel: { color: '#9ec0dc', fontSize: 14 },
-    axisLine: { lineStyle: { color: 'rgba(102,217,255,0.28)', width: 1.5 } },
-    splitLine: { lineStyle: { color: 'rgba(102,217,255,0.08)', type: 'dashed' } },
-  },
-  series: [{
-    type: 'scatter',
-    z: 3,
-    data: opportunities.value.map(o => ({
-      name: o.name,
-      value: [o.match, o.value],
-      symbolSize: o.urgency,
-      itemStyle: {
-        color: o.color,
-        opacity: 0.92,
-        borderColor: '#fff',
-        borderWidth: 2,
-        shadowBlur: 12,
-        shadowColor: o.color,
-      },
-      label: {
-        show: true,
-        formatter: '{b}',
-        color: '#f2fbff',
-        fontSize: 14,
-        fontWeight: 700,
-        position: o.labelPos,
-        distance: 10,
-        textBorderColor: 'rgba(4,16,40,.85)',
-        textBorderWidth: 3,
-      },
-    })),
-    markLine: {
-      silent: true,
-      symbol: 'none',
-      lineStyle: { color: 'rgba(160, 210, 255, 0.22)', type: 'dashed', width: 1 },
-      data: [{ xAxis: 70 }, { yAxis: 72 }],
-      label: { show: false },
-    },
-    markArea: {
-      silent: true,
-      data: [
-        [{ xAxis: 70, yAxis: 72, itemStyle: { color: 'rgba(67,231,175,0.07)' } }, { xAxis: 100, yAxis: 100 }],
+    {
+      time: '大一 · 上学期', side: 'up' as const,
+      items: [
+        { type: '证书', title: '英语四级 CET-4', desc: '夯实语言基础，为六级与留学铺路' },
+        { type: '活动', title: '加入技术社团', desc: '参与迎新项目，初步接触工程实践' },
       ],
     },
-  }, {
-    type: 'scatter',
-    z: 2,
-    symbol: 'pin',
-    symbolSize: 28,
-    data: [{ value: [62, 68], name: '当前学生', itemStyle: { color: '#ffffff', borderColor: '#7ff6ff', borderWidth: 1 } }],
-    label: {
-      show: true,
-      formatter: '当前',
-      position: 'bottom',
-      distance: 6,
-      color: '#ffffff',
-      fontSize: 13,
-      fontWeight: 700,
-      textBorderColor: 'rgba(4,16,40,.9)',
-      textBorderWidth: 3,
+    {
+      time: '大一 · 下学期', side: 'down' as const,
+      items: [
+        { type: '证书', title: '计算机二级', desc: '巩固办公与编程基础能力' },
+        { type: '比赛', title: '校级编程新生赛', desc: '以赛促学，积累首个竞赛经历' },
+      ],
     },
-  }],
-}))
+    {
+      time: '大二 · 上学期', side: 'up' as const,
+      items: [
+        { type: '证书', title: '英语六级 CET-6', desc: '提升语言竞争力，对应聘 / 考研加分' },
+        { type: '活动', title: '开源代码贡献', desc: '在 GitHub 参与 1 个开源项目' },
+      ],
+    },
+    {
+      time: '大二 · 下学期', side: 'down' as const,
+      items: [
+        { type: '比赛', title: '蓝桥杯 / 数学建模', desc: '冲击省级奖项，丰富简历亮点' },
+        { type: '证书', title: `行业认证 ×${certGap}`, desc: '考取与方向匹配的 1–2 项认证' },
+      ],
+    },
+    {
+      time: '大三 · 上学期', side: 'up' as const,
+      items: [
+        { type: '实习', title: `首段企业实习 ×${internGap}`, desc: '进入真实工程环境，补足项目经验' },
+        { type: '比赛', title: '互联网+ / 挑战杯', desc: '组队参与双创大赛，锻炼综合能力' },
+      ],
+    },
+    {
+      time: '大三 · 下学期', side: 'down' as const,
+      items: [
+        { type: '项目', title: `企业级项目 ×${projGap}`, desc: '打磨作品集，对齐优秀生均 5 项' },
+        { type: '证书', title: '云架构 / 软考中级', desc: '提升专业深度与背书' },
+      ],
+    },
+    {
+      time: '大四 · 上学期', side: 'up' as const,
+      items: [
+        { type: '升学', title: '考研 / 申请冲刺', desc: '整理成果，联络目标导师' },
+        { type: '就业', title: '秋招集中投递', desc: '完善简历，定向投递目标岗位' },
+      ],
+    },
+    {
+      time: '当前', side: 'down' as const,
+      items: [
+        { type: '行动', title: '补齐最短板', desc: '优先投入当前匹配度最高、收益最大的机会' },
+      ],
+    },
+  ]
+})
 
 /* ════════════ 4. 学生成长风险雷达 ════════════ */
 const riskDims = computed(() => {
@@ -559,60 +520,13 @@ const riskRadarOption = computed<EChartsOption>(() => ({
   }],
 }))
 
-/* ════════════ 5. AI成长预测 + 路径模拟 ════════════ */
-const growthForecast = computed(() => {
-  const base = compositeScore.value.score
-  return [
-    { label: '当前', value: base },
-    { label: '半年', value: clamp(base + 3) },
-    { label: '一年', value: clamp(base + 6) },
-    { label: '毕业', value: clamp(base + 7) },
-  ]
-})
-const forecastFactors = ['+项目经历', '+企业实习', '+竞赛科研']
-const growthForecastOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'axis' },
-  grid: { left: '12%', right: '8%', top: 30, bottom: 36 },
-  xAxis: {
-    type: 'category',
-    data: growthForecast.value.map(p => p.label),
-    axisLabel: { color: '#8eb8d8', fontSize: 12 },
-    axisLine: { lineStyle: { color: 'rgba(102,217,255,0.2)' } },
-  },
-  yAxis: {
-    type: 'value', min: 60, max: 100,
-    axisLabel: { color: '#889ec2', fontSize: 11 },
-    axisLine: { lineStyle: { color: 'rgba(102,217,255,0.2)' } },
-    splitLine: { lineStyle: { color: 'rgba(102,217,255,0.06)' } },
-  },
-  series: [{
-    type: 'line',
-    smooth: true,
-    symbol: 'circle',
-    symbolSize: 9,
-    data: growthForecast.value.map(p => p.value),
-    lineStyle: { color: '#00e5ff', width: 3 },
-    itemStyle: { color: '#00e5ff' },
-    label: { show: true, color: '#7ff6ff', fontSize: 12, formatter: '{c}' },
-    areaStyle: {
-      color: {
-        type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-        colorStops: [
-          { offset: 0, color: 'rgba(0,229,255,0.32)' },
-          { offset: 1, color: 'rgba(0,229,255,0.02)' },
-        ],
-      },
-    },
-  }],
-}))
-
-const simPath = ref<'postgrad' | 'job' | 'civil'>('postgrad')
-const pathOptions = [
-  { key: 'postgrad' as const, label: '继续考研' },
-  { key: 'job' as const, label: '直接就业' },
-  { key: 'civil' as const, label: '考公' },
+/* ════════════ 学生发展路径规划（驾驶舱内） ════════════ */
+const pathOptions: Array<{ key: 'postgrad' | 'job' | 'civil'; label: string }> = [
+  { key: 'postgrad', label: '继续考研' },
+  { key: 'job', label: '直接就业' },
+  { key: 'civil', label: '考公' },
 ]
-/* 各方向匹配度（占比代理），用于默认优先展示占比最高的方向 */
+/* 各方向匹配度，用于排序与默认优先展示匹配度最高的方向 */
 const pathScore = (key: 'postgrad' | 'job' | 'civil'): number => {
   const gpa = dashboard.value?.academic.gpa ?? 3
   const jobReady = dashboard.value?.employment.jobReadiness ?? 70
@@ -620,20 +534,19 @@ const pathScore = (key: 'postgrad' | 'job' | 'civil'): number => {
   if (key === 'job') return clamp(jobReady + 5)
   return 68
 }
-/* 占比最高的方向优先默认展示（数据加载后仅应用一次） */
-const priorityPath = computed<'postgrad' | 'job' | 'civil'>(() => {
-  const ranked = [...pathOptions].sort((a, b) => pathScore(b.key) - pathScore(a.key))
-  return ranked[0].key
-})
-let priorityApplied = false
+/* 三个方向按匹配度从高到低排序，手风琴展示 */
+const pathOptionsSorted = computed(() =>
+  [...pathOptions].sort((a, b) => pathScore(b.key) - pathScore(a.key)),
+)
+/* 占比最高的方向优先默认展开（数据抵达时自动更新） */
+const priorityPath = computed<'postgrad' | 'job' | 'civil'>(() => pathOptionsSorted.value[0].key)
+const simPath = ref<'postgrad' | 'job' | 'civil'>(priorityPath.value)
 watch(
   () => dashboard.value,
   (val) => {
-    if (!priorityApplied && val) {
-      simPath.value = priorityPath.value
-      priorityApplied = true
-    }
+    if (val) simPath.value = priorityPath.value
   },
+  { immediate: true },
 )
 const pathResult = computed(() => {
   if (simPath.value === 'postgrad') {
@@ -811,37 +724,38 @@ onMounted(load)
             </div>
           </div>
 
-          <!-- 中：AI学生画像 -->
+          <!-- 中：学生发展路径规划（手风琴：匹配度最高默认展开） -->
           <div class="cockpit-portrait">
-            <h4 class="panel-label">AI 学生画像</h4>
-            <div class="portrait-card">
-              <div class="portrait-card__head">
-                <div class="portrait-name">{{ profile.name }}</div>
-                <div class="portrait-meta">{{ profile.major }} · {{ profile.grade }}</div>
-              </div>
-              <div class="portrait-type">
-                <span class="portrait-type__icon">{{ studentType.icon }}</span>
-                <span class="portrait-type__label">{{ studentType.label }}</span>
-              </div>
-              <div class="portrait-section">
-                <div class="portrait-section__title portrait-section__title--good">优势</div>
-                <div class="tag-row">
-                  <span v-for="s in studentPortrait.strengths" :key="s" class="tag tag--good">{{ s }}</span>
-                </div>
-              </div>
-              <div class="portrait-section">
-                <div class="portrait-section__title portrait-section__title--warn">待提升</div>
-                <div class="tag-row">
-                  <span v-for="w in studentPortrait.weaknesses" :key="w" class="tag tag--warn">{{ w }}</span>
-                </div>
-              </div>
-              <div class="portrait-section">
-                <div class="portrait-section__title">发展路线</div>
-                <div class="route-row">
-                  <template v-for="(dir, i) in studentPortrait.directions" :key="dir">
-                    <span class="route-item">{{ dir }}</span>
-                    <span v-if="i < studentPortrait.directions.length - 1" class="route-arrow">↓</span>
-                  </template>
+            <h4 class="panel-label">学生发展路径规划</h4>
+            <div class="path-accordion">
+              <div
+                v-for="opt in pathOptionsSorted"
+                :key="opt.key"
+                class="path-item"
+                :class="{ 'is-active': simPath === opt.key }"
+              >
+                <button
+                  type="button"
+                  class="path-item__head"
+                  :class="{ 'is-active': simPath === opt.key }"
+                  @click="simPath = opt.key"
+                >
+                  <span class="path-item__label">{{ opt.label }}</span>
+                  <span class="path-item__score">匹配 {{ pathScore(opt.key) }}%</span>
+                  <i class="path-item__arrow" />
+                </button>
+                <div v-show="simPath === opt.key" class="path-item__body">
+                  <div class="sim-result">
+                    <div class="sim-result__headline">{{ pathResult.headline }}</div>
+                    <template v-if="pathResult.type === 'job'">
+                      <div class="sim-result__row"><span>推荐岗位</span><em>{{ pathResult.roles?.join(' / ') }}</em></div>
+                      <div class="sim-result__row"><span>预计薪资</span><em class="hl">{{ pathResult.salary }}</em></div>
+                    </template>
+                    <div class="sim-result__row"><span>优势</span><em>{{ pathResult.strengths.join('、') }}</em></div>
+                    <div class="sim-result__row"><span>短板</span><em>{{ pathResult.weakness }}</em></div>
+                    <div v-if="pathResult.suggest" class="sim-result__suggest">建议：{{ pathResult.suggest }}</div>
+                    <button type="button" class="sim-detail-btn" @click="goCareerPath(simPath)">查看{{ currentPathLabel }}详情 ›</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -872,10 +786,6 @@ onMounted(load)
                   <li v-for="(r, i) in aiDecision.recommendations" :key="i">{{ r }}</li>
                 </ul>
               </div>
-              <div class="ai-decision__confidence">
-                <span>AI 可信度</span>
-                <strong>{{ aiDecision.confidence }}%</strong>
-              </div>
               <div class="judge-source">
                 <span class="judge-source__label">数据来源</span>
                 <div class="tag-row">
@@ -883,6 +793,31 @@ onMounted(load)
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════ 1.5 AI行动建议 ═══════ -->
+      <section id="sec-action" class="deep-card">
+        <h3 class="deep-card__title">AI 行动建议</h3>
+        <div class="action-grid">
+          <div class="action-col">
+            <h4 class="action-col__title action-col__title--now">近期任务</h4>
+            <ul class="action-list">
+              <li v-for="t in actionPlan.recent" :key="t"><i class="dot dot--red" />{{ t }}</li>
+            </ul>
+          </div>
+          <div class="action-col">
+            <h4 class="action-col__title action-col__title--mid">中期任务</h4>
+            <ul class="action-list">
+              <li v-for="t in actionPlan.mid" :key="t"><i class="dot dot--yellow" />{{ t }}</li>
+            </ul>
+          </div>
+          <div class="action-col">
+            <h4 class="action-col__title action-col__title--long">长期目标</h4>
+            <ul class="action-list">
+              <li v-for="t in actionPlan.long" :key="t"><i class="dot dot--green" />{{ t }}</li>
+            </ul>
           </div>
         </div>
       </section>
@@ -939,82 +874,30 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- ═══════ 3. AI机会雷达 ═══════ -->
+      <!-- ═══════ 3. AI机会雷达 · 成长时间轴 ═══════ -->
       <section id="sec-opportunity" class="deep-card">
-        <h3 class="deep-card__title">AI 机会雷达</h3>
-        <div class="oppo-chips oppo-chips--bar">
-          <button
-            v-for="o in opportunities"
-            :key="o.id"
-            type="button"
-            class="oppo-chip"
-            :class="{ 'is-active': selectedOpportunity?.id === o.id }"
-            :style="{ '--c': o.color }"
-            @click="selectedOpportunityId = o.id"
-          >
-            <i class="oppo-chip__dot" :style="{ background: o.color }" />
-            {{ o.name }}
-          </button>
-        </div>
-        <div class="oppo-grid">
-          <div class="oppo-map">
-            <div class="cap-cell__title">机会分布图</div>
-            <p class="oppo-map__hint">气泡越大表示优先度越高 · 右上象限为高匹配高收益</p>
-            <ChartContainer
-              :option="opportunityMapOption"
-              style="height:340px"
-              @chart-click="onOpportunityClick"
-            />
-          </div>
-          <div v-if="selectedOpportunity" class="oppo-detail">
-            <div class="oppo-detail__head">
-              <div class="oppo-detail__title-row">
-                <i class="oppo-detail__dot" :style="{ background: selectedOpportunity.color }" />
-                <h4 class="oppo-detail__name">{{ selectedOpportunity.name }}机会</h4>
+        <h3 class="deep-card__title">AI 机会雷达 · 成长时间轴</h3>
+        <p class="opp-timeline__hint">沿时间轴查看每个阶段可参与的比赛、可考取的证书与可推进的实践，卡片上下交替排布</p>
+        <div class="opp-timeline">
+          <div class="opp-timeline__inner">
+            <div
+              v-for="(node, i) in opportunityTimeline"
+              :key="i"
+              class="tl-node"
+              :class="node.side === 'up' ? 'tl-node--top' : 'tl-node--bottom'"
+            >
+              <div class="tl-card">
+                <ul class="tl-card__list">
+                  <li v-for="it in node.items" :key="it.title" class="tl-item">
+                    <span class="tl-item__tag" :class="'is-' + it.type">{{ it.type }}</span>
+                    <div class="tl-item__text">
+                      <div class="tl-item__title">{{ it.title }}</div>
+                      <div class="tl-item__desc">{{ it.desc }}</div>
+                    </div>
+                  </li>
+                </ul>
               </div>
-              <div class="oppo-detail__score">
-                <span class="oppo-detail__score-label">推荐指数</span>
-                <strong>{{ selectedOpportunity.recommend }}</strong>
-                <em>{{ stars(selectedOpportunity.starN) }}</em>
-              </div>
-            </div>
-            <div class="oppo-compare">
-              <div class="oppo-compare__row">
-                <span>当前状态</span>
-                <em>{{ selectedOpportunity.current }}</em>
-              </div>
-              <div class="oppo-compare__row">
-                <span>优秀生对照</span>
-                <em>{{ selectedOpportunity.avg }}</em>
-              </div>
-              <div class="oppo-compare__row oppo-compare__row--gap">
-                <span>提升空间</span>
-                <em class="hl">{{ selectedOpportunity.gap }}</em>
-              </div>
-            </div>
-            <div class="oppo-block">
-              <div class="oppo-block__title">推荐资源</div>
-              <div class="oppo-res-chips">
-                <span v-for="r in selectedOpportunity.resources" :key="r" class="oppo-res-chip">{{ r }}</span>
-              </div>
-            </div>
-            <div class="oppo-block">
-              <div class="oppo-block__title">预计提升</div>
-              <div class="oppo-improve">
-                <div
-                  v-for="im in selectedOpportunity.improve"
-                  :key="im.label"
-                  class="oppo-improve__item"
-                >
-                  <span class="oppo-improve__label">{{ im.label }}</span>
-                  <span class="oppo-improve__vals">
-                    <b>{{ im.from }}</b>
-                    <i>→</i>
-                    <b class="hl">{{ im.to }}</b>
-                    <em>+{{ im.to - im.from }}</em>
-                  </span>
-                </div>
-              </div>
+              <div class="tl-time">{{ node.time }}</div>
             </div>
           </div>
         </div>
@@ -1045,50 +928,7 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- ═══════ 5. AI成长预测 + 路径模拟 ═══════ -->
-      <section id="sec-forecast" class="deep-card">
-        <h3 class="deep-card__title">AI 成长预测</h3>
-        <div class="forecast-grid">
-          <div class="forecast-chart">
-            <div class="cap-cell__title">未来趋势曲线</div>
-            <ChartContainer :option="growthForecastOption" style="height:320px" />
-            <div class="forecast-factors">
-              <span class="cap-cell__title">关键影响因素</span>
-              <div class="tag-row">
-                <span v-for="f in forecastFactors" :key="f" class="tag tag--dir">{{ f }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="forecast-sim">
-            <div class="cap-cell__title">学生发展路径规划</div>
-            <div class="sim-btns">
-              <button
-                v-for="opt in pathOptions"
-                :key="opt.key"
-                type="button"
-                class="sim-btn"
-                :class="{ 'is-active': simPath === opt.key }"
-                @click="simPath = opt.key"
-              >
-                {{ opt.label }}
-              </button>
-            </div>
-            <div class="sim-result">
-              <div class="sim-result__headline">{{ pathResult.headline }}</div>
-              <template v-if="pathResult.type === 'job'">
-                <div class="sim-result__row"><span>推荐岗位</span><em>{{ pathResult.roles.join(' / ') }}</em></div>
-                <div class="sim-result__row"><span>预计薪资</span><em class="hl">{{ pathResult.salary }}</em></div>
-              </template>
-              <div class="sim-result__row"><span>优势</span><em>{{ pathResult.strengths.join('、') }}</em></div>
-              <div class="sim-result__row"><span>短板</span><em>{{ pathResult.weakness }}</em></div>
-              <div v-if="pathResult.suggest" class="sim-result__suggest">建议：{{ pathResult.suggest }}</div>
-              <button type="button" class="sim-detail-btn" @click="goCareerPath(simPath)">查看{{ currentPathLabel }}详情 ›</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══════ 6. 同专业成长比较 ═══════ -->
+      <!-- ═══════ 5. 同专业成长比较 ═══════ -->
       <section id="sec-peer" class="deep-card">
         <h3 class="deep-card__title">同专业成长比较</h3>
         <div class="peer-grid">
@@ -1112,30 +952,6 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- ═══════ 7. AI行动建议 ═══════ -->
-      <section id="sec-action" class="deep-card">
-        <h3 class="deep-card__title">AI 行动建议</h3>
-        <div class="action-grid">
-          <div class="action-col">
-            <h4 class="action-col__title action-col__title--now">近期任务</h4>
-            <ul class="action-list">
-              <li v-for="t in actionPlan.recent" :key="t"><i class="dot dot--red" />{{ t }}</li>
-            </ul>
-          </div>
-          <div class="action-col">
-            <h4 class="action-col__title action-col__title--mid">中期任务</h4>
-            <ul class="action-list">
-              <li v-for="t in actionPlan.mid" :key="t"><i class="dot dot--yellow" />{{ t }}</li>
-            </ul>
-          </div>
-          <div class="action-col">
-            <h4 class="action-col__title action-col__title--long">长期目标</h4>
-            <ul class="action-list">
-              <li v-for="t in actionPlan.long" :key="t"><i class="dot dot--green" />{{ t }}</li>
-            </ul>
-          </div>
-        </div>
-      </section>
     </div>
   </StudentDetailLayout>
 </template>
@@ -1625,18 +1441,7 @@ onMounted(load)
     li { color: #d8eeff; font-size: 16px; line-height: 1.6; }
   }
 
-  &__confidence {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: rgba(0, 100, 180, .12);
-    border: 1px solid rgba(0, 184, 255, .2);
 
-    span { color: #7aa4c0; font-size: 16px; }
-    strong { color: #7ff6ff; font-size: 24px; font-weight: 800; }
-  }
 }
 
 /* ── 2. 能力画像分析 ── */
@@ -1713,228 +1518,132 @@ onMounted(load)
   padding: 14px 12px 8px;
 }
 
-/* ── 3. 机会雷达 ── */
-.oppo-chips--bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: -4px 0 16px;
-}
-
-.oppo-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.95fr);
-  gap: 20px;
-  align-items: stretch;
-}
-
-.oppo-map {
-  min-width: 0;
-  padding: 14px 14px 8px;
-  border-radius: 12px;
-  background: rgba(0, 26, 54, .28);
-  border: 1px solid rgba(0, 200, 255, .12);
-
-  .cap-cell__title { margin-bottom: 4px; }
-}
-
-.oppo-map__hint {
-  margin: 0 0 8px;
+/* ── 3. 机会雷达 · 成长时间轴 ── */
+.opp-timeline__hint {
+  margin: 0 0 12px;
   color: #7aa4c0;
   font-size: 14px;
   line-height: 1.4;
 }
-
-.oppo-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.opp-timeline {
+  overflow: auto;
+  padding: 12px 4px;
 }
-.oppo-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 16px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--c) 42%, transparent);
-  background: rgba(0, 30, 60, .34);
-  color: #d8eeff;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all .2s;
+.opp-timeline__inner {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  min-width: max-content;
+  padding: 0 28px;
 
-  &__dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    box-shadow: 0 0 8px color-mix(in srgb, var(--c) 70%, transparent);
-  }
-
-  &:hover { border-color: var(--c); transform: translateY(-1px); }
-  &.is-active {
-    background: color-mix(in srgb, var(--c) 22%, transparent);
-    color: #fff;
-    box-shadow: 0 0 14px color-mix(in srgb, var(--c) 32%, transparent);
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2px;
+    transform: translateY(-50%);
+    background: linear-gradient(90deg,
+      rgba(56, 189, 248, .12),
+      rgba(56, 189, 248, .55),
+      rgba(67, 231, 175, .55),
+      rgba(67, 231, 175, .12));
   }
 }
-
-.oppo-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px 18px 16px;
+.tl-node {
+  position: relative;
+  flex: 0 0 220px;
+  height: 480px;
+}
+.tl-card {
+  position: absolute;
+  left: 50%;
+  width: 200px;
+  transform: translateX(-50%);
+  padding: 12px 13px;
   border-radius: 12px;
-  background: linear-gradient(165deg, rgba(0, 48, 96, .38), rgba(0, 22, 50, .5));
+  background: linear-gradient(165deg, rgba(0, 48, 96, .42), rgba(0, 22, 50, .55));
   border: 1px solid rgba(0, 200, 255, .18);
   box-shadow: inset 0 1px 0 rgba(160, 220, 255, .08);
-
-  &__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(102, 217, 255, .12);
-  }
-  &__title-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  &__dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    box-shadow: 0 0 10px currentColor;
-  }
-  &__name {
-    margin: 0;
-    color: #f2fbff;
-    font-size: 22px;
-    font-weight: 900;
-    letter-spacing: .03em;
-  }
-  &__score {
-    text-align: right;
-    line-height: 1.15;
-  }
-  &__score-label {
-    display: block;
-    color: #7aa4c0;
-    font-size: 13px;
-    margin-bottom: 2px;
-  }
-  &__score strong {
-    color: #7ff6ff;
-    font-size: 36px;
-    font-weight: 900;
-    font-variant-numeric: tabular-nums;
-  }
-  &__score em {
-    display: block;
-    margin-top: 2px;
-    color: #facc15;
-    font-style: normal;
-    font-size: 15px;
-    letter-spacing: 1px;
-  }
 }
+/* 时间统一落在中轴线上；卡片上下交替排布 */
+.tl-node--top .tl-card { bottom: calc(50% + 28px); }
+.tl-node--bottom .tl-card { top: calc(50% + 28px); }
 
-.oppo-compare {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  &__row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 11px 14px;
-    border-radius: 10px;
-    background: rgba(0, 30, 60, .32);
-    border: 1px solid rgba(102, 217, 255, .08);
-    span { color: #8eb8d8; font-size: 15px; flex-shrink: 0; }
-    em {
-      color: #eaf6ff;
-      font-style: normal;
-      font-size: 16px;
-      font-weight: 700;
-      text-align: right;
-    }
-    .hl { color: #7ff6ff; }
-  }
-  &__row--gap {
-    background: rgba(0, 120, 180, .16);
-    border-color: rgba(0, 200, 255, .2);
-  }
-}
-
-.oppo-block {
-  &__title {
-    font-size: 15px;
-    font-weight: 800;
-    color: #7ae7ff;
-    margin-bottom: 10px;
-    letter-spacing: .04em;
-  }
-}
-.oppo-res-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.oppo-res-chip {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(0, 80, 140, .28);
-  border: 1px solid rgba(0, 184, 255, .22);
-  color: #d8eeff;
+.tl-time {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  top: auto;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 4px 14px;
+  border-radius: 999px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: .03em;
+  color: #dbeeff;
+  background: rgba(150, 180, 210, .22);
+  border: 1px solid rgba(170, 200, 225, .4);
+  box-shadow: 0 0 0 4px rgba(120, 150, 180, .15);
+  z-index: 3;
 }
-.oppo-improve {
+
+.tl-card__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-
-  &__item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: rgba(0, 30, 60, .28);
-    border: 1px solid rgba(102, 217, 255, .08);
-  }
-  &__label {
-    color: #cfe6f8;
-    font-size: 15px;
-    font-weight: 700;
-  }
-  &__vals {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-variant-numeric: tabular-nums;
-
-    b { color: #d8eeff; font-size: 16px; }
-    i { color: #7aa4c0; font-style: normal; font-size: 14px; }
-    .hl { color: #43e7af; font-size: 18px; }
-    em {
-      margin-left: 4px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(67, 231, 175, .16);
-      color: #5ff0bd;
-      font-style: normal;
-      font-size: 13px;
-      font-weight: 800;
-    }
-  }
+  gap: 10px;
 }
+.tl-item {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.tl-item__tag {
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #061834;
+  background: #7fd4ff;
+}
+/* 标签仅用蓝/绿两色：上排节点蓝色，下排节点绿色 */
+.tl-node--top .tl-item__tag { background: #38bdf8; }
+.tl-node--bottom .tl-item__tag { background: #43e7af; }
+.tl-item__text { min-width: 0; }
+.tl-item__title {
+  color: #f2fbff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.tl-item__desc {
+  margin-top: 2px;
+  color: #9ec0dc;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+.tl-card__list::-webkit-scrollbar { width: 6px; }
+.tl-card__list::-webkit-scrollbar-thumb {
+  background: rgba(120, 200, 255, .35);
+  border-radius: 6px;
+}
+.tl-card__list::-webkit-scrollbar-track { background: transparent; }
+
+.opp-timeline::-webkit-scrollbar { width: 8px; height: 8px; }
+.opp-timeline::-webkit-scrollbar-thumb {
+  background: rgba(120, 200, 255, .4);
+  border-radius: 8px;
+}
+.opp-timeline::-webkit-scrollbar-track { background: transparent; }
 
 .cap-bars {
   display: flex;
@@ -2054,6 +1763,70 @@ onMounted(load)
     box-shadow: 0 0 12px rgba(0, 200, 255, .35);
     border-color: #00e5ff;
   }
+}
+
+/* 发展规划手风琴 */
+.path-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.path-item {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 200, 255, .2);
+  background: rgba(0, 28, 58, .35);
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease;
+
+  &.is-active {
+    border-color: rgba(0, 200, 255, .5);
+    box-shadow: 0 0 14px rgba(0, 200, 255, .18);
+  }
+}
+.path-item__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  background: transparent;
+  color: #cfeaff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: background .2s ease;
+
+  &:hover { background: rgba(0, 60, 110, .3); }
+  &.is-active { background: rgba(0, 120, 200, .22); }
+}
+.path-item__label {
+  flex: 1 1 auto;
+}
+.path-item__score {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #8ee9ff;
+  background: rgba(0, 184, 255, .14);
+  border: 1px solid rgba(0, 184, 255, .28);
+  font-family: var(--student-font-number);
+}
+.path-item__arrow {
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid #8ee9ff;
+  border-bottom: 2px solid #8ee9ff;
+  transform: rotate(45deg);
+  transition: transform .25s ease;
+  margin-left: 2px;
+  .path-item.is-active & { transform: rotate(-135deg); }
+}
+.path-item__body {
+  padding: 4px 16px 16px;
 }
 .sim-result {
   &__headline {
@@ -2238,7 +2011,6 @@ onMounted(load)
   .cockpit-grid { grid-template-columns: 1fr; }
   .cockpit-portrait { border-left: none; border-right: none; padding: 14px 0; border-top: 1px solid rgba(102, 217, 255, .1); border-bottom: 1px solid rgba(102, 217, 255, .1); }
   .capability-grid { grid-template-columns: 1fr; }
-  .oppo-grid { grid-template-columns: 1fr; }
   .risk-grid { grid-template-columns: 1fr; }
   .risk-explain { grid-template-columns: 1fr; }
   .forecast-grid { grid-template-columns: 1fr; }

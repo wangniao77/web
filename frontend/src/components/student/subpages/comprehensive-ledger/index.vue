@@ -663,6 +663,19 @@ const disciplineAiAdvice = computed(() => {
   return { strengths, weaknesses, future }
 })
 
+/** 综合素养 · AI 学业分析（顶部总体研判，类似学情轨迹护航详情） */
+const qualityAiSummary = computed(() => {
+  const d = dashboard.value
+  if (!d) return '—'
+  const h = honorAiAdvice.value
+  const disc = disciplineAiAdvice.value
+  const discText =
+    disciplineLevel.value === 'low'
+      ? `纪律方面，${disc.strengths}`
+      : `纪律方面需重点关注：${disc.weaknesses}`
+  return `${h.strengths}${discText}建议：${h.future}`
+})
+
 onMounted(load)
 </script>
 
@@ -701,6 +714,12 @@ onMounted(load)
             <strong class="kpi-card__value">{{ dashboard.competition.awardCount }}<small>项</small></strong>
           </div>
         </div>
+      </section>
+
+      <!-- AI 学业分析（总体研判） -->
+      <section class="ai-analysis">
+        <span class="ai-analysis__tag">AI 学业分析</span>
+        <p class="ai-analysis__text">{{ qualityAiSummary }}</p>
       </section>
 
       <!-- 主 Tab -->
@@ -1385,6 +1404,38 @@ onMounted(load)
     &:hover {
       background: rgba(0, 184, 255, 0.2);
     }
+  }
+}
+
+/* AI 学业分析（顶部总体研判，仿学情轨迹护航详情） */
+.ai-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  background:
+    linear-gradient(120deg, rgba(0, 113, 206, 0.2), rgba(3, 12, 34, 0.7)),
+    rgba(5, 18, 48, 0.55);
+  border: 1px solid rgba(102, 217, 255, 0.2);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 22px rgba(0, 184, 255, 0.07);
+
+  &__tag {
+    align-self: flex-start;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8ef6ff;
+    background: rgba(0, 184, 255, 0.14);
+    border: 1px solid rgba(0, 184, 255, 0.3);
+  }
+
+  &__text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #dbeeff;
   }
 }
 

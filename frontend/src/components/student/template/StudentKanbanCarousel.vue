@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ROUTES } from '@/constants/routes'
 import DashIcon from '@/components/college/DashIcon.vue'
@@ -429,17 +429,92 @@ function goQualityLedger(anchor?: 'reward' | 'discipline') {
   })
 }
 
-function openQualityTab(tab: 'honor' | 'discipline') {
+/* ── 资源管理器式导航：左分类 / 右内容 ── */
+const activeCatKey = ref<string | null>(null)
+const catInited = ref(false)
+
+function selectCat(key: string) {
+  activeCatKey.value = key
+  qualityTab.value =
+    ['competition', 'research', 'honor', 'scholarship', 'practice', 'art', 'collective', 'cert'].includes(key)
+      ? 'honor'
+      : 'discipline'
+}
+
+/* 切换顶部标签时，自动选中该标签下的第一个分类 */
+function selectTab(tab: 'honor' | 'discipline') {
   qualityTab.value = tab
+  const cats = tab === 'honor' ? honorCats.value : disciplineCats.value
+  if (cats.length) activeCatKey.value = cats[0].key
+  nextTick(() => {
+    const el = qualityNavRef.value
+    if (el) el.scrollTop = 0
+  })
 }
 
-function openHonorCat() {
-  goQualityLedger('reward')
+const activeCatLabel = computed(() => {
+  if (!activeCatKey.value) return ''
+  const h = honorCats.value.find(c => c.key === activeCatKey.value)
+  if (h) return h.label
+  const d = disciplineCats.value.find(c => c.key === activeCatKey.value)
+  return d?.label ?? ''
+})
+
+const activeCatItems = computed(() => {
+  if (!activeCatKey.value) return []
+  const honor = honorCats.value.find(c => c.key === activeCatKey.value)
+  if (honor) return honor.items
+  const recs = disciplineRecords.value
+  const k = activeCatKey.value
+  if (k === 'disciplinary')
+    return recs.filter(r => /警告|记过|留校|开除|处分|严重警告/.test(r.type)).map(r => `${r.type} · ${r.reason}`)
+  if (k === 'criticism')
+    return recs.filter(r => /通报|批评/.test(`${r.type}${r.reason}`)).map(r => `${r.type} · ${r.reason}`)
+  if (k === 'warning')
+    return recs.filter(r => /学业|挂科|旷课|考勤/.test(`${r.type}${r.reason}`)).map(r => `${r.type} · ${r.reason}`)
+  if (k === 'integrity')
+    return recs.filter(r => /诚信|失信|超期|作弊|抄袭/.test(`${r.type}${r.reason}`)).map(r => `${r.type} · ${r.reason}`)
+  return []
+})
+
+function initActiveCat() {
+  if (catInited.value) return
+  const first = honorCats.value.find(c => c.count > 0) || honorCats.value[0]
+  if (first) {
+    activeCatKey.value = first.key
+    qualityTab.value = 'honor'
+    catInited.value = true
+  }
+}
+watch(honorCats, initActiveCat, { immediate: true })
+
+/* 左侧分类导航自动滑动（内容溢出时滚动，悬停暂停） */
+const qualityNavRef = ref<HTMLElement | null>(null)
+const navHovered = ref(false)
+let navTimer: number | null = null
+
+function startNavAutoScroll() {
+  const el = qualityNavRef.value
+  if (!el) return
+  stopNavAutoScroll()
+  navTimer = window.setInterval(() => {
+    if (navHovered.value) return
+    if (el.scrollHeight <= el.clientHeight + 2) return
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) el.scrollTop = 0
+    else el.scrollTop += 1
+  }, 45)
 }
 
-function openDisciplineCat() {
-  goQualityLedger('discipline')
+function stopNavAutoScroll() {
+  if (navTimer !== null) {
+    clearInterval(navTimer)
+    navTimer = null
+  }
 }
+
+onMounted(startNavAutoScroll)
+onBeforeUnmount(stopNavAutoScroll)
+
 function goGpaDetail() {
   router.push(ROUTES.student.gpaDetail)
 }
@@ -646,6 +721,7 @@ function goCreditProgress() {
         <div class="quality-body">
           <p class="quality-shortboard-tip">{{ softSkillShortboard }}</p>
 
+          <!-- 顶部两个标签：荣誉成果 / 纪律处分 -->
           <div class="quality-tabs" role="tablist" aria-label="综合素养分类">
             <button
               type="button"
@@ -653,7 +729,7 @@ function goCreditProgress() {
               class="quality-tab"
               :class="{ 'is-active': qualityTab === 'honor' }"
               :aria-selected="qualityTab === 'honor'"
-              @click="openQualityTab('honor')"
+              @click="selectTab('honor')"
             >
               荣誉成果
               <em>{{ honorTotalCount }}</em>
@@ -664,40 +740,55 @@ function goCreditProgress() {
               class="quality-tab"
               :class="{ 'is-active': qualityTab === 'discipline' }"
               :aria-selected="qualityTab === 'discipline'"
-              @click="openQualityTab('discipline')"
+              @click="selectTab('discipline')"
             >
               纪律处分
               <em>{{ disciplineTotalCount }}</em>
             </button>
           </div>
 
-          <!-- 荣誉成果：8 个子功能，两列各 4 个 -->
-          <div v-if="qualityTab === 'honor'" class="quality-cat-grid quality-cat-grid--honor" role="tabpanel">
-            <button
-              v-for="cat in honorCats"
-              :key="cat.key"
-              type="button"
-              class="quality-cat-item"
-              @click="openHonorCat"
+          <!-- 资源管理器式：左导航 / 右内容 -->
+          <div class="quality-explorer">
+            <!-- 左侧：分类导航（可滚动 / 自动滑动） -->
+            <nav
+              ref="qualityNavRef"
+              class="quality-nav"
+              aria-label="综合素养分类"
+              @mouseenter="navHovered = true"
+              @mouseleave="navHovered = false"
             >
-              <span class="quality-cat-item__label">{{ cat.label }}</span>
-              <strong class="quality-cat-item__count">{{ cat.count }}</strong>
-            </button>
-          </div>
+              <button
+                v-for="cat in (qualityTab === 'honor' ? honorCats : disciplineCats)"
+                :key="cat.key"
+                type="button"
+                class="quality-nav__item"
+                :class="{ 'is-active': activeCatKey === cat.key, 'is-alert': qualityTab === 'discipline' && cat.count > 0 }"
+                @click="selectCat(cat.key)"
+              >
+                <span>{{ cat.label }}</span>
+                <em>{{ cat.count }}</em>
+              </button>
+            </nav>
 
-          <!-- 纪律处分：4 个子功能 -->
-          <div v-else class="quality-cat-grid quality-cat-grid--discipline" role="tabpanel">
-            <button
-              v-for="cat in disciplineCats"
-              :key="cat.key"
-              type="button"
-              class="quality-cat-item"
-              :class="{ 'is-alert': cat.count > 0 }"
-              @click="openDisciplineCat"
-            >
-              <span class="quality-cat-item__label">{{ cat.label }}</span>
-              <strong class="quality-cat-item__count">{{ cat.count }}</strong>
-            </button>
+            <!-- 右侧：详细内容（内容多可滚动） -->
+            <div class="quality-content">
+              <div class="quality-content__head">
+                <strong>{{ activeCatLabel }}</strong>
+                <em>{{ activeCatItems.length }} 项</em>
+              </div>
+              <div class="quality-item-list">
+                <div
+                  v-for="(item, i) in activeCatItems"
+                  :key="i"
+                  class="quality-item"
+                >
+                  {{ item }}
+                </div>
+                <div v-if="!activeCatItems.length" class="quality-empty">
+                  暂无记录
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1044,29 +1135,19 @@ function goCreditProgress() {
 }
 
 .quality-body {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   min-height: 0;
   overflow: hidden;
 }
 
-.quality-shortboard-tip {
-  margin: 0;
-  padding: 5px 8px;
-  border: 1px solid rgba(232, 200, 120, 0.35);
-  border-radius: 2px;
-  background: rgba(232, 200, 120, 0.08);
-  color: #f0d9a0;
-  font-size: 13px;
-  line-height: 1.45;
-  letter-spacing: 0.02em;
-}
-
+/* 顶部两个标签：荣誉成果 / 纪律处分 */
 .quality-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .quality-tab {
@@ -1116,82 +1197,177 @@ function goCreditProgress() {
   }
 }
 
-.quality-cat-grid {
-  display: grid;
-  gap: 8px;
+/* 资源管理器式：左内容 / 右分类 */
+.quality-explorer {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
   min-height: 0;
-  align-content: stretch;
+  flex: 1 1 auto;
+}
 
-  &--honor {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(4, minmax(0, 1fr));
-  }
+/* 右侧分类导航（可滚动） */
+.quality-nav {
+  flex: 0 0 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(232, 200, 120, 0.18);
+  background: rgba(0, 28, 58, 0.45);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 200, 120, 0.25) transparent;
 
-  &--discipline {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(232, 200, 120, 0.25);
+    border-radius: 3px;
   }
 }
 
-.quality-cat-item {
-  display: flex;
+.quality-nav__item {
+  display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(232, 200, 120, 0.18);
+  gap: 6px;
+  padding: 6px 10px;
   border-radius: 4px;
-  background:
-    linear-gradient(160deg, rgba(0, 50, 95, 0.42), rgba(0, 28, 58, 0.48));
-  color: #d8eeff;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #a8c8e0;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.18s ease;
   text-align: left;
-  transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+
+  em {
+    min-width: 20px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgba(232, 200, 120, 0.12);
+    color: #ffe59d;
+    font-style: normal;
+    font-size: 11px;
+    font-weight: 900;
+    font-family: var(--student-font-number);
+    line-height: 1.4;
+  }
 
   &:hover {
-    border-color: rgba(232, 200, 120, 0.42);
-    transform: translateY(-1px);
-    background:
-      linear-gradient(160deg, rgba(0, 60, 110, 0.5), rgba(0, 34, 68, 0.55));
+    background: rgba(0, 50, 95, 0.35);
+    color: #d0e8f8;
+  }
+
+  &.is-active {
+    background: rgba(232, 200, 120, 0.1);
+    border-color: rgba(232, 200, 120, 0.35);
+    color: #fff8e8;
+
+    em {
+      background: rgba(232, 200, 120, 0.28);
+    }
   }
 
   &.is-alert {
-    border-color: rgba(255, 140, 100, 0.38);
-    background: linear-gradient(160deg, rgba(90, 36, 28, 0.42), rgba(28, 18, 40, 0.48));
-  }
-}
-
-.quality-cat-item__label {
-  min-width: 0;
-  color: #d2e8f5;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.quality-cat-item__count {
-  flex-shrink: 0;
-  min-width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(232, 200, 120, 0.18);
-  color: #ffe59d;
-  font-size: 15px;
-  font-weight: 900;
-  font-family: var(--student-font-number);
-  line-height: 1;
-
-  .quality-cat-item.is-alert & {
-    background: rgba(255, 140, 100, 0.22);
     color: #ffb4b4;
+
+    em {
+      background: rgba(255, 140, 100, 0.22);
+      color: #ffb4b4;
+    }
   }
+}
+
+/* 右侧内容 */
+.quality-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.quality-shortboard-tip {
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid rgba(232, 200, 120, 0.35);
+  border-radius: 2px;
+  background: rgba(232, 200, 120, 0.08);
+  color: #f0d9a0;
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.quality-content__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(232, 200, 120, 0.2);
+  background: rgba(0, 36, 68, 0.35);
+  color: #c8dff0;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+
+  strong {
+    color: #f2faff;
+    font-size: 15px;
+  }
+
+  em {
+    font-style: normal;
+    color: #ffe59d;
+    font-size: 13px;
+    font-weight: 900;
+    font-family: var(--student-font-number);
+  }
+}
+
+.quality-item-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 200, 120, 0.2) transparent;
+
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(232, 200, 120, 0.2);
+    border-radius: 3px;
+  }
+}
+
+.quality-item {
+  padding: 7px 10px;
+  border-radius: 3px;
+  border: 1px solid rgba(232, 200, 120, 0.12);
+  background: rgba(0, 36, 68, 0.3);
+  color: #c8dff0;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.quality-empty {
+  padding: 20px;
+  text-align: center;
+  color: rgba(184, 220, 255, 0.5);
+  font-size: 13px;
 }
 
 .quality-panels {

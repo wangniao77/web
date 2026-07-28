@@ -37,17 +37,16 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 /* ────── 顶部标签 ────── */
-type TabKey = 'overview' | 'graduate' | 'employment' | 'civil'
+type TabKey = 'graduate' | 'employment' | 'civil'
 const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: 'overview', label: '综合画像' },
   { key: 'graduate', label: '升学考研' },
   { key: 'employment', label: '就业' },
   { key: 'civil', label: '考公考编' },
 ]
 function resolveInitialTab(): TabKey {
   const t = route.query.tab as TabKey | undefined
-  if (t === 'overview' || t === 'graduate' || t === 'employment' || t === 'civil') return t
-  return 'overview'
+  if (t === 'graduate' || t === 'employment' || t === 'civil') return t
+  return 'graduate'
 }
 const activeTab = ref<TabKey>(resolveInitialTab())
 watch(
@@ -580,54 +579,7 @@ const civilTaskGroups = computed<CivilTaskGroup[]>(() => [
   ] },
 ])
 
-/* ═══════════ 综合画像（出口趋势分析）═══════════ */
-interface ExitDirection {
-  name: string
-  match: number
-  color: string
-  note: string
-}
-const exitDirections = computed<ExitDirection[]>(() => [
-  { name: '就业', match: competitivenessIndex.value, color: '#00d4ff', note: '专业对口岗位匹配度高，建议作为主线方向' },
-  { name: '升学考研', match: gradIndex.value, color: '#a78bfa', note: '成绩与排名优异，具备冲刺名校潜力' },
-  { name: '考公考编', match: civilIndex.value, color: '#34d399', note: '专业限制少岗位多，可作为稳妥备选' },
-])
-
-const recommendedExit = computed(() => {
-  const sorted = [...exitDirections.value].sort((a, b) => b.match - a.match)
-  return sorted[0]
-})
-
-const exitTrendOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'axis' },
-  legend: {
-    data: ['就业', '升学考研', '考公考编'],
-    textStyle: { color: '#b8d6ec', fontSize: 12 },
-    top: 0,
-  },
-  grid: { left: '8%', right: '5%', top: 40, bottom: 30 },
-  xAxis: {
-    type: 'category',
-    boundaryGap: false,
-    data: ['大一', '大二', '大三', '大四上', '大四下'],
-    axisLabel: { color: '#889ec2', fontSize: 12 },
-    axisLine: { lineStyle: { color: 'rgba(102,217,255,0.2)' } },
-  },
-  yAxis: {
-    type: 'value',
-    name: '倾向度',
-    min: 0,
-    max: 100,
-    nameTextStyle: { color: '#889ec2', fontSize: 11 },
-    axisLabel: { color: '#889ec2', fontSize: 11 },
-    splitLine: { lineStyle: { color: 'rgba(102,217,255,0.08)' } },
-  },
-  series: [
-    { name: '就业', type: 'line', smooth: true, data: [40, 50, 65, 78, 85], lineStyle: { color: '#00d4ff', width: 2 }, itemStyle: { color: '#00d4ff' }, areaStyle: { color: 'rgba(0,212,255,0.1)' } },
-    { name: '升学考研', type: 'line', smooth: true, data: [30, 45, 60, 72, 70], lineStyle: { color: '#a78bfa', width: 2 }, itemStyle: { color: '#a78bfa' }, areaStyle: { color: 'rgba(167,139,250,0.08)' } },
-    { name: '考公考编', type: 'line', smooth: true, data: [20, 30, 42, 55, 60], lineStyle: { color: '#34d399', width: 2 }, itemStyle: { color: '#34d399' }, areaStyle: { color: 'rgba(52,211,153,0.08)' } },
-  ],
-}))
+/* ═══════════ 综合画像（已移除）═══════════ */
 
 onMounted(load)
 </script>
@@ -660,34 +612,8 @@ onMounted(load)
         </button>
       </div>
 
-      <!-- ═══════════ 综合画像 ═══════════ -->
-      <div v-if="activeTab === 'overview'" class="detail-grid">
-        <div class="section-title section-title--full">出口趋势分析</div>
-
-        <ChartCard title="出口方向倾向趋势" sub="四年演变">
-          <ChartContainer :option="exitTrendOption" style="height: 300px" />
-        </ChartCard>
-
-        <div class="exit-summary">
-          <div class="exit-summary__head">
-            <span class="exit-summary__bar" aria-hidden="true" />
-            <h3 class="exit-summary__title">三大方向适配度</h3>
-            <span class="exit-summary__reco">推荐主线：{{ recommendedExit.name }}</span>
-          </div>
-          <div class="exit-dir-list">
-            <div v-for="d in exitDirections" :key="d.name" class="exit-dir">
-              <span class="exit-dir__pct" :style="{ color: d.color }">{{ d.match }}%</span>
-              <div class="exit-dir__bar">
-                <div class="exit-dir__bar-inner" :style="{ height: `${d.match}%`, background: d.color }" />
-              </div>
-              <span class="exit-dir__name">{{ d.name }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- ═══════════ 升学考研 ═══════════ -->
-      <div v-else-if="activeTab === 'graduate'" class="detail-grid">
+      <div v-if="activeTab === 'graduate'" class="detail-grid">
         <!-- ① 考研竞争力画像（雷达 + 能力拆解）并排 考研准备度进度 -->
         <div class="section-title section-title--full">考研竞争力画像 · 考研准备度进度</div>
 
@@ -2744,98 +2670,6 @@ onMounted(load)
     font-size: 16px;
     font-weight: 800;
     color: #f0c040;
-  }
-}
-
-/* ── 综合画像：出口趋势 ── */
-.exit-summary {
-  display: flex;
-  flex-direction: column;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
-    rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(0, 206, 255, 0.42);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 24px rgba(0, 184, 255, 0.12);
-
-  &__head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  &__bar {
-    width: 3px;
-    height: 14px;
-    border-radius: 2px;
-    background: linear-gradient(180deg, #00e5ff, #00b8ff);
-    box-shadow: 0 0 6px rgba(0, 212, 255, 0.45);
-  }
-
-  &__title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: #f4fbff;
-  }
-
-  &__reco {
-    margin-left: auto;
-    font-size: 12px;
-    font-weight: 700;
-    color: #7ff6ff;
-    padding: 2px 10px;
-    border-radius: 999px;
-    background: rgba(0, 184, 255, 0.12);
-    border: 1px solid rgba(0, 184, 255, 0.25);
-  }
-}
-
-.exit-dir-list {
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  gap: 12px;
-  min-height: 248px;
-  padding-top: 6px;
-}
-
-.exit-dir {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-
-  &__name {
-    font-size: 14px;
-    font-weight: 700;
-    color: #f6fbff;
-  }
-
-  &__pct {
-    font-size: 20px;
-    font-weight: 900;
-    font-family: 'DIN Alternate', sans-serif;
-  }
-
-  &__bar {
-    width: 34px;
-    height: 200px;
-    border-radius: 999px;
-    background: rgba(0, 60, 120, 0.45);
-    overflow: hidden;
-    display: flex;
-    align-items: flex-end;
-  }
-
-  &__bar-inner {
-    width: 100%;
-    border-radius: 999px;
-    transition: height 0.6s ease;
   }
 }
 

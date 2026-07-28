@@ -16,7 +16,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
+import StudentSectionNav from '../_shared/StudentSectionNav.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import AiAnalysisCard from '@/components/student/template/AiAnalysisCard.vue'
 import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, AttentionItemVM } from '@/types/student/view'
@@ -54,6 +56,17 @@ const LEVEL_COLOR: Record<string, string> = { low: '#55e995', medium: '#facc15',
 const levelColor = (level: string) => LEVEL_COLOR[level] || '#8fb7cd'
 const riskText = (level: string) =>
   ({ low: '正常', medium: '需关注', high: '高危' }[level] || '—')
+
+/** 页面分区导航（点击跳转到对应模块） */
+const sectionNav = [
+  { id: 'sec-overview', label: '心理状态总览' },
+  { id: 'sec-indicators', label: '测评与趋势' },
+  { id: 'sec-radar', label: '风险维度' },
+  { id: 'sec-factors', label: '风险因素' },
+  { id: 'sec-intervention', label: '干预跟踪' },
+  { id: 'sec-ledger', label: '心理预警台账' },
+  { id: 'sec-advice', label: '干预建议' },
+]
 
 const mentalLevel = computed(() => dashboard.value?.profile.mentalLevelCode ?? 'low')
 
@@ -147,6 +160,14 @@ const mentalStatusText = computed(() => {
   if (lv === 'high') return '心理状态多项异常，已触发高危预警，须立即介入心理干预。'
   if (lv === 'medium') return '存在心理波动与风险因素，需持续关注并安排心理疏导。'
   return '整体心理状态平稳，保持常规关注即可。'
+})
+
+/* 状态总览下方的 AI 学业分析结论（从学业侧面关联心理状态） */
+const aiAnalysis = computed(() => {
+  const d = dashboard.value
+  if (!d) return ''
+  const gpa = d.academic.gpa
+  return `该生心理状态等级为「${riskText(mentalLevel.value)}」，${mentalStatusText.value} 从学业侧面看，当前 GPA ${gpa.toFixed(2)}，整体学业表现${gpa >= 3 ? '平稳' : '有待提升'}。建议将学业压力疏导与心理疏导结合，关注睡眠与人际适应，避免学业波动加剧心理风险。`
 })
 
 /* ---------- 心理测评指标（保留） ---------- */
@@ -453,8 +474,10 @@ onMounted(load)
     <div v-else-if="error" class="placeholder error"><span>{{ error }}</span><button @click="load">重试</button></div>
 
     <div v-else-if="dashboard" class="psy-warning">
+      <StudentSectionNav :items="sectionNav" />
+
       <!-- 1. 心理状态总览 -->
-      <section class="warn-section sec-full overview">
+      <section id="sec-overview" class="warn-section sec-full overview">
         <h3 class="warn-section__title">心理状态总览</h3>
         <div class="overview__body">
           <div class="overview__gauge">
@@ -488,8 +511,11 @@ onMounted(load)
         </div>
       </section>
 
+      <!-- 状态总览下方：AI 学业分析 -->
+      <AiAnalysisCard title="AI 心理分析" :text="aiAnalysis" class="sec-full" />
+
       <!-- 心理测评指标 + 心理状态趋势分析（合并） -->
-      <section class="warn-section">
+      <section id="sec-indicators" class="warn-section">
         <h3 class="warn-section__title">心理测评指标与状态趋势</h3>
         <h4 class="combine__sub">心理测评指标</h4>
         <div class="indicator-grid">
@@ -525,7 +551,7 @@ onMounted(load)
       </section>
 
       <!-- 2. 心理风险维度分析 -->
-      <section class="warn-section">
+      <section id="sec-radar" class="warn-section">
         <h3 class="warn-section__title">心理风险维度分析</h3>
         <div class="radar-wrap">
           <ChartContainer :option="psyRadarOption" />
@@ -550,7 +576,7 @@ onMounted(load)
       </section>
 
       <!-- 4. 心理风险因素分析（模拟数据兜底） -->
-      <section class="warn-section">
+      <section id="sec-factors" class="warn-section">
         <h3 class="warn-section__title">心理风险因素分析</h3>
         <div class="risk-sub">当前可能影响因素（气泡越大风险越高）</div>
         <div class="risk-bubble">
@@ -571,7 +597,7 @@ onMounted(load)
       </section>
 
       <!-- 5. 心理干预跟踪 -->
-      <section class="warn-section">
+      <section id="sec-intervention" class="warn-section">
         <h3 class="warn-section__title">心理干预跟踪</h3>
         <div class="closure">
           <div
@@ -593,7 +619,7 @@ onMounted(load)
       </section>
 
       <!-- 心理预警台账（保留） -->
-      <section class="warn-section">
+      <section id="sec-ledger" class="warn-section">
         <h3 class="warn-section__title">心理预警台账</h3>
         <div class="warn-table-wrap">
           <table class="warn-table">
@@ -611,7 +637,7 @@ onMounted(load)
       </section>
 
       <!-- 干预建议（保留） -->
-      <section class="warn-section">
+      <section id="sec-advice" class="warn-section">
         <h3 class="warn-section__title">干预建议</h3>
         <ul class="suggestion-list">
           <li v-for="(s, idx) in suggestions" :key="idx">{{ s }}</li>
@@ -840,10 +866,10 @@ onMounted(load)
 }
 
 .factor-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .factor-item {
@@ -853,11 +879,7 @@ onMounted(load)
   padding: 7px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  border-left: 3px solid #65dfff;
-
-  &--low { border-color: #55e995; }
-  &--medium { border-color: #facc15; }
-  &--high { border-color: #ff7474; }
+  border: 1px solid rgba(0, 184, 255, 0.12);
 
   &__head {
     display: flex;
@@ -1105,6 +1127,13 @@ onMounted(load)
   color: #d0e8f8;
   font-size: 14px;
   line-height: 1.9;
+
+  li {
+    padding: 8px 0;
+    border-bottom: 1px dashed rgba(0, 184, 255, 0.18);
+
+    &:last-child { border-bottom: none; }
+  }
 
   li::marker { color: #00d4ff; }
 }

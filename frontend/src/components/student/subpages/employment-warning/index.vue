@@ -17,7 +17,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
+import StudentSectionNav from '../_shared/StudentSectionNav.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import AiAnalysisCard from '@/components/student/template/AiAnalysisCard.vue'
 import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, JobMatchVM, AttentionItemVM } from '@/types/student/view'
@@ -64,6 +66,17 @@ const LEVEL_TEXT: Record<Level, string> = { low: '正常', medium: '需关注', 
 const levelColor = (lv: string) => LEVEL_COLOR[(lv as Level)] || '#8fb7cd'
 const levelText = (lv: string) => LEVEL_TEXT[(lv as Level)] || '—'
 
+/** 页面分区导航（点击跳转到对应模块） */
+const sectionNav = [
+  { id: 'sec-overview', label: '就业状态总览' },
+  { id: 'sec-ability', label: '能力画像' },
+  { id: 'sec-progress', label: '进展与意向' },
+  { id: 'sec-risk', label: '风险原因' },
+  { id: 'sec-jobradar', label: '岗位适配' },
+  { id: 'sec-ledger', label: '就业预警台账' },
+  { id: 'sec-action', label: '求职计划' },
+]
+
 /* ---------- 就业预警台账（保留） ---------- */
 const employmentItems = computed(() => {
   if (!dashboard.value) return []
@@ -96,6 +109,16 @@ const employmentLevel = computed<Level>(() => {
 
 const employmentLevelText = computed(() =>
   employmentLevel.value === 'high' ? '高危' : employmentLevel.value === 'medium' ? '需关注' : '正常')
+
+/* 状态总览下方的 AI 学业分析结论（从学业基础关联就业竞争力） */
+const aiAnalysis = computed(() => {
+  const d = dashboard.value
+  if (!d) return ''
+  const gpa = d.academic.gpa
+  const intern = d.internship?.internshipCount ?? 0
+  const proj = d.internship?.projectCount ?? 0
+  return `该生就业风险等级为「${employmentLevelText.value}」，就业准备度 ${jobReadiness.value}。当前 GPA ${gpa.toFixed(2)}，实习 ${intern} 段、项目 ${proj} 项；学业基础${gpa >= 3 ? '扎实' : '需夯实'}。建议同步提升专业成绩与企业实践，增强岗位竞争力。`
+})
 
 /* ---------- 1. 就业状态总览 ---------- */
 const jobReadiness = computed(() => {
@@ -348,8 +371,10 @@ onMounted(load)
     <div v-else-if="error" class="placeholder error"><span>{{ error }}</span><button @click="load">重试</button></div>
 
     <div v-else-if="dashboard" class="employment-warning">
+      <StudentSectionNav :items="sectionNav" />
+
       <!-- 1. 就业状态总览 -->
-      <section class="warn-section sec-full overview">
+      <section id="sec-overview" class="warn-section sec-full overview">
         <h3 class="warn-section__title">就业状态总览</h3>
         <div class="overview__body">
           <div class="overview__gauge">
@@ -383,8 +408,11 @@ onMounted(load)
         </div>
       </section>
 
+      <!-- 状态总览下方：AI 学业分析 -->
+      <AiAnalysisCard title="AI 就业分析" :text="aiAnalysis" class="sec-full" />
+
       <!-- 3. 就业能力画像 + 求职进展/意向（并排） -->
-      <section class="warn-section">
+      <section id="sec-ability" class="warn-section">
         <h3 class="warn-section__title">就业能力画像</h3>
         <div class="radar-wrap">
           <ChartContainer :option="abilityRadarOption" />
@@ -405,7 +433,7 @@ onMounted(load)
         </div>
       </section>
 
-      <section class="warn-section">
+      <section id="sec-progress" class="warn-section">
         <h3 class="warn-section__title">求职进展与就业意向</h3>
         <h4 class="combine__sub">求职进展跟踪</h4>
         <div class="progress-flow">
@@ -428,7 +456,7 @@ onMounted(load)
       </section>
 
       <!-- 4. 就业风险原因分析（风险分析放上面） -->
-      <section class="warn-section">
+      <section id="sec-risk" class="warn-section sec-full">
         <h3 class="warn-section__title">就业风险原因分析</h3>
         <div class="risk-sub">风险矩阵（横轴=发生可能性，纵轴=影响程度，越靠右上风险越高）</div>
         <div class="matrix-wrap">
@@ -449,7 +477,7 @@ onMounted(load)
       </section>
 
       <!-- 岗位适配雷达图 + 推荐目标岗位 / 优势 / 缺失能力 -->
-      <section class="warn-section sec-full">
+      <section id="sec-jobradar" class="warn-section sec-full">
         <h3 class="warn-section__title">岗位适配雷达图 <i class="mock-tag">模拟数据</i></h3>
         <div class="job-radar-layout">
           <!-- 左侧：岗位适配雷达图 -->
@@ -497,7 +525,6 @@ onMounted(load)
               <label class="job-section-label job-section-label--warn">缺失能力</label>
               <div class="job-weakness-list">
                 <div v-for="(w, idx) in weaknesses" :key="idx" class="job-weakness-chip" :class="`job-weakness-chip--${w.level}`">
-                  <span class="job-weakness-chip__dot" :style="{ background: levelColor(w.level) }" />
                   <span class="job-weakness-chip__label">{{ w.label }}</span>
                   <span class="job-weakness-chip__level" :style="{ color: levelColor(w.level) }">{{ { low: '良好', medium: '需关注', high: '短板' }[w.level] }}</span>
                 </div>
@@ -520,7 +547,7 @@ onMounted(load)
       </section>
 
       <!-- 就业预警台账 -->
-      <section class="warn-section">
+      <section id="sec-ledger" class="warn-section">
         <h3 class="warn-section__title">就业预警台账</h3>
         <div class="warn-table-wrap">
           <table class="warn-table">
@@ -538,7 +565,7 @@ onMounted(load)
       </section>
 
       <!-- 求职行动计划（保留） -->
-      <section class="warn-section">
+      <section id="sec-action" class="warn-section">
         <h3 class="warn-section__title">求职行动计划</h3>
         <div class="action-list">
           <div v-for="(a, idx) in actionPlan" :key="idx" class="action-item">
@@ -725,10 +752,10 @@ onMounted(load)
 }
 
 .factor-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .factor-item {
@@ -1316,8 +1343,7 @@ onMounted(load)
   font-size: 17px;
 
   &--good {
-    border-left: 3px solid #55e995;
-    background: rgba(52, 211, 153, 0.06);
+    background: rgba(0, 38, 73, 0.35);
   }
 
   &__name {
@@ -1353,16 +1379,9 @@ onMounted(load)
   background: rgba(0, 38, 73, 0.35);
   font-size: 17px;
 
-  &--high { border-left: 3px solid #ff7474; }
-  &--medium { border-left: 3px solid #facc15; }
-  &--low { border-left: 3px solid #55e995; }
-
-  &__dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
+  &--high { background: rgba(0, 38, 73, 0.35); }
+  &--medium { background: rgba(0, 38, 73, 0.35); }
+  &--low { background: rgba(0, 38, 73, 0.35); }
 
   &__label {
     color: #d0e8f8;
