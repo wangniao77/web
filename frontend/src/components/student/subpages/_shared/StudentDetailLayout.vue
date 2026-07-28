@@ -108,13 +108,17 @@ async function exportPageExcel() {
 .student-detail {
   position: relative;
   isolation: isolate;
+  width: 100%;
   height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 0 4px 10px;
+  min-width: 0;
+  padding: 8px 12px 12px;
   overflow: hidden;
   color: #eaf3ff;
+  box-sizing: border-box;
 
   &::before {
     position: absolute;

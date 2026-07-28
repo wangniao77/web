@@ -32,7 +32,7 @@ const entries: PortalEntry[] = [
     mode: 'student',
     title: '学生个人大屏',
     desc: '个人学业成长与发展驾驶舱',
-    route: ROUTES.student,
+    route: ROUTES.student.root,
   },
 ]
 

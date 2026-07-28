@@ -30,7 +30,10 @@ defineEmits<{ retry: [] }>()
         <StuHint v-if="tip" :tip="tip">{{ title }}</StuHint>
         <template v-else>{{ title }}</template>
       </h3>
-      <span v-if="extra" class="ref-panel__extra">{{ extra }}</span>
+      <div class="ref-panel__actions">
+        <slot name="header-extra" />
+        <span v-if="extra" class="ref-panel__extra">{{ extra }}</span>
+      </div>
     </header>
     <div v-if="loading" class="ref-panel__body ref-panel__placeholder">加载中…</div>
     <div v-else-if="error" class="ref-panel__body ref-panel__placeholder">
@@ -97,6 +100,14 @@ defineEmits<{ retry: [] }>()
   box-shadow:
     inset 0 1px 0 rgba(180, 230, 255, 0.12),
     0 0 12px rgba(0, 160, 220, 0.16);
+}
+
+.ref-panel__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .ref-panel__extra {

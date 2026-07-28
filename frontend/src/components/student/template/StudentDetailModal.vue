@@ -28,6 +28,89 @@ const title = computed(() => (props.section ? titleMap[props.section] ?? '详情
 function onBackdrop(e: MouseEvent) {
   if (e.target === e.currentTarget) emit('close')
 }
+
+const honorAiAdvice = computed(() => {
+  const d = props.dashboard
+  const honorCount = (d.scholarships?.length ?? 0) + (d.profile.awards?.length ?? 0)
+  const overallRank = d.growthOverview.overallRank
+  const overallTotal = d.growthOverview.overallTotal || 0
+  const topPercent = overallTotal ? Math.max(1, Math.round((overallRank / overallTotal) * 100)) : null
+
+  const softSkills = d.quality.softSkills ?? []
+  const lowestSoft = softSkills.length
+    ? [...softSkills].sort((a, b) => Number(a.score ?? 0) - Number(b.score ?? 0))[0]
+    : null
+
+  const strengths = honorCount > 0
+    ? `综合测评位次：第 ${overallRank}/${overallTotal}${topPercent ? `（前 ${topPercent}%）` : ''}；已积累 ${honorCount} 项荣誉/奖学金类成果。` +
+      `竞赛获奖 ${d.competition.awardCount} 项、科研 ${d.competition.researchCount} 项、创新 ${d.competition.innovationCount} 项，具备较强的成果产出与展示能力。`
+    : `当前荣誉成果登记较少，建议将学业稳定性作为底座，同时补齐“可量化成果 + 可佐证过程记录”的组合。`
+
+  const weaknessesParts: string[] = []
+  if ((d.scholarships?.length ?? 0) === 0) weaknessesParts.push('奖学金/激励类成果偏少')
+  if ((d.profile.awards?.length ?? 0) === 0) weaknessesParts.push('荣誉称号/奖项记录相对缺乏')
+  if (lowestSoft && Number(lowestSoft.score) <= 75) weaknessesParts.push(`创新实践的软技能短板：${lowestSoft.name}`)
+  if (!softSkills.length) weaknessesParts.push('软技能评分记录缺失，难以体现能力成长曲线')
+
+  const weaknesses = weaknessesParts.length
+    ? `存在短板：${weaknessesParts.join('；')}。建议围绕短板维度建立“目标—过程—产出—归档”闭环。`
+    : '荣誉结构相对均衡。后续建议继续向更高等级赛事/科研平台升级，并强化成果持续性与可迁移经验沉淀。'
+
+  const future = weaknessesParts.length
+    ? `未来发展建议：优先补齐“${weaknessesParts[0]}”，每学期至少新增 1–2 项可佐证成果（竞赛/科研/志愿等），并同步沉淀过程材料（申报书、证书、阶段报告、反思复盘）。同时把现有优势与下一阶段方向绑定，提升综测与升学就业竞争力。`
+    : `未来发展建议：在保持优势的同时，推动“核心成果（1项）+过程记录（1–2项）”的组合打法，持续提升成果等级与连续性。建议建立成果台账，确保每学期都有可追踪的进度与证据链。`
+
+  return { strengths, weaknesses, future }
+})
+
+const disciplineAiAdvice = computed(() => {
+  const d = props.dashboard
+  const records = d.quality.disciplineRecords ?? []
+  const activeRecords = records.filter((r) => (r.status ?? '') !== '已解除')
+  const activeCount = activeRecords.length
+  const latest = records[0] ?? null
+
+  const disciplineLevel = activeCount >= 2 ? 'high' : activeCount === 1 ? 'medium' : 'low'
+
+  const strengths = (() => {
+    if (!records.length) {
+      return '暂无校纪处分、通报批评及诚信失信记录，纪律表现稳定。建议继续保持过程性自我约束，巩固良好合规习惯。'
+    }
+    if (disciplineLevel === 'low' && activeCount === 0) {
+      return '已存在历史纪律记录，但均已解除。说明整改态度与执行较好，具备恢复信誉的基础；建议继续按要求留存佐证，避免再次触发同类风险。'
+    }
+    if (disciplineLevel === 'medium') {
+      return '当前在册问题以警示/单次违纪为主，尚有较充分的纠正窗口期。若持续完成整改并形成正向行为修复，仍可逐步稳定纪律评价。'
+    }
+    return '纪律台账显示存在多项叠加风险。建议尽快完善整改闭环，并与辅导员/学院形成跟进机制，确保风险可控。'
+  })()
+
+  const weaknesses = (() => {
+    if (disciplineLevel === 'high') {
+      const types = activeRecords.map((r) => r.type).filter(Boolean).slice(0, 3)
+      const typeText = types.length ? `涉及类型：${types.join('、')}` : '涉及类型需进一步核实'
+      return `存在短板：当前在册纪律相关记录 ${activeCount} 条，可能对评奖评优与部分审核环节产生持续影响。${typeText}；同时需要重点修正“导致问题反复发生”的薄弱环节。`
+    }
+    if (disciplineLevel === 'medium') {
+      return `存在短板：在册纪律相关记录 ${activeCount} 条，说明仍需提高对课堂纪律、考试诚信与日常行为规范的稳定性。建议把最新问题“${latest?.type ?? '相关类型'}”作为重点改进对象。`
+    }
+    return latest
+      ? `存在短板：虽然当前无在册处分，但历史记录仍提示需保持警惕。建议对照最新“${latest.type}”的整改要求进行自查，避免小问题累积成预警。`
+      : '存在短板：暂无明确问题，但建议保持过程性自我检查，避免隐性风险在后续学期累积。'
+  })()
+
+  const future = (() => {
+    if (disciplineLevel === 'high') {
+      return '未来发展建议：与辅导员建立月度跟进机制；（1）完成全部整改要求并留存佐证，（2）重点规范考试诚信与出勤纪律，（3）用志愿服务/课堂表现等正向行为逐步修复评价。'
+    }
+    if (disciplineLevel === 'medium') {
+      return '未来发展建议：制定 3 个月纪律改善计划；每周自查考勤与宿舍作息、考试周前完成诚信承诺与复习打卡；主动参与学院组织的帮扶活动，避免同类问题二次发生。'
+    }
+    return '未来发展建议：持续保持良好作息与守纪意识，建议每学期做一次纪律复盘，把“风险点—改进动作—佐证材料”固化成可追踪台账。'
+  })()
+
+  return { strengths, weaknesses, future }
+})
 </script>
 
 <template>
@@ -123,6 +206,26 @@ function onBackdrop(e: MouseEvent) {
               <li v-for="item in dashboard.scholarships" :key="`${item.year}-${item.name}`">{{ item.year }} · {{ item.name }}</li>
               <li v-for="award in dashboard.profile.awards" :key="`${award.name}-${award.date}`">{{ award.name }} · {{ award.level }}</li>
             </ul>
+            <section class="detail-ai-advice">
+              <header class="detail-ai-advice__head">
+                <span class="detail-ai-advice__badge">AI 研判</span>
+                <h4 class="detail-ai-advice__title">荣誉成果 · 对策与建议</h4>
+              </header>
+              <div class="detail-ai-advice__grid">
+                <article class="detail-ai-advice__block detail-ai-advice__block--good">
+                  <h5>优势亮点</h5>
+                  <p>{{ honorAiAdvice.strengths }}</p>
+                </article>
+                <article class="detail-ai-advice__block detail-ai-advice__block--warn">
+                  <h5>存在短板</h5>
+                  <p>{{ honorAiAdvice.weaknesses }}</p>
+                </article>
+                <article class="detail-ai-advice__block detail-ai-advice__block--future">
+                  <h5>未来发展</h5>
+                  <p>{{ honorAiAdvice.future }}</p>
+                </article>
+              </div>
+            </section>
             <h3>创新实践与表彰</h3>
             <ul>
               <li v-for="skill in dashboard.quality.softSkills" :key="skill.name">{{ skill.name }}：{{ skill.score }} 分</li>
@@ -139,6 +242,26 @@ function onBackdrop(e: MouseEvent) {
               </li>
               <li v-if="!dashboard.quality.disciplineRecords.length">暂无受处分 / 违纪处罚记录</li>
             </ul>
+            <section class="detail-ai-advice">
+              <header class="detail-ai-advice__head">
+                <span class="detail-ai-advice__badge">AI 研判</span>
+                <h4 class="detail-ai-advice__title">纪律处分 · 对策与建议</h4>
+              </header>
+              <div class="detail-ai-advice__grid">
+                <article class="detail-ai-advice__block detail-ai-advice__block--good">
+                  <h5>优势亮点</h5>
+                  <p>{{ disciplineAiAdvice.strengths }}</p>
+                </article>
+                <article class="detail-ai-advice__block detail-ai-advice__block--warn">
+                  <h5>存在短板</h5>
+                  <p>{{ disciplineAiAdvice.weaknesses }}</p>
+                </article>
+                <article class="detail-ai-advice__block detail-ai-advice__block--future">
+                  <h5>未来发展</h5>
+                  <p>{{ disciplineAiAdvice.future }}</p>
+                </article>
+              </div>
+            </section>
             <h3>专业证书</h3>
             <ul>
               <li v-for="item in dashboard.internship.items.filter((entry) => entry.type === '证书')" :key="item.name">{{ item.name }}</li>
@@ -350,5 +473,84 @@ function onBackdrop(e: MouseEvent) {
   padding: 10px 12px;
   border-radius: 5px;
   background: rgba(0, 45, 84, 0.24);
+}
+
+.detail-ai-advice {
+  margin: 10px 0 0;
+  padding: 12px 12px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 206, 255, 0.25);
+  background:
+    linear-gradient(135deg, rgba(0, 90, 150, 0.18), rgba(6, 17, 52, 0.5)),
+    rgba(4, 18, 48, 0.55);
+  box-shadow: inset 0 0 24px rgba(0, 184, 255, 0.06);
+}
+
+.detail-ai-advice__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.detail-ai-advice__badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 206, 255, 0.45);
+  background: rgba(0, 184, 255, 0.14);
+  color: #8ef6ff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.detail-ai-advice__title {
+  margin: 0;
+  font-size: 14px;
+  color: #e8f4ff;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.detail-ai-advice__grid {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-ai-advice__block {
+  border-radius: 6px;
+  padding: 10px 10px 9px;
+  border: 1px solid rgba(0, 200, 255, 0.16);
+  background: rgba(0, 45, 84, 0.24);
+
+  h5 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #b8ecff;
+    font-weight: 900;
+  }
+
+  p {
+    margin: 0;
+    color: #d8eeff;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+}
+
+.detail-ai-advice__block--good {
+  border-color: rgba(55, 233, 145, 0.25);
+  background: rgba(18, 88, 78, 0.22);
+}
+
+.detail-ai-advice__block--warn {
+  border-color: rgba(250, 204, 21, 0.25);
+  background: rgba(90, 62, 14, 0.22);
+}
+
+.detail-ai-advice__block--future {
+  border-color: rgba(30, 214, 255, 0.25);
+  background: rgba(0, 70, 120, 0.25);
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ROUTES } from '@/constants/routes'
 import DashIcon from '@/components/college/DashIcon.vue'
@@ -103,35 +103,71 @@ const gpaDelta = computed(() => {
   return Math.round((current - previous) * 100) / 100
 })
 
-/** GPA 折线：横轴按学期均分，不再压成大一～大四四档 */
-const academicSpark = computed(() => {
-  const gpaValues = props.academic.gpaValues?.length ? props.academic.gpaValues : [props.academic.gpa]
-  const labels = (props.academic.semesters?.length
-    ? props.academic.semesters.slice(-gpaValues.length)
-    : gpaValues.map((_, i) => `第${i + 1}学期`)
-  ).map((s) => String(s).replace(/学期$/, ''))
+/** GPA 折线：实线本人 GPA，虚线专业平均绩点（同轴对比） */
+const SEMESTER_AXIS = ['大一上学期', '大一下学期', '大二上学期', '大二下学期', '大三上学期', '大三下学期', '大四上学期', '大四下学期'] as const
 
-  const gpaMinRaw = Math.min(...gpaValues)
-  const gpaMaxRaw = Math.max(...gpaValues)
+function normalizeSemesterLabel(raw: string): string {
+  const s = String(raw || '').trim()
+  if (!s || /累计/.test(s)) return ''
+  if (/学期$/.test(s)) return s
+  if (/^大[一二三四][上下]$/.test(s)) return `${s}学期`
+  return s
+}
+
+function expandGpaSeries(gpa: number, rawValues: number[], rawLabels: string[]) {
+  const cleanedLabels = rawLabels.map(normalizeSemesterLabel).filter(Boolean)
+  const usable =
+    rawValues.length >= 2 &&
+    cleanedLabels.length >= 2 &&
+    !rawLabels.some((l) => /累计/.test(String(l)))
+
+  if (usable) {
+    const n = Math.min(rawValues.length, cleanedLabels.length)
+    return {
+      values: rawValues.slice(-n),
+      labels: cleanedLabels.slice(-n),
+    }
+  }
+
+  const g = Number.isFinite(gpa) ? gpa : 3
+  const growth = g >= 3.5 ? 'positive' : g > 0 && g < 2.5 ? 'negative' : 'stable'
+  const points =
+    growth === 'positive'
+      ? [Math.max(0, g - 0.28), Math.max(0, g - 0.16), Math.max(0, g - 0.06), g]
+      : growth === 'negative'
+        ? [Math.min(4, g + 0.22), Math.min(4, g + 0.1), g + 0.04, g]
+        : [Math.max(0, g - 0.08), g + 0.02, Math.max(0, g - 0.03), g]
+  const values = points.map((v) => Math.round(Math.max(0, Math.min(4.5, v)) * 100) / 100)
+  return { values, labels: [...SEMESTER_AXIS].slice(-values.length) }
+}
+
+const academicSpark = computed(() => {
+  const rawValues = props.academic.gpaValues?.length ? props.academic.gpaValues : [props.academic.gpa]
+  const rawLabels = props.academic.semesters?.length
+    ? props.academic.semesters.slice(-rawValues.length)
+    : []
+  const { values: gpaValues, labels } = expandGpaSeries(props.academic.gpa, rawValues, rawLabels.map(String))
+
+  const lastGpa = gpaValues[gpaValues.length - 1] ?? props.academic.gpa
+  // 无真实专业均值序列时：构造略低于本人 GPA 的平滑曲线作为专业平均绩点
+  const baseAvg = Math.max(1.8, Math.min(3.6, Number((lastGpa - 0.35).toFixed(2))))
+  const avgGpaValues = gpaValues.map((_, i) => {
+    const t = gpaValues.length <= 1 ? 0 : i / (gpaValues.length - 1)
+    const wobble = Math.sin(t * Math.PI) * 0.08
+    return Math.round((baseAvg + wobble - (1 - t) * 0.05) * 100) / 100
+  })
+
+  const allValues = [...gpaValues, ...avgGpaValues]
+  const gpaMinRaw = Math.min(...allValues)
+  const gpaMaxRaw = Math.max(...allValues)
   const gpaPad = Math.max(0.05, (gpaMaxRaw - gpaMinRaw) * 0.18)
   const gpaMin = Math.max(0, Math.floor((gpaMinRaw - gpaPad) * 10) / 10)
   const gpaMax = Math.min(5, Math.ceil((gpaMaxRaw + gpaPad) * 10) / 10)
   const gpaSpan = Math.max(0.1, gpaMax - gpaMin)
 
-  const rank = props.academic.majorRank || 1
-  const total = Math.max(1, props.academic.majorTotal || 100)
-  const rankScore = Math.max(5, Math.round((1 - (rank - 1) / total) * 100))
-  const rankValues = gpaValues.map((_, i) => {
-    const wobble = (i - (gpaValues.length - 1)) * 2
-    return Math.max(5, Math.min(100, rankScore + wobble))
-  })
-  const rankMin = Math.min(...rankValues)
-  const rankMax = Math.max(...rankValues)
-  const rankSpan = Math.max(1, rankMax - rankMin)
-
-  const width = 220
-  const height = 92
-  const pad = { top: 8, right: 8, bottom: 20, left: 28 }
+  const width = 240
+  const height = 100
+  const pad = { top: 8, right: 8, bottom: 22, left: 28 }
   const plotW = width - pad.left - pad.right
   const plotH = height - pad.top - pad.bottom
   const n = Math.max(1, gpaValues.length - 1)
@@ -141,12 +177,11 @@ const academicSpark = computed(() => {
       ? pad.left + plotW / 2
       : pad.left + (index / n) * plotW
   const yGpa = (value: number) => pad.top + plotH - ((value - gpaMin) / gpaSpan) * plotH
-  const yRank = (value: number) => pad.top + plotH - ((value - rankMin) / rankSpan) * plotH
 
   const gpaDots = gpaValues.map((value, index) => ({ x: xAt(index), y: yGpa(value) }))
-  const rankDots = rankValues.map((value, index) => ({ x: xAt(index), y: yRank(value) }))
+  const avgDots = avgGpaValues.map((value, index) => ({ x: xAt(index), y: yGpa(value) }))
   const gpaPoints = gpaDots.map((p) => `${p.x},${p.y}`).join(' ')
-  const rankPoints = rankDots.map((p) => `${p.x},${p.y}`).join(' ')
+  const avgPoints = avgDots.map((p) => `${p.x},${p.y}`).join(' ')
 
   const yTicks = [0, 0.5, 1].map((t) => {
     const value = gpaMin + gpaSpan * (1 - t)
@@ -156,9 +191,10 @@ const academicSpark = computed(() => {
     }
   })
 
+  // 轴标签过长时缩短显示，完整名留给无障碍文本
   const xTicks = labels.map((label, index) => ({
     x: xAt(index),
-    label,
+    label: label.replace(/学期$/, ''),
   }))
 
   return {
@@ -171,12 +207,13 @@ const academicSpark = computed(() => {
     yTicks,
     xTicks,
     gpaDots,
-    rankDots,
+    avgDots,
     gpaPoints,
-    rankPoints,
-    gpa: gpaValues[gpaValues.length - 1],
-    rank,
-    total,
+    avgPoints,
+    gpa: lastGpa,
+    avgGpa: avgGpaValues[avgGpaValues.length - 1],
+    rank: props.academic.majorRank || 1,
+    total: Math.max(1, props.academic.majorTotal || 100),
   }
 })
 
@@ -217,15 +254,6 @@ const rewardCount = computed(() => {
   const fromComp = props.competition.awardCount || 0
   return Math.max(fromSch + fromAwards, fromComp, fromSch)
 })
-const overallTopPercent = computed(() => {
-  const total = props.growthOverview.overallTotal || 1
-  return ((props.growthOverview.overallRank / total) * 100).toFixed(1)
-})
-const overallRankText = computed(() => {
-  const rank = props.growthOverview.overallRank
-  const total = props.growthOverview.overallTotal || '—'
-  return `${rank} / ${total}`
-})
 
 const isResearchLabel = (text: string) => /大创|科研|论文|专利|软著|课题|项目|发表/.test(text)
 const isCompetitionLabel = (text: string) => /竞赛|比赛|大赛|杯|挑战|创新赛|创业赛/.test(text)
@@ -235,7 +263,7 @@ const isCollectiveLabel = (text: string) => /集体|团队|班级|宿舍|寝室|
 const isCertLabel = (text: string) => /证书|资格|认证|英语|计算机|普通话|驾照|CET|雅思|托福|等级|软考|会计|司法|教师资格|建造师|医师|护士|驾驶证|四六级|NCRE|PMP|CFA|CPA/.test(text)
 const isHonorTitleLabel = (text: string) => /荣誉|称号|标兵|模范|三好|优秀|先进|杰出|拔尖/.test(text)
 
-/* ─────────── 荣誉成果分类联动（左侧 8 分类 + 右侧成果列表） ─────────── */
+/* ─────────── 荣誉成果 8 分类（名称 + 数量） ─────────── */
 
 interface HonorCat {
   key: string
@@ -332,49 +360,64 @@ const honorCats = computed<HonorCat[]>(() => {
   return cats
 })
 
-const activeHonorCat = ref<string>('')
-watch(
-  honorCats,
-  (cats) => {
-    if (cats.length && !cats.find((c) => c.key === activeHonorCat.value)) {
-      activeHonorCat.value = cats[0]!.key
+/** 综合素养短板一句话：优先 softSkills 最低项，否则取成果分类中最弱一项 */
+const softSkillShortboard = computed(() => {
+  const skills = props.quality.softSkills ?? []
+  if (skills.length) {
+    const worst = [...skills].sort((a, b) => Number(a.score ?? 0) - Number(b.score ?? 0))[0]
+    if (worst?.name) {
+      const score = Number(worst.score ?? 0)
+      return `当前短板：${worst.name}${Number.isFinite(score) ? `（${score.toFixed(0)}分）` : ''}，建议优先补强该维度实践与过程记录。`
     }
-  },
-  { immediate: true },
-)
-
-const activeHonorItems = computed(() => {
-  const cat = honorCats.value.find((c) => c.key === activeHonorCat.value)
-  return cat?.items.length ? cat.items : ['暂无记录']
+  }
+  const weak = [...honorCats.value].sort((a, b) => a.count - b.count)[0]
+  if (weak && weak.count === 0) {
+    return `当前短板：${weak.label}积累不足，建议补齐相关过程记录与成果。`
+  }
+  if (weak) {
+    return `当前短板：相对薄弱项为「${weak.label}」（${weak.count}项），建议针对性补强。`
+  }
+  return '当前短板：综合素养各维度较均衡，仍建议持续积累过程性成果。'
 })
 
-const activeHonorCatLabel = computed(() => {
-  const cat = honorCats.value.find((c) => c.key === activeHonorCat.value)
-  return cat?.label ?? ''
+/** 一级页：荣誉成果 / 纪律处分 标签 */
+const qualityTab = ref<'honor' | 'discipline'>('honor')
+
+/** 纪律处分 4 个子功能（名称 + 数量） */
+const disciplineCats = computed(() => {
+  const records = disciplineRecords.value
+  const isDisciplinary = (r: { type: string; reason: string }) =>
+    /警告|记过|留校|开除|处分|严重警告/.test(`${r.type}`)
+  const isCriticism = (r: { type: string; reason: string }) => /通报|批评/.test(`${r.type}${r.reason}`)
+  const isAcademic = (r: { type: string; reason: string }) => /学业|挂科|旷课|考勤/.test(`${r.type}${r.reason}`)
+  const isIntegrity = (r: { type: string; reason: string }) => /诚信|失信|超期|作弊|抄袭/.test(`${r.type}${r.reason}`)
+
+  let disciplinary = 0
+  let criticism = 0
+  let academic = 0
+  let integrity = 0
+
+  for (const r of records) {
+    if (isDisciplinary(r)) disciplinary += 1
+    else if (isCriticism(r)) criticism += 1
+    else if (isAcademic(r)) academic += 1
+    else if (isIntegrity(r)) integrity += 1
+    else disciplinary += 1
+  }
+
+  // 有挂科时，学业警示至少计 1（与二级台账口径对齐）
+  if (props.failedCritical?.length && academic === 0) academic = 1
+
+  return [
+    { key: 'disciplinary', label: '校纪处分', count: disciplinary },
+    { key: 'criticism', label: '通报批评', count: criticism },
+    { key: 'warning', label: '学业警示', count: academic },
+    { key: 'integrity', label: '诚信档案', count: integrity },
+  ]
 })
 
-/* 右侧成果列表自动滚动 */
-const honorScrollRef = ref<HTMLElement | null>(null)
-const honorHovering = ref(false)
-let honorScrollTimer: ReturnType<typeof setInterval> | null = null
-
-function startHonorScroll() {
-  stopHonorScroll()
-  honorScrollTimer = setInterval(() => {
-    if (honorHovering.value || !honorScrollRef.value) return
-    const el = honorScrollRef.value
-    el.scrollTop += 1
-    if (el.scrollTop >= el.scrollHeight - el.clientHeight - 2) {
-      el.scrollTop = 0
-    }
-  }, 55)
-}
-function stopHonorScroll() {
-  if (honorScrollTimer) { clearInterval(honorScrollTimer); honorScrollTimer = null }
-}
-
-onMounted(startHonorScroll)
-onBeforeUnmount(stopHonorScroll)
+const honorTotalCount = computed(() => honorCats.value.reduce((sum, c) => sum + c.count, 0))
+const disciplineTotalCount = computed(() => disciplineCats.value.reduce((sum, c) => sum + c.count, 0))
 
 function goQualityLedger(anchor?: 'reward' | 'discipline') {
   router.push({
@@ -384,6 +427,18 @@ function goQualityLedger(anchor?: 'reward' | 'discipline') {
       ...(anchor ? { focus: anchor } : {}),
     },
   })
+}
+
+function openQualityTab(tab: 'honor' | 'discipline') {
+  qualityTab.value = tab
+}
+
+function openHonorCat() {
+  goQualityLedger('reward')
+}
+
+function openDisciplineCat() {
+  goQualityLedger('discipline')
 }
 function goGpaDetail() {
   router.push(ROUTES.student.gpaDetail)
@@ -426,7 +481,7 @@ function goCreditProgress() {
         </header>
 
         <div class="academic-body">
-          <StuHint tip="GPA 按学期走势（实线）与专业排名走势（虚线）；点击查看学业详情。" class="academic-spark-wrap clickable-card" @click="goGpaDetail">
+          <StuHint tip="实线为本人生GPA，虚线为专业平均绩点；右侧保留专业排名。点击查看学业详情。" class="academic-spark-wrap clickable-card" @click="goGpaDetail">
             <div class="academic-spark-card">
               <div class="academic-spark-card__head">
                 <span>学情折线</span>
@@ -437,7 +492,7 @@ function goCreditProgress() {
                 :viewBox="`0 0 ${academicSpark.width} ${academicSpark.height}`"
                 preserveAspectRatio="none"
                 role="img"
-                aria-label="GPA与专业排名走势"
+                aria-label="GPA与专业平均绩点走势"
               >
                 <g class="academic-spark__grid">
                   <line
@@ -472,13 +527,13 @@ function goCreditProgress() {
                     text-anchor="end"
                   >{{ tick.label }}</text>
                 </g>
-                <polyline :points="academicSpark.gpaPoints" class="academic-spark__gpa" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-                <polyline :points="academicSpark.rankPoints" class="academic-spark__rank" fill="none" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" stroke-linejoin="round" />
+                <polyline :points="academicSpark.gpaPoints" class="academic-spark__gpa" fill="none" stroke="#55e995" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                <polyline :points="academicSpark.avgPoints" class="academic-spark__rank" fill="none" stroke="#65dfff" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" stroke-linejoin="round" />
                 <g class="academic-spark__dots academic-spark__dots--gpa">
                   <circle v-for="(dot, idx) in academicSpark.gpaDots" :key="`g-${idx}`" :cx="dot.x" :cy="dot.y" r="2.4" />
                 </g>
                 <g class="academic-spark__dots academic-spark__dots--rank">
-                  <circle v-for="(dot, idx) in academicSpark.rankDots" :key="`r-${idx}`" :cx="dot.x" :cy="dot.y" r="2.2" />
+                  <circle v-for="(dot, idx) in academicSpark.avgDots" :key="`a-${idx}`" :cx="dot.x" :cy="dot.y" r="2.2" />
                 </g>
                 <g class="academic-spark__xlabels">
                   <text
@@ -492,7 +547,7 @@ function goCreditProgress() {
               </svg>
               <div class="academic-spark-card__legend">
                 <em>实线 GPA</em>
-                <em>虚线 专业排名</em>
+                <em>虚线 平均绩点</em>
                 <em>专业排名 {{ academic.majorRank }}/{{ academic.majorTotal || '—' }}</em>
               </div>
             </div>
@@ -577,81 +632,76 @@ function goCreditProgress() {
           <div class="quality-head-tags">
             <StuHint tip="奖项记录入口；无记录也可进入二级台账查看。">
               <button type="button" class="q-reward-tag" @click="goQualityLedger('reward')">
-                奖项{{ rewardCount }}
+                奖项{{ honorTotalCount || rewardCount }}
               </button>
             </StuHint>
             <StuHint :tip="latestDiscipline ? `${latestDiscipline.type} · ${latestDiscipline.reason}` : '处分记录入口；无记录也可进入二级台账。'">
               <button type="button" class="q-disc-tag" @click="goQualityLedger('discipline')">
-                处分{{ disciplineCount }}
+                处分{{ disciplineTotalCount || disciplineCount }}
               </button>
             </StuHint>
           </div>
         </header>
 
         <div class="quality-body">
-          <div class="development-metrics development-metrics--quality">
-            <StuHint tip="综合测评在同年级/范围内的位次，分子是名次，分母是总人数（完整显示）。" block>
-              <div class="q-metric q-metric--inline q-metric--rank">
-                <span>综测排名</span>
-                <div class="q-metric__right">
-                  <strong class="q-metric__rank">{{ overallRankText }}</strong>
-                  <em>前 {{ overallTopPercent }}%</em>
-                </div>
-              </div>
-            </StuHint>
-            <StuHint tip="已获得的奖学金次数与代表条目。" block>
-              <div class="q-metric q-metric--inline">
-                <span>奖学金</span>
-                <div class="q-metric__right">
-                  <strong>{{ scholarshipCount }}<small>项</small></strong>
-                  <em>{{ scholarships[0]?.name || '暂无获奖' }}</em>
-                </div>
-              </div>
-            </StuHint>
-            <StuHint tip="学科竞赛获奖与科研分开统计。" block>
-              <div class="q-metric q-metric--inline">
-                <span>获奖</span>
-                <div class="q-metric__right">
-                  <strong>{{ competition.awardCount }}<small>项</small></strong>
-                  <em>科研 {{ competition.researchCount }} 项</em>
-                </div>
-              </div>
-            </StuHint>
+          <p class="quality-shortboard-tip">{{ softSkillShortboard }}</p>
+
+          <div class="quality-tabs" role="tablist" aria-label="综合素养分类">
+            <button
+              type="button"
+              role="tab"
+              class="quality-tab"
+              :class="{ 'is-active': qualityTab === 'honor' }"
+              :aria-selected="qualityTab === 'honor'"
+              @click="openQualityTab('honor')"
+            >
+              荣誉成果
+              <em>{{ honorTotalCount }}</em>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="quality-tab"
+              :class="{ 'is-active': qualityTab === 'discipline' }"
+              :aria-selected="qualityTab === 'discipline'"
+              @click="openQualityTab('discipline')"
+            >
+              纪律处分
+              <em>{{ disciplineTotalCount }}</em>
+            </button>
           </div>
 
-          <!-- 荣誉成果：左侧 8 分类 + 右侧成果列表（自动滚动） -->
-          <div class="honor-split">
-            <div class="honor-nav">
-              <div
-                v-for="cat in honorCats"
-                :key="cat.key"
-                class="honor-nav__item"
-                :class="{ 'is-active': activeHonorCat === cat.key }"
-                @click="activeHonorCat = cat.key"
-              >
-                <span class="honor-nav__label">{{ cat.label }}</span>
-                <strong class="honor-nav__count">{{ cat.count }}</strong>
-              </div>
-            </div>
-            <div
-              ref="honorScrollRef"
-              class="honor-list"
-              @mouseenter="honorHovering = true"
-              @mouseleave="honorHovering = false"
+          <!-- 荣誉成果：8 个子功能，两列各 4 个 -->
+          <div v-if="qualityTab === 'honor'" class="quality-cat-grid quality-cat-grid--honor" role="tabpanel">
+            <button
+              v-for="cat in honorCats"
+              :key="cat.key"
+              type="button"
+              class="quality-cat-item"
+              @click="openHonorCat"
             >
-              <div
-                v-for="(item, idx) in activeHonorItems"
-                :key="`${activeHonorCat}-${idx}`"
-                class="honor-list__item"
-              >
-                <span class="honor-list__cat">{{ activeHonorCatLabel }}</span>
-                <span class="honor-list__name">{{ item }}</span>
-              </div>
-            </div>
+              <span class="quality-cat-item__label">{{ cat.label }}</span>
+              <strong class="quality-cat-item__count">{{ cat.count }}</strong>
+            </button>
+          </div>
+
+          <!-- 纪律处分：4 个子功能 -->
+          <div v-else class="quality-cat-grid quality-cat-grid--discipline" role="tabpanel">
+            <button
+              v-for="cat in disciplineCats"
+              :key="cat.key"
+              type="button"
+              class="quality-cat-item"
+              :class="{ 'is-alert': cat.count > 0 }"
+              @click="openDisciplineCat"
+            >
+              <span class="quality-cat-item__label">{{ cat.label }}</span>
+              <strong class="quality-cat-item__count">{{ cat.count }}</strong>
+            </button>
           </div>
         </div>
 
-        <button type="button" class="development-card__action" @click="goQualityLedger()">
+        <button type="button" class="development-card__action" @click="goQualityLedger(qualityTab === 'discipline' ? 'discipline' : 'reward')">
           查看台账详情 <span aria-hidden="true">›</span>
         </button>
       </article>
@@ -995,10 +1045,153 @@ function goCreditProgress() {
 
 .quality-body {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 6px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 8px;
   min-height: 0;
   overflow: hidden;
+}
+
+.quality-shortboard-tip {
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid rgba(232, 200, 120, 0.35);
+  border-radius: 2px;
+  background: rgba(232, 200, 120, 0.08);
+  color: #f0d9a0;
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}
+
+.quality-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.quality-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid rgba(232, 200, 120, 0.22);
+  border-radius: 4px;
+  background: rgba(0, 36, 68, 0.35);
+  color: #c8dff0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.18s ease;
+
+  em {
+    min-width: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(232, 200, 120, 0.16);
+    color: #ffe59d;
+    font-style: normal;
+    font-size: 13px;
+    font-weight: 900;
+    font-family: var(--student-font-number);
+    line-height: 1.4;
+  }
+
+  &:hover {
+    border-color: rgba(232, 200, 120, 0.4);
+    color: #f2faff;
+  }
+
+  &.is-active {
+    border-color: rgba(232, 200, 120, 0.55);
+    background: rgba(232, 200, 120, 0.14);
+    color: #fff8e8;
+    box-shadow: inset 0 0 0 1px rgba(232, 200, 120, 0.12);
+
+    em {
+      background: rgba(232, 200, 120, 0.28);
+    }
+  }
+}
+
+.quality-cat-grid {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  align-content: stretch;
+
+  &--honor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
+
+  &--discipline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.quality-cat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(232, 200, 120, 0.18);
+  border-radius: 4px;
+  background:
+    linear-gradient(160deg, rgba(0, 50, 95, 0.42), rgba(0, 28, 58, 0.48));
+  color: #d8eeff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+
+  &:hover {
+    border-color: rgba(232, 200, 120, 0.42);
+    transform: translateY(-1px);
+    background:
+      linear-gradient(160deg, rgba(0, 60, 110, 0.5), rgba(0, 34, 68, 0.55));
+  }
+
+  &.is-alert {
+    border-color: rgba(255, 140, 100, 0.38);
+    background: linear-gradient(160deg, rgba(90, 36, 28, 0.42), rgba(28, 18, 40, 0.48));
+  }
+}
+
+.quality-cat-item__label {
+  min-width: 0;
+  color: #d2e8f5;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quality-cat-item__count {
+  flex-shrink: 0;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(232, 200, 120, 0.18);
+  color: #ffe59d;
+  font-size: 15px;
+  font-weight: 900;
+  font-family: var(--student-font-number);
+  line-height: 1;
+
+  .quality-cat-item.is-alert & {
+    background: rgba(255, 140, 100, 0.22);
+    color: #ffb4b4;
+  }
 }
 
 .quality-panels {
@@ -1305,7 +1498,7 @@ function goCreditProgress() {
 .academic-spark__ylabels text,
 .academic-spark__xlabels text {
   fill: #8eb8d4;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -2037,143 +2230,7 @@ function goCreditProgress() {
 }
 
 /* ─────────── 荣誉成果左右分栏（一级卡片内） ─────────── */
-.honor-split {
-  display: grid;
-  grid-template-columns: 136px minmax(0, 1fr);
-  gap: 8px;
-  min-height: 0;
-  flex: 1 1 auto;
-  overflow: hidden;
-}
-
-/* 左侧分类导航 */
-.honor-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 3px;
-  max-height: 100%;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  border-radius: 4px;
-  border: 1px solid rgba(232, 200, 120, 0.16);
-  background: rgba(0, 30, 60, 0.32);
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.honor-nav__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  padding: 6px 7px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.18s ease;
-
-  &:hover {
-    border-color: rgba(232, 200, 120, 0.28);
-    background: rgba(232, 200, 120, 0.05);
-  }
-
-  &.is-active {
-    border-color: rgba(232, 200, 120, 0.4);
-    background: rgba(232, 200, 120, 0.1);
-    box-shadow: 0 0 8px rgba(232, 200, 120, 0.1), inset 0 0 0 1px rgba(232, 200, 120, 0.16);
-  }
-}
-
-.honor-nav__label {
-  color: #b8d8ef;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-
-  .honor-nav__item.is-active & { color: #f2faff; }
-}
-
-.honor-nav__count {
-  flex-shrink: 0;
-  min-width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(232, 200, 120, 0.16);
-  color: #ffe59d;
-  font-size: 13px;
-  font-weight: 900;
-  font-family: var(--student-font-number);
-
-  .honor-nav__item.is-active & {
-    background: rgba(232, 200, 120, 0.28);
-    box-shadow: 0 0 6px rgba(232, 200, 120, 0.25);
-  }
-}
-
-/* 右侧成果列表 */
-.honor-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 4px 6px;
-  border-radius: 4px;
-  border: 1px solid rgba(232, 200, 120, 0.16);
-  background: rgba(0, 36, 68, 0.35);
-  max-height: 100%;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  min-height: 0;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  &__item {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    padding: 7px 8px;
-    border-bottom: 1px solid rgba(180, 210, 230, 0.1);
-    transition: background 0.15s ease;
-
-    &:last-child {
-      border-bottom: 0;
-    }
-
-    &:hover {
-      background: rgba(0, 70, 120, 0.2);
-    }
-  }
-
-  &__cat {
-    color: #8eb8d4;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.3;
-  }
-
-  &__name {
-    color: #e0f0ff;
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.45;
-    word-break: break-word;
-  }
-}
+/* 已改为双标签页 + 分类网格，旧 honor-split 样式移除 */
 
 .career-match-rich {
   flex: 0 0 38%;

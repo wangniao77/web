@@ -46,6 +46,17 @@ function goAiPortrait() {
   router.push({ path: ROUTES.student.aiPortrait, query: studentId ? { studentId } : undefined })
 }
 
+function goCareerDevelopment(tab?: 'overview' | 'graduate' | 'employment' | 'civil') {
+  const studentId = route.query.studentId as string | undefined
+  router.push({
+    path: ROUTES.student.careerDevelopment,
+    query: {
+      ...(studentId ? { studentId } : {}),
+      ...(tab ? { tab } : {}),
+    },
+  })
+}
+
 type PageId = 'judge' | 'action'
 
 const pages: Array<{ id: PageId; label: string; tip: string }> = [
@@ -245,6 +256,7 @@ const developmentPlans = computed(() => {
       id: 'postgraduate' as PlanId,
       label: '考研适配度',
       score: postScore,
+      peerCompare: postScore >= 70 ? `高于专业均值 ${postScore - 58}%` : `低于专业均值 ${58 - postScore}%`,
       detail:
         `英语与专业课基础支撑升学；竞赛/科研 ${awards + research} 项` +
         `${awardShort ? `（含「${awardShort}」）` : ''}。` +
@@ -254,6 +266,7 @@ const developmentPlans = computed(() => {
       id: 'public' as PlanId,
       label: '考公适配度',
       score: publicScore,
+      peerCompare: publicScore >= 62 ? `高于同辈 ${publicScore - 55}%` : `低于同辈均值 ${55 - publicScore}%`,
       detail:
         (cadre ? `学生干部经历 ${cadre} 项，` : '干部经历待补充，') +
         `志愿服务 ${volunteer || 0}+ 小时，组织与服务意识可迁移。` +
@@ -264,6 +277,7 @@ const developmentPlans = computed(() => {
       id: 'job' as PlanId,
       label: '就业适配度',
       score: jobScore,
+      peerCompare: jobScore >= 72 ? `高于专业均值 ${jobScore - 65}%` : `低于专业均值 ${65 - jobScore}%`,
       detail:
         (awards
           ? `竞赛获奖 ${awards} 项${awardShort ? `，代表「${awardShort}」` : ''}，工程实践突出。`
@@ -426,8 +440,10 @@ onBeforeUnmount(stopAutoplay)
     tip="两页切换：全景研判（含发展规划）/ 育人智策（含风险与机会）。"
     class="stu-tpl__ai"
   >
-    <div class="navi" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
+    <template #header-extra>
       <button type="button" class="navi__detail-btn" @click="goAiPortrait">查看详情 ›</button>
+    </template>
+    <div class="navi" @mouseenter="stopAutoplay" @mouseleave="startAutoplay">
       <div class="navi__tabs navi__tabs--two" role="tablist" aria-label="智能育航分页">
         <StuHint v-for="page in pages" :key="page.id" :tip="page.tip">
           <button
@@ -495,11 +511,17 @@ onBeforeUnmount(stopAutoplay)
                 <i><em :style="{ width: plan.score + '%' }"></em></i>
                 <b>{{ plan.score }}%</b>
               </button>
+              <p class="navi-plan__peer">同辈对标：{{ plan.peerCompare }}</p>
               <p v-if="isPlanOpen(plan.id)" class="navi-plan__detail">{{ plan.detail }}</p>
             </div>
-            <StuHint tip="打开完整发展规划与更多建议。" block>
-              <button type="button" class="navi-more" @click="goGrowthPath">完整方案 ›</button>
-            </StuHint>
+            <div class="navi-more-group">
+              <StuHint tip="打开完整发展规划与更多建议。" block>
+                <button type="button" class="navi-more" @click="goGrowthPath">成长方案 ›</button>
+              </StuHint>
+              <StuHint tip="进入出口发展详情，查看就业/考研/考公三类路径。" block>
+                <button type="button" class="navi-more navi-more--secondary" @click="goCareerDevelopment('overview')">出口发展 ›</button>
+              </StuHint>
+            </div>
           </section>
         </div>
 
@@ -952,16 +974,15 @@ onBeforeUnmount(stopAutoplay)
 .navi-timeline {
   position: relative;
   height: 100%;
-  min-height: 0;
-  padding: 0 2px 18px;
+  min-height: 156px;
+  padding: 2px 4px 10px;
   overflow: hidden;
-  /* 整体再上移，给下方卡片留出空间 */
-  transform: translateY(-22px);
+  transform: translateY(-10px);
 }
 
 .navi-timeline__track {
   position: absolute;
-  top: 42%;
+  top: 46%;
   left: 10%;
   right: 10%;
   height: 2px;
@@ -984,7 +1005,7 @@ onBeforeUnmount(stopAutoplay)
   min-height: 0;
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 14px;
 }
 
 .navi-timeline__node {
@@ -992,8 +1013,9 @@ onBeforeUnmount(stopAutoplay)
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1.25fr) 10px auto minmax(0, 0.75fr);
+  grid-template-rows: minmax(56px, 1.25fr) 16px auto minmax(56px, 1fr);
   align-items: stretch;
+  gap: 4px;
 
   :deep(.stu-hint--block) {
     width: 100%;
@@ -1010,13 +1032,13 @@ onBeforeUnmount(stopAutoplay)
   &--top {
     grid-row: 1;
     align-items: flex-end;
-    padding-bottom: 6px;
+    padding-bottom: 14px;
   }
 
   &--bottom {
     grid-row: 4;
     align-items: flex-start;
-    padding-top: 6px;
+    padding-top: 14px;
   }
 }
 
@@ -1187,8 +1209,21 @@ onBeforeUnmount(stopAutoplay)
   max-height: none;
 }
 
-.navi-more {
+.navi-plan__peer {
+  margin: 6px 0 0;
+  color: #7ef0a8;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.navi-more-group {
   margin-top: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.navi-more {
   width: 100%;
   padding: 9px;
   border: 1px solid rgba(120, 210, 255, 0.28);
@@ -1198,16 +1233,28 @@ onBeforeUnmount(stopAutoplay)
   font-size: var(--fs-sm);
   font-weight: 700;
   cursor: pointer;
+
+  &--secondary {
+    border-color: rgba(67, 231, 175, 0.3);
+    background: rgba(18, 88, 78, 0.28);
+    color: #9df5cd;
+  }
 }
 
 .navi__detail-btn {
-  align-self: flex-end;
-  margin: 0 0 2px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: #7ff6ff;
   font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    color: #b8f7ff;
+  }
 }
 
 .navi__tabs button i.is-important,

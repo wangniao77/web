@@ -636,13 +636,13 @@ export function deriveStudentDashboard(
         ? [Math.min(4, gpa + 0.22), Math.min(4, gpa + 0.1), gpa + 0.04, gpa]
         : [Math.max(0, gpa - 0.08), gpa + 0.02, Math.max(0, gpa - 0.03), gpa]
   const gpaTrendValues = gpaPoints.map((v) => Math.round(Math.max(0, Math.min(4.5, v)) * 100) / 100)
-  /** 近学期标签：按年级推到当前学年，输出「大X上/下」 */
+  /** 近学期标签：按年级推到当前学年，输出「大X上学期/下学期」 */
   const gpaTrendSemesters = (() => {
-    const all = ['大一上', '大一下', '大二上', '大二下', '大三上', '大三下', '大四上', '大四下'] as const
+    const all = ['大一上学期', '大一下学期', '大二上学期', '大二下学期', '大三上学期', '大三下学期', '大四上学期', '大四下学期'] as const
     const yearsIn = grade ? Math.max(1, Math.min(4, 2026 - grade + 1)) : 2
     const end = Math.min(all.length, yearsIn * 2)
     const start = Math.max(0, end - gpaTrendValues.length)
-    return all.slice(start, end)
+    return [...all.slice(start, end)]
   })()
 
   const thesisByGrade = (() => {

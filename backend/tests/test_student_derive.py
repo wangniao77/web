@@ -52,6 +52,11 @@ def test_derive_from_export_json():
     )
     assert dto["profile"]["name"] == "刘华杰"
     assert dto["academic"]["gpa"] == 3.89
+    trend = dto["academic"]["gpaTrend"]
+    assert len(trend["values"]) >= 2
+    assert len(trend["semesters"]) == len(trend["values"])
+    assert all("累计" not in s for s in trend["semesters"])
+    assert trend["values"][-1] == 3.89
     assert "竞赛高潜" in (dto["profile"]["highPotentialTags"] or [])
     assert dto["health"]["mentalHealth"] == 70
     assert dto["creditProgress"]["required"] >= 160

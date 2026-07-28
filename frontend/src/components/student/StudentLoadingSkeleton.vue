@@ -1,64 +1,62 @@
 <script setup lang="ts">
 import { NSkeleton } from 'naive-ui'
-import StudentScreenLayout from '@/components/student/StudentScreenLayout.vue'
-import '@/styles/student/student.scss'
 </script>
 
 <template>
-  <StudentScreenLayout>
-    <div class="student-grid skeleton-grid">
-      <div class="cell-left-stack">
-        <div class="skeleton-panel stack-personal">
-          <NSkeleton circle :width="80" :height="80" />
-          <div class="skeleton-lines">
-            <NSkeleton text :repeat="2" />
-            <NSkeleton text width="60%" />
-          </div>
-          <NSkeleton text :repeat="5" />
+  <div class="student-grid skeleton-grid">
+    <div class="cell-left-stack">
+      <div class="skeleton-panel stack-personal">
+        <NSkeleton circle :width="80" :height="80" />
+        <div class="skeleton-lines">
+          <NSkeleton text :repeat="2" />
+          <NSkeleton text width="60%" />
         </div>
-        <div class="skeleton-panel stack-academic">
-          <NSkeleton text width="40%" />
-          <NSkeleton height="72%" />
-        </div>
+        <NSkeleton text :repeat="5" />
       </div>
-
-      <div class="skeleton-panel cell-radar">
-        <NSkeleton text width="35%" />
-        <NSkeleton circle :width="160" :height="160" class="radar-ring" />
-      </div>
-
-      <div class="skeleton-panel cell-ai">
-        <NSkeleton text width="50%" />
-        <NSkeleton text :repeat="6" />
-        <NSkeleton height="28%" />
-      </div>
-
-      <div class="cell-middle-pair">
-        <div class="skeleton-panel pair-intern">
-          <NSkeleton text width="45%" />
-          <NSkeleton height="70%" />
-        </div>
-        <div class="skeleton-panel pair-comp">
-          <NSkeleton text width="45%" />
-          <NSkeleton height="70%" />
-        </div>
-      </div>
-
-      <div class="cell-footer">
-        <NSkeleton height="36px" :sharp="false" />
+      <div class="skeleton-panel stack-academic">
+        <NSkeleton text width="40%" />
+        <NSkeleton height="72%" />
       </div>
     </div>
-  </StudentScreenLayout>
+
+    <div class="skeleton-panel cell-radar">
+      <NSkeleton text width="35%" />
+      <NSkeleton circle :width="160" :height="160" class="radar-ring" />
+    </div>
+
+    <div class="skeleton-panel cell-ai">
+      <NSkeleton text width="50%" />
+      <NSkeleton text :repeat="6" />
+      <NSkeleton height="28%" />
+    </div>
+
+    <div class="cell-middle-pair">
+      <div class="skeleton-panel pair-intern">
+        <NSkeleton text width="45%" />
+        <NSkeleton height="70%" />
+      </div>
+      <div class="skeleton-panel pair-comp">
+        <NSkeleton text width="45%" />
+        <NSkeleton height="70%" />
+      </div>
+    </div>
+
+    <div class="cell-footer">
+      <NSkeleton height="36px" :sharp="false" />
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">
 .skeleton-grid {
   flex: 1;
   min-height: 0;
+  height: 100%;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   grid-template-rows: minmax(0, 1.36fr) minmax(0, 0.62fr) minmax(0, 0.62fr) 56px;
   gap: 12px;
+  padding: 8px 12px 12px;
 }
 
 .cell-left-stack {

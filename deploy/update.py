@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Quick update: upload changed code and restart services (no full reinstall)."""
 from __future__ import annotations
 
@@ -27,6 +27,12 @@ rm -rf frontend/dist
 mkdir -p frontend/dist backend
 tar -xzf release.tar.gz
 rm -f release.tar.gz
+# Avoid nginx 403: physical dist/student shadows SPA /student route
+if [ -d frontend/dist/student ]; then
+  mkdir -p frontend/dist/student-static
+  mv -f frontend/dist/student/* frontend/dist/student-static/ 2>/dev/null || true
+  rm -rf frontend/dist/student
+fi
 
 echo "[2/5] Updating Python dependencies (if changed)..."
 cd backend

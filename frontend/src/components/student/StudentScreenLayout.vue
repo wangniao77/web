@@ -2,6 +2,16 @@
 import { useScreenScale } from '@/composables/useScreenScale'
 import StudentScreenHeader from '@/components/student/StudentScreenHeader.vue'
 
+withDefaults(
+  defineProps<{
+    /** 是否显示主屏顶栏；二级页通常关闭 */
+    showHeader?: boolean
+  }>(),
+  {
+    showHeader: true,
+  },
+)
+
 const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'contain' })
 </script>
 
@@ -18,8 +28,8 @@ const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'contain' })
           :style="{ '--i': n }"
         />
       </div>
-      <StudentScreenHeader />
-      <main class="screen-main">
+      <StudentScreenHeader v-if="showHeader" />
+      <main class="screen-main" :class="{ 'screen-main--flush': !showHeader }">
         <slot />
       </main>
     </div>
@@ -38,9 +48,26 @@ const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'contain' })
 }
 
 .screen-scale {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   transform-origin: center center;
+  overflow: hidden;
+}
+
+.screen-main {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+
+  &--flush {
+    /* 二级页无主顶栏时，内容贴满画布 */
+    padding-top: 0;
+  }
 }
 </style>

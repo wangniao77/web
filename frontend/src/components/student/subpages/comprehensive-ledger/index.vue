@@ -518,6 +518,151 @@ const overallTopPercent = computed(() => {
   return `${Math.max(1, Math.round((d.overallRank / d.overallTotal) * 100))}`
 })
 
+/** 各荣誉分类成果条数（用于 AI 研判） */
+const honorCategoryCounts = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const g of honorGroups) {
+    if (g.sub) {
+      counts[g.key] = g.sub.reduce((sum, s) => sum + s.rows.length, 0)
+    } else {
+      counts[g.key] = g.rows?.length ?? 0
+    }
+  }
+  return counts
+})
+
+const honorTotalCount = computed(() =>
+  Object.values(honorCategoryCounts.value).reduce((sum, n) => sum + n, 0),
+)
+
+const honorStrongLabels = computed(() => {
+  const entries = Object.entries(honorCategoryCounts.value)
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1])
+  const labelMap: Record<string, string> = {
+    competition: '学科竞赛',
+    research: '科研成果',
+    honor: '荣誉称号',
+    scholarship: '奖学金',
+    practice: '社会实践与志愿服务',
+    art: '文体艺术',
+    collective: '集体荣誉',
+    skill: '技能证书',
+  }
+  return entries.slice(0, 2).map(([k]) => labelMap[k] ?? k)
+})
+
+const honorWeakLabels = computed(() => {
+  const labelMap: Record<string, string> = {
+    competition: '学科竞赛',
+    research: '科研成果',
+    honor: '荣誉称号',
+    scholarship: '奖学金',
+    practice: '社会实践与志愿服务',
+    art: '文体艺术',
+    collective: '集体荣誉',
+    skill: '技能证书',
+  }
+  return Object.entries(honorCategoryCounts.value)
+    .filter(([, n]) => n === 0)
+    .slice(0, 3)
+    .map(([k]) => labelMap[k] ?? k)
+})
+
+/** 荣誉成果 · AI 对策与建议（整块，不按子模块拆分） */
+const honorAiAdvice = computed(() => {
+  const d = dashboard.value
+  if (!d) {
+    return { strengths: '—', weaknesses: '—', future: '—' }
+  }
+
+  const total = honorTotalCount.value
+  const strong = honorStrongLabels.value
+  const weak = honorWeakLabels.value
+  const rank = d.growthOverview.overallRank
+  const rankTotal = d.growthOverview.overallTotal
+  const scholarships = d.scholarships.length
+  const awards = d.competition.awardCount
+
+  const strengths =
+    total > 0
+      ? `综测排名 ${rank}/${rankTotal}（前 ${overallTopPercent.value}%），` +
+        `已积累 ${total} 项荣誉成果，${strong.length ? `在「${strong.join('」「')}」表现相对突出` : '成果类型较均衡'}；` +
+        `${scholarships ? `获奖学金 ${scholarships} 项，` : ''}${awards ? `竞赛获奖 ${awards} 项，` : ''}` +
+        `具备较好的综合素质基础与展示潜力。`
+      : '暂无系统登记的荣誉成果，但学业与综测基础仍可作为后续发力起点。'
+
+  const weaknesses =
+    weak.length > 0
+      ? `「${weak.join('」「')}」等维度尚无记录或积累偏少，成果结构不够均衡；` +
+        `${honorCategoryCounts.value.practice === 0 ? '志愿服务与社会实践过程性记录不足；' : ''}` +
+        `${honorCategoryCounts.value.research === 0 ? '科研类成果尚未形成稳定产出；' : ''}` +
+        `部分成果仍以单次获奖为主，缺少连续性与可迁移的项目经历支撑。`
+      : '各分类已有一定积累，但高等级、跨学科、可量化产出的标志性成果仍可加强。'
+
+  const future =
+    weak.length > 0
+      ? `建议优先补齐「${weak[0]}」相关过程记录，每学期至少新增 1–2 项可佐证成果；` +
+        `竞赛与科研可形成“1 项核心项目 + 1 项过程记录”组合；` +
+        `将现有优势（${strong[0] ?? '学业表现'}）与实习、大创或志愿服务联动，提升综测与升学就业竞争力。`
+      : `建议在保持现有优势的同时，向更高等级赛事/科研平台升级，` +
+        `并建立“学期目标—过程记录—成果归档”台账机制，形成可持续的成长曲线。`
+
+  return { strengths, weaknesses, future }
+})
+
+const disciplineIssueCount = computed(
+  () =>
+    disciplinaryRecords.length +
+    criticismRecords.length +
+    academicWarnings.length +
+    integrityRecords.length,
+)
+
+/** 纪律处分 · AI 对策与建议（整块，不按子模块拆分） */
+const disciplineAiAdvice = computed(() => {
+  const d = dashboard.value
+  if (!d) {
+    return { strengths: '—', weaknesses: '—', future: '—' }
+  }
+
+  const level = disciplineLevel.value
+  const records = d.quality.disciplineRecords ?? []
+  const activeCount = records.filter((r) => r.status !== '已解除').length
+  const issues = disciplineIssueCount.value
+
+  if (level === 'low' && issues === 0 && records.length === 0) {
+    return {
+      strengths: '暂无校纪处分、通报批评及诚信失信记录，纪律表现稳定，守纪意识良好，有利于评奖评优与正常毕业审核。',
+      weaknesses: '日常考勤、宿舍管理与考试诚信等“零记录”不等于“零风险”，仍需保持过程性自我约束，避免小问题累积成预警。',
+      future: '建议继续保持良好作息与课堂出勤，主动参与班级/宿舍文明创建；每学期做一次自我纪律复盘，确保无迟到、晚归、挂科等隐性风险。',
+    }
+  }
+
+  const strengths =
+    activeCount === 0 && records.length > 0
+      ? '历史处分/警示已基本整改到位，当前无在册处分，说明整改态度与执行较好，具备恢复信誉的基础。'
+      : level === 'medium'
+        ? '问题以警示或单次违纪为主，尚未形成多重叠加，仍有较充分的纠正窗口期。'
+        : '纪律台账完整、问题边界清晰，便于辅导员与学院开展针对性帮扶与过程跟踪。'
+
+  const weaknesses =
+    level === 'high'
+      ? `累计纪律相关记录 ${issues} 条，存在多项叠加风险；` +
+        `${disciplinaryRecords.length ? '曾有校纪处分记录，对评奖评优与部分岗位政审可能产生持续影响；' : ''}` +
+        `${academicWarnings.length ? '学业警示与日常违纪并存，说明学习态度与行为规范需同步改善。' : ''}`
+      : `现有 ${issues} 条相关记录，${criticismRecords.length ? '通报批评提示考勤/行为规范性不足；' : ''}` +
+        `${integrityRecords.length ? '诚信档案存在失信事项，需警惕再次触发升级处理；' : ''}` +
+        `若重复发生同类问题，可能由“需关注”升级为“高危”。`
+
+  const future =
+    level === 'high'
+      ? '建议与辅导员建立月度跟进机制：一是完成全部整改要求并留存佐证；二是重点规范考试诚信与考勤纪律；三是以志愿服务、课堂表现等正向行为逐步修复评价。'
+      : '建议制定 3 个月纪律改善计划：每周自查考勤与宿舍作息，考试周前完成诚信承诺与复习打卡；主动参加学院组织的心理/学业帮扶，避免同一问题二次发生。'
+
+  return { strengths, weaknesses, future }
+})
+
 onMounted(load)
 </script>
 
@@ -645,6 +790,28 @@ onMounted(load)
             该分类暂无成果记录
           </div>
         </div>
+
+        <!-- 荣誉成果 · AI 对策与建议 -->
+        <section class="ledger-ai-advice">
+          <header class="ledger-ai-advice__head">
+            <span class="ledger-ai-advice__badge">AI 研判</span>
+            <h4 class="ledger-ai-advice__title">荣誉成果 · 对策与建议</h4>
+          </header>
+          <div class="ledger-ai-advice__grid">
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--good">
+              <h5>优势亮点</h5>
+              <p>{{ honorAiAdvice.strengths }}</p>
+            </article>
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--warn">
+              <h5>存在短板</h5>
+              <p>{{ honorAiAdvice.weaknesses }}</p>
+            </article>
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--future">
+              <h5>未来发展</h5>
+              <p>{{ honorAiAdvice.future }}</p>
+            </article>
+          </div>
+        </section>
       </div>
 
       <!-- 纪律处分 -->
@@ -786,6 +953,28 @@ onMounted(load)
             </table>
           </div>
         </div>
+
+        <!-- 纪律处分 · AI 对策与建议 -->
+        <section class="ledger-ai-advice">
+          <header class="ledger-ai-advice__head">
+            <span class="ledger-ai-advice__badge">AI 研判</span>
+            <h4 class="ledger-ai-advice__title">纪律处分 · 对策与建议</h4>
+          </header>
+          <div class="ledger-ai-advice__grid">
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--good">
+              <h5>优势亮点</h5>
+              <p>{{ disciplineAiAdvice.strengths }}</p>
+            </article>
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--warn">
+              <h5>存在短板</h5>
+              <p>{{ disciplineAiAdvice.weaknesses }}</p>
+            </article>
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--future">
+              <h5>未来发展</h5>
+              <p>{{ disciplineAiAdvice.future }}</p>
+            </article>
+          </div>
+        </section>
       </div>
     </div>
   </StudentDetailLayout>
@@ -927,6 +1116,86 @@ onMounted(load)
   text-align: center;
   color: rgba(184, 236, 255, 0.6);
   font-size: 14px;
+}
+
+/* AI 对策与建议 */
+.ledger-ai-advice {
+  margin-top: 4px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 206, 255, 0.28);
+  background:
+    linear-gradient(135deg, rgba(0, 90, 150, 0.22), rgba(6, 17, 52, 0.55)),
+    rgba(4, 18, 48, 0.62);
+  box-shadow: inset 0 0 24px rgba(0, 184, 255, 0.06);
+}
+
+.ledger-ai-advice__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ledger-ai-advice__badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 206, 255, 0.45);
+  background: rgba(0, 184, 255, 0.14);
+  color: #8ef6ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.ledger-ai-advice__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #f6fbff;
+  letter-spacing: 0.04em;
+}
+
+.ledger-ai-advice__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ledger-ai-advice__block {
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  background: rgba(0, 30, 60, 0.35);
+
+  h5 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  p {
+    margin: 0;
+    color: #d8eeff;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  &--good {
+    border-color: rgba(55, 233, 149, 0.28);
+    h5 { color: #7ef0a8; }
+  }
+
+  &--warn {
+    border-color: rgba(250, 204, 21, 0.28);
+    h5 { color: #ffe08a; }
+  }
+
+  &--future {
+    border-color: rgba(0, 206, 255, 0.32);
+    h5 { color: #8ef6ff; }
+  }
 }
 
 /* 子面板 */
@@ -1137,6 +1406,10 @@ onMounted(load)
 @media (max-width: 1280px) {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ledger-ai-advice__grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

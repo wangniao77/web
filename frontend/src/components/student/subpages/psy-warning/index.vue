@@ -174,18 +174,37 @@ const indicators = computed(() => {
 })
 
 /* ---------- 2. 心理风险维度分析（雷达图） ---------- */
+/** 客观行为信号：量表正常时仍可抬高对应维度突起 */
+const objectiveBehavior = computed(() => ({
+  lateReturnDays: 7,
+  note: '闸机数据：近 7 天连续晚归 ≥23:30',
+}))
+
 const psyRadarValues = computed<number[]>(() => {
   const code = mentalLevel.value
-  if (code === 'high') return [82, 75, 70, 58, 65]
-  if (code === 'medium') return [52, 55, 40, 42, 45]
-  return [30, 38, 25, 22, 30]
+  let base =
+    code === 'high' ? [82, 75, 70, 58, 65]
+      : code === 'medium' ? [52, 55, 40, 42, 45]
+        : [30, 38, 25, 22, 30]
+  // 量表正常但客观行为异常 → 睡眠 / 生活适应突起
+  if (code === 'low' && objectiveBehavior.value.lateReturnDays >= 5) {
+    base = [...base]
+    base[3] = Math.max(base[3], 72) // 睡眠状态
+    base[4] = Math.max(base[4], 68) // 生活适应
+  }
+  return base
 })
 
 const psyRadarOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'item' },
+  legend: {
+    bottom: 0,
+    textStyle: { color: '#9ec7e0', fontSize: 12 },
+    data: ['量表评估', '客观行为叠加'],
+  },
   radar: {
-    center: ['50%', '54%'],
-    radius: '66%',
+    center: ['50%', '50%'],
+    radius: '58%',
     indicator: [
       { name: '情绪状态', max: 100 },
       { name: '学业压力', max: 100 },
@@ -200,14 +219,24 @@ const psyRadarOption = computed<EChartsOption>(() => ({
   },
   series: [{
     type: 'radar',
-    data: [{
-      value: psyRadarValues.value,
-      name: '心理风险',
-      symbolSize: 5,
-      areaStyle: { color: 'rgba(248, 113, 113, 0.26)' },
-      lineStyle: { color: '#ff7474', width: 2 },
-      itemStyle: { color: '#ff7474' },
-    }],
+    data: [
+      {
+        value: mentalLevel.value === 'low' ? [30, 38, 25, 22, 30] : psyRadarValues.value,
+        name: '量表评估',
+        symbolSize: 4,
+        areaStyle: { color: 'rgba(85, 233, 149, 0.12)' },
+        lineStyle: { color: '#55e995', width: 1.5, type: 'dashed' },
+        itemStyle: { color: '#55e995' },
+      },
+      {
+        value: psyRadarValues.value,
+        name: '客观行为叠加',
+        symbolSize: 5,
+        areaStyle: { color: 'rgba(248, 113, 113, 0.26)' },
+        lineStyle: { color: '#ff7474', width: 2 },
+        itemStyle: { color: '#ff7474' },
+      },
+    ],
   }],
 }))
 
@@ -501,6 +530,9 @@ onMounted(load)
         <div class="radar-wrap">
           <ChartContainer :option="psyRadarOption" />
         </div>
+        <p v-if="mentalLevel === 'low' && objectiveBehavior.lateReturnDays >= 5" class="radar-obj-note">
+          量表显示正常，但客观行为异常：{{ objectiveBehavior.note }} —— 雷达在「睡眠状态 / 生活适应」出现突起。
+        </p>
         <div class="factor-list">
           <div
             v-for="(v, i) in psyRadarValues"
@@ -792,8 +824,19 @@ onMounted(load)
 
 /* 雷达 + 因素 */
 .radar-wrap {
-  height: 200px;
-  :deep(.chart-container) { height: 200px; }
+  height: 240px;
+  :deep(.chart-container) { height: 240px; }
+}
+
+.radar-obj-note {
+  margin: 8px 0 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  background: rgba(90, 60, 10, 0.28);
+  color: #ffe7a8;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .factor-list {

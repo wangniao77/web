@@ -9,6 +9,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
+import StudentSectionNav from '../_shared/StudentSectionNav.vue'
 import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import { gpaDetailService } from '../_shared/gpa-data'
@@ -30,6 +31,14 @@ const activeStudentId = computed(
 )
 
 const activeQuadrantKey = ref('advantage')
+
+const sectionNav = [
+  { id: 'sec-portrait', label: '学业画像' },
+  { id: 'sec-structure', label: '成绩结构' },
+  { id: 'sec-difficulty', label: '难度适应' },
+  { id: 'sec-compare', label: '同专业对比' },
+  { id: 'sec-advice', label: '指导建议' },
+]
 
 const dashboard = ref<StudentDashboardVM | null>(null)
 const gpaDetail = ref<GpaDetailVM | null>(null)
@@ -318,8 +327,10 @@ onMounted(load)
     </div>
 
     <div v-else-if="dashboard && gpaDetail" class="academic-detail">
+      <StudentSectionNav :items="sectionNav" />
+
       <!-- 1. 学业画像总结 -->
-      <section class="portrait">
+      <section id="sec-portrait" class="portrait">
         <div class="portrait__left">
           <div class="portrait__status">{{ portraitStatus }}</div>
           <div class="portrait__score">
@@ -347,7 +358,7 @@ onMounted(load)
       </section>
 
       <!-- 2. 成绩结构分析 + 成绩能力解析 | 3. 学业稳定性分析 + 稳定性评价 -->
-      <div class="detail-grid">
+      <div id="sec-structure" class="detail-grid">
         <section class="composite">
           <GradeStructureChart :courses="gpaDetail.courses" />
           <div class="analysis-cards">
@@ -406,7 +417,7 @@ onMounted(load)
       </div>
 
       <!-- 4. 课程难度适应分析 + 四象限 | 7. 培养完成情况 + 毕业达成预测 -->
-      <div class="detail-grid">
+      <div id="sec-difficulty" class="detail-grid">
         <section class="composite">
           <DifficultyScatter :points="coursePoints" />
           <div class="quadrant">
@@ -508,7 +519,7 @@ onMounted(load)
       </div>
 
       <!-- 5. 同专业对比分析 · 专业位置分析 | 6. 课程能力雷达图 -->
-      <div class="detail-grid">
+      <div id="sec-compare" class="detail-grid">
         <MajorPositionChart
           :student-gpa="gpa"
           :major-avg-gpa="gpaDetail.overview.majorAvgGpa"
@@ -523,7 +534,7 @@ onMounted(load)
       <SupportTrajectory />
 
       <!-- 8. 教师指导建议 -->
-      <section class="advice">
+      <section id="sec-advice" class="advice">
         <h3 class="advice__title">教师指导建议</h3>
         <div class="advice__grid">
           <div class="advice-card advice-card--green">
@@ -558,6 +569,10 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  :deep([id^='sec-']) {
+    scroll-margin-top: 64px;
+  }
 }
 
 /* ── 1. 学业画像 ── */

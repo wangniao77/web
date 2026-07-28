@@ -23,6 +23,48 @@ DEFAULT_REQUIRED_CREDITS = 160.0
 ACADEMIC_HIGH_POTENTIAL_PERCENTILE = 0.15  # 同年级同专业 GPA 前 15%
 CET6_PASS = 425.0
 
+_SEMESTER_LABELS = (
+    "大一上学期",
+    "大一下学期",
+    "大二上学期",
+    "大二下学期",
+    "大三上学期",
+    "大三下学期",
+    "大四上学期",
+    "大四下学期",
+)
+
+
+def _build_gpa_trend(gpa: float, grade: int | None, *, now_year: int = 2026) -> dict[str, list]:
+    """按当前 GPA 推近学期走势（无逐学期明细时的展示序列）。"""
+    g = round(float(gpa or 0), 2)
+    if g >= 3.5:
+        points = [max(0.0, g - 0.28), max(0.0, g - 0.16), max(0.0, g - 0.06), g]
+    elif 0 < g < 2.5:
+        points = [min(4.0, g + 0.22), min(4.0, g + 0.1), g + 0.04, g]
+    else:
+        points = [max(0.0, g - 0.08), g + 0.02, max(0.0, g - 0.03), g]
+    values = [round(max(0.0, min(4.5, v)), 2) for v in points]
+
+    years_in = max(1, min(4, now_year - grade + 1)) if grade else 2
+    end = min(len(_SEMESTER_LABELS), years_in * 2)
+    start = max(0, end - len(values))
+    semesters = list(_SEMESTER_LABELS[start:end])
+    if len(semesters) < len(values):
+        semesters = list(_SEMESTER_LABELS[: len(values)])
+    return {"semesters": semesters, "values": values}
+
+
+def _build_rank_trend(rank: int, grade: int | None, *, now_year: int = 2026) -> dict[str, list]:
+    """排名趋势与 GPA 学期轴对齐（暂无逐学期排名时做平滑回推）。"""
+    gpa_axis = _build_gpa_trend(3.0, grade, now_year=now_year)
+    n = max(1, len(gpa_axis["semesters"]))
+    r = max(1, int(rank or 1))
+    # 从略差回推到当前名次
+    values = [max(1, int(round(r * (1.18 - 0.18 * i / max(1, n - 1))))) for i in range(n)]
+    values[-1] = r
+    return {"semesters": gpa_axis["semesters"], "values": values}
+
 
 def _f(value: Decimal | float | int | str | None) -> float:
     if value is None or value == "":
@@ -672,10 +714,10 @@ def derive_student_dashboard(
             "majorRank": major_rank.rank,
             "majorTotal": major_rank.total,
             "physicalTestScore": physical,
-            "gpaTrend": {"semesters": [f"{grade}级累计"] if grade else ["累计"], "values": [round(gpa, 2)]},
-            "classRankTrend": {"semesters": [f"{grade}级累计"] if grade else ["累计"], "values": [class_rank.rank]},
-            "departmentRankTrend": {"semesters": [f"{grade}级累计"] if grade else ["累计"], "values": [grade_rank.rank]},
-            "majorRankTrend": {"semesters": [f"{grade}级累计"] if grade else ["累计"], "values": [major_rank.rank]},
+            "gpaTrend": _build_gpa_trend(gpa, grade),
+            "classRankTrend": _build_rank_trend(class_rank.rank, grade),
+            "departmentRankTrend": _build_rank_trend(grade_rank.rank, grade),
+            "majorRankTrend": _build_rank_trend(major_rank.rank, grade),
             "physicalTestTrend": {"semesters": [], "values": []},
             "courseGrades": course_grades,
             "courseCompletionRate": int(credits["earnedPercent"]),

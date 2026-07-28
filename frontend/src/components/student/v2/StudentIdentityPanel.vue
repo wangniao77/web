@@ -18,7 +18,7 @@ const trendLabel = {
   <div class="stu-identity">
     <div class="stu-identity__hero">
       <div class="stu-identity__avatar-wrap">
-        <img :src="profile.avatarUrl || '/student/avatar.png'" :alt="profile.name" class="stu-identity__avatar" />
+        <img :src="profile.avatarUrl || '/student-static/avatar.png'" :alt="profile.name" class="stu-identity__avatar" />
         <span class="stu-identity__status">{{ profile.onCampusStatus || '在校' }}</span>
       </div>
       <div class="stu-identity__main">
