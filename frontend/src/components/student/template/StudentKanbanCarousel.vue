@@ -502,7 +502,7 @@ function startNavAutoScroll() {
     if (el.scrollHeight <= el.clientHeight + 2) return
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) el.scrollTop = 0
     else el.scrollTop += 1
-  }, 45)
+  }, 110)
 }
 
 function stopNavAutoScroll() {
@@ -1218,13 +1218,13 @@ function goCreditProgress() {
   border-radius: 6px;
   border: 1px solid rgba(232, 200, 120, 0.18);
   background: rgba(0, 28, 58, 0.45);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(232, 200, 120, 0.25) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
-  &::-webkit-scrollbar { width: 5px; }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(232, 200, 120, 0.25);
-    border-radius: 3px;
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
 }
 
@@ -1342,13 +1342,13 @@ function goCreditProgress() {
   flex-direction: column;
   gap: 4px;
   padding-right: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(232, 200, 120, 0.2) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
-  &::-webkit-scrollbar { width: 5px; }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(232, 200, 120, 0.2);
-    border-radius: 3px;
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
 }
 
