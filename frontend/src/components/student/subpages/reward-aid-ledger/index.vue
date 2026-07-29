@@ -171,7 +171,7 @@ const growthItems = computed<GrowthItem[]>(() => {
     items.push({ date: d.date, type: 'discipline', icon: '⚠️', title: d.text, sub: d.cat }),
   )
   const toNum = (d: string) => Number(d.replace(/[^0-9]/g, '')) || 0
-  return items.sort((a, b) => toNum(b.date) - toNum(a.date))
+  return items.sort((a, b) => toNum(b.date) - toNum(a.date)).slice(0, 8)
 })
 </script>
 
@@ -344,8 +344,8 @@ const growthItems = computed<GrowthItem[]>(() => {
             class="growth-item"
             :class="`growth-item--${it.type}`"
           >
+            <span class="growth-item__dot" />
             <span class="growth-item__time">{{ it.date }}</span>
-            <span class="growth-item__track"><span class="growth-item__dot" /></span>
             <div class="growth-item__content">
               <span class="growth-item__icon">{{ it.icon }}</span>
               <div>
@@ -659,45 +659,61 @@ const growthItems = computed<GrowthItem[]>(() => {
 .aid-timeline {
   list-style: none;
   margin: 0;
-  padding: 8px 4px 10px;
+  padding: 16px 0 4px;
   display: flex;
   flex-direction: row;
-  gap: 10px;
   overflow-x: auto;
 
   &__item {
+    position: relative;
+    flex: 0 0 170px;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    min-width: 150px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    background: rgba(0, 40, 78, 0.3);
-    border: 1px solid rgba(67, 231, 175, 0.15);
-    flex-shrink: 0;
+    align-items: center;
+    text-align: center;
+    padding: 18px 12px 0;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 6px;
+      left: -50%;
+      width: 100%;
+      height: 2px;
+      background: rgba(67, 231, 175, 0.3);
+    }
+
+    &:first-child::before { display: none; }
+  }
+
+  &__dot {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #43e7b0;
+    box-shadow: 0 0 8px rgba(67, 231, 176, 0.6);
+    z-index: 1;
   }
 
   &__date {
     font-size: 13px;
     font-weight: 700;
     color: #7eb4d8;
-    flex-shrink: 0;
-  }
-
-  &__dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #43e7b0;
-    box-shadow: 0 0 8px rgba(67, 231, 176, 0.6);
-    flex-shrink: 0;
+    margin-bottom: 8px;
   }
 
   &__text {
-    font-size: 14px;
+    font-size: 13px;
     color: #d8eeff;
     font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: rgba(0, 40, 78, 0.3);
+    border: 1px solid rgba(67, 231, 175, 0.15);
   }
 }
 
@@ -819,86 +835,84 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 }
 
-/* ═══ 第五部分：成长时间轴（横向） ═══ */
+/* ═══ 第五部分：成长时间轴（一条横向贯穿线） ═══ */
 .growth-timeline {
   display: flex;
   flex-direction: row;
-  gap: 12px;
-  padding: 8px 0 10px;
+  gap: 0;
+  padding: 16px 0 4px;
   overflow-x: auto;
 }
 
 .growth-item {
+  position: relative;
+  flex: 0 0 200px;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  min-width: 200px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: rgba(0, 40, 78, 0.3);
-  border: 1px solid rgba(102, 217, 255, 0.12);
-  flex-shrink: 0;
+  align-items: center;
+  text-align: center;
+  padding: 18px 12px 0;
 
-  &__time {
-    font-size: 13px;
-    font-weight: 700;
-    color: #7eb4d8;
-    flex-shrink: 0;
-  }
-
-  &__track {
+  &::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: -50%;
     width: 100%;
-    height: 16px;
-    display: flex;
-    align-items: center;
-
-    &::before {
-      content: '';
-      width: 100%;
-      height: 2px;
-      background: rgba(102, 217, 255, 0.22);
-    }
+    height: 2px;
+    background: rgba(102, 217, 255, 0.28);
   }
+
+  &:first-child::before { display: none; }
 
   &__dot {
-    position: relative;
-    z-index: 1;
-    width: 11px;
-    height: 11px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    margin: 0 auto;
     background: #8ef6ff;
     box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+    z-index: 1;
   }
 
   &--award &__dot { background: #5dffa6; box-shadow: 0 0 8px rgba(85, 233, 149, 0.6); }
   &--aid &__dot { background: #ffcf6b; box-shadow: 0 0 8px rgba(255, 207, 107, 0.6); }
   &--discipline &__dot { background: #ff8a8a; box-shadow: 0 0 8px rgba(255, 116, 116, 0.6); }
 
-  &__content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    padding: 6px 10px;
-    border-radius: 5px;
-    background: rgba(0, 40, 78, 0.3);
-    border: 1px solid rgba(102, 217, 255, 0.1);
+  &__time {
+    font-size: 13px;
+    font-weight: 700;
+    color: #7eb4d8;
+    margin-bottom: 8px;
   }
 
-  &__icon { font-size: 20px; flex-shrink: 0; }
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(0, 40, 78, 0.3);
+    border: 1px solid rgba(102, 217, 255, 0.12);
+  }
+
+  &__icon { font-size: 18px; flex-shrink: 0; }
 
   &__title {
     display: block;
-    font-size: 15px;
+    font-size: 14px;
     color: #eaf6ff;
     font-weight: 700;
   }
 
   &__sub {
     display: block;
-    font-size: 13px;
+    font-size: 12px;
     color: #8fb7cd;
   }
 }
