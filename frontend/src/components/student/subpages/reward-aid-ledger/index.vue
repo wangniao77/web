@@ -119,25 +119,6 @@ const donut = computed(() => {
   return { r, c, size, center, stroke, segments, total }
 })
 
-interface KeyAchievement {
-  icon: string
-  title: string
-  sub: string
-  date: string
-}
-const keyAchievements = computed<KeyAchievement[]>(() => {
-  const list: KeyAchievement[] = []
-  const comp = honorGroups.find((g) => g.key === 'competition')?.rows?.[0]
-  if (comp) list.push({ icon: '🏆', title: comp.name, sub: `${comp.level} · ${comp.awardLevel}`, date: comp.date })
-  const proj = honorGroups.find((g) => g.key === 'research')?.sub?.find((s) => s.key === 'project')?.rows?.[0]
-  if (proj) list.push({ icon: '🔬', title: proj.name, sub: `${proj.source} · ${proj.role}`, date: proj.startDate })
-  const honor = honorGroups.find((g) => g.key === 'honor')?.rows?.[0]
-  if (honor) list.push({ icon: '🥇', title: honor.name, sub: `荣誉称号 · ${honor.level}`, date: honor.date })
-  const sch = honorGroups.find((g) => g.key === 'scholarship')?.rows?.[0]
-  if (sch) list.push({ icon: '💎', title: sch.name, sub: `${sch.level} · ${sch.amount} 元`, date: sch.date })
-  return list
-})
-
 /* ─────────── 第三部分：资助帮扶分析 ─────────── */
 const aid = aidProfile
 
@@ -256,27 +237,10 @@ const growthItems = computed<GrowthItem[]>(() => {
               </ul>
             </div>
 
-            <!-- 重点成果卡片 -->
-            <div class="key-achievements">
-              <div
-                v-for="(a, i) in keyAchievements"
-                :key="i"
-                class="key-card"
-                role="button"
-                tabindex="0"
-                @click="goComprehensive"
-                @keyup.enter="goComprehensive"
-              >
-                <span class="key-card__icon">{{ a.icon }}</span>
-                <div class="key-card__body">
-                  <strong class="key-card__title">{{ a.title }}</strong>
-                  <span class="key-card__sub">{{ a.sub }}</span>
-                </div>
-                <span class="key-card__date">{{ a.date }}</span>
-                <span class="key-card__arrow">›</span>
-              </div>
-              <p class="key-hint">点击卡片查看综合素养台账详情</p>
-            </div>
+            <!-- 查看详情：跳转综合素养台账二级页 -->
+            <button class="detail-btn" type="button" @click="goComprehensive">
+              查看详情<span class="detail-btn__arrow">›</span>
+            </button>
           </div>
         </section>
 
@@ -330,7 +294,12 @@ const growthItems = computed<GrowthItem[]>(() => {
 
       <!-- ═══ 第四部分：纪律风险分析（小模块） ═══ -->
       <section class="panel panel--discipline">
-        <h3 class="section-title">纪律与行为状态</h3>
+        <div class="panel-head">
+          <h3 class="section-title">纪律与行为状态</h3>
+          <button class="detail-btn detail-btn--inline" type="button" @click="goComprehensive">
+            查看详情<span class="detail-btn__arrow">›</span>
+          </button>
+        </div>
 
         <div v-if="!disciplineSummary.hasRecord" class="discipline-ok">
           <span class="discipline-ok__dot" />
@@ -569,77 +538,50 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 }
 
-/* 重点成果卡片 */
-.key-achievements {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.key-card {
-  display: flex;
+/* 查看详情按钮 */
+.detail-btn {
+  align-self: flex-start;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 8px 18px;
   border-radius: 6px;
-  border: 1px solid rgba(102, 217, 255, 0.16);
-  background: rgba(0, 45, 84, 0.25);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  background: rgba(0, 184, 255, 0.12);
+  color: #8ef6ff;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, background 0.15s;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 184, 255, 0.14);
-    border-color: rgba(0, 212, 255, 0.5);
-  }
-
-  &__icon {
-    font-size: 24px;
-    flex-shrink: 0;
-  }
-
-  &__body {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    flex: 1;
-  }
-
-  &__title {
-    font-size: 15px;
-    color: #eaf6ff;
-    font-weight: 700;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__sub {
-    font-size: 13px;
-    color: #8fb7cd;
-  }
-
-  &__date {
-    font-size: 13px;
-    color: #7eb4d8;
-    font-weight: 700;
-    white-space: nowrap;
-    flex-shrink: 0;
+    transform: translateY(-1px);
+    background: rgba(0, 184, 255, 0.22);
+    border-color: rgba(0, 212, 255, 0.7);
+    box-shadow: 0 6px 18px rgba(0, 184, 255, 0.16);
   }
 
   &__arrow {
-    font-size: 20px;
-    color: #8ef6ff;
+    font-size: 17px;
     font-weight: 700;
-    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  &--inline {
+    align-self: center;
+    margin-left: auto;
+    padding: 5px 14px;
+    font-size: 13px;
   }
 }
 
-.key-hint {
-  margin: 2px 0 0;
-  font-size: 13px;
-  color: #5a7d96;
-  font-style: italic;
+/* 标题 + 查看详情 同行 */
+.panel-head {
+  display: flex;
+  align-items: center;
+  margin: 0 0 12px;
+
+  .section-title { margin: 0; }
 }
 
 /* 资助画像 */
@@ -713,42 +655,34 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 }
 
-/* 资助历史时间轴 */
+/* 资助历史时间轴（横向） */
 .aid-timeline {
   list-style: none;
   margin: 0;
-  padding: 4px 0 0 4px;
+  padding: 8px 4px 10px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  gap: 10px;
+  overflow-x: auto;
 
   &__item {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 4px;
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 83px;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: rgba(67, 231, 175, 0.25);
-    }
-
-    &:first-child::before { top: 50%; }
-    &:last-child::before { bottom: 50%; }
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 150px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(0, 40, 78, 0.3);
+    border: 1px solid rgba(67, 231, 175, 0.15);
+    flex-shrink: 0;
   }
 
   &__date {
-    width: 72px;
-    flex-shrink: 0;
-    text-align: right;
     font-size: 13px;
     font-weight: 700;
     color: #7eb4d8;
+    flex-shrink: 0;
   }
 
   &__dot {
@@ -758,8 +692,6 @@ const growthItems = computed<GrowthItem[]>(() => {
     background: #43e7b0;
     box-shadow: 0 0 8px rgba(67, 231, 176, 0.6);
     flex-shrink: 0;
-    z-index: 1;
-    margin-left: -3px;
   }
 
   &__text {
@@ -887,46 +819,47 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 }
 
-/* ═══ 第五部分：成长时间轴 ═══ */
+/* ═══ 第五部分：成长时间轴（横向） ═══ */
 .growth-timeline {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  gap: 12px;
+  padding: 8px 0 10px;
+  overflow-x: auto;
 }
 
 .growth-item {
   display: flex;
+  flex-direction: column;
   align-items: stretch;
-  gap: 14px;
-  padding: 6px 0;
+  gap: 8px;
+  min-width: 200px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(0, 40, 78, 0.3);
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  flex-shrink: 0;
 
   &__time {
-    width: 72px;
-    flex-shrink: 0;
-    text-align: right;
     font-size: 13px;
     font-weight: 700;
     color: #7eb4d8;
-    padding-top: 2px;
+    flex-shrink: 0;
   }
 
   &__track {
-    position: relative;
-    width: 16px;
+    width: 100%;
+    height: 16px;
     display: flex;
-    justify-content: center;
+    align-items: center;
 
     &::before {
       content: '';
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 2px;
+      width: 100%;
+      height: 2px;
       background: rgba(102, 217, 255, 0.22);
     }
   }
-
-  &:first-child &__track::before { top: 50%; }
-  &:last-child &__track::before { bottom: 50%; }
 
   &__dot {
     position: relative;
@@ -934,7 +867,7 @@ const growthItems = computed<GrowthItem[]>(() => {
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    margin-top: 4px;
+    margin: 0 auto;
     background: #8ef6ff;
     box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
   }
