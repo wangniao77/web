@@ -598,7 +598,7 @@ onMounted(load)
     align-self: flex-start;
     padding: 4px 14px;
     border-radius: 999px;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #04101f;
     background: linear-gradient(90deg, #7ef0d0, #34d399);
@@ -606,12 +606,12 @@ onMounted(load)
   }
 
   &__score {
-    font-size: 16px;
+    font-size: 20px;
     color: #cfe8ff;
     font-weight: 600;
 
     b {
-      font-size: 34px;
+      font-size: 38px;
       font-weight: 900;
       color: #f6fbff;
       font-family: 'DIN Alternate', sans-serif;
@@ -636,12 +636,12 @@ onMounted(load)
     border: 1px solid rgba(102, 217, 255, 0.12);
 
     &-label {
-      font-size: 12px;
+      font-size: 16px;
       color: #7eb4d8;
     }
 
     &-value {
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 800;
       color: #f6fbff;
       font-family: 'DIN Alternate', sans-serif;
@@ -660,7 +660,7 @@ onMounted(load)
     align-self: flex-start;
     padding: 2px 10px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 700;
     color: #8ef6ff;
     background: rgba(0, 184, 255, 0.14);
@@ -669,7 +669,7 @@ onMounted(load)
 
   &__ai-text {
     margin: 0;
-    font-size: 15px;
+    font-size: 19px;
     line-height: 1.8;
     color: #dbeeff;
   }
@@ -712,7 +712,7 @@ onMounted(load)
 
   &__badge {
     align-self: flex-start;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 700;
     padding: 1px 8px;
     border-radius: 999px;
@@ -724,20 +724,20 @@ onMounted(load)
   }
 
   &__main {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #f6fbff;
   }
 
   &__sub {
-    font-size: 13px;
+    font-size: 17px;
     color: #cfe8ff;
 
     b { color: #7ff6ff; font-family: 'DIN Alternate', sans-serif; }
   }
 
   &__courses {
-    font-size: 12px;
+    font-size: 16px;
     line-height: 1.5;
     color: #9ec7e0;
   }
@@ -758,12 +758,12 @@ onMounted(load)
 
   &__index {
     grid-area: index;
-    font-size: 14px;
+    font-size: 18px;
     color: #cfe8ff;
     font-weight: 600;
 
     b {
-      font-size: 26px;
+      font-size: 30px;
       font-weight: 900;
       color: #7ff6c4;
       font-family: 'DIN Alternate', sans-serif;
@@ -777,7 +777,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 4px;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
 
     &--good { color: #34d399; }
@@ -852,7 +852,7 @@ onMounted(load)
   }
 
   &__tab-title {
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -886,7 +886,7 @@ onMounted(load)
 
   &__desc {
     margin: 0 0 6px;
-    font-size: 12px;
+    font-size: 16px;
     line-height: 1.5;
     color: #b8d6ec;
   }
@@ -932,14 +932,14 @@ onMounted(load)
 
   &__stars {
     color: #9ec7e0;
-    font-size: 11px;
+    font-size: 15px;
     letter-spacing: -1px;
     text-align: left;
     white-space: nowrap;
   }
 
   &__empty {
-    font-size: 12px;
+    font-size: 16px;
     color: #5a7d96;
   }
 }
@@ -953,7 +953,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 8px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #b8ecff;
   }
@@ -966,7 +966,7 @@ onMounted(load)
   }
 
   &__bar-label {
-    font-size: 13px;
+    font-size: 17px;
     color: #7eb4d8;
     width: 64px;
     flex-shrink: 0;
@@ -987,7 +987,7 @@ onMounted(load)
   }
 
   &__bar-value {
-    font-size: 13px;
+    font-size: 17px;
     color: #7ff6ff;
     font-weight: 700;
     width: 40px;
@@ -1000,7 +1000,7 @@ onMounted(load)
     align-items: center;
     justify-content: space-between;
     padding: 3px 0;
-    font-size: 13px;
+    font-size: 17px;
   }
 
   &__label {
@@ -1008,7 +1008,7 @@ onMounted(load)
   }
 
   &__value {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 800;
     color: #7ff6c4;
     font-family: 'DIN Alternate', sans-serif;
@@ -1028,12 +1028,12 @@ onMounted(load)
   }
 
   &__tag-label {
-    font-size: 12px;
+    font-size: 16px;
     color: #7eb4d8;
   }
 
   &__tag {
-    font-size: 12px;
+    font-size: 16px;
     padding: 2px 8px;
     border-radius: 999px;
     color: #cfe8ff;
@@ -1054,7 +1054,7 @@ onMounted(load)
 
 .warn-section__title {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -1087,8 +1087,8 @@ onMounted(load)
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
 
-  &__label { font-size: 13px; color: #7eb4d8; }
-  &__value { font-size: 14px; font-weight: 800; color: #f6fbff; }
+  &__label { font-size: 17px; color: #7eb4d8; }
+  &__value { font-size: 18px; font-weight: 800; color: #f6fbff; }
 }
 
 .completion-progress {
@@ -1097,10 +1097,10 @@ onMounted(load)
   gap: 8px;
   padding: 8px 0;
 
-  &__label { font-size: 14px; color: #7eb4d8; font-weight: 600; width: 90px; flex-shrink: 0; }
+  &__label { font-size: 18px; color: #7eb4d8; font-weight: 600; width: 90px; flex-shrink: 0; }
   &__bar { flex: 1; height: 6px; border-radius: 999px; background: rgba(0, 60, 120, 0.45); overflow: hidden; }
   &__inner { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #00b8ff, #00e5ff); }
-  &__percent { font-size: 14px; color: #7ff6ff; font-weight: 700; font-family: var(--student-font-number); width: 40px; text-align: right; flex-shrink: 0; }
+  &__percent { font-size: 18px; color: #7ff6ff; font-weight: 700; font-family: var(--student-font-number); width: 40px; text-align: right; flex-shrink: 0; }
 }
 
 .completion-status {
@@ -1108,7 +1108,7 @@ onMounted(load)
   align-items: center;
   gap: 8px;
   padding: 6px 0;
-  font-size: 14px;
+  font-size: 18px;
 
   &__label { color: #7eb4d8; font-weight: 600; width: 90px; flex-shrink: 0; }
   &__value { color: #d0e8f8;
@@ -1131,7 +1131,7 @@ onMounted(load)
   padding: 5px 8px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.25);
-  font-size: 13px;
+  font-size: 17px;
 
   &__label { color: #7eb4d8; width: 70px; flex-shrink: 0; }
   &__bar { flex: 1; height: 5px; border-radius: 999px; background: rgba(0, 60, 120, 0.45); overflow: hidden; }
@@ -1150,7 +1150,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 12px;
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 700;
     color: #f4fbff;
     text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -1181,7 +1181,7 @@ onMounted(load)
     align-self: flex-start;
     padding: 2px 12px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 800;
     color: #04101f;
     background: #34d399;
@@ -1192,14 +1192,14 @@ onMounted(load)
 
   &__head {
     margin: 0;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #f6fbff;
   }
 
   &__text {
     margin: 0;
-    font-size: 13px;
+    font-size: 17px;
     line-height: 1.6;
     color: #cfe8ff;
   }
@@ -1217,7 +1217,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
     cursor: pointer;
 
@@ -1232,7 +1232,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 14px;
+  font-size: 18px;
 }
 
 .placeholder {
@@ -1241,7 +1241,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -1253,7 +1253,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 15px;
+    font-size: 19px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }

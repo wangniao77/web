@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
 import { collegeDetailService } from '@/api/college/services/details'
@@ -123,7 +123,7 @@ onMounted(async () => {
 
   span {
     display: block;
-    font-size: $college-fs-meta;
+    font-size: $detail-fs-meta;
     color: rgba(174, 198, 230, 0.62);
     margin-bottom: 4px;
   }
@@ -134,7 +134,7 @@ onMounted(async () => {
 
     small {
       margin-left: 2px;
-      font-size: $college-fs-meta;
+      font-size: $detail-fs-meta;
     }
   }
 }
@@ -144,7 +144,7 @@ onMounted(async () => {
 
   h3 {
     margin-bottom: 8px;
-    font-size: $college-fs-body;
+    font-size: $detail-fs-body;
     color: #55dfff;
   }
 }
@@ -156,7 +156,7 @@ onMounted(async () => {
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
 
   th,
   td {

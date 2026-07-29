@@ -358,7 +358,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  font-size: 17px;
+  font-size: 19px;
   line-height: 1.55;
 }
 
@@ -374,7 +374,7 @@ const growthItems = computed<GrowthItem[]>(() => {
 
 .section-title {
   margin: 0 0 12px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -394,7 +394,7 @@ const growthItems = computed<GrowthItem[]>(() => {
 
 .subsection-title {
   margin: 14px 0 8px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   color: #9edcff;
   letter-spacing: 0.03em;
@@ -425,7 +425,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   &--mute { border-left-color: #7ea8c8; }
 
   &__icon {
-    font-size: 26px;
+    font-size: 28px;
     flex-shrink: 0;
     filter: drop-shadow(0 0 6px rgba(0, 184, 255, 0.25));
   }
@@ -437,19 +437,19 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 
   &__label {
-    font-size: 14px;
+    font-size: 16px;
     color: #8fb7cd;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 900;
     color: #f6fbff;
     line-height: 1.1;
 
     small {
-      font-size: 15px;
+      font-size: 17px;
       color: #9ecae8;
       font-weight: 600;
       margin-left: 2px;
@@ -484,13 +484,13 @@ const growthItems = computed<GrowthItem[]>(() => {
 
   &__total {
     fill: #f6fbff;
-    font-size: 30px;
+    font-size: 32px;
     font-weight: 900;
   }
 
   &__caption {
     fill: #8fb7cd;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
   }
 }
@@ -509,7 +509,7 @@ const growthItems = computed<GrowthItem[]>(() => {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 14px;
+    font-size: 16px;
   }
 
   &__dot {
@@ -542,7 +542,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   border: 1px solid rgba(0, 212, 255, 0.4);
   background: rgba(0, 184, 255, 0.12);
   color: #8ef6ff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, background 0.15s;
@@ -555,7 +555,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 
   &__arrow {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 700;
     line-height: 1;
   }
@@ -564,7 +564,7 @@ const growthItems = computed<GrowthItem[]>(() => {
     align-self: center;
     margin-left: auto;
     padding: 5px 14px;
-    font-size: 13px;
+    font-size: 15px;
   }
 }
 
@@ -598,7 +598,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 
   &__label {
-    font-size: 14px;
+    font-size: 16px;
     color: #7eb4d8;
     font-weight: 600;
     flex-shrink: 0;
@@ -606,7 +606,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 
   &__value {
-    font-size: 15px;
+    font-size: 17px;
     color: #e8f4ff;
     font-weight: 700;
     display: inline-flex;
@@ -635,7 +635,7 @@ const growthItems = computed<GrowthItem[]>(() => {
 .aid-type {
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: #5dffa6;
   border: 1px solid rgba(85, 233, 149, 0.4);
@@ -696,14 +696,14 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 
   &__date {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     color: #7eb4d8;
     margin-bottom: 8px;
   }
 
   &__text {
-    font-size: 13px;
+    font-size: 15px;
     color: #d8eeff;
     font-weight: 600;
   }
@@ -717,8 +717,8 @@ const growthItems = computed<GrowthItem[]>(() => {
   padding: 30px;
   color: #8fb7cd;
 
-  &__icon { font-size: 34px; }
-  p { margin: 0; font-size: 15px; }
+  &__icon { font-size: 36px; }
+  p { margin: 0; font-size: 17px; }
 }
 
 /* ═══ 第四部分：纪律风险分析 ═══ */
@@ -740,8 +740,8 @@ const growthItems = computed<GrowthItem[]>(() => {
     flex-shrink: 0;
   }
 
-  strong { color: #5dffa6; font-size: 16px; }
-  p { margin: 2px 0 0; color: #8fb7cd; font-size: 14px; }
+  strong { color: #5dffa6; font-size: 18px; }
+  p { margin: 2px 0 0; color: #8fb7cd; font-size: 16px; }
 }
 
 .discipline-box {
@@ -766,13 +766,13 @@ const growthItems = computed<GrowthItem[]>(() => {
   min-width: 120px;
 
   &__label {
-    font-size: 13px;
+    font-size: 15px;
     color: #8fb7cd;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 16px;
+    font-size: 18px;
     color: #e8f4ff;
     font-weight: 700;
 
@@ -801,7 +801,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 
   &__cat {
-    font-size: 12px;
+    font-size: 14px;
     padding: 2px 8px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.1);
@@ -812,7 +812,7 @@ const growthItems = computed<GrowthItem[]>(() => {
 
   &__text {
     flex: 1;
-    font-size: 14px;
+    font-size: 16px;
     color: #d0e8f8;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -820,7 +820,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 
   &__date {
-    font-size: 13px;
+    font-size: 15px;
     color: #7eb4d8;
     font-weight: 700;
     white-space: nowrap;
@@ -878,7 +878,7 @@ const growthItems = computed<GrowthItem[]>(() => {
   &--discipline &__dot { background: #ff8a8a; box-shadow: 0 0 8px rgba(255, 116, 116, 0.6); }
 
   &__time {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     color: #7eb4d8;
     margin-bottom: 8px;
@@ -894,14 +894,14 @@ const growthItems = computed<GrowthItem[]>(() => {
 
   &__title {
     display: block;
-    font-size: 14px;
+    font-size: 16px;
     color: #eaf6ff;
     font-weight: 700;
   }
 
   &__sub {
     display: block;
-    font-size: 12px;
+    font-size: 14px;
     color: #8fb7cd;
   }
 }

@@ -119,7 +119,7 @@ const option = computed<EChartsOption>(() => ({
     pointer-events: none;
 
     b {
-      font-size: 30px;
+      font-size: 34px;
       font-weight: 900;
       color: #7ff6c4;
       font-family: 'DIN Alternate', sans-serif;
@@ -129,7 +129,7 @@ const option = computed<EChartsOption>(() => ({
 
     span {
       margin-top: 4px;
-      font-size: 12px;
+      font-size: 16px;
       color: #9ec7e0;
     }
   }
@@ -152,12 +152,12 @@ const option = computed<EChartsOption>(() => ({
   background: rgba(0, 38, 73, 0.3);
 
   &__label {
-    font-size: 13px;
+    font-size: 17px;
     color: #7eb4d8;
   }
 
   &__value {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #f6fbff;
     font-family: 'DIN Alternate', sans-serif;
@@ -176,7 +176,7 @@ const option = computed<EChartsOption>(() => ({
 }
 
 .info-tag {
-  font-size: 12px;
+  font-size: 16px;
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 600;

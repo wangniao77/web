@@ -300,32 +300,32 @@ onMounted(load)
 }
 
 .kpi-label {
-  font-size: 15px;
+  font-size: 17px;
   color: rgba(190, 210, 238, 0.8);
   letter-spacing: 0.04em;
 }
 
 .kpi-value {
   font-family: 'DIN Alternate', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 700;
   color: #f4f8ff;
   line-height: 1.1;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 12px rgba(57, 230, 255, 0.42);
 
   small {
-    font-size: 15px;
+    font-size: 17px;
     color: rgba(186, 208, 236, 0.7);
     font-weight: 400;
     margin-left: 2px;
   }
 
   &--sm {
-    font-size: 22px;
+    font-size: 24px;
   }
 }
 .kpi-tag{
-  font-size: 14px;
+  font-size: 16px;
   padding: 2px 10px;
   border-radius: 999px;
   border: 1px solid;
@@ -340,7 +340,7 @@ onMounted(load)
 /* ═══ Section ═══ */
 .section-title {
   margin: 0 0 10px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -375,7 +375,7 @@ onMounted(load)
 }
 
 .risk-chip {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -426,13 +426,13 @@ onMounted(load)
 
 .risk-list__label {
   flex: 1;
-  font-size: 14px;
+  font-size: 16px;
   color: #d0e8f8;
   font-weight: 600;
 }
 
 .risk-list__count {
-  font-size: 14px;
+  font-size: 16px;
   color: #7ff6ff;
   font-weight: 700;
   font-family: 'DIN Alternate', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
@@ -441,7 +441,7 @@ onMounted(load)
 .risk-list__pct {
   width: 48px;
   text-align: right;
-  font-size: 14px;
+  font-size: 16px;
   color: rgba(184, 236, 255, 0.7);
   font-weight: 700;
   font-family: 'DIN Alternate', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
@@ -473,13 +473,13 @@ onMounted(load)
 }
 
 .semester-name {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   color: #7ff6ff;
 }
 
 .semester-badge {
-  font-size: 14px;
+  font-size: 16px;
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(248, 113, 113, 0.12);
@@ -505,13 +505,13 @@ onMounted(load)
 .fail-table {
   width: 100%;
   min-width: 900px;
-  font-size: 15px;
+  font-size: 17px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: center;
     padding: 8px 10px;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     color: #9ecae8;
     text-transform: uppercase;
@@ -536,15 +536,15 @@ onMounted(load)
   .col-num { font-family: 'DIN Alternate', sans-serif; font-weight: 700; }
   .col-name { min-width: 150px; white-space: normal; }
 
-  .score-fail { color: #f87171; font-size: 15px; }
+  .score-fail { color: #f87171; font-size: 17px; }
   .gap-bad { color: #f87171; }
   .rate-high { color: #fbbf24; }
 
-  small { font-size: 11px; color: rgba(148, 163, 184, 0.7); font-weight: 400; }
+  small { font-size: 13px; color: rgba(148, 163, 184, 0.7); font-weight: 400; }
 }
 
 .cat-tag {
-  font-size: 13px;
+  font-size: 15px;
   padding: 2px 7px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -553,7 +553,7 @@ onMounted(load)
 }
 
 .sev-tag {
-  font-size: 13px;
+  font-size: 15px;
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
@@ -565,7 +565,7 @@ onMounted(load)
 }
 
 .risk-badge {
-  font-size: 13px;
+  font-size: 15px;
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
@@ -606,21 +606,21 @@ onMounted(load)
 }
 
 .an-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #f4fbff;
 }
 
 .an-score {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: #f87171;
 }
 
 .an-text {
   margin: 0 0 8px;
-  font-size: 13px;
+  font-size: 15px;
   color: rgba(184, 236, 255, 0.75);
   line-height: 1.5;
 }
@@ -628,7 +628,7 @@ onMounted(load)
 .an-footer {
   display: flex;
   gap: 16px;
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(148, 163, 184, 0.7);
 }
 
@@ -639,7 +639,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 17px;
   color: rgba(184, 236, 255, 0.7);
   border: 1px solid rgba(102, 217, 255, 0.12);
   border-radius: 8px;
@@ -654,7 +654,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 15px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }

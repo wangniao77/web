@@ -57,7 +57,7 @@ const option = computed<EChartsOption>(() => ({
     confine: true,
     backgroundColor: 'rgba(6, 17, 52, 0.96)',
     borderColor: 'rgba(0, 212, 255, 0.3)',
-    textStyle: { color: '#e2edff', fontSize: 13 },
+    textStyle: { color: '#e2edff', fontSize: 17 },
   },
   legend: {
     top: 2,
@@ -72,15 +72,15 @@ const option = computed<EChartsOption>(() => ({
   xAxis: {
     type: 'value',
     name: '课程数',
-    nameTextStyle: { color: '#7fb4d4', fontSize: 11, padding: [0, 0, 0, -22] },
-    axisLabel: { ...AXIS_LABEL, fontSize: 12, color: '#9ec7e0' },
+    nameTextStyle: { color: '#7fb4d4', fontSize: 15, padding: [0, 0, 0, -22] },
+    axisLabel: { ...AXIS_LABEL, fontSize: 16, color: '#9ec7e0' },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
   },
   yAxis: {
     type: 'category',
     data: categories.value,
     axisTick: { show: false },
-    axisLabel: { ...AXIS_LABEL, fontSize: 13, color: '#cfe8ff' },
+    axisLabel: { ...AXIS_LABEL, fontSize: 17, color: '#cfe8ff' },
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.18)' } },
   },
   series: series.value,
@@ -123,7 +123,7 @@ const insight = computed(() => {
 <style scoped lang="scss">
 .insight {
   margin: 0;
-  font-size: 13px;
+  font-size: 17px;
   line-height: 1.55;
   color: #bfe2f5;
 
@@ -132,7 +132,7 @@ const insight = computed(() => {
     margin-right: 6px;
     padding: 1px 7px;
     border-radius: 999px;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 700;
     color: #04101f;
     background: linear-gradient(90deg, #7ef0d0, #34d399);

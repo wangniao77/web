@@ -152,7 +152,7 @@ const items = computed<KpiItem[]>(() => {
 }
 
 .kpi-label {
-  font-size: 14px;
+  font-size: 18px;
   color: rgba(190, 210, 238, 0.85);
   letter-spacing: 0.04em;
   font-weight: 500;
@@ -160,7 +160,7 @@ const items = computed<KpiItem[]>(() => {
 
 .kpi-pct {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 800;
   color: #66d9ff;
 
@@ -176,26 +176,26 @@ const items = computed<KpiItem[]>(() => {
 
   .num {
     font-family: 'DIN Alternate', sans-serif;
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 800;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 14px rgba(57, 230, 255, 0.48);
   }
 
   .sep {
-    font-size: 16px;
+    font-size: 20px;
     color: rgba(184, 236, 255, 0.5);
     margin: 0 2px;
   }
 
   .total {
     font-family: 'DIN Alternate', sans-serif;
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 700;
     color: rgba(184, 236, 255, 0.75);
   }
 
   .unit {
-    font-size: 12px;
+    font-size: 16px;
     color: rgba(186, 208, 236, 0.65);
     margin-left: 4px;
   }

@@ -58,7 +58,7 @@ onMounted(async () => {
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
   th, td {
     padding: 10px 12px;
     border-bottom: 1px solid rgba(85, 168, 255, 0.1);

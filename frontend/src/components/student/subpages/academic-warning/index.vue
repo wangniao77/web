@@ -188,14 +188,14 @@ const gaugeOption = computed<EChartsOption>(() => ({
     pointer: { width: 4, length: '58%', itemStyle: { color: '#f6fbff' } },
     axisTick: { show: false },
     splitLine: { length: 10, lineStyle: { color: 'rgba(255,255,255,0.25)', width: 1 } },
-    axisLabel: { distance: 14, color: '#7eb4d8', fontSize: 10 },
+    axisLabel: { distance: 14, color: '#7eb4d8', fontSize: 14 },
     anchor: { show: true, size: 8, itemStyle: { color: '#f6fbff' } },
     title: { show: false },
     detail: {
       valueAnimation: true,
       formatter: '{value}',
       color: '#f6fbff',
-      fontSize: 26,
+      fontSize: 30,
       fontWeight: 'bolder',
       offsetCenter: [0, '36%'],
     },
@@ -237,7 +237,7 @@ const radarOption = computed<EChartsOption>(() => ({
       { name: '培养进度', max: 100 },
       { name: '毕业风险', max: 100 },
     ],
-    axisName: { color: '#b8ecff', fontSize: 13 },
+    axisName: { color: '#b8ecff', fontSize: 17 },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
     splitArea: { areaStyle: { color: ['rgba(0,184,255,0.04)', 'rgba(0,184,255,0.08)'] } },
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
@@ -330,7 +330,7 @@ const gpaTrendOption = computed<EChartsOption>(() => {
       type: 'category',
       data: semesters,
       boundaryGap: false,
-      axisLabel: { ...AXIS_LABEL, fontSize: 13, margin: 6 },
+      axisLabel: { ...AXIS_LABEL, fontSize: 17, margin: 6 },
       axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.18)' } },
     },
     yAxis: {
@@ -338,7 +338,7 @@ const gpaTrendOption = computed<EChartsOption>(() => {
       min: yMin,
       max: yMax,
       interval: 0.5,
-      axisLabel: { ...AXIS_LABEL, fontSize: 13 },
+      axisLabel: { ...AXIS_LABEL, fontSize: 17 },
       splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
     },
     series: [{
@@ -449,7 +449,7 @@ const courseRadarOption = computed<EChartsOption>(() => ({
       { name: '毕业影响', max: 100 },
       { name: '课程压力', max: 100 },
     ],
-    axisName: { color: '#b8ecff', fontSize: 13 },
+    axisName: { color: '#b8ecff', fontSize: 17 },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
     splitArea: { areaStyle: { color: ['rgba(0,184,255,0.04)', 'rgba(0,184,255,0.08)'] } },
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
@@ -837,7 +837,7 @@ onMounted(load)
 
 .develop__sub {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #9ecae8;
 }
@@ -859,7 +859,7 @@ onMounted(load)
 
 .warn-section__title {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -913,7 +913,7 @@ onMounted(load)
 
   &-cap {
     margin-top: -6px;
-    font-size: 13px;
+    font-size: 17px;
     color: #7eb4d8;
     font-weight: 600;
   }
@@ -941,13 +941,13 @@ onMounted(load)
   &--warn { border-color: #facc15; }
 
   &__label {
-    font-size: 14px;
+    font-size: 18px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 23px;
+    font-size: 27px;
     font-weight: 900;
     color: #f6fbff;
   }
@@ -966,13 +966,13 @@ onMounted(load)
     flex-shrink: 0;
     padding: 3px 12px;
     border-radius: 999px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #06122e;
   }
 
   &__text {
-    font-size: 14px;
+    font-size: 18px;
     color: #d0e8f8;
     line-height: 1.5;
   }
@@ -997,14 +997,14 @@ onMounted(load)
     margin-bottom: 8px;
   }
   &__title {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #b8ecff;
   }
   &__tag {
     padding: 2px 10px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 800;
     color: #06122e;
     &--low { background: #55e995; }
@@ -1028,11 +1028,11 @@ onMounted(load)
     align-items: center;
     justify-content: space-between;
     margin-top: 6px;
-    font-size: 13px;
+    font-size: 17px;
     color: #9ecae8;
   }
   &__pct {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: var(--student-font-number);
@@ -1065,7 +1065,7 @@ onMounted(load)
   &--medium { border-color: #facc15; }
   &--high { border-color: #ff7474; }
 
-  &__name { font-size: 14px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
+  &__name { font-size: 18px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
   &__row {
     display: flex;
     align-items: center;
@@ -1073,7 +1073,7 @@ onMounted(load)
   }
   &__badge {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: 16px;
     padding: 2px 6px;
     border-radius: 999px;
     font-weight: 700;
@@ -1084,7 +1084,7 @@ onMounted(load)
   &--high &__badge { background: rgba(255, 116, 116, 0.14); color: #ff7474; }
 
   &__desc {
-    font-size: 13px;
+    font-size: 17px;
     color: #9ecae8;
     line-height: 1.35;
   }
@@ -1104,10 +1104,10 @@ onMounted(load)
   padding: 8px 12px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 14px;
+  font-size: 18px;
   color: #d0e8f8;
 
-  &__icon { font-size: 16px; font-weight: 900; }
+  &__icon { font-size: 20px; font-weight: 900; }
   &--low &__icon { color: #55e995; }
   &--medium &__icon { color: #facc15; }
   &--high &__icon { color: #ff7474; }
@@ -1115,7 +1115,7 @@ onMounted(load)
 
 /* 4. 课程风险 */
 .risk-sub {
-  font-size: 13px;
+  font-size: 17px;
   color: #7eb4d8;
   margin-bottom: 8px;
 }
@@ -1127,7 +1127,7 @@ onMounted(load)
 }
 
 .risk-list-head {
-  font-size: 13px;
+  font-size: 17px;
   color: #7eb4d8;
   margin-bottom: 7px;
   font-weight: 600;
@@ -1149,7 +1149,7 @@ onMounted(load)
   padding: 7px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 14px;
+  font-size: 18px;
 
   &__dot {
     width: 7px;
@@ -1175,7 +1175,7 @@ onMounted(load)
 
   &__tag {
     justify-self: end;
-    font-size: 11px;
+    font-size: 15px;
     padding: 1px 6px;
     border-radius: 999px;
     font-weight: 700;
@@ -1191,7 +1191,7 @@ onMounted(load)
   &__head {
     display: flex;
     justify-content: space-between;
-    font-size: 14px;
+    font-size: 18px;
     color: #9ecae8;
     margin-bottom: 6px;
     font-weight: 600;
@@ -1212,10 +1212,10 @@ onMounted(load)
 
   &__note {
     margin-top: 6px;
-    font-size: 13px;
+    font-size: 17px;
     color: #9ecae8;
 
-    b { font-size: 14px; }
+    b { font-size: 18px; }
   }
 }
 
@@ -1231,10 +1231,10 @@ onMounted(load)
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.3);
 
-  &__label { font-size: 13px; color: #7eb4d8; }
+  &__label { font-size: 17px; color: #7eb4d8; }
   &__value {
     float: right;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -1265,7 +1265,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.3);
     background: rgba(0, 184, 255, 0.08);
     color: #8ef6ff;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     cursor: pointer;
 
@@ -1316,26 +1316,26 @@ onMounted(load)
   }
 
   &__label {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #f6fbff;
   }
 
   &__time {
-    font-size: 12px;
+    font-size: 16px;
     color: #7eb4d8;
     font-weight: 700;
   }
 
   &__title {
-    font-size: 13px;
+    font-size: 17px;
     color: #8ef6ff;
     font-weight: 700;
     margin: 2px 0;
   }
 
   &__content {
-    font-size: 13px;
+    font-size: 17px;
     color: #d0e8f8;
     line-height: 1.5;
     display: flex;
@@ -1345,7 +1345,7 @@ onMounted(load)
   }
 
   &__status {
-    font-size: 12px;
+    font-size: 16px;
     padding: 1px 8px;
     border-radius: 999px;
     font-weight: 800;
@@ -1366,13 +1366,13 @@ onMounted(load)
 .warn-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 18px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
     padding: 8px 10px;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -1398,7 +1398,7 @@ onMounted(load)
 }
 
 .cat-badge {
-  font-size: 12px;
+  font-size: 16px;
   padding: 2px 6px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -1408,7 +1408,7 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 13px;
+  font-size: 17px;
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
@@ -1422,7 +1422,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 14px;
+  font-size: 18px;
 }
 
 /* Footer */
@@ -1438,7 +1438,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     cursor: pointer;
 
@@ -1478,7 +1478,7 @@ onMounted(load)
 
 .course-risk__sub {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #9ecae8;
 }
@@ -1517,7 +1517,7 @@ onMounted(load)
 
   &__light {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 800;
     white-space: nowrap;
   }
@@ -1526,14 +1526,14 @@ onMounted(load)
   &--low &__light { color: #55e995; }
 
   &__name {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #f6fbff;
   }
 
   &__toggle {
     margin-left: auto;
-    font-size: 12px;
+    font-size: 16px;
     color: #8ef6ff;
     font-weight: 700;
     white-space: nowrap;
@@ -1543,7 +1543,7 @@ onMounted(load)
     display: flex;
     flex-wrap: wrap;
     gap: 6px 16px;
-    font-size: 13px;
+    font-size: 17px;
     color: #cfe8ff;
 
     span {
@@ -1559,7 +1559,7 @@ onMounted(load)
   &__hint {
     margin: 0 0 8px;
     color: #ffe7a8;
-    font-size: 13px;
+    font-size: 17px;
     line-height: 1.5;
   }
 
@@ -1575,7 +1575,7 @@ onMounted(load)
     border: 1px solid rgba(0, 206, 255, 0.35);
     background: rgba(0, 80, 140, 0.3);
     color: #8ee9ff;
-    font-size: 12px;
+    font-size: 16px;
     text-decoration: none;
 
     &:hover {
@@ -1604,7 +1604,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 2px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #b8ecff;
   }
@@ -1618,8 +1618,8 @@ onMounted(load)
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
 
-  &__label { font-size: 13px; color: #9ecae8; }
-  &__value { font-size: 17px; font-weight: 900; font-family: 'DIN Alternate', sans-serif; }
+  &__label { font-size: 17px; color: #9ecae8; }
+  &__value { font-size: 21px; font-weight: 900; font-family: 'DIN Alternate', sans-serif; }
 
   &--done &__value { color: #55e995; }
   &--doing &__value { color: #facc15; }
@@ -1653,7 +1653,7 @@ onMounted(load)
 
   &__light {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 800;
     white-space: nowrap;
   }
@@ -1662,7 +1662,7 @@ onMounted(load)
   &--low &__light { color: #55e995; }
 
   &__title {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -1671,7 +1671,7 @@ onMounted(load)
     display: flex;
     flex-wrap: wrap;
     gap: 4px 14px;
-    font-size: 13px;
+    font-size: 17px;
     color: #cfe8ff;
   }
 
@@ -1685,7 +1685,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -1696,7 +1696,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.3);
     background: rgba(0, 184, 255, 0.1);
     cursor: pointer;
-    font-size: 15px;
+    font-size: 19px;
     color: #55dfff;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }

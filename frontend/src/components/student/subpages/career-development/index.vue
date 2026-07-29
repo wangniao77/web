@@ -114,7 +114,7 @@ function makeGauge(value: number, progressColor: string | { type: 'linear'; x: n
       axisLine: { lineStyle: { width: 14, color: [[1, 'rgba(0, 60, 120, 0.45)']] } },
       axisTick: { distance: -14, length: 5, lineStyle: { color: 'rgba(102,217,255,0.3)' } },
       splitLine: { distance: -14, length: 12, lineStyle: { color: 'rgba(102,217,255,0.45)', width: 2 } },
-      axisLabel: { distance: -26, color: '#6f9bbd', fontSize: 11 },
+      axisLabel: { distance: -26, color: '#6f9bbd', fontSize: 15 },
       title: { show: false },
       detail: {
         valueAnimation: true,
@@ -177,7 +177,7 @@ const rankBarOption = computed<EChartsOption>(() => ({
   xAxis: {
     type: 'category',
     data: [dashboard.value?.profile?.name?.slice(0, 4) || '本人', '学院平均', '专业平均'],
-    axisLabel: { color: '#889ec2', fontSize: 12 },
+    axisLabel: { color: '#889ec2', fontSize: 16 },
     axisLine: { lineStyle: { color: 'rgba(102,217,255,0.2)' } },
   },
   yAxis: {
@@ -185,8 +185,8 @@ const rankBarOption = computed<EChartsOption>(() => ({
     name: '竞争力指数',
     min: 0,
     max: 100,
-    nameTextStyle: { color: '#889ec2', fontSize: 11 },
-    axisLabel: { color: '#889ec2', fontSize: 11 },
+    nameTextStyle: { color: '#889ec2', fontSize: 15 },
+    axisLabel: { color: '#889ec2', fontSize: 15 },
     splitLine: { lineStyle: { color: 'rgba(102,217,255,0.08)' } },
   },
   series: [{
@@ -197,7 +197,7 @@ const rankBarOption = computed<EChartsOption>(() => ({
       { value: collegeAvg.value, itemStyle: { color: 'rgba(102,217,255,0.55)', borderRadius: [4, 4, 0, 0] } },
       { value: majorAvg.value, itemStyle: { color: 'rgba(102,217,255,0.35)', borderRadius: [4, 4, 0, 0] } },
     ],
-    label: { show: true, position: 'top', color: '#f6fbff', fontSize: 12, fontWeight: 'bold' },
+    label: { show: true, position: 'top', color: '#f6fbff', fontSize: 16, fontWeight: 'bold' },
   }],
 }))
 
@@ -242,7 +242,7 @@ const radarOption = computed<EChartsOption>(() => {
       center: ['50%', '50%'],
       radius: '58%',
       indicator: indicators,
-      axisName: { color: '#889ec2', fontSize: 10.5, padding: [2, 4] },
+      axisName: { color: '#889ec2', fontSize: 14.5, padding: [2, 4] },
       splitArea: { areaStyle: { color: ['rgba(0,184,255,0.02)', 'rgba(0,184,255,0.04)', 'rgba(0,184,255,0.02)', 'rgba(0,184,255,0.04)', 'rgba(0,184,255,0.02)'] } },
       splitLine: { lineStyle: { color: 'rgba(102,217,255,0.15)' } },
       axisLine: { lineStyle: { color: 'rgba(102,217,255,0.2)' } },
@@ -360,7 +360,7 @@ const gradRadarOption = computed<EChartsOption>(() => ({
       { name: '科研经历', max: 100 },
       { name: '项目经历', max: 100 },
     ],
-    axisName: { color: '#889ec2', fontSize: 11, padding: [2, 4] },
+    axisName: { color: '#889ec2', fontSize: 15, padding: [2, 4] },
     splitArea: { areaStyle: { color: ['rgba(167,139,250,0.02)', 'rgba(167,139,250,0.05)', 'rgba(167,139,250,0.02)', 'rgba(167,139,250,0.05)', 'rgba(167,139,250,0.02)'] } },
     splitLine: { lineStyle: { color: 'rgba(167,139,250,0.15)' } },
     axisLine: { lineStyle: { color: 'rgba(167,139,250,0.2)' } },
@@ -487,7 +487,7 @@ const civilRadarOption = computed<EChartsOption>(() => ({
       { name: '综合素质', max: 100 },
       { name: '实践经历', max: 100 },
     ],
-    axisName: { color: '#9fe9c9', fontSize: 11, padding: [2, 4] },
+    axisName: { color: '#9fe9c9', fontSize: 15, padding: [2, 4] },
     splitArea: { areaStyle: { color: ['rgba(52,211,153,0.02)', 'rgba(52,211,153,0.05)', 'rgba(52,211,153,0.02)', 'rgba(52,211,153,0.05)', 'rgba(52,211,153,0.02)'] } },
     splitLine: { lineStyle: { color: 'rgba(52,211,153,0.15)' } },
     axisLine: { lineStyle: { color: 'rgba(52,211,153,0.2)' } },
@@ -1190,7 +1190,7 @@ onMounted(load)
   border: 1px solid transparent;
   background: transparent;
   color: #9ec7e0;
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -1239,13 +1239,13 @@ onMounted(load)
   border-left: 3px solid rgba(0, 206, 255, 0.6);
 
   &__label {
-    font-size: 14px;
+    font-size: 18px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 900;
     color: #f6fbff;
     line-height: 1.3;
@@ -1261,7 +1261,7 @@ onMounted(load)
 
 /* ── 跨列标题 ── */
 .section-title {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 800;
   color: #b8ecff;
   letter-spacing: 0.06em;
@@ -1315,7 +1315,7 @@ onMounted(load)
 
   &__title {
     margin: 0;
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 700;
     color: #f4fbff;
     text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -1323,7 +1323,7 @@ onMounted(load)
 
   &__sub {
     margin-left: auto;
-    font-size: 12px;
+    font-size: 16px;
     color: rgba(184, 236, 255, 0.6);
   }
 }
@@ -1347,12 +1347,12 @@ onMounted(load)
 }
 
 .comp-meta__label {
-  font-size: 11px;
+  font-size: 15px;
   color: #7eb4d8;
 }
 
 .comp-meta__value {
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 800;
   color: #f6fbff;
   font-family: 'DIN Alternate', sans-serif;
@@ -1361,7 +1361,7 @@ onMounted(load)
 }
 
 .comp-meta__hint {
-  font-size: 10px;
+  font-size: 14px;
   color: #6f9bbd;
   text-align: center;
   line-height: 1.4;
@@ -1389,7 +1389,7 @@ onMounted(load)
   border: 1px solid rgba(102, 217, 255, 0.18);
   background: rgba(0, 38, 73, 0.35);
   color: #9ec7e0;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
@@ -1418,7 +1418,7 @@ onMounted(load)
 .match-col {
   &__title {
     margin: 0 0 6px;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     letter-spacing: 0.03em;
 
@@ -1470,14 +1470,14 @@ onMounted(load)
   margin-bottom: 12px;
 
   &__title {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
     color: #f4fbff;
     margin: 0;
   }
 
   &__badge {
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 600;
     color: #7ff6ff;
     padding: 2px 8px;
@@ -1509,7 +1509,7 @@ onMounted(load)
   }
 
   &__label {
-    font-size: 11px;
+    font-size: 15px;
     padding: 1px 6px;
     border-radius: 3px;
     font-weight: 600;
@@ -1521,7 +1521,7 @@ onMounted(load)
 
   &__pct {
     margin-left: auto;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -1562,10 +1562,10 @@ onMounted(load)
   background: rgba(248, 113, 113, 0.06);
   border: 1px solid rgba(248, 113, 113, 0.16);
 
-  &__icon { flex-shrink: 0; font-size: 16px; }
+  &__icon { flex-shrink: 0; font-size: 20px; }
 
   &__text {
-    font-size: 13px;
+    font-size: 17px;
     color: #f6c8c8;
     line-height: 1.6;
   }
@@ -1646,7 +1646,7 @@ onMounted(load)
 
   &__date {
     display: block;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -1654,7 +1654,7 @@ onMounted(load)
 
   &__event {
     display: block;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #f6fbff;
     margin: 4px 0 2px;
@@ -1662,7 +1662,7 @@ onMounted(load)
 
   &__detail {
     margin: 0;
-    font-size: 11px;
+    font-size: 15px;
     color: #889ec2;
     line-height: 1.5;
   }
@@ -1676,12 +1676,12 @@ onMounted(load)
   }
 
   &__prob-label {
-    font-size: 10px;
+    font-size: 14px;
     color: #6f9bbd;
   }
 
   &__prob-value {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 900;
     font-family: 'DIN Alternate', sans-serif;
   }
@@ -1708,7 +1708,7 @@ onMounted(load)
     display: flex;
     justify-content: space-between;
     margin-bottom: 8px;
-    font-size: 13px;
+    font-size: 17px;
     color: #6f9bbd;
     padding: 0 6px;
   }
@@ -1747,7 +1747,7 @@ onMounted(load)
   }
 
   &__label {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 700;
     color: #030c22;
     text-align: center;
@@ -1774,7 +1774,7 @@ onMounted(load)
 
   .risk-matrix--grad &__label,
   .risk-matrix--civil &__label {
-    font-size: 12px;
+    font-size: 16px;
     white-space: nowrap;
     word-break: normal;
   }
@@ -1801,7 +1801,7 @@ onMounted(load)
 }
 
 .risk-table__th {
-  font-size: 13px;
+  font-size: 17px;
   color: #6f9bbd;
   font-weight: 600;
   padding: 0 4px;
@@ -1825,7 +1825,7 @@ onMounted(load)
 }
 
 .risk-table__cell {
-  font-size: 15px;
+  font-size: 19px;
 
   &--name {
     color: #d0e8f8;
@@ -1837,7 +1837,7 @@ onMounted(load)
 
   &--lv {
     text-align: center;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     padding: 2px 4px;
     border-radius: 3px;
@@ -1871,7 +1871,7 @@ onMounted(load)
   gap: 8px;
 
   &__name {
-    font-size: 13px;
+    font-size: 17px;
     color: #b8d6ec;
     font-weight: 600;
   }
@@ -1890,7 +1890,7 @@ onMounted(load)
   }
 
   &__val {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -1914,14 +1914,14 @@ onMounted(load)
   }
 
   &__name {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #f6fbff;
   }
 
   &__pct {
     margin-left: auto;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -1943,7 +1943,7 @@ onMounted(load)
 
 .school-tier {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 4px;
@@ -1975,7 +1975,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 8px;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     letter-spacing: 0.03em;
 
@@ -1996,7 +1996,7 @@ onMounted(load)
     display: flex;
     align-items: center;
     gap: 7px;
-    font-size: 13px;
+    font-size: 17px;
     color: #d0e8f8;
     line-height: 1.5;
     padding: 5px 9px;
@@ -2035,7 +2035,7 @@ onMounted(load)
   }
 
   &__title {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2073,7 +2073,7 @@ onMounted(load)
   }
 
   &__title {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2104,7 +2104,7 @@ onMounted(load)
 
   &__val {
     margin-left: auto;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -2136,7 +2136,7 @@ onMounted(load)
   }
 
   &__overall-num {
-    font-size: 32px;
+    font-size: 36px;
     font-weight: 900;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -2153,12 +2153,12 @@ onMounted(load)
   }
 
   &__overall-label {
-    font-size: 12px;
+    font-size: 16px;
     color: #7eb4d8;
   }
 
   &__gap {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 700;
     color: #f0c040;
   }
@@ -2181,7 +2181,7 @@ onMounted(load)
   }
 
   &__title {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2196,7 +2196,7 @@ onMounted(load)
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 17px;
     color: #b8d6ec;
   }
 
@@ -2260,7 +2260,7 @@ onMounted(load)
     flex-shrink: 0;
     width: 34px;
     text-align: right;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #f6fbff;
     font-family: 'DIN Alternate', sans-serif;
@@ -2297,7 +2297,7 @@ onMounted(load)
   &--long .grad-task__head { background: rgba(52, 211, 153, 0.1); }
 
   &__period {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2316,7 +2316,7 @@ onMounted(load)
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
-    font-size: 13px;
+    font-size: 17px;
     color: #d0e8f8;
     line-height: 1.5;
   }
@@ -2328,13 +2328,13 @@ onMounted(load)
   }
 
   &__meta {
-    font-size: 12px;
+    font-size: 16px;
     color: #9fc4e0;
   }
 
   &__state {
     align-self: flex-end;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 700;
     padding: 1px 8px;
     border-radius: 999px;
@@ -2353,14 +2353,14 @@ onMounted(load)
   gap: 10px;
 
   &__num {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 900;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
   }
 
   &__tag {
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     color: #34d399;
     padding: 3px 10px;
@@ -2388,7 +2388,7 @@ onMounted(load)
   }
 
   &__title {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2413,7 +2413,7 @@ onMounted(load)
   }
 
   &__th {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 700;
     color: #7eb4d8;
   }
@@ -2425,7 +2425,7 @@ onMounted(load)
   }
 
   &__val {
-    font-size: 13px;
+    font-size: 17px;
     color: #b8d6ec;
   }
 }
@@ -2457,14 +2457,14 @@ onMounted(load)
   }
 
   &__name {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #f6fbff;
   }
 
   &__pct {
     margin-left: auto;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -2490,7 +2490,7 @@ onMounted(load)
   }
 
   &__tag {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 600;
     padding: 2px 9px;
     border-radius: 999px;
@@ -2525,7 +2525,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 8px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #f4fbff;
 
@@ -2546,7 +2546,7 @@ onMounted(load)
       display: flex;
       align-items: center;
       gap: 7px;
-      font-size: 13px;
+      font-size: 17px;
       color: #d0e8f8;
       line-height: 1.5;
     }
@@ -2569,7 +2569,7 @@ onMounted(load)
     border-radius: 50%;
     background: rgba(0, 184, 255, 0.18);
     color: #66d9ff;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 800;
     display: flex;
     align-items: center;
@@ -2590,7 +2590,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.14);
     border: 1px solid rgba(0, 184, 255, 0.3);
     color: #7ff6ff;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
   }
 
@@ -2610,14 +2610,14 @@ onMounted(load)
   }
 
   &__name {
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 600;
     color: #d0e8f8;
   }
 
   &__pct {
     margin-left: auto;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -2661,13 +2661,13 @@ onMounted(load)
   }
 
   &__stage-label {
-    font-size: 13px;
+    font-size: 17px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__stage-value {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 800;
     color: #f0c040;
   }
@@ -2680,7 +2680,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error {
@@ -2694,7 +2694,7 @@ onMounted(load)
       background: rgba(0, 184, 255, 0.1);
       color: #55dfff;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 17px;
 
       &:hover { background: rgba(0, 184, 255, 0.2); }
     }

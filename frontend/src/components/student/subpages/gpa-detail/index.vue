@@ -220,7 +220,7 @@ onMounted(load)
 
 .entry-title {
   margin: 0 0 6px;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 800;
   color: #f4fbff;
   letter-spacing: 0.04em;
@@ -229,7 +229,7 @@ onMounted(load)
 
 .entry-sub {
   margin: 0;
-  font-size: 13px;
+  font-size: 17px;
   color: rgba(184, 236, 255, 0.7);
   letter-spacing: 0.02em;
 
@@ -237,7 +237,7 @@ onMounted(load)
     color: #f0c040;
     font-weight: 800;
     font-family: 'DIN Alternate', sans-serif;
-    font-size: 14px;
+    font-size: 18px;
     margin: 0 2px;
   }
 }
@@ -257,7 +257,7 @@ onMounted(load)
 
 .entry-stat-num {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
   color: #66d9ff;
   line-height: 1;
@@ -265,13 +265,13 @@ onMounted(load)
 }
 
 .entry-stat-label {
-  font-size: 11px;
+  font-size: 15px;
   color: rgba(184, 236, 255, 0.55);
   letter-spacing: 0.04em;
 }
 
 .entry-arrow {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #8ef6ff;
   letter-spacing: 0.06em;
@@ -285,7 +285,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
   border: 1px solid rgba(102, 217, 255, 0.12);
   border-radius: 8px;
@@ -300,7 +300,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 17px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }

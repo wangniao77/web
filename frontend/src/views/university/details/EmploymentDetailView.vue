@@ -164,18 +164,18 @@ const pieOption = computed<EChartsOption>(() => {
 
   span {
     display: block;
-    font-size: $college-fs-label;
+    font-size: $detail-fs-label;
     color: rgba(174, 198, 230, 0.68);
     margin-bottom: 4px;
   }
 
   strong {
-    font-size: 20px;
+    font-size: 22px;
     color: #00e5ff;
     font-family: var(--university-font-number);
 
     small {
-      font-size: 12px;
+      font-size: 14px;
       margin-left: 2px;
     }
   }
@@ -195,7 +195,7 @@ const pieOption = computed<EChartsOption>(() => {
   background: rgba(4, 14, 38, 0.45);
 
   h3 {
-    font-size: 14px;
+    font-size: 16px;
     color: #f3f8ff;
     margin-bottom: 8px;
   }
@@ -206,7 +206,7 @@ const pieOption = computed<EChartsOption>(() => {
 }
 
 .group h3 {
-  font-size: 14px;
+  font-size: 16px;
   color: #f3f8ff;
   margin-bottom: 8px;
 }
@@ -218,7 +218,7 @@ const pieOption = computed<EChartsOption>(() => {
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
 
   th,
   td {

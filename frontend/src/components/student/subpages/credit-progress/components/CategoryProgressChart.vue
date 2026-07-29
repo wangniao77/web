@@ -33,7 +33,7 @@ const option = computed<EChartsOption>(() => {
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      textStyle: { fontSize: 14 },
+      textStyle: { fontSize: 18 },
       formatter: (params: unknown) => {
         const arr = params as Array<{ name: string; seriesName: string; value: number; marker: string }>
         if (!Array.isArray(arr) || !arr.length) return ''
@@ -52,15 +52,15 @@ const option = computed<EChartsOption>(() => {
     xAxis: {
       type: 'value',
       name: '学分',
-      nameTextStyle: { color: 'rgba(184, 236, 255, 0.6)', fontSize: 13 },
-      axisLabel: { color: '#9bb8db', fontSize: 13 },
+      nameTextStyle: { color: 'rgba(184, 236, 255, 0.6)', fontSize: 17 },
+      axisLabel: { color: '#9bb8db', fontSize: 17 },
       axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.2)' } },
       splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
     },
     yAxis: {
       type: 'category',
       data: list.map((c) => c.name),
-      axisLabel: { color: '#d4ecff', fontSize: 15, fontWeight: 600 },
+      axisLabel: { color: '#d4ecff', fontSize: 19, fontWeight: 600 },
       axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.2)' } },
       axisTick: { show: false },
     },
@@ -87,7 +87,7 @@ const option = computed<EChartsOption>(() => {
           show: true,
           position: 'insideRight',
           color: '#f4fbff',
-          fontSize: 15,
+          fontSize: 19,
           fontWeight: 700,
           formatter: (p: unknown) => {
             const it = p as { value: number; dataIndex: number }
@@ -133,7 +133,7 @@ const option = computed<EChartsOption>(() => {
               ? '#f87171'
               : '#34d399'
           },
-          fontSize: 12,
+          fontSize: 16,
           fontWeight: 700,
           formatter: (p: unknown) => {
             const it = p as { value: number; dataIndex: number }
@@ -210,7 +210,7 @@ const option = computed<EChartsOption>(() => {
 
 .chart-card__title {
   margin: 0;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   color: #f4fbff;
   text-shadow: 0 0 12px rgba(0, 242, 255, 0.22);
@@ -219,7 +219,7 @@ const option = computed<EChartsOption>(() => {
 
 .chart-card__sub {
   margin-left: auto;
-  font-size: 14px;
+  font-size: 18px;
   color: rgba(184, 236, 255, 0.6);
 }
 

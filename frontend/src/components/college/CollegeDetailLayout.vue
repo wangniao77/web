@@ -148,7 +148,7 @@ async function exportPageExcel() {
     rgba(0, 184, 255, 0.08);
   color: #8ef6ff;
   cursor: pointer;
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
   font-weight: 800;
   box-shadow: inset 0 0 14px rgba(0, 242, 255, 0.08);
   transition: border-color 0.2s, color 0.2s, box-shadow 0.2s, background 0.2s;
@@ -173,7 +173,7 @@ async function exportPageExcel() {
     position: relative;
     margin: 0 0 4px;
     color: #f6fbff;
-    font-size: 24px;
+    font-size: 28px;
     line-height: 1.15;
     font-weight: 900;
     letter-spacing: 0.04em;
@@ -181,7 +181,7 @@ async function exportPageExcel() {
   }
 
   span {
-    font-size: $college-fs-label;
+    font-size: $detail-fs-label;
     color: rgba(184, 236, 255, 0.74);
   }
 }
@@ -197,7 +197,7 @@ async function exportPageExcel() {
   background: linear-gradient(180deg, rgba(0, 120, 190, 0.28), rgba(4, 18, 48, 0.58));
   color: #b8f0ff;
   cursor: pointer;
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
   font-weight: 800;
   transition: border-color 0.2s, color 0.2s, background 0.2s;
 
@@ -232,7 +232,7 @@ async function exportPageExcel() {
   border-radius: 8px;
   background: rgba(4, 14, 38, 0.38);
   color: rgba(184, 236, 255, 0.72);
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
 }
 
 .college-detail__body :deep(.detail-error) {
@@ -336,7 +336,7 @@ async function exportPageExcel() {
 .college-detail__body :deep(.detail-table) {
   width: 100%;
   border-collapse: collapse;
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
 }
 
 .college-detail__body :deep(.detail-table th),

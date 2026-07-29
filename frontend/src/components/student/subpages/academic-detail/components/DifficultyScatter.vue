@@ -61,7 +61,7 @@ const option = computed<EChartsOption>(() => ({
     confine: true,
     backgroundColor: 'rgba(6, 17, 52, 0.96)',
     borderColor: 'rgba(0, 212, 255, 0.3)',
-    textStyle: { color: '#e2edff', fontSize: 13 },
+    textStyle: { color: '#e2edff', fontSize: 17 },
     formatter: (p: unknown) => {
       const it = p as { data: { name: string; p: CoursePoint } }
       const c = it.data.p
@@ -83,17 +83,17 @@ const option = computed<EChartsOption>(() => ({
     name: '课程难度 →',
     nameLocation: 'middle',
     nameGap: 24,
-    nameTextStyle: { color: '#7fb4d4', fontSize: 12 },
+    nameTextStyle: { color: '#7fb4d4', fontSize: 16 },
     min: 30, max: 95,
-    axisLabel: { ...AXIS_LABEL, fontSize: 12, color: '#9ec7e0', formatter: diffLabel },
+    axisLabel: { ...AXIS_LABEL, fontSize: 16, color: '#9ec7e0', formatter: diffLabel },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
   },
   yAxis: {
     type: 'value',
     name: '成绩',
     min: 50, max: 100,
-    nameTextStyle: { color: '#7fb4d4', fontSize: 12 },
-    axisLabel: { ...AXIS_LABEL, fontSize: 12, color: '#9ec7e0' },
+    nameTextStyle: { color: '#7fb4d4', fontSize: 16 },
+    axisLabel: { ...AXIS_LABEL, fontSize: 16, color: '#9ec7e0' },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
   },
   series: [
@@ -104,7 +104,7 @@ const option = computed<EChartsOption>(() => ({
       markArea: {
         silent: true,
         itemStyle: { color: 'rgba(52, 211, 153, 0.08)' },
-        label: { show: true, position: 'insideTopLeft', color: 'rgba(52,211,153,0.7)', fontSize: 11, formatter: '优势区（高难·高分）' },
+        label: { show: true, position: 'insideTopLeft', color: 'rgba(52,211,153,0.7)', fontSize: 15, formatter: '优势区（高难·高分）' },
         data: [[{ xAxis: 65, yAxis: 80 }, { xAxis: 95, yAxis: 100 }]],
       },
     },
@@ -137,7 +137,7 @@ const insight = computed(() => {
 <style scoped lang="scss">
 .insight {
   margin: 0;
-  font-size: 13px;
+  font-size: 17px;
   line-height: 1.55;
   color: #bfe2f5;
 
@@ -146,7 +146,7 @@ const insight = computed(() => {
     margin-right: 6px;
     padding: 1px 7px;
     border-radius: 999px;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 700;
     color: #04101f;
     background: linear-gradient(90deg, #7ef0d0, #34d399);

@@ -1018,7 +1018,7 @@ onMounted(load)
   border: 1px solid rgba(0, 184, 255, 0.25);
   background: rgba(0, 38, 73, 0.35);
   color: #7eb4d8;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
@@ -1049,7 +1049,7 @@ onMounted(load)
   border: 1px solid rgba(0, 184, 255, 0.18);
   background: rgba(0, 38, 73, 0.3);
   color: #7eb4d8;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
@@ -1079,7 +1079,7 @@ onMounted(load)
   border: 1px solid rgba(0, 184, 255, 0.22);
   background: rgba(0, 38, 73, 0.4);
   color: #8ec8e8;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
@@ -1112,7 +1112,7 @@ onMounted(load)
   border: 1px dashed rgba(0, 184, 255, 0.28);
   background: rgba(0, 38, 73, 0.28);
   color: #7eb4d8;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -1134,7 +1134,7 @@ onMounted(load)
   padding: 24px;
   text-align: center;
   color: rgba(184, 236, 255, 0.6);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* AI 对策与建议 */
@@ -1162,14 +1162,14 @@ onMounted(load)
   border: 1px solid rgba(0, 206, 255, 0.45);
   background: rgba(0, 184, 255, 0.14);
   color: #8ef6ff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.06em;
 }
 
 .ledger-ai-advice__title {
   margin: 0;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 800;
   color: #f6fbff;
   letter-spacing: 0.04em;
@@ -1189,7 +1189,7 @@ onMounted(load)
 
   h5 {
     margin: 0 0 8px;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 800;
     letter-spacing: 0.04em;
   }
@@ -1197,7 +1197,7 @@ onMounted(load)
   p {
     margin: 0;
     color: #d8eeff;
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.65;
   }
 
@@ -1226,7 +1226,7 @@ onMounted(load)
 
 .sub-panel__title {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   color: #f6fbff;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1255,7 +1255,7 @@ onMounted(load)
   width: 100%;
   min-width: 720px;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.4;
 
   th,
@@ -1293,7 +1293,7 @@ onMounted(load)
   color: #55dfff;
   text-decoration: underline;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
 
   &:hover {
     color: #8ef6ff;
@@ -1330,18 +1330,18 @@ onMounted(load)
   &--high { border-color: #ff7474; }
 
   &__label {
-    font-size: 14px;
+    font-size: 16px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 900;
     color: #f6fbff;
 
     small {
-      font-size: 15px;
+      font-size: 17px;
       color: #9ecae8;
       font-weight: 600;
     }
@@ -1384,7 +1384,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 17px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error {
@@ -1399,7 +1399,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 15px;
+    font-size: 17px;
 
     &:hover {
       background: rgba(0, 184, 255, 0.2);
@@ -1424,7 +1424,7 @@ onMounted(load)
     align-self: flex-start;
     padding: 2px 10px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     color: #8ef6ff;
     background: rgba(0, 184, 255, 0.14);
@@ -1433,7 +1433,7 @@ onMounted(load)
 
   &__text {
     margin: 0;
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.8;
     color: #dbeeff;
   }

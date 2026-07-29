@@ -53,18 +53,18 @@ function goBack() {
   background: rgba(0, 184, 255, 0.08);
   color: #55dfff;
   cursor: pointer;
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
 }
 
 .university-detail__title {
   h1 {
-    font-size: 20px;
+    font-size: 26px;
     color: #f3f8ff;
     margin-bottom: 2px;
   }
 
   span {
-    font-size: $college-fs-label;
+    font-size: $detail-fs-label;
     color: rgba(174, 198, 230, 0.68);
   }
 }

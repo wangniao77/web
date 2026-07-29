@@ -72,7 +72,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
   border: 1px solid rgba(102, 217, 255, 0.12);
   border-radius: 8px;
@@ -87,7 +87,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 17px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }

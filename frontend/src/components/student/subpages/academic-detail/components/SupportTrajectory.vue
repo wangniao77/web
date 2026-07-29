@@ -140,7 +140,7 @@ const records: SupportRecord[] = [
 
   &__title {
     margin: 0;
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 700;
     color: #f4fbff;
     text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -148,7 +148,7 @@ const records: SupportRecord[] = [
 
   &__sub {
     margin-left: auto;
-    font-size: 12px;
+    font-size: 16px;
     color: rgba(184, 236, 255, 0.6);
     white-space: nowrap;
   }
@@ -231,13 +231,13 @@ const records: SupportRecord[] = [
 
 .tl-date {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 800;
   color: #8ef6ff;
 }
 
 .tl-role {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   color: #04101f;
   background: linear-gradient(90deg, #7ef0d0, #34d399);
@@ -249,13 +249,13 @@ const records: SupportRecord[] = [
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 17px;
 }
 
 .tl-teacher-label {
   flex-shrink: 0;
   color: #7eb4d8;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .tl-teacher-name {
@@ -272,14 +272,14 @@ const records: SupportRecord[] = [
 .tl-row-label {
   flex-shrink: 0;
   margin-top: 1px;
-  font-size: 12px;
+  font-size: 16px;
   color: #7eb4d8;
   width: 56px;
 }
 
 .tl-text {
   margin: 0;
-  font-size: 13px;
+  font-size: 17px;
   line-height: 1.5;
   color: #cfe8ff;
 

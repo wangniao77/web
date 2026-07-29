@@ -82,7 +82,7 @@ const tagFilters = [
   background: rgba(0, 184, 255, 0.06);
   color: rgba(174, 198, 230, 0.78);
   cursor: pointer;
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
 
   &.active {
     color: #00e5ff;
@@ -110,13 +110,13 @@ const tagFilters = [
     margin-bottom: 8px;
 
     time {
-      font-size: $college-fs-label;
+      font-size: $detail-fs-label;
       color: rgba(174, 198, 230, 0.55);
     }
   }
 
   h3 {
-    font-size: 16px;
+    font-size: 18px;
     color: #f3f8ff;
     margin-bottom: 6px;
   }
@@ -126,7 +126,7 @@ const tagFilters = [
   display: inline-block;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 
   &--important {
@@ -146,21 +146,21 @@ const tagFilters = [
 }
 
 .summary {
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
   color: rgba(174, 198, 230, 0.78);
   margin-bottom: 8px;
   line-height: 1.5;
 }
 
 .content {
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
   color: rgba(174, 198, 230, 0.65);
   line-height: 1.6;
   margin-bottom: 8px;
 }
 
 footer {
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
   color: rgba(174, 198, 230, 0.5);
 }
 </style>

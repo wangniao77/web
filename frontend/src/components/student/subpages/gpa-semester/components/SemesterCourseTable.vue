@@ -213,7 +213,7 @@ watch(activeIndex, () => {
 
 .table-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   color: #f4fbff;
   text-shadow: 0 0 12px rgba(0, 242, 255, 0.28);
@@ -222,7 +222,7 @@ watch(activeIndex, () => {
 
 .table-sub {
   margin-left: auto;
-  font-size: 13px;
+  font-size: 17px;
   color: rgba(184, 236, 255, 0.55);
   letter-spacing: 0.02em;
 }
@@ -268,12 +268,12 @@ watch(activeIndex, () => {
 }
 
 .tab-name {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
 }
 
 .tab-stat {
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(184, 236, 255, 0.6);
   display: flex;
   gap: 8px;
@@ -303,20 +303,20 @@ watch(activeIndex, () => {
 }
 
 .sum-label {
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(184, 236, 255, 0.6);
   letter-spacing: 0.04em;
 }
 
 .sum-val {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: #f4f8ff;
   line-height: 1.1;
 
   small {
-    font-size: 12px;
+    font-size: 16px;
     color: rgba(184, 236, 255, 0.55);
     font-weight: 400;
     font-family: inherit;
@@ -344,7 +344,7 @@ watch(activeIndex, () => {
 .course-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 18px;
 
   th, td {
     padding: 12px 14px;
@@ -359,7 +359,7 @@ watch(activeIndex, () => {
     z-index: 1;
     color: #a8f0ff;
     font-weight: 800;
-    font-size: 13px;
+    font-size: 17px;
     letter-spacing: 0.04em;
     background:
       linear-gradient(90deg, rgba(0, 184, 255, 0.16), rgba(0, 184, 255, 0.04)),
@@ -397,7 +397,7 @@ watch(activeIndex, () => {
   td.td-score {
     font-family: 'DIN Alternate', sans-serif;
     font-weight: 800;
-    font-size: 18px;
+    font-size: 22px;
 
     &.lv-excellent { color: #34d399; text-shadow: 0 0 6px rgba(52, 211, 153, 0.3); }
     &.lv-good      { color: #66d9ff; }
@@ -409,13 +409,13 @@ watch(activeIndex, () => {
 
 .course-name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 18px;
   color: rgba(230, 246, 255, 0.92);
 }
 
 .badge-uncounted {
   margin-left: 6px;
-  font-size: 11px;
+  font-size: 15px;
   padding: 0 5px;
   border-radius: 3px;
   background: rgba(184, 236, 255, 0.08);
@@ -425,7 +425,7 @@ watch(activeIndex, () => {
 
 .cat-tag {
   display: inline-block;
-  font-size: 12px;
+  font-size: 16px;
   padding: 2px 8px;
   border-radius: 3px;
   border: 1px solid;
@@ -434,7 +434,7 @@ watch(activeIndex, () => {
 
 .level-tag {
   display: inline-block;
-  font-size: 12px;
+  font-size: 16px;
   padding: 2px 10px;
   border-radius: 999px;
   font-weight: 700;

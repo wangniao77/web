@@ -78,7 +78,7 @@ defineProps<{ title: string; sub?: string; wide?: boolean; compact?: boolean }>(
 
 .chart-card__title {
   margin: 0;
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -86,7 +86,7 @@ defineProps<{ title: string; sub?: string; wide?: boolean; compact?: boolean }>(
 
 .chart-card__sub {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(184, 236, 255, 0.6);
   white-space: nowrap;
 }

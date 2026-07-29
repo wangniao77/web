@@ -98,7 +98,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 
 .list-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(52, 211, 153, 0.18);
@@ -106,7 +106,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 
 .list-meta {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(184, 236, 255, 0.6);
 }
 
@@ -146,7 +146,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 }
 
 .rank {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   text-align: center;
   color: #f0c040;
@@ -174,7 +174,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 }
 
 .name {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   color: #f0f6ff;
   white-space: nowrap;
@@ -184,7 +184,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 }
 
 .category {
-  font-size: 11px;
+  font-size: 15px;
   padding: 1px 6px;
   border-radius: 3px;
   background: rgba(0, 184, 255, 0.12);
@@ -194,7 +194,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 }
 
 .meta-row {
-  font-size: 11px;
+  font-size: 15px;
   color: rgba(184, 236, 255, 0.55);
   display: flex;
   align-items: center;
@@ -213,7 +213,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 
 .score-num {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   color: #34d399;
   line-height: 1.1;
@@ -221,7 +221,7 @@ const display = computed(() => props.courses.slice(0, props.max))
 }
 
 .score-gpa {
-  font-size: 11px;
+  font-size: 15px;
   color: rgba(184, 236, 255, 0.6);
 }
 
@@ -229,7 +229,7 @@ const display = computed(() => props.courses.slice(0, props.max))
   flex: 1;
   display: grid;
   place-items: center;
-  font-size: 13px;
+  font-size: 17px;
   color: rgba(184, 236, 255, 0.5);
 }
 </style>

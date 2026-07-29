@@ -38,15 +38,15 @@ onMounted(async () => {
 <style scoped lang="scss">
 .detail-placeholder { color: rgba(174, 198, 230, 0.7); }
 .metrics-section { margin-bottom: 20px; }
-.metrics-section h3 { font-size: 16px; color: #f3f8ff; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(85, 168, 255, 0.12); }
+.metrics-section h3 { font-size: 18px; color: #f3f8ff; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(85, 168, 255, 0.12); }
 .metrics-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .metric-card {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid rgba(85, 168, 255, 0.12);
   background: rgba(4, 14, 38, 0.45);
-  h4 { font-size: 14px; color: #55dfff; margin-bottom: 8px; }
-  p { font-size: 12px; color: rgba(174, 198, 230, 0.78); line-height: 1.55; margin-bottom: 4px; }
+  h4 { font-size: 16px; color: #55dfff; margin-bottom: 8px; }
+  p { font-size: 14px; color: rgba(174, 198, 230, 0.78); line-height: 1.55; margin-bottom: 4px; }
   strong { color: rgba(232, 244, 255, 0.92); font-weight: 600; }
 }
 </style>

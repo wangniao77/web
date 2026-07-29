@@ -58,6 +58,16 @@ $college-fs-label:     14px;  // 标签 / 图表小标题
 $college-fs-meta:      12px;  // 辅助 / 日期 / 状态
 $college-fs-chart:     15px;  // 坐标轴 / 图例
 
+// 二级详情页字号（相对一级大屏更大，仅详情页引用）
+$detail-fs-display:   44px;
+$detail-fs-hero:      36px;
+$detail-fs-highlight: 30px;
+$detail-fs-title:     20px;
+$detail-fs-body:      17px;
+$detail-fs-label:     16px;
+$detail-fs-meta:      14px;
+$detail-fs-chart:     17px;
+
 // 兼容旧变量名
 $college-fs-xs:     $college-fs-meta;
 $college-fs-sm:     $college-fs-label;

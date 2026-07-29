@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
 import { collegeDetailService } from '@/api/college/services/details'
@@ -59,7 +59,7 @@ onMounted(async () => {
   display: flex;
   gap: 16px;
   margin-bottom: 12px;
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
   color: rgba(174, 198, 230, 0.78);
 }
 
@@ -82,12 +82,12 @@ onMounted(async () => {
     margin-bottom: 8px;
 
     h3 {
-      font-size: $college-fs-body;
+      font-size: $detail-fs-body;
       color: #f3f8ff;
     }
 
     span {
-      font-size: $college-fs-meta;
+      font-size: $detail-fs-meta;
       padding: 2px 8px;
       border-radius: 999px;
     }
@@ -110,7 +110,7 @@ onMounted(async () => {
 }
 
 .task-desc {
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
   color: rgba(174, 198, 230, 0.72);
   margin-bottom: 8px;
   line-height: 1.5;
@@ -120,7 +120,7 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  font-size: $college-fs-meta;
+  font-size: $detail-fs-meta;
   color: rgba(174, 198, 230, 0.62);
   margin-bottom: 8px;
 }
@@ -132,7 +132,7 @@ onMounted(async () => {
   gap: 4px;
 
   li {
-    font-size: $college-fs-meta;
+    font-size: $detail-fs-meta;
     color: rgba(174, 198, 230, 0.55);
     padding-left: 12px;
     position: relative;

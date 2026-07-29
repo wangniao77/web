@@ -262,13 +262,13 @@ const growthTrend = computed(() => {
 const growthTrendOption = computed<EChartsOption>(() => ({
   tooltip: {
     trigger: 'axis',
-    textStyle: { fontSize: 15 },
+    textStyle: { fontSize: 17 },
     backgroundColor: 'rgba(6, 24, 52, 0.92)',
     borderColor: 'rgba(0, 184, 255, 0.35)',
   },
   legend: {
     data: ['GPA', '技能证书', '项目经历'],
-    textStyle: { color: '#d8eeff', fontSize: 16, fontWeight: 600 },
+    textStyle: { color: '#d8eeff', fontSize: 18, fontWeight: 600 },
     top: 4,
     itemWidth: 18,
     itemHeight: 10,
@@ -281,7 +281,7 @@ const growthTrendOption = computed<EChartsOption>(() => ({
     boundaryGap: true,
     axisLabel: {
       color: '#b8d8f0',
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: 600,
       margin: 14,
       interval: 0,
@@ -294,15 +294,15 @@ const growthTrendOption = computed<EChartsOption>(() => ({
   yAxis: [
     {
       type: 'value', min: 0, max: 10, splitNumber: 5, position: 'left',
-      name: '次数', nameTextStyle: { color: '#9ec0dc', fontSize: 12 },
-      axisLabel: { color: '#9ec0dc', fontSize: 14, margin: 10 },
+      name: '次数', nameTextStyle: { color: '#9ec0dc', fontSize: 14 },
+      axisLabel: { color: '#9ec0dc', fontSize: 16, margin: 10 },
       axisLine: { show: false },
       splitLine: { lineStyle: { color: 'rgba(102,217,255,.10)', type: 'dashed' } },
     },
     {
       type: 'value', min: 0, max: 4, splitNumber: 4, position: 'right',
-      name: 'GPA', nameTextStyle: { color: '#7fd4ff', fontSize: 12 },
-      axisLabel: { color: '#7fd4ff', fontSize: 14, margin: 10 },
+      name: 'GPA', nameTextStyle: { color: '#7fd4ff', fontSize: 14 },
+      axisLabel: { color: '#7fd4ff', fontSize: 16, margin: 10 },
       axisLine: { show: false },
       splitLine: { show: false },
     },
@@ -312,7 +312,7 @@ const growthTrendOption = computed<EChartsOption>(() => ({
       name: 'GPA', type: 'line', yAxisIndex: 1, smooth: 0.35, symbol: 'circle', symbolSize: 9,
       data: growthTrend.value.gpa,
       label: {
-        show: true, position: 'top', color: '#7fd4ff', fontSize: 12, fontWeight: 600,
+        show: true, position: 'top', color: '#7fd4ff', fontSize: 14, fontWeight: 600,
         formatter: (p: any) => `${p.value}`,
       },
       lineStyle: { color: '#38bdf8', width: 3 },
@@ -322,7 +322,7 @@ const growthTrendOption = computed<EChartsOption>(() => ({
       name: '技能证书', type: 'bar', yAxisIndex: 0, barMaxWidth: 18,
       data: growthTrend.value.cert,
       label: {
-        show: true, position: 'top', color: '#b8d8f0', fontSize: 12, fontWeight: 600,
+        show: true, position: 'top', color: '#b8d8f0', fontSize: 14, fontWeight: 600,
         formatter: (p: any) => `${p.value}`,
       },
       itemStyle: {
@@ -340,7 +340,7 @@ const growthTrendOption = computed<EChartsOption>(() => ({
       name: '项目经历', type: 'bar', yAxisIndex: 0, barMaxWidth: 18,
       data: growthTrend.value.proj,
       label: {
-        show: true, position: 'top', color: '#b8d8f0', fontSize: 12, fontWeight: 600,
+        show: true, position: 'top', color: '#b8d8f0', fontSize: 14, fontWeight: 600,
         formatter: (p: any) => `${p.value}`,
       },
       itemStyle: {
@@ -360,12 +360,12 @@ const growthTrendOption = computed<EChartsOption>(() => ({
 /* ════════════ 2. 能力画像分析 ════════════ */
 const radarOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'item' },
-  legend: { data: ['本人', '专业平均'], textStyle: { color: '#cfe6f8', fontSize: 14 }, top: 0, right: 0 },
+  legend: { data: ['本人', '专业平均'], textStyle: { color: '#cfe6f8', fontSize: 16 }, top: 0, right: 0 },
   radar: {
     center: ['50%', '54%'],
     radius: '64%',
     indicator: abilities.value.map(a => ({ name: a.label, max: 100 })),
-    axisName: { color: '#8eb8d8', fontSize: 14 },
+    axisName: { color: '#8eb8d8', fontSize: 16 },
     shape: 'polygon',
     splitNumber: 4,
     axisLine: { lineStyle: { color: 'rgba(102,217,255,0.15)' } },
@@ -499,7 +499,7 @@ const riskRadarOption = computed<EChartsOption>(() => ({
     center: ['50%', '52%'],
     radius: '66%',
     indicator: riskDims.value.map(r => ({ name: r.label, max: 100 })),
-    axisName: { color: '#8eb8d8', fontSize: 14 },
+    axisName: { color: '#8eb8d8', fontSize: 16 },
     shape: 'polygon',
     splitNumber: 4,
     axisLine: { lineStyle: { color: 'rgba(102,217,255,0.15)' } },
@@ -618,12 +618,12 @@ const peerDims = computed(() => {
 })
 const peerCompareOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'item' },
-  legend: { data: ['本人', '专业TOP20%'], textStyle: { color: '#cfe6f8', fontSize: 14 }, top: 0, right: 0 },
+  legend: { data: ['本人', '专业TOP20%'], textStyle: { color: '#cfe6f8', fontSize: 16 }, top: 0, right: 0 },
   radar: {
     center: ['50%', '56%'],
     radius: '66%',
     indicator: peerDims.value.map(d => ({ name: d.name, max: 100 })),
-    axisName: { color: '#8eb8d8', fontSize: 14 },
+    axisName: { color: '#8eb8d8', fontSize: 16 },
     shape: 'polygon',
     splitNumber: 4,
     axisLine: { lineStyle: { color: 'rgba(102,217,255,0.15)' } },
@@ -983,7 +983,7 @@ onMounted(load)
 .ai-deep :deep(.stu-sec-nav__item) {
   min-width: 112px;
   padding: 13px 18px;
-  font-size: 17px;
+  font-size: 19px;
   letter-spacing: 0.05em;
 }
 
@@ -1041,7 +1041,7 @@ onMounted(load)
 }
 
 .cap-cell__title {
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 800;
   color: #a8d4ef;
   margin-bottom: 12px;
@@ -1110,14 +1110,14 @@ onMounted(load)
     justify-content: center;
   }
   &__score {
-    font-size: 44px;
+    font-size: 46px;
     font-weight: 900;
     color: #fff;
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
   &__level {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     margin-top: 6px;
   }
@@ -1130,10 +1130,10 @@ onMounted(load)
   background: rgba(0, 30, 60, .28);
   border: 1px solid rgba(0, 184, 255, .12);
 
-  &__label { color: #7aa4c0; font-size: 16px; margin-bottom: 6px; }
+  &__label { color: #7aa4c0; font-size: 18px; margin-bottom: 6px; }
   &__stage { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-  &__stars { color: #facc15; font-size: 20px; letter-spacing: 2px; }
-  &__text { color: #7ff6ff; font-size: 19px; font-weight: 700; }
+  &__stars { color: #facc15; font-size: 22px; letter-spacing: 2px; }
+  &__text { color: #7ff6ff; font-size: 21px; font-weight: 700; }
 }
 
 .stage-progress {
@@ -1143,11 +1143,11 @@ onMounted(load)
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-size: 16px;
+    font-size: 18px;
     color: #8eb8d8;
     margin-bottom: 6px;
 
-    em { color: #7ff6ff; font-weight: 800; font-style: normal; font-size: 19px; }
+    em { color: #7ff6ff; font-weight: 800; font-style: normal; font-size: 21px; }
   }
   &__bar {
     height: 11px;
@@ -1173,15 +1173,15 @@ onMounted(load)
   background: rgba(0, 30, 60, .3);
   border: 1px solid rgba(102, 217, 255, .1);
 
-  &__label { display: block; color: #7aa4c0; font-size: 15px; margin-bottom: 4px; }
-  &__value { color: #7ff6ff; font-size: 22px; font-weight: 800; }
+  &__label { display: block; color: #7aa4c0; font-size: 17px; margin-bottom: 4px; }
+  &__value { color: #7ff6ff; font-size: 24px; font-weight: 800; }
 }
 
 .ability-break {
   margin-top: 8px;
 
   &__hint {
-    font-size: 15px;
+    font-size: 17px;
     color: #6a8db0;
     text-align: center;
     margin-bottom: 8px;
@@ -1194,7 +1194,7 @@ onMounted(load)
     background: rgba(0, 100, 180, .12);
     border: 1px solid rgba(0, 184, 255, .18);
     color: #b8ecff;
-    font-size: 16px;
+    font-size: 18px;
     text-align: center;
   }
 }
@@ -1210,7 +1210,7 @@ onMounted(load)
   border: 1px solid rgba(102, 217, 255, .12);
   background: rgba(0, 30, 60, .28);
   color: #d8eeff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   cursor: pointer;
   transition: all .2s;
@@ -1264,13 +1264,13 @@ onMounted(load)
   background: rgba(0, 184, 255, .14);
   border: 1px solid rgba(0, 184, 255, .32);
 
-  &__icon { font-size: 22px; }
-  &__label { color: #8ef6ff; font-size: 18px; font-weight: 800; }
+  &__icon { font-size: 24px; }
+  &__label { color: #8ef6ff; font-size: 20px; font-weight: 800; }
 }
 
 .portrait-section {
   &__title {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: #7aa4c0;
     margin-bottom: 8px;
@@ -1292,10 +1292,10 @@ onMounted(load)
   background: rgba(0, 180, 255, .12);
   border: 1px solid rgba(0, 200, 255, .3);
   color: #8ef6ff;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
 }
-.route-arrow { color: #6cdfff; font-size: 18px; font-weight: 800; }
+.route-arrow { color: #6cdfff; font-size: 20px; font-weight: 800; }
 
 .portrait-head {
   display: flex;
@@ -1304,13 +1304,13 @@ onMounted(load)
   margin-bottom: 10px;
 }
 .portrait-name {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 900;
   color: #f6fbff;
   letter-spacing: 0.04em;
   text-shadow: 0 0 14px rgba(0, 242, 255, .28);
 }
-.portrait-meta { color: #9ecae8; font-size: 18px; margin-top: 2px; }
+.portrait-meta { color: #9ecae8; font-size: 20px; margin-top: 2px; }
 
 .portrait-stage {
   display: flex;
@@ -1318,16 +1318,16 @@ onMounted(load)
   gap: 10px;
   margin-bottom: 12px;
 
-  &__label { color: #7aa4c0; font-size: 15px; }
-  &__stars { color: #facc15; font-size: 18px; letter-spacing: 2px; }
-  &__text { color: #7ff6ff; font-size: 17px; font-weight: 800; }
+  &__label { color: #7aa4c0; font-size: 17px; }
+  &__stars { color: #facc15; font-size: 20px; letter-spacing: 2px; }
+  &__text { color: #7ff6ff; font-size: 19px; font-weight: 800; }
 }
 
 .portrait-block {
   margin-bottom: 14px;
 
   &__title {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     color: #7aa4c0;
     margin-bottom: 8px;
@@ -1346,7 +1346,7 @@ onMounted(load)
 .tag {
   padding: 6px 14px;
   border-radius: 14px;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   border: 1px solid transparent;
 
@@ -1374,8 +1374,8 @@ onMounted(load)
     border: 1px solid rgba(102, 217, 255, .1);
     text-align: center;
   }
-  &__label { display: block; color: #7aa4c0; font-size: 15px; margin-bottom: 6px; }
-  &__value { color: #7ff6ff; font-size: 20px; font-weight: 800; }
+  &__label { display: block; color: #7aa4c0; font-size: 17px; margin-bottom: 6px; }
+  &__value { color: #7ff6ff; font-size: 22px; font-weight: 800; }
 }
 
 .judge-basis {
@@ -1388,12 +1388,12 @@ onMounted(load)
     justify-content: space-between;
     align-items: center;
   }
-  &__label { color: #cfe6f8; font-size: 16px; }
-  &__stars { color: #facc15; font-size: 16px; letter-spacing: 1px; }
+  &__label { color: #cfe6f8; font-size: 18px; }
+  &__stars { color: #facc15; font-size: 18px; letter-spacing: 1px; }
 }
 
 .judge-source {
-  &__label { display: block; color: #7aa4c0; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  &__label { display: block; color: #7aa4c0; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
 }
 
 .ai-decision {
@@ -1419,8 +1419,8 @@ onMounted(load)
     &.is-good { background: #43e7af; box-shadow: 0 0 10px rgba(67, 231, 175, .6); }
     &.is-warn { background: #facc15; box-shadow: 0 0 10px rgba(250, 204, 21, .6); }
   }
-  &__row-label { color: #7aa4c0; font-size: 16px; }
-  &__status-text { color: #7ff6ff; font-size: 20px; font-weight: 800; }
+  &__row-label { color: #7aa4c0; font-size: 18px; }
+  &__status-text { color: #7ff6ff; font-size: 22px; font-weight: 800; }
 
   &__block {
     padding: 12px 14px;
@@ -1428,8 +1428,8 @@ onMounted(load)
     background: rgba(0, 30, 60, .24);
     border: 1px solid rgba(102, 217, 255, .08);
   }
-  &__label { color: #6cdfff; font-size: 16px; font-weight: 800; margin-bottom: 6px; }
-  &__text { color: #d8eeff; font-size: 17px; line-height: 1.6; }
+  &__label { color: #6cdfff; font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  &__text { color: #d8eeff; font-size: 19px; line-height: 1.6; }
 
   &__list {
     margin: 0;
@@ -1438,7 +1438,7 @@ onMounted(load)
     flex-direction: column;
     gap: 6px;
 
-    li { color: #d8eeff; font-size: 16px; line-height: 1.6; }
+    li { color: #d8eeff; font-size: 18px; line-height: 1.6; }
   }
 
 
@@ -1482,7 +1482,7 @@ onMounted(load)
 
   &__title {
     color: #8ef6ff;
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 800;
     margin-bottom: 10px;
   }
@@ -1496,7 +1496,7 @@ onMounted(load)
     padding-top: 10px;
     border-top: 1px dashed rgba(102, 217, 255, .12);
     color: #f7d774;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
   }
 }
@@ -1504,7 +1504,7 @@ onMounted(load)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 16px;
+  font-size: 18px;
 
   &__k { color: #8eb8d8; }
   &__v { color: #eaf6ff; font-weight: 700; }
@@ -1522,7 +1522,7 @@ onMounted(load)
 .opp-timeline__hint {
   margin: 0 0 12px;
   color: #7aa4c0;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.4;
 }
 .opp-timeline {
@@ -1592,7 +1592,7 @@ onMounted(load)
   white-space: nowrap;
   padding: 4px 14px;
   border-radius: 999px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing: .03em;
   color: #dbeeff;
@@ -1620,7 +1620,7 @@ onMounted(load)
   margin-top: 2px;
   padding: 3px 8px;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   color: #061834;
   background: #7fd4ff;
@@ -1631,7 +1631,7 @@ onMounted(load)
 .tl-item__text { min-width: 0; }
 .tl-item__title {
   color: #f2fbff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.3;
   word-break: break-word;
@@ -1639,7 +1639,7 @@ onMounted(load)
 .tl-item__desc {
   margin-top: 2px;
   color: #9ec0dc;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.4;
   word-break: break-word;
 }
@@ -1669,8 +1669,8 @@ onMounted(load)
   gap: 10px;
   align-items: center;
 
-  &__label { color: #8eb8d8; font-size: 16px; font-weight: 700; text-align: right; }
-  &__value { color: #7ff6ff; font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  &__label { color: #8eb8d8; font-size: 18px; font-weight: 700; text-align: right; }
+  &__value { color: #7ff6ff; font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
   &__track { height: 12px; border-radius: 99px; overflow: hidden; background: rgba(80, 120, 160, .25); }
   &__fill { height: 100%; border-radius: inherit; transition: width 1.2s ease; }
 }
@@ -1678,7 +1678,7 @@ onMounted(load)
 .cap-summary {
   margin: 0 0 14px;
   color: #d8eeff;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.65;
 
   &__tag { color: #7ff6ff; font-weight: 800; margin-right: 4px; }
@@ -1694,9 +1694,9 @@ onMounted(load)
   border-radius: 0 8px 8px 0;
   background: rgba(0, 30, 60, .28);
 
-  strong { color: #eaf6ff; font-size: 16px; }
-  small { float: right; color: #7ff6ff; font-weight: 800; font-size: 16px; }
-  p { margin: 4px 0 0; color: #8eb8d8; font-size: 15px; line-height: 1.5; }
+  strong { color: #eaf6ff; font-size: 18px; }
+  small { float: right; color: #7ff6ff; font-weight: 800; font-size: 18px; }
+  p { margin: 4px 0 0; color: #8eb8d8; font-size: 17px; line-height: 1.5; }
   &__dot {
     display: inline-block;
     width: 8px; height: 8px; border-radius: 50%;
@@ -1729,10 +1729,10 @@ onMounted(load)
     align-items: center;
     margin-bottom: 6px;
   }
-  &__name { color: #eaf6ff; font-size: 17px; font-weight: 800; }
-  &__val { color: #7fe3ff; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
-  &__reason { margin: 0 0 4px; color: #cfe6f8; font-size: 16px; line-height: 1.5; }
-  &__suggest { margin: 0; color: #8eb8d8; font-size: 16px; line-height: 1.5; }
+  &__name { color: #eaf6ff; font-size: 19px; font-weight: 800; }
+  &__val { color: #7fe3ff; font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  &__reason { margin: 0 0 4px; color: #cfe6f8; font-size: 18px; line-height: 1.5; }
+  &__suggest { margin: 0; color: #8eb8d8; font-size: 18px; line-height: 1.5; }
 }
 
 /* ── 5. 成长预测 + 路径模拟 ── */
@@ -1763,7 +1763,7 @@ onMounted(load)
   border: 1px solid rgba(0, 200, 255, .25);
   background: rgba(0, 30, 60, .3);
   color: #d8eeff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   transition: all .2s;
@@ -1805,7 +1805,7 @@ onMounted(load)
   border: none;
   background: transparent;
   color: #cfeaff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   text-align: left;
@@ -1820,7 +1820,7 @@ onMounted(load)
 .path-item__score {
   padding: 2px 10px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
   color: #8ee9ff;
   background: rgba(0, 184, 255, .14);
@@ -1842,7 +1842,7 @@ onMounted(load)
 }
 .sim-result {
   &__headline {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 900;
     color: #7ff6ff;
     margin-bottom: 12px;
@@ -1855,8 +1855,8 @@ onMounted(load)
     border-radius: 6px;
     background: rgba(0, 30, 60, .25);
     margin-bottom: 8px;
-    span { color: #8eb8d8; font-size: 16px; }
-    em { color: #d8eeff; font-style: normal; font-size: 16px; font-weight: 600; }
+    span { color: #8eb8d8; font-size: 18px; }
+    em { color: #d8eeff; font-style: normal; font-size: 18px; font-weight: 600; }
     .hl { color: #43e7af; }
   }
   &__suggest {
@@ -1866,7 +1866,7 @@ onMounted(load)
     background: rgba(0, 100, 180, .12);
     border: 1px solid rgba(0, 184, 255, .18);
     color: #b8ecff;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.55;
   }
 }
@@ -1879,7 +1879,7 @@ onMounted(load)
   border: 1px solid rgba(120, 210, 255, .35);
   background: rgba(0, 60, 110, .35);
   color: #8ee9ff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   transition: all .2s;
@@ -1909,7 +1909,7 @@ onMounted(load)
   align-items: center;
   padding: 12px 14px;
   border-bottom: 1px solid rgba(102, 217, 255, .06);
-  font-size: 17px;
+  font-size: 19px;
 
   span:first-child { color: #cfe6f8; }
   span:nth-child(2) { color: #7ff6ff; font-weight: 800; text-align: center; }
@@ -1917,7 +1917,7 @@ onMounted(load)
 
   &--head {
     border-bottom: 1px solid rgba(102, 217, 255, .15);
-    span { color: #7aa4c0; font-size: 15px; font-weight: 700; }
+    span { color: #7aa4c0; font-size: 17px; font-weight: 700; }
   }
 }
 .peer-concl {
@@ -1940,7 +1940,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 14px;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     padding-left: 10px;
     border-left: 3px solid;
@@ -1960,7 +1960,7 @@ onMounted(load)
     align-items: flex-start;
     gap: 8px;
     color: #d8eeff;
-    font-size: 17px;
+    font-size: 19px;
     line-height: 1.55;
     padding: 10px 0;
     border-bottom: 1px solid rgba(102, 217, 255, .05);
@@ -1985,7 +1985,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 17px;
   color: rgba(184, 236, 255, .7);
 
   &.error {
@@ -2000,7 +2000,7 @@ onMounted(load)
     background: rgba(0, 184, 255, .1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
 
     &:hover { background: rgba(0, 184, 255, .2); }
   }

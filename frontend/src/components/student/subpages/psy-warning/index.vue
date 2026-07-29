@@ -131,14 +131,14 @@ const mentalGaugeOption = computed<EChartsOption>(() => ({
     pointer: { width: 4, length: '58%', itemStyle: { color: '#f6fbff' } },
     axisTick: { show: false },
     splitLine: { length: 10, lineStyle: { color: 'rgba(255,255,255,0.25)', width: 1 } },
-    axisLabel: { distance: 14, color: '#7eb4d8', fontSize: 10 },
+    axisLabel: { distance: 14, color: '#7eb4d8', fontSize: 14 },
     anchor: { show: true, size: 8, itemStyle: { color: '#f6fbff' } },
     title: { show: false },
     detail: {
       valueAnimation: true,
       formatter: '{value}',
       color: '#f6fbff',
-      fontSize: 26,
+      fontSize: 30,
       fontWeight: 'bolder',
       offsetCenter: [0, '36%'],
     },
@@ -220,7 +220,7 @@ const psyRadarOption = computed<EChartsOption>(() => ({
   tooltip: { trigger: 'item' },
   legend: {
     bottom: 0,
-    textStyle: { color: '#9ec7e0', fontSize: 12 },
+    textStyle: { color: '#9ec7e0', fontSize: 16 },
     data: ['量表评估', '客观行为叠加'],
   },
   radar: {
@@ -233,7 +233,7 @@ const psyRadarOption = computed<EChartsOption>(() => ({
       { name: '睡眠状态', max: 100 },
       { name: '生活适应', max: 100 },
     ],
-    axisName: { color: '#b8ecff', fontSize: 13 },
+    axisName: { color: '#b8ecff', fontSize: 17 },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
     splitArea: { areaStyle: { color: ['rgba(0, 184, 255, 0.04)', 'rgba(0, 184, 255, 0.08)'] } },
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
@@ -291,14 +291,14 @@ const mentalTrendOption = computed<EChartsOption>(() => {
       type: 'category',
       data: semesters,
       boundaryGap: false,
-      axisLabel: { ...AXIS_LABEL, fontSize: 13, margin: 6 },
+      axisLabel: { ...AXIS_LABEL, fontSize: 17, margin: 6 },
       axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.18)' } },
     },
     yAxis: {
       type: 'value',
       min: yMin,
       max: yMax,
-      axisLabel: { ...AXIS_LABEL, fontSize: 13 },
+      axisLabel: { ...AXIS_LABEL, fontSize: 17 },
       splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
     },
     series: [{
@@ -373,13 +373,13 @@ const riskBubbleOption = computed<EChartsOption>(() => {
     },
     xAxis: {
       type: 'value', min: 0, max: 100,
-      axisLabel: { ...AXIS_LABEL, fontSize: 13 },
+      axisLabel: { ...AXIS_LABEL, fontSize: 17 },
       splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
     },
     yAxis: {
       type: 'category',
       data: riskFactors.value.map((f) => f.name),
-      axisLabel: { ...AXIS_LABEL, fontSize: 13 },
+      axisLabel: { ...AXIS_LABEL, fontSize: 17 },
       axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.18)' } },
     },
     series: [{
@@ -389,7 +389,7 @@ const riskBubbleOption = computed<EChartsOption>(() => {
         show: true,
         position: 'right',
         color: '#d0e8f8',
-        fontSize: 12,
+        fontSize: 16,
         formatter: (params: unknown) => {
           const p = params as { value: number[] }
           return `${p.value[0]}`
@@ -673,7 +673,7 @@ onMounted(load)
 
 .warn-section__title {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -694,7 +694,7 @@ onMounted(load)
 /* 合并卡片内的二级小标题 */
 .combine__sub {
   margin: 14px 0 8px;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #9ecae8;
 
@@ -719,7 +719,7 @@ onMounted(load)
 
   &-cap {
     margin-top: -6px;
-    font-size: 13px;
+    font-size: 17px;
     color: #7eb4d8;
     font-weight: 600;
   }
@@ -753,17 +753,17 @@ onMounted(load)
   &--high { border-color: #ff7474; }
 
   &__label {
-    font-size: 14px;
+    font-size: 18px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 23px;
+    font-size: 27px;
     font-weight: 900;
     color: #f6fbff;
 
-    &--sm { font-size: 16px; }
+    &--sm { font-size: 20px; }
   }
 }
 
@@ -780,13 +780,13 @@ onMounted(load)
     flex-shrink: 0;
     padding: 3px 12px;
     border-radius: 999px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #06122e;
   }
 
   &__text {
-    font-size: 14px;
+    font-size: 18px;
     color: #d0e8f8;
     line-height: 1.5;
   }
@@ -817,13 +817,13 @@ onMounted(load)
   }
 
   &__name {
-    font-size: 13px;
+    font-size: 17px;
     color: #8fb7cd;
     font-weight: 600;
   }
 
   &__score {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
   }
 
@@ -842,7 +842,7 @@ onMounted(load)
   }
 
   &__desc {
-    font-size: 13px;
+    font-size: 17px;
     color: #9ecae8;
     line-height: 1.4;
   }
@@ -861,7 +861,7 @@ onMounted(load)
   border: 1px solid rgba(250, 204, 21, 0.4);
   background: rgba(90, 60, 10, 0.28);
   color: #ffe7a8;
-  font-size: 13px;
+  font-size: 17px;
   line-height: 1.5;
 }
 
@@ -887,10 +887,10 @@ onMounted(load)
     justify-content: space-between;
     gap: 6px;
   }
-  &__name { font-size: 14px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
+  &__name { font-size: 18px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
   &__badge {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: 16px;
     padding: 2px 6px;
     border-radius: 999px;
     font-weight: 700;
@@ -901,7 +901,7 @@ onMounted(load)
   &--high &__badge { background: rgba(255, 116, 116, 0.14); color: #ff7474; }
 
   &__desc {
-    font-size: 13px;
+    font-size: 17px;
     color: #9ecae8;
     line-height: 1.35;
   }
@@ -921,10 +921,10 @@ onMounted(load)
   padding: 8px 12px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 14px;
+  font-size: 18px;
   color: #d0e8f8;
 
-  &__icon { font-size: 16px; font-weight: 900; }
+  &__icon { font-size: 20px; font-weight: 900; }
   &--low &__icon { color: #55e995; }
   &--medium &__icon { color: #facc15; }
   &--high &__icon { color: #ff7474; }
@@ -932,7 +932,7 @@ onMounted(load)
 
 /* 风险因素气泡 */
 .risk-sub {
-  font-size: 13px;
+  font-size: 17px;
   color: #7eb4d8;
   margin-bottom: 8px;
 }
@@ -957,7 +957,7 @@ onMounted(load)
   padding: 7px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 14px;
+  font-size: 18px;
 
   &__dot {
     width: 7px;
@@ -995,13 +995,13 @@ onMounted(load)
 .warn-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 18px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
     padding: 8px 10px;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -1027,7 +1027,7 @@ onMounted(load)
 }
 
 .cat-badge {
-  font-size: 12px;
+  font-size: 16px;
   padding: 2px 6px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -1037,7 +1037,7 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 13px;
+  font-size: 17px;
   padding: 2px 8px;
   border-radius: 999px;
   font-weight: 700;
@@ -1051,7 +1051,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 14px;
+  font-size: 18px;
 }
 
 /* 干预跟踪时间轴 */
@@ -1095,26 +1095,26 @@ onMounted(load)
   }
 
   &__label {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 800;
     color: #f6fbff;
   }
 
   &__time {
-    font-size: 12px;
+    font-size: 16px;
     color: #7eb4d8;
     font-weight: 700;
   }
 
   &__focus {
-    font-size: 13px;
+    font-size: 17px;
     color: #8ef6ff;
     font-weight: 700;
     margin: 2px 0;
   }
 
   &__content {
-    font-size: 14px;
+    font-size: 18px;
     color: #d0e8f8;
     line-height: 1.5;
   }
@@ -1125,7 +1125,7 @@ onMounted(load)
   margin: 0;
   padding-left: 20px;
   color: #d0e8f8;
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.9;
 
   li {
@@ -1151,7 +1151,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     cursor: pointer;
 
@@ -1169,7 +1169,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -1180,7 +1180,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.3);
     background: rgba(0, 184, 255, 0.1);
     cursor: pointer;
-    font-size: 15px;
+    font-size: 19px;
     color: #55dfff;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }

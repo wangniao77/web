@@ -118,21 +118,21 @@ const trendOption = computed<EChartsOption>(() => {
 <style scoped lang="scss">
 .detail-placeholder { color: rgba(174, 198, 230, 0.7); }
 .group { margin-bottom: 16px; }
-.group h3 { font-size: 14px; color: #f3f8ff; margin-bottom: 8px; }
+.group h3 { font-size: 16px; color: #f3f8ff; margin-bottom: 8px; }
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .chart-section {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid rgba(85, 168, 255, 0.12);
   background: rgba(4, 14, 38, 0.45);
-  h3 { font-size: 14px; color: #f3f8ff; margin-bottom: 8px; }
+  h3 { font-size: 16px; color: #f3f8ff; margin-bottom: 8px; }
 }
 .chart-lg { height: 240px; }
 .table-wrap { overflow: auto; }
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
   th, td {
     padding: 10px 12px;
     border-bottom: 1px solid rgba(85, 168, 255, 0.1);

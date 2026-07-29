@@ -233,55 +233,172 @@ const holoTags = computed<Array<{ text: string; level: HoloLevel }>>(() => {
       tags.push({ text: t, level: lvl })
     }
   }
-  return tags.slice(0, 40)
+  return tags.slice(0, 28)
 })
 
-/** 全息云布局：中心主词 + 分层环绕，文字保持水平，尽量拉开上下层距避免重叠 */
-interface HoloSlot { top: number; left: number; size: number; rotate: number; weight: number }
-function buildHoloLayout(): HoloSlot[] {
-  const slots: HoloSlot[] = [{ top: 50, left: 50, size: 22, rotate: 0, weight: 800 }]
-  const rings = [
-    { count: 6, radiusX: 18, radiusY: 12, size: 16, weight: 700, phase: -90 },
-    { count: 12, radiusX: 29, radiusY: 18, size: 13, weight: 650, phase: -78 },
-    { count: 21, radiusX: 40, radiusY: 24, size: 11, weight: 600, phase: -66 },
-  ]
-  rings.forEach((ring, ri) => {
-    for (let i = 0; i < ring.count; i++) {
-      const ang = ((ring.phase + (360 / ring.count) * i) * Math.PI) / 180
-      const top = 50 + ring.radiusY * Math.sin(ang)
-      const left = 50 + ring.radiusX * Math.cos(ang)
-      const verticalNudge = ri === 2 ? ((i % 2 === 0) ? -1.2 : 1.2) : ri === 1 ? ((i % 2 === 0) ? -0.8 : 0.8) : 0
-      slots.push({
-        top: Math.round((top + verticalNudge) * 10) / 10,
-        left: Math.round(left * 10) / 10,
-        size: ring.size,
-        rotate: 0,
-        weight: ring.weight,
-      })
-    }
-  })
-  return slots
+/** 全息云布局：大字号 + 上下压缩收拢 + AABB 碰撞避让 */
+interface HoloSlot {
+  top: number
+  left: number
+  size: number
+  weight: number
 }
-const holoLayout: HoloSlot[] = buildHoloLayout()
+interface HoloBox {
+  x: number
+  y: number
+  w: number
+  h: number
+  size: number
+  weight: number
+}
+
+function holoCharCount(text: string) {
+  return Array.from(text).length
+}
+
+function holoTextSize(i: number) {
+  if (i === 0) return 34
+  if (i <= 4) return 24
+  if (i <= 10) return 20
+  if (i <= 18) return 18
+  return 16
+}
+
+function holoTextWeight(i: number) {
+  if (i === 0) return 800
+  if (i <= 4) return 750
+  if (i <= 10) return 700
+  return 650
+}
+
+function holoBoxesOverlap(a: HoloBox, b: HoloBox, padX = 10, padY = 6) {
+  return Math.abs(a.x - b.x) < (a.w + b.w) / 2 + padX
+    && Math.abs(a.y - b.y) < (a.h + b.h) / 2 + padY
+}
+
+const holoPlaced = computed<HoloSlot[]>(() => {
+  const tags = holoTags.value
+  if (!tags.length) return []
+
+  // 画布偏扁：上下压缩，标签往中间带收拢
+  const VW = 1280
+  const VH = 300
+  const placed: HoloBox[] = []
+
+  const clampBox = (x: number, y: number, w: number, h: number) => ({
+    x: Math.min(Math.max(x, w / 2 + 8), VW - w / 2 - 8),
+    y: Math.min(Math.max(y, h / 2 + 6), VH - h / 2 - 6),
+  })
+
+  for (let i = 0; i < tags.length; i++) {
+    let size = holoTextSize(i)
+    const weight = holoTextWeight(i)
+    let w = Math.max(holoCharCount(tags[i].text) * size * 0.95, size * 2.2)
+    let h = size * 1.38
+
+    const candidates: Array<[number, number]> = []
+    if (i === 0) {
+      candidates.push([VW * 0.5, VH * 0.5])
+    } else {
+      // 紧凑螺旋：横向可铺开，纵向半径收紧
+      for (let k = 0; k < 110; k++) {
+        const t = 0.6 + k * 0.42
+        const rx = Math.min(55 + t * 13, VW * 0.42)
+        const ry = Math.min(28 + t * 6.5, VH * 0.36)
+        const ang = t * 2.05 + i * 0.62
+        candidates.push([VW * 0.5 + Math.cos(ang) * rx, VH * 0.5 + Math.sin(ang) * ry])
+      }
+      // 3 行网格，集中在中间带，避免顶底大空白
+      const rows = 3
+      const cols = 8
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = VW * (0.07 + (col + 0.5) / cols * 0.86) + ((i * 5 + row) % 4) * 5 - 8
+          const y = VH * (0.22 + (row + 0.5) / rows * 0.56) + ((i + col) % 3) * 4 - 4
+          candidates.push([x, y])
+        }
+      }
+    }
+
+    let chosen: HoloBox | null = null
+    let bestScore = Infinity
+
+    const tryPlace = (trySize: number) => {
+      const tw = Math.max(holoCharCount(tags[i].text) * trySize * 0.95, trySize * 2.2)
+      const th = trySize * 1.38
+      for (const [rawX, rawY] of candidates) {
+        const { x, y } = clampBox(rawX, rawY, tw, th)
+        const box: HoloBox = { x, y, w: tw, h: th, size: trySize, weight }
+        if (placed.some((p) => holoBoxesOverlap(box, p))) continue
+        // 优先靠近中心（从内往外填），纵向惩罚更大，避免顶底空
+        const dx = Math.abs(x - VW * 0.5) / VW
+        const dy = Math.abs(y - VH * 0.5) / VH
+        const score = dx * 1.0 + dy * 1.8
+        if (score < bestScore) {
+          bestScore = score
+          chosen = box
+        }
+      }
+    }
+
+    tryPlace(size)
+    if (!chosen && size > 15) {
+      size = Math.max(15, size - 2)
+      w = Math.max(holoCharCount(tags[i].text) * size * 0.95, size * 2.2)
+      h = size * 1.38
+      bestScore = Infinity
+      tryPlace(size)
+    }
+    if (!chosen && size > 14) {
+      size = 14
+      w = Math.max(holoCharCount(tags[i].text) * size * 0.95, size * 2.2)
+      h = size * 1.38
+      bestScore = Infinity
+      tryPlace(size)
+    }
+
+    if (!chosen) {
+      let least: { box: HoloBox; hit: number } | null = null
+      for (const [rawX, rawY] of candidates) {
+        const { x, y } = clampBox(rawX, rawY, w, h)
+        const box: HoloBox = { x, y, w, h, size, weight }
+        const hit = placed.reduce((n, p) => n + (holoBoxesOverlap(box, p, 3, 2) ? 1 : 0), 0)
+        if (!least || hit < least.hit) least = { box, hit }
+      }
+      chosen = least?.box ?? { x: VW * 0.5, y: VH * 0.5, w, h, size, weight }
+    }
+
+    placed.push(chosen)
+  }
+
+  return placed.map((p) => ({
+    top: Math.round((p.y / VH) * 1000) / 10,
+    left: Math.round((p.x / VW) * 1000) / 10,
+    size: p.size,
+    weight: p.weight,
+  }))
+})
+
 const holoStyle = (idx: number) => {
-  const s = holoLayout[idx] ?? { top: 50, left: 50, size: 16, rotate: 0, weight: 600 }
+  const s = holoPlaced.value[idx] ?? { top: 50, left: 50, size: 18, weight: 600 }
   return {
     top: `${s.top}%`,
     left: `${s.left}%`,
     fontSize: `${s.size}px`,
     fontWeight: s.weight,
-    transform: `translate(-50%, -50%) rotate(${s.rotate}deg)`,
+    transform: 'translate(-50%, -50%)',
+    zIndex: Math.max(1, 40 - idx),
   }
 }
 
-/** 版面高度随词条数量收放：词条少则不占太多空间 */
+/** 上下压缩后的高度 */
 const holoMinHeight = computed(() => {
   const n = holoTags.value.length
-  if (n === 0) return 80
-  if (n <= 6) return 130
-  if (n <= 14) return 170
-  if (n <= 24) return 220
-  return 260
+  if (n === 0) return 100
+  if (n <= 6) return 200
+  if (n <= 12) return 240
+  if (n <= 20) return 270
+  return 290
 })
 
 onMounted(load)
@@ -589,7 +706,7 @@ onMounted(load)
   grid-template-columns: 2fr 1fr;
   gap: 10px;
   align-items: start;
-  font-size: 17px;
+  font-size: 21px;
   line-height: 1.55;
 }
 
@@ -613,7 +730,7 @@ onMounted(load)
     text-align: left;
 
     strong {
-      font-size: 17px;
+      font-size: 21px;
       letter-spacing: 0.06em;
     }
 
@@ -625,14 +742,14 @@ onMounted(load)
       color: #fff;
       font-style: normal;
       font-weight: 800;
-      font-size: 14px;
+      font-size: 18px;
       text-align: center;
     }
 
     span {
       margin-left: auto;
       color: #b8ecff;
-      font-size: 15px;
+      font-size: 19px;
     }
   }
 
@@ -649,7 +766,7 @@ onMounted(load)
       border: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(0, 20, 45, 0.45);
       color: #eaf6ff;
-      font-size: 16px;
+      font-size: 20px;
 
       &.is-high {
         border-color: rgba(255, 116, 116, 0.45);
@@ -671,7 +788,7 @@ onMounted(load)
   border: 1px solid rgba(0, 184, 255, 0.26);
   background: rgba(0, 184, 255, 0.08);
   color: #8ef6ff;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
 
@@ -702,7 +819,7 @@ onMounted(load)
 
 .section-title {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -722,7 +839,7 @@ onMounted(load)
 
 .subsection-title {
   margin: 12px 0 8px;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
   color: #9edcff;
   letter-spacing: 0.03em;
@@ -734,23 +851,27 @@ onMounted(load)
   width: 100%;
   min-height: 260px;
   overflow: hidden;
+  padding: 2px 0;
 }
 
 .holo-tag {
   position: absolute;
   white-space: nowrap;
   cursor: default;
-  line-height: 1.22;
-  letter-spacing: 0;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
   transform-origin: center;
   text-align: center;
   text-wrap: nowrap;
-  text-shadow: 0 0 10px rgba(18, 90, 150, 0.18);
+  pointer-events: auto;
+  text-shadow:
+    0 0 10px rgba(18, 90, 150, 0.22),
+    0 1px 2px rgba(0, 10, 30, 0.45);
   transition: filter 0.15s ease, color 0.15s ease;
 
   &:hover {
     filter: brightness(1.18);
-    z-index: 6;
+    z-index: 20 !important;
   }
 
   &.holo--red { color: #ff8a8a; }
@@ -824,14 +945,14 @@ onMounted(load)
 }
 
 .timeline-time {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   color: #7eb4d8;
   white-space: nowrap;
 }
 
 .timeline-cat {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 800;
   padding: 1px 8px;
   border-radius: 999px;
@@ -842,7 +963,7 @@ onMounted(load)
 
 .timeline-text {
   margin: 0;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.4;
   color: #d0e8f8;
 }
@@ -886,7 +1007,7 @@ onMounted(load)
   padding: 0 0 5px;
   border-bottom: 1px solid rgba(102, 217, 255, 0.14);
   color: #8fd4ff;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.5px;
 }
@@ -947,7 +1068,7 @@ onMounted(load)
 
 .info-lbl {
   color: #6899b8;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
@@ -959,7 +1080,7 @@ onMounted(load)
 
 .info-val {
   color: #d8ecff;
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -971,7 +1092,7 @@ onMounted(load)
     border-radius: 3px;
     background: linear-gradient(135deg, rgba(140, 100, 20, 0.32), rgba(80, 55, 10, 0.35));
     color: #f0d78a;
-    font-size: 13px;
+    font-size: 17px;
   }
 }
 
@@ -989,7 +1110,7 @@ onMounted(load)
 .tag {
   padding: 2px 8px;
   border-radius: 3px;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
   white-space: nowrap;
 
@@ -1012,11 +1133,11 @@ onMounted(load)
     display: block;
     margin-top: 6px;
     padding: 5px 8px;
-    font-size: 13px;
+    font-size: 17px;
     line-height: 1.45;
   }
   border: 1px solid rgba(0, 180, 255, 0.06);
-  font-size: 14px;
+  font-size: 18px;
   color: #b0d4e8;
   line-height: 1.5;
 
@@ -1045,13 +1166,13 @@ onMounted(load)
 
   &__label {
     color: #7eb4d8;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 600;
   }
 
   &__value {
     color: #e8f4ff;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
   }
 }
@@ -1090,7 +1211,7 @@ onMounted(load)
 .dynamic-time {
   padding: 2px 6px;
   border-radius: 2px;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1098,7 +1219,7 @@ onMounted(load)
 
 .dynamic-text {
   color: #e8f4ff;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1164,13 +1285,13 @@ onMounted(load)
 
   &__label {
     color: #e8f4ff;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
     flex: 1;
   }
 
   &__level {
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     white-space: nowrap;
   }
@@ -1178,7 +1299,7 @@ onMounted(load)
   &__tip {
     margin: 0 0 8px;
     color: #8fb7cd;
-    font-size: 13px;
+    font-size: 17px;
     line-height: 1.35;
   }
 
@@ -1202,7 +1323,7 @@ onMounted(load)
     padding: 3px 6px;
     border-radius: 2px;
     background: rgba(0, 0, 0, 0.15);
-    font-size: 12px;
+    font-size: 16px;
     overflow: hidden;
 
     &--low { border-left: none; }
@@ -1237,14 +1358,14 @@ onMounted(load)
 
   &__empty {
     color: #5a7d96;
-    font-size: 12px;
+    font-size: 16px;
     font-style: italic;
   }
 
   &__folded {
     margin: 6px 0 0;
     color: #7eb4d8;
-    font-size: 13px;
+    font-size: 17px;
   }
 }
 
@@ -1266,13 +1387,13 @@ onMounted(load)
 .warning-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
     padding: 6px 10px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -1306,7 +1427,7 @@ onMounted(load)
 }
 
 .cat-badge {
-  font-size: 12px;
+  font-size: 16px;
   padding: 2px 6px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -1316,7 +1437,7 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 14px;
+  font-size: 18px;
   padding: 3px 10px;
   border-radius: 999px;
   font-weight: 700;
@@ -1341,7 +1462,7 @@ onMounted(load)
 .section-mock-tag {
   display: inline-block;
   padding: 2px 8px;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   color: #f0a040;
   border: 1px solid rgba(240, 160, 64, 0.4);
@@ -1360,7 +1481,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
   border: 1px solid rgba(102, 217, 255, 0.12);
   border-radius: 8px;
@@ -1375,7 +1496,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 17px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }
@@ -1403,8 +1524,8 @@ onMounted(load)
 .func-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 16px;
+  gap: 12px;
+  padding: 14px 16px;
   border-radius: 5px;
   border: 1px solid rgba(102, 217, 255, 0.16);
   background: linear-gradient(135deg, rgba(0, 50, 95, 0.5), rgba(0, 28, 60, 0.4));
@@ -1418,19 +1539,19 @@ onMounted(load)
   }
 
   &__icon {
-    font-size: 24px;
+    font-size: 30px;
     flex-shrink: 0;
   }
 
   &__label {
     flex: 1;
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 700;
     color: #d8f0ff;
   }
 
   &__arrow {
-    font-size: 20px;
+    font-size: 26px;
     color: #8ef6ff;
     font-weight: 700;
   }

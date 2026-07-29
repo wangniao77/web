@@ -38,7 +38,7 @@ const option = computed<EChartsOption>(() => ({
     splitNumber: 4,
     name: {
       color: '#9eefff',
-      fontSize: 13,
+      fontSize: 17,
       fontWeight: 600,
     },
     nameGap: 6,
@@ -161,7 +161,7 @@ const weakCategory = computed(() => {
 
 .chart-card__title {
   margin: 0;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -169,7 +169,7 @@ const weakCategory = computed(() => {
 
 .chart-card__sub {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(184, 236, 255, 0.6);
 }
 
@@ -191,7 +191,7 @@ const weakCategory = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 16px;
   padding: 4px 8px;
   border-radius: 4px;
   background: rgba(0, 184, 255, 0.04);
@@ -213,7 +213,7 @@ const weakCategory = computed(() => {
 
 .foot-num {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
 
   .strong & { color: #34d399; }

@@ -55,7 +55,7 @@ const option = computed<EChartsOption>(() => ({
       'border-radius: 6px; border: 1px solid rgba(0, 212, 255, 0.32); white-space: nowrap;',
     backgroundColor: 'rgba(6, 17, 52, 0.96)',
     borderColor: 'rgba(0, 212, 255, 0.3)',
-    textStyle: { color: '#e2edff', fontSize: 13, lineHeight: 20 },
+    textStyle: { color: '#e2edff', fontSize: 17, lineHeight: 20 },
     formatter: (p: unknown) => {
       const it = p as { name: string; value: number; percent: number; marker: string }
       const b = buckets.value.find((x) => x.label === it.name)
@@ -231,7 +231,7 @@ const topBucket = computed(() => {
 
 .chart-card__title {
   margin: 0;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -239,7 +239,7 @@ const topBucket = computed(() => {
 
 .chart-card__sub {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(184, 236, 255, 0.6);
 }
 
@@ -299,7 +299,7 @@ const topBucket = computed(() => {
 
 .bucket-label {
   grid-area: label;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   color: #f4f8ff;
   white-space: nowrap;
@@ -307,7 +307,7 @@ const topBucket = computed(() => {
 
 .bucket-range {
   grid-area: range;
-  font-size: 10px;
+  font-size: 14px;
   color: rgba(184, 236, 255, 0.5);
   white-space: nowrap;
 }
@@ -315,13 +315,13 @@ const topBucket = computed(() => {
 .bucket-num {
     grid-area: num;
     font-family: 'DIN Alternate', sans-serif;
-    font-size: 18px;
+    font-size: 22px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.02em;
 
   small {
-    font-size: 9px;
+    font-size: 13px;
     color: rgba(184, 236, 255, 0.6);
     font-weight: 500;
     margin-left: 1px;
@@ -331,7 +331,7 @@ const topBucket = computed(() => {
 
 .bucket-pct {
   grid-area: pct;
-  font-size: 10px;
+  font-size: 14px;
   color: rgba(184, 236, 255, 0.7);
   font-weight: 600;
   align-self: end;

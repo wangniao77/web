@@ -62,7 +62,7 @@ onMounted(async () => {
   display: flex;
   gap: 16px;
   margin-bottom: 12px;
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
   color: rgba(174, 198, 230, 0.78);
 }
 
@@ -86,14 +86,14 @@ onMounted(async () => {
     margin-bottom: 8px;
 
     h3 {
-      font-size: 15px;
+      font-size: 17px;
       color: #f3f8ff;
     }
   }
 }
 
 .task-desc {
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
   color: rgba(174, 198, 230, 0.72);
   margin-bottom: 8px;
   line-height: 1.5;
@@ -103,7 +103,7 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
   color: rgba(174, 198, 230, 0.65);
   margin-bottom: 8px;
 }
@@ -133,7 +133,7 @@ onMounted(async () => {
   gap: 4px;
 
   li {
-    font-size: $college-fs-label;
+    font-size: $detail-fs-label;
     color: rgba(174, 198, 230, 0.6);
     padding-left: 14px;
     position: relative;

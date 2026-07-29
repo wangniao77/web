@@ -42,7 +42,7 @@
 
   .core-hero-core {
     width: 100%;
-    max-width: 200px;
+    max-width: 208px;
     overflow: visible;
     /* 整体下移，贴近下方「综合指数趋势」 */
     top: auto;
@@ -52,8 +52,8 @@
   }
 
   .core-gauge-square {
-    width: 188px;
-    height: 188px;
+    width: 196px;
+    height: 196px;
     margin: 0 auto;
     overflow: visible;
   }
@@ -63,7 +63,7 @@
   }
 
   .core-hero-platform {
-    width: 188px;
+    width: 196px;
     margin-top: -16px;
     transform: scale(0.7);
     transform-origin: center top;
@@ -137,10 +137,10 @@
   }
 
   .core-gauge--hero .core-gauge__content {
-    width: 66%;
-    height: 66%;
-    padding: 10px 8px 8px;
-    gap: 4px;
+    width: 68%;
+    height: 68%;
+    padding: 8px 6px 6px;
+    gap: 2px;
     justify-content: center;
     border: 1px solid rgba(120, 200, 240, 0.28);
     background:
@@ -154,10 +154,10 @@
       width: auto;
       max-width: 96%;
       color: #c8ecff;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
-      line-height: 1.2;
-      letter-spacing: 0.12em;
+      line-height: 1.15;
+      letter-spacing: 0.1em;
       text-shadow:
         0 0 8px rgba(120, 220, 255, 0.55),
         0 0 16px rgba(60, 180, 255, 0.35);
@@ -175,9 +175,9 @@
     strong {
       font-family: var(--student-font-number);
       color: #ffffff;
-      font-size: 38px;
+      font-size: 42px;
       font-weight: 800;
-      line-height: 0.95;
+      line-height: 0.92;
       margin: 0;
       letter-spacing: -0.02em;
       text-shadow:
@@ -196,7 +196,7 @@
       border-radius: 999px;
       background: rgba(30, 100, 70, 0.42);
       color: #9dffc0;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 800;
       line-height: 1.1;
       letter-spacing: 0.02em;
@@ -216,8 +216,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
-      margin-top: 4px;
+      gap: 1px;
+      margin-top: 3px;
       padding: 3px 8px 4px;
       border: 1px solid rgba(130, 210, 255, 0.42);
       border-radius: 999px;
@@ -226,10 +226,10 @@
 
       i {
         color: #9ed8f5;
-        font-size: 10px;
+        font-size: 11px;
         font-style: normal;
         font-weight: 600;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
         line-height: 1;
         text-shadow: 0 0 8px rgba(100, 200, 255, 0.45);
       }
@@ -237,10 +237,10 @@
       span {
         width: auto;
         color: #eaf8ff !important;
-        font-size: 12px !important;
+        font-size: 13px !important;
         font-weight: 800 !important;
-        letter-spacing: 0.04em;
-        line-height: 1.1;
+        letter-spacing: 0.03em;
+        line-height: 1.05;
         text-shadow:
           0 0 8px rgba(140, 230, 255, 0.7),
           0 0 16px rgba(80, 190, 255, 0.4) !important;
@@ -310,12 +310,12 @@
     box-sizing: border-box;
     position: absolute;
     z-index: 4;
-    width: 210px;
-    max-width: 48%;
+    width: 218px;
+    max-width: 49%;
     height: auto;
     max-height: none;
-    padding: 6px 8px;
-    gap: 4px;
+    padding: 5px 8px;
+    gap: 3px;
     overflow: visible;
     border-color: rgba(90, 210, 255, 0.55);
     box-shadow:
@@ -388,9 +388,9 @@
   .core-orbit-metric__label {
     min-width: 0;
     overflow: hidden;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.15;
     text-overflow: ellipsis;
     white-space: nowrap;
     text-shadow: 0 0 8px rgba(100, 200, 255, 0.35);
@@ -398,8 +398,8 @@
 
   .core-orbit-metric__value {
     margin: 0;
-    font-size: 20px;
-    line-height: 1.1;
+    font-size: 22px;
+    line-height: 1.05;
     text-align: right;
     white-space: nowrap;
     text-shadow: 0 0 10px rgba(120, 220, 255, 0.45);
@@ -408,7 +408,7 @@
   .core-orbit-metric__delta {
     margin-left: 3px;
     color: #55e995;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     vertical-align: baseline;
     text-shadow: 0 0 8px rgba(85, 233, 149, 0.55);
@@ -420,7 +420,7 @@
   }
 
   .core-orbit-metric__value--level {
-    font-size: 17px !important;
+    font-size: 18px !important;
   }
 
   .core-orbit-metric__trend {
@@ -429,14 +429,14 @@
 
   .core-orbit-metric__details {
     margin-top: 0;
-    padding: 4px 6px;
+    padding: 3px 6px;
     overflow: visible;
 
     p {
       gap: 6px;
-      margin: 0 0 2px;
-      font-size: 15px;
-      line-height: 1.3;
+      margin: 0 0 1px;
+      font-size: 16px;
+      line-height: 1.25;
       white-space: normal;
 
       &:last-child {
@@ -447,7 +447,7 @@
     span {
       flex: 0 0 auto;
       color: #9ec9e6;
-      font-size: 15px;
+      font-size: 16px;
     }
 
     b {
@@ -457,7 +457,7 @@
       overflow: visible;
       text-overflow: clip;
       color: #e8f7ff;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 750;
       text-align: right;
       white-space: nowrap;
@@ -543,8 +543,8 @@
   width: 100%;
   display: grid;
   grid-template-rows: auto auto 96px auto;
-  gap: 4px;
-  padding: 6px 8px 8px;
+  gap: 3px;
+  padding: 5px 8px 6px;
   overflow: visible;
   border: 1px solid rgba(85, 233, 149, 0.28);
   border-radius: 4px;
@@ -557,26 +557,26 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  line-height: 1.2;
-  min-height: 20px;
+  line-height: 1.15;
+  min-height: 22px;
   padding: 0 4px;
 
   span {
     color: #9ed8f5;
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
 
     small {
       margin-left: 6px;
       color: #7aa4c0;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
     }
   }
 
   strong {
     color: #75f0ac;
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 800;
 
     &.is-up { color: #55e995; }
@@ -594,7 +594,7 @@
 
   i {
     font-style: normal;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
 
     &.is-up { color: #55e995; }
@@ -649,7 +649,7 @@
   transform: translateY(-50%);
   width: 7.5%;
   color: #8eb8d4;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1;
   text-align: right;
@@ -659,14 +659,14 @@
 .stu-rank-band__spark-val {
   position: absolute;
   z-index: 3;
-  transform: translate(-50%, calc(-100% - 5px));
+  transform: translate(-50%, calc(-100% - 4px));
   padding: 1px 4px;
   border-radius: 2px;
   background: rgba(0, 36, 68, 0.92);
   color: #e8fff6;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.1;
   letter-spacing: 0.02em;
   white-space: nowrap;
   pointer-events: none;
@@ -674,11 +674,11 @@
   box-shadow: 0 0 0 1px rgba(100, 220, 180, 0.28);
 
   &.is-first {
-    transform: translate(0, calc(-100% - 5px));
+    transform: translate(0, calc(-100% - 4px));
   }
 
   &.is-last {
-    transform: translate(-100%, calc(-100% - 5px));
+    transform: translate(-100%, calc(-100% - 4px));
   }
 }
 
@@ -690,9 +690,9 @@
 
   span {
     color: #8eb8d4;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 650;
-    line-height: 1.25;
+    line-height: 1.2;
     text-align: center;
     white-space: nowrap;
     overflow: visible;

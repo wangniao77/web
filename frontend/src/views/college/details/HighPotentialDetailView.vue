@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
@@ -106,7 +106,7 @@ onMounted(load)
 
 .module-desc {
   margin-bottom: 12px;
-  font-size: $college-fs-body;
+  font-size: $detail-fs-body;
   color: rgba(174, 198, 230, 0.78);
   line-height: 1.6;
 }
@@ -126,7 +126,7 @@ onMounted(load)
 
   span {
     display: block;
-    font-size: $college-fs-meta;
+    font-size: $detail-fs-meta;
     color: rgba(174, 198, 230, 0.62);
     margin-bottom: 4px;
   }
@@ -137,7 +137,7 @@ onMounted(load)
 
     small {
       margin-left: 2px;
-      font-size: $college-fs-meta;
+      font-size: $detail-fs-meta;
     }
   }
 }
@@ -152,7 +152,7 @@ onMounted(load)
 .tag {
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: $college-fs-meta;
+  font-size: $detail-fs-meta;
   color: #55dfff;
   border: 1px solid rgba(0, 184, 255, 0.2);
   background: rgba(0, 184, 255, 0.08);
@@ -174,7 +174,7 @@ onMounted(load)
   padding: 8px 10px;
   border-radius: 6px;
   background: rgba(4, 14, 38, 0.55);
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
 
   span { color: rgba(174, 198, 230, 0.62); }
   strong { color: #f3f8ff; }
@@ -184,7 +184,7 @@ onMounted(load)
 .bullet-list li {
   padding-left: 12px;
   position: relative;
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
   color: rgba(174, 198, 230, 0.78);
 
   &::before {

@@ -43,13 +43,13 @@ const option = computed<EChartsOption>(() => ({
     confine: true,
     backgroundColor: 'rgba(6, 17, 52, 0.96)',
     borderColor: 'rgba(0, 212, 255, 0.3)',
-    textStyle: { color: '#e2edff', fontSize: 13 },
+    textStyle: { color: '#e2edff', fontSize: 17 },
   },
   radar: {
     indicator: indicators,
     center: ['50%', '54%'],
     radius: '66%',
-    axisName: { color: '#bfe2f5', fontSize: 13, fontWeight: 600 },
+    axisName: { color: '#bfe2f5', fontSize: 17, fontWeight: 600 },
     splitNumber: 4,
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
     splitArea: {
@@ -83,6 +83,6 @@ const option = computed<EChartsOption>(() => ({
 
 <style scoped lang="scss">
 :deep(.chart-card__body) {
-  font-size: 13px;
+  font-size: 17px;
 }
 </style>

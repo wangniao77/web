@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
 import { collegeDetailService } from '@/api/college/services/details'
@@ -59,7 +59,7 @@ onMounted(async () => {
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
 
   th,
   td {

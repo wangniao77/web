@@ -89,7 +89,7 @@ const option = computed<EChartsOption>(() => ({
     backgroundColor: 'rgba(6, 20, 44, 0.94)',
     borderColor: 'rgba(0, 212, 255, 0.35)',
     borderWidth: 1,
-    textStyle: { color: '#dcefff', fontSize: 13 },
+    textStyle: { color: '#dcefff', fontSize: 17 },
     formatter: (p: unknown) => {
       const it = p as { data: [number, number, number, CourseRecordVM] }
       const course = it.data[3]
@@ -117,25 +117,25 @@ const option = computed<EChartsOption>(() => ({
     data: props.semesters,
     boundaryGap: true,
     axisTick: { show: false },
-    axisLabel: { ...AXIS_LABEL, fontSize: 13, margin: 10, color: '#9ec7e0' },
+    axisLabel: { ...AXIS_LABEL, fontSize: 17, margin: 10, color: '#9ec7e0' },
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.22)' } },
     splitLine: { show: false },
   },
   yAxis: {
     type: 'value',
     name: '分数',
-    nameTextStyle: { color: '#7fb4d4', fontSize: 12, padding: [0, 0, 0, -28] },
+    nameTextStyle: { color: '#7fb4d4', fontSize: 16, padding: [0, 0, 0, -28] },
     min: 50,
     max: 100,
     interval: 10,
-    axisLabel: { ...AXIS_LABEL, fontSize: 13, margin: 8, color: '#9ec7e0' },
+    axisLabel: { ...AXIS_LABEL, fontSize: 17, margin: 8, color: '#9ec7e0' },
     axisLine: { show: false },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.07)' } },
     markLine: {
       silent: true,
       symbol: 'none',
       lineStyle: { color: 'rgba(248, 113, 113, 0.55)', type: 'dashed', width: 1.5 },
-      label: { color: '#f87171', fontSize: 12, formatter: `预警线 ${WARNING_SCORE}`, position: 'insideEndTop' },
+      label: { color: '#f87171', fontSize: 16, formatter: `预警线 ${WARNING_SCORE}`, position: 'insideEndTop' },
       data: [{ yAxis: WARNING_SCORE }],
     },
   },
@@ -159,7 +159,7 @@ const option = computed<EChartsOption>(() => ({
           markArea: {
             silent: true,
             itemStyle: { color: 'rgba(248, 113, 113, 0.07)' },
-            label: { show: true, position: 'insideTopLeft', color: 'rgba(248, 113, 113, 0.7)', fontSize: 11, formatter: '预警区' },
+            label: { show: true, position: 'insideTopLeft', color: 'rgba(248, 113, 113, 0.7)', fontSize: 15, formatter: '预警区' },
             data: [[{ yAxis: 50 }, { yAxis: WARNING_SCORE }]],
           },
         }
@@ -232,7 +232,7 @@ const totalCount = computed(() => props.courses.filter((c) => c.counted).length)
 
 .chart-card__title {
   margin: 0;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -240,7 +240,7 @@ const totalCount = computed(() => props.courses.filter((c) => c.counted).length)
 
 .chart-card__sub {
   margin-left: auto;
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(184, 236, 255, 0.6);
 }
 

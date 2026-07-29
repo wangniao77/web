@@ -60,7 +60,7 @@ const option = computed<EChartsOption>(() => ({
       axisLine: { lineStyle: { width: 14, color: [[1, 'rgba(0, 60, 120, 0.45)']] } },
       axisTick: { distance: -14, length: 5, lineStyle: { color: 'rgba(102,217,255,0.3)' } },
       splitLine: { distance: -14, length: 12, lineStyle: { color: 'rgba(102,217,255,0.45)', width: 2 } },
-      axisLabel: { distance: -26, color: '#6f9bbd', fontSize: 11 },
+      axisLabel: { distance: -26, color: '#6f9bbd', fontSize: 15 },
       title: { show: false },
       detail: {
         valueAnimation: true,
@@ -127,19 +127,19 @@ const option = computed<EChartsOption>(() => ({
   border: 1px solid rgba(102, 217, 255, 0.08);
 
   &__label {
-    font-size: 11px;
+    font-size: 15px;
     color: #7eb4d8;
     white-space: nowrap;
   }
 
   &__value {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
     color: #f6fbff;
     font-family: 'DIN Alternate', sans-serif;
 
     small {
-      font-size: 10px;
+      font-size: 14px;
       color: #6f9bbd;
       margin-left: 3px;
       font-weight: 500;

@@ -662,7 +662,7 @@ onMounted(load)
 
 .warn-section__title {
   margin: 0 0 12px;
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -703,20 +703,20 @@ onMounted(load)
   .stage-label,
   .goal-label {
     color: #8fb7cd;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 600;
     flex-shrink: 0;
   }
 
   .stage-value {
     color: #43e7af;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
   }
 
   .goal-value {
     color: #d0e8f8;
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 700;
   }
 
@@ -746,13 +746,13 @@ onMounted(load)
 
     strong {
       color: #43e7af;
-      font-size: 24px;
+      font-size: 28px;
       font-weight: 700;
     }
 
     span {
       color: #8fb7cd;
-      font-size: 11px;
+      font-size: 15px;
     }
   }
 }
@@ -770,13 +770,13 @@ onMounted(load)
 
   strong {
     color: #d0e8f8;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
   }
 
   span {
     color: #8fb7cd;
-    font-size: 12px;
+    font-size: 16px;
   }
 }
 
@@ -804,14 +804,14 @@ onMounted(load)
 
     strong {
       color: #d0e8f8;
-      font-size: 13px;
+      font-size: 17px;
       font-weight: 700;
     }
 
     .count {
       margin-left: auto;
       color: #43e7af;
-      font-size: 14px;
+      font-size: 18px;
       font-weight: 700;
     }
   }
@@ -840,13 +840,13 @@ onMounted(load)
     display: flex;
     align-items: flex-start;
     gap: 6px;
-    font-size: 12px;
+    font-size: 16px;
     line-height: 1.4;
   }
 
   .empty {
     color: #5a7d96;
-    font-size: 12px;
+    font-size: 16px;
     padding: 4px 0;
   }
 }
@@ -866,7 +866,7 @@ onMounted(load)
 .status-list__level {
   flex-shrink: 0;
   color: #8fb7cd;
-  font-size: 11px;
+  font-size: 15px;
 }
 
 .status-list__priority {
@@ -900,18 +900,18 @@ onMounted(load)
 
   &__name {
     color: #8fb7cd;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 600;
   }
 
   &__score {
     color: #43e7af;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
 
     small {
       color: #8fb7cd;
-      font-size: 11px;
+      font-size: 15px;
       font-weight: 400;
     }
   }
@@ -925,7 +925,7 @@ onMounted(load)
   &__legend {
     display: flex;
     gap: 12px;
-    font-size: 11px;
+    font-size: 15px;
     color: #8fb7cd;
 
     span {
@@ -1000,13 +1000,13 @@ onMounted(load)
 
   &__title {
     color: #7ff6ff;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
   }
 
   &__anchor {
     color: #8fb7cd;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 600;
   }
 }
@@ -1026,7 +1026,7 @@ onMounted(load)
     border-radius: 3px;
     background: rgba(0, 38, 73, 0.3);
     color: #d0e8f8;
-    font-size: 12px;
+    font-size: 16px;
     line-height: 1.4;
   }
 }
@@ -1055,13 +1055,13 @@ onMounted(load)
 
   &__label {
     color: #8fb7cd;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 600;
   }
 
   &__value {
     color: #43e7af;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
   }
 
@@ -1110,7 +1110,7 @@ onMounted(load)
   border-radius: 3px;
   background: rgba(0, 184, 255, 0.12);
   color: #55dfff;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -1125,7 +1125,7 @@ onMounted(load)
   border-radius: 3px;
   background: rgba(67, 231, 175, 0.12);
   color: #43e7af;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -1143,7 +1143,7 @@ onMounted(load)
 
   &__role {
     color: #d0e8f8;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1165,7 +1165,7 @@ onMounted(load)
 
   &__percent {
     color: #43e7af;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     text-align: right;
   }
@@ -1194,12 +1194,12 @@ onMounted(load)
     border-bottom: 1px solid rgba(102, 217, 255, 0.08);
 
     .resource-icon {
-      font-size: 18px;
+      font-size: 22px;
     }
 
     strong {
       color: #d0e8f8;
-      font-size: 13px;
+      font-size: 17px;
       font-weight: 700;
     }
   }
@@ -1215,7 +1215,7 @@ onMounted(load)
 
   li {
     color: #8fb7cd;
-    font-size: 12px;
+    font-size: 16px;
     line-height: 1.4;
     padding: 3px 0;
   }
@@ -1239,13 +1239,13 @@ onMounted(load)
 
     strong {
       color: #43e7af;
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
     }
 
     span {
       color: #8fb7cd;
-      font-size: 11px;
+      font-size: 15px;
       font-weight: 600;
     }
   }
@@ -1267,7 +1267,7 @@ onMounted(load)
 
   &__title {
     margin: 0;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     color: #7ff6ff;
   }
@@ -1284,12 +1284,12 @@ onMounted(load)
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 6px;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1.4;
 
   &__label {
     color: #d0e8f8;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 600;
   }
 
@@ -1310,7 +1310,7 @@ onMounted(load)
     border-radius: 3px;
     background: rgba(0, 184, 255, 0.15);
     color: #55dfff;
-    font-size: 10px;
+    font-size: 14px;
     font-weight: 700;
     flex-shrink: 0;
   }
@@ -1350,13 +1350,13 @@ onMounted(load)
 
     strong {
       color: #43e7af;
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
     }
 
     span {
       color: #8fb7cd;
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 600;
     }
   }
@@ -1382,8 +1382,8 @@ onMounted(load)
     justify-content: space-between;
     align-items: center;
 
-    span { color: #8fb7cd; font-size: 13px; font-weight: 600; }
-    strong { color: #43e7af; font-size: 14px; font-weight: 700; }
+    span { color: #8fb7cd; font-size: 17px; font-weight: 600; }
+    strong { color: #43e7af; font-size: 18px; font-weight: 700; }
   }
 
   &__bar {
@@ -1403,7 +1403,7 @@ onMounted(load)
 .yearly-goals {
   &__title {
     margin: 0 0 8px;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 700;
     color: #7ff6ff;
   }
@@ -1426,14 +1426,14 @@ onMounted(load)
 
   &__year {
     color: #8fb7cd;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 600;
     flex-shrink: 0;
   }
 
   &__text {
     color: #d0e8f8;
-    font-size: 12px;
+    font-size: 16px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1454,7 +1454,7 @@ onMounted(load)
 
   &__percent {
     color: #43e7af;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 700;
     text-align: right;
   }
@@ -1467,7 +1467,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 15px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error {
@@ -1482,7 +1482,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 17px;
 
     &:hover {
       background: rgba(0, 184, 255, 0.2);
@@ -1503,7 +1503,7 @@ onMounted(load)
   padding: 12px;
   text-align: center;
   color: #5a7d96;
-  font-size: 13px;
+  font-size: 17px;
 }
 
 @keyframes spin {

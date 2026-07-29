@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
@@ -76,7 +76,7 @@ watch(() => route.params.type, load)
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: $college-fs-label;
+  font-size: $detail-fs-label;
 
   th,
   td {

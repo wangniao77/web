@@ -148,7 +148,7 @@ const readinessGaugeOption = computed<EChartsOption>(() => ({
     pointer: { width: 4, length: '58%', itemStyle: { color: '#f6fbff' } },
     axisTick: { show: false },
     splitLine: { length: 10, lineStyle: { color: 'rgba(255,255,255,0.25)', width: 1 } },
-    axisLabel: { distance: 14, color: '#7eb4d8', fontSize: 12 },
+    axisLabel: { distance: 14, color: '#7eb4d8', fontSize: 16 },
     anchor: { show: true, size: 8, itemStyle: { color: '#f6fbff' } },
     title: { show: false },
     detail: {
@@ -219,7 +219,7 @@ const abilityRadarOption = computed<EChartsOption>(() => ({
       { name: '技能证书', max: 100 },
       { name: '面试能力', max: 100 },
     ],
-    axisName: { color: '#b8ecff', fontSize: 15 },
+    axisName: { color: '#b8ecff', fontSize: 19 },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
     splitArea: { areaStyle: { color: ['rgba(0,184,255,0.04)', 'rgba(0,184,255,0.08)'] } },
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
@@ -277,14 +277,14 @@ const riskMatrixOption = computed<EChartsOption>(() => ({
   },
   xAxis: {
     type: 'value', min: 0, max: 100, name: '可能性',
-    nameTextStyle: { color: '#7eb4d8', fontSize: 14 },
-    axisLabel: { ...AXIS_LABEL, fontSize: 14 },
+    nameTextStyle: { color: '#7eb4d8', fontSize: 18 },
+    axisLabel: { ...AXIS_LABEL, fontSize: 18 },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
   },
   yAxis: {
     type: 'value', min: 0, max: 100, name: '影响程度',
-    nameTextStyle: { color: '#7eb4d8', fontSize: 14 },
-    axisLabel: { ...AXIS_LABEL, fontSize: 14 },
+    nameTextStyle: { color: '#7eb4d8', fontSize: 18 },
+    axisLabel: { ...AXIS_LABEL, fontSize: 18 },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
   },
   series: [{
@@ -294,7 +294,7 @@ const riskMatrixOption = computed<EChartsOption>(() => ({
       value: [r.x, r.y],
       symbolSize: 20 + (r.x + r.y) / 8,
       itemStyle: { color: LEVEL_COLOR[r.level], opacity: 0.85 },
-      label: { show: true, formatter: r.name, position: 'top', color: '#d0e8f8', fontSize: 14 },
+      label: { show: true, formatter: r.name, position: 'top', color: '#d0e8f8', fontSize: 18 },
     })),
   }],
 }))
@@ -605,7 +605,7 @@ onMounted(load)
 
 .warn-section__title {
   margin: 0 0 12px;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -625,7 +625,7 @@ onMounted(load)
   .mock-tag {
     margin-left: 4px;
     font-style: normal;
-    font-size: 13px;
+    font-size: 17px;
     padding: 1px 7px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.12);
@@ -637,7 +637,7 @@ onMounted(load)
 /* 合并卡片内的二级小标题 */
 .combine__sub {
   margin: 14px 0 8px;
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 700;
   color: #9ecae8;
 
@@ -662,7 +662,7 @@ onMounted(load)
 
   &-cap {
     margin-top: -6px;
-    font-size: 16px;
+    font-size: 20px;
     color: #7eb4d8;
     font-weight: 600;
   }
@@ -696,18 +696,18 @@ onMounted(load)
   &--high { border-color: #ff7474; }
 
   &__label {
-    font-size: 17px;
+    font-size: 21px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__value {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 900;
     color: #f6fbff;
 
     &--small {
-      font-size: 18px;
+      font-size: 22px;
       line-height: 1.3;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -729,13 +729,13 @@ onMounted(load)
     flex-shrink: 0;
     padding: 4px 14px;
     border-radius: 999px;
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 800;
     color: #06122e;
   }
 
   &__text {
-    font-size: 17px;
+    font-size: 21px;
     color: #d0e8f8;
     line-height: 1.6;
   }
@@ -777,10 +777,10 @@ onMounted(load)
     justify-content: space-between;
     gap: 6px;
   }
-  &__name { font-size: 17px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
+  &__name { font-size: 21px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
   &__badge {
     flex-shrink: 0;
-    font-size: 15px;
+    font-size: 19px;
     padding: 2px 8px;
     border-radius: 999px;
     font-weight: 700;
@@ -791,7 +791,7 @@ onMounted(load)
   &--high &__badge { background: rgba(255, 116, 116, 0.14); color: #ff7474; }
 
   &__desc {
-    font-size: 16px;
+    font-size: 20px;
     color: #9ecae8;
     line-height: 1.4;
   }
@@ -799,7 +799,7 @@ onMounted(load)
 
 /* 风险矩阵 + 标签 */
 .risk-sub {
-  font-size: 16px;
+  font-size: 20px;
   color: #7eb4d8;
   margin-bottom: 8px;
 }
@@ -824,7 +824,7 @@ onMounted(load)
   padding: 7px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 16px;
+  font-size: 20px;
 
   &__dot {
     width: 7px;
@@ -881,20 +881,20 @@ onMounted(load)
   &--pending &__dot { background: #5a7d96; }
 
   &__name {
-    font-size: 16px;
+    font-size: 20px;
     color: #b8ecff;
     font-weight: 700;
   }
 
   &__value {
-    font-size: 25px;
+    font-size: 29px;
     font-weight: 900;
     color: #f6fbff;
     font-variant-numeric: tabular-nums;
   }
 
   &__unit {
-    font-size: 14px;
+    font-size: 18px;
     color: #7eb4d8;
     margin-left: 2px;
     font-weight: 600;
@@ -907,7 +907,7 @@ onMounted(load)
   align-items: center;
   justify-content: center;
   color: #3b6e92;
-  font-size: 21px;
+  font-size: 25px;
   font-weight: 900;
 }
 
@@ -950,7 +950,7 @@ onMounted(load)
   }
 
   &__rank {
-    font-size: 14px;
+    font-size: 18px;
     padding: 1px 5px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.12);
@@ -960,7 +960,7 @@ onMounted(load)
   }
 
   &__role {
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 700;
     color: #d0e8f8;
     overflow: hidden;
@@ -969,7 +969,7 @@ onMounted(load)
   }
 
   &__match {
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 900;
     white-space: nowrap;
   }
@@ -985,7 +985,7 @@ onMounted(load)
   gap: 10px;
 
   &__role {
-    font-size: 21px;
+    font-size: 25px;
     font-weight: 800;
     color: #f6fbff;
     padding-bottom: 8px;
@@ -1007,19 +1007,19 @@ onMounted(load)
     gap: 2px;
 
     label {
-      font-size: 15px;
+      font-size: 19px;
       color: #7eb4d8;
       font-weight: 600;
     }
 
     strong {
-      font-size: 21px;
+      font-size: 25px;
       font-weight: 900;
       color: #f6fbff;
     }
 
     span {
-      font-size: 17px;
+      font-size: 21px;
       font-weight: 700;
       color: #d0e8f8;
     }
@@ -1028,7 +1028,7 @@ onMounted(load)
   &__section {
     label {
       display: block;
-      font-size: 16px;
+      font-size: 20px;
       font-weight: 700;
       color: #7eb4d8;
       margin-bottom: 4px;
@@ -1036,7 +1036,7 @@ onMounted(load)
 
     p {
       margin: 0;
-      font-size: 16px;
+      font-size: 20px;
       color: #c8dff0;
       line-height: 1.5;
     }
@@ -1058,7 +1058,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 16px;
+  font-size: 20px;
 
   &__dot {
     width: 7px;
@@ -1072,7 +1072,7 @@ onMounted(load)
   }
 
   &__level {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 800;
   }
 
@@ -1096,7 +1096,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 16px;
+  font-size: 20px;
 
   &__time {
     width: 56px;
@@ -1112,7 +1112,7 @@ onMounted(load)
   }
 
   &__tag {
-    font-size: 17px;
+    font-size: 21px;
     padding: 2px 8px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.12);
@@ -1133,13 +1133,13 @@ onMounted(load)
 .warn-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 16px;
+  font-size: 20px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
     padding: 8px 10px;
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -1167,7 +1167,7 @@ onMounted(load)
 .cat-badge {
   display: inline-block;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 18px;
   padding: 1px 5px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -1177,7 +1177,7 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 16px;
+  font-size: 20px;
   padding: 3px 10px;
   border-radius: 999px;
   font-weight: 700;
@@ -1194,7 +1194,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 /* Info grid */
@@ -1213,12 +1213,12 @@ onMounted(load)
   background: rgba(0, 38, 73, 0.3);
 
   &__label {
-    font-size: 15px;
+    font-size: 19px;
     color: #7eb4d8;
   }
 
   &__value {
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -1256,7 +1256,7 @@ onMounted(load)
 /* 推荐目标岗位标签（顶部） */
 .job-tags-label {
   display: block;
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 700;
   color: #b8ecff;
   margin-bottom: 8px;
@@ -1277,7 +1277,7 @@ onMounted(load)
   background: rgba(0, 38, 73, 0.4);
   border: 1px solid rgba(102, 217, 255, 0.15);
   cursor: pointer;
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 700;
   color: #d0e8f8;
   transition: border-color 0.2s, background 0.2s;
@@ -1296,7 +1296,7 @@ onMounted(load)
   }
 
   &__rank {
-    font-size: 14px;
+    font-size: 18px;
     padding: 1px 6px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.14);
@@ -1305,7 +1305,7 @@ onMounted(load)
   }
 
   &__match {
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 900;
     font-family: 'DIN Alternate', sans-serif;
   }
@@ -1319,7 +1319,7 @@ onMounted(load)
 }
 
 .job-section-label {
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 700;
 
   &--good { color: #55e995; }
@@ -1340,7 +1340,7 @@ onMounted(load)
   padding: 8px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.35);
-  font-size: 17px;
+  font-size: 21px;
 
   &--good {
     background: rgba(0, 38, 73, 0.35);
@@ -1359,7 +1359,7 @@ onMounted(load)
 }
 
 .job-ability-empty {
-  font-size: 16px;
+  font-size: 20px;
   color: #5a7d96;
   padding: 6px 0;
 }
@@ -1377,7 +1377,7 @@ onMounted(load)
   padding: 7px 10px;
   border-radius: 4px;
   background: rgba(0, 38, 73, 0.35);
-  font-size: 17px;
+  font-size: 21px;
 
   &--high { background: rgba(0, 38, 73, 0.35); }
   &--medium { background: rgba(0, 38, 73, 0.35); }
@@ -1394,7 +1394,7 @@ onMounted(load)
   }
 
   &__level {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 800;
     flex-shrink: 0;
   }
@@ -1418,20 +1418,20 @@ onMounted(load)
   background: rgba(0, 38, 73, 0.35);
 
   label {
-    font-size: 16px;
+    font-size: 20px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   strong {
-    font-size: 23px;
+    font-size: 27px;
     font-weight: 900;
     color: #f6fbff;
     font-family: 'DIN Alternate', sans-serif;
   }
 
   span {
-    font-size: 17px;
+    font-size: 21px;
     font-weight: 700;
     color: #d0e8f8;
     line-height: 1.5;
@@ -1451,7 +1451,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 700;
     cursor: pointer;
 
@@ -1469,7 +1469,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 17px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -1481,7 +1481,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 17px;
+    font-size: 21px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }
