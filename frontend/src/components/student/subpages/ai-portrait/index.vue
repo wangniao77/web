@@ -1567,16 +1567,28 @@ onMounted(load)
   border: 1px solid rgba(0, 200, 255, .18);
   box-shadow: inset 0 1px 0 rgba(160, 220, 255, .08);
 }
-/* 时间统一落在中轴线上；卡片上下交替排布 */
-.tl-node--top .tl-card { bottom: calc(50% + 28px); }
-.tl-node--bottom .tl-card { top: calc(50% + 28px); }
+/* 中轴作为数轴：轴上圆点 + 时间标签置于轴下方，卡片上下交替排布 */
+.tl-node::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #7fd4ff;
+  box-shadow: 0 0 0 4px rgba(127, 212, 255, .18);
+  z-index: 4;
+}
+.tl-node--top .tl-card { bottom: calc(50% + 66px); }
+.tl-node--bottom .tl-card { top: calc(50% + 66px); }
 
 .tl-time {
   position: absolute;
   left: 50%;
-  bottom: 6px;
-  top: auto;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, 16px);
   white-space: nowrap;
   padding: 4px 14px;
   border-radius: 999px;
