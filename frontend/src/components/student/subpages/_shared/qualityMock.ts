@@ -389,40 +389,7 @@ export const disciplinaryRecords = [
   },
 ]
 
-export const criticismRecords = [
-  {
-    reason: '无故旷课累计10学时',
-    scope: '学院通报',
-    unit: '学院学工办',
-    date: '2024-04-10',
-    requirement: '限期补齐考勤',
-    evidence: '通报文件.pdf',
-  },
-]
 
-export const academicWarnings = [
-  {
-    type: '挂科过多预警',
-    target: '高等数学、线性代数',
-    count: '2',
-    measure: '学业谈话、强制辅导',
-    deduction: '—',
-    date: '2024-07-01',
-    recorder: '辅导员',
-  },
-]
-
-export const integrityRecords = [
-  {
-    type: '图书馆借书超期',
-    detail: '图书馆借书超期3个月未还',
-    amount: '—',
-    status: '已结清',
-    result: '已归还图书',
-    date: '2024-02-15',
-    evidence: '图书馆罚单.pdf',
-  },
-]
 
 /* ─────────── 资助帮扶 mock data（新增，供「奖惩助贷详情」使用） ─────────── */
 

@@ -14,9 +14,6 @@ import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import {
   honorGroups,
   disciplinaryRecords,
-  criticismRecords,
-  academicWarnings,
-  integrityRecords,
   aidProfile,
 } from '../_shared/qualityMock'
 
@@ -125,7 +122,7 @@ const aid = aidProfile
 /* ─────────── 第四部分：纪律风险分析 ─────────── */
 type RiskLevel = 'low' | 'medium' | 'high'
 const disciplineLevel = computed<RiskLevel>(() => {
-  const count = disciplinaryRecords.length + criticismRecords.length + academicWarnings.length + integrityRecords.length
+  const count = disciplinaryRecords.length
   if (count >= 2) return 'high'
   if (count === 1) return 'medium'
   return 'low'
@@ -142,9 +139,6 @@ const disciplineSummary = computed(() => {
 const disciplineItems = computed(() => {
   const items: { cat: string; text: string; date: string }[] = []
   disciplinaryRecords.forEach((r) => items.push({ cat: '校纪处分', text: `${r.type} · ${r.reason}`, date: r.date }))
-  criticismRecords.forEach((r) => items.push({ cat: '通报批评', text: r.reason, date: r.date }))
-  academicWarnings.forEach((r) => items.push({ cat: '学业警示', text: `${r.type}（${r.target}）`, date: r.date }))
-  integrityRecords.forEach((r) => items.push({ cat: '诚信档案', text: r.detail, date: r.date }))
   return items
 })
 
@@ -347,7 +341,6 @@ const growthItems = computed<GrowthItem[]>(() => {
             <span class="growth-item__dot" />
             <span class="growth-item__time">{{ it.date }}</span>
             <div class="growth-item__content">
-              <span class="growth-item__icon">{{ it.icon }}</span>
               <div>
                 <strong class="growth-item__title">{{ it.title }}</strong>
                 <span class="growth-item__sub">{{ it.sub }}</span>
@@ -655,18 +648,21 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 }
 
-/* 资助历史时间轴（横向） */
+/* 资助历史时间轴（一条横向贯穿线，占满整行） */
 .aid-timeline {
   list-style: none;
   margin: 0;
   padding: 16px 0 4px;
   display: flex;
   flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
   overflow-x: auto;
 
   &__item {
     position: relative;
-    flex: 0 0 170px;
+    flex: 1 1 150px;
+    min-width: 120px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -710,10 +706,6 @@ const growthItems = computed<GrowthItem[]>(() => {
     font-size: 13px;
     color: #d8eeff;
     font-weight: 600;
-    padding: 6px 10px;
-    border-radius: 6px;
-    background: rgba(0, 40, 78, 0.3);
-    border: 1px solid rgba(67, 231, 175, 0.15);
   }
 }
 
@@ -835,10 +827,12 @@ const growthItems = computed<GrowthItem[]>(() => {
   }
 }
 
-/* ═══ 第五部分：成长时间轴（一条横向贯穿线） ═══ */
+/* ═══ 第五部分：成长时间轴（一条横向贯穿线，占满整行居中） ═══ */
 .growth-timeline {
   display: flex;
   flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
   gap: 0;
   padding: 16px 0 4px;
   overflow-x: auto;
@@ -846,7 +840,8 @@ const growthItems = computed<GrowthItem[]>(() => {
 
 .growth-item {
   position: relative;
-  flex: 0 0 200px;
+  flex: 1 1 200px;
+  min-width: 130px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -895,13 +890,7 @@ const growthItems = computed<GrowthItem[]>(() => {
     align-items: center;
     gap: 6px;
     width: 100%;
-    padding: 8px 10px;
-    border-radius: 6px;
-    background: rgba(0, 40, 78, 0.3);
-    border: 1px solid rgba(102, 217, 255, 0.12);
   }
-
-  &__icon { font-size: 18px; flex-shrink: 0; }
 
   &__title {
     display: block;
