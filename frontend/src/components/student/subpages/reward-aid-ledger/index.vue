@@ -83,8 +83,8 @@ const overviewCards = computed(() => [
     key: 'discipline',
     icon: '📋',
     label: '纪律状态',
-    value: disciplineLevel.value === 'low' && disciplineRecords.length === 0 ? '无处分' : `${disciplineRecords.length} 项`,
-    unit: disciplineRecords.length ? '' : '',
+    value: disciplineLevel.value === 'low' && disciplinaryRecords.length === 0 ? '无处分' : `${disciplinaryRecords.length} 项`,
+    unit: disciplinaryRecords.length ? '' : '',
     tone: disciplineLevel.value === 'low' ? 'green' : disciplineLevel.value === 'medium' ? 'yellow' : 'red',
   },
 ])
