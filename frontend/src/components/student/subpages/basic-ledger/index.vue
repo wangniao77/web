@@ -570,7 +570,7 @@ onMounted(load)
           <button
             type="button"
             class="func-card"
-            @click="router.push({ name: 'student-comprehensive-ledger', query: { studentId: activeStudentId } })"
+            @click="router.push({ name: 'student-reward-aid-ledger', query: { studentId: activeStudentId } })"
           >
             <span class="func-card__icon">🏅</span>
             <span class="func-card__label">奖惩助贷详情</span>

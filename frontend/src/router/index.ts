@@ -180,6 +180,12 @@ const router = createRouter({
           meta: { title: '综合素养台账详情', isStudentSubpage: true },
         },
         {
+          path: 'reward-aid-ledger',
+          name: 'student-reward-aid-ledger',
+          component: () => import('@/components/student/subpages/reward-aid-ledger/index.vue'),
+          meta: { title: '奖惩助贷详情', isStudentSubpage: true },
+        },
+        {
           path: 'career-development',
           name: 'student-career-development',
           component: () => import('@/components/student/subpages/career-development/index.vue'),

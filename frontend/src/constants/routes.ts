@@ -32,6 +32,7 @@ export const ROUTES = {
     academicWarning: '/student/academic-warning',
     employmentWarning: '/student/employment-warning',
     comprehensiveLedger: '/student/comprehensive-ledger',
+    rewardAidLedger: '/student/reward-aid-ledger',
     careerDevelopment: '/student/career-development',
     careerPathPostgrad: '/student/career-path/postgrad',
     careerPathJob: '/student/career-path/job',
