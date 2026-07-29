@@ -8,12 +8,9 @@
  * 与「综合素养台账」相互独立：本页整合 荣誉 / 奖学金 / 资助 / 纪律 四大维度，
  * 不跳转到综合素养台账二级页；仅「重点成果卡片」可下钻至综合素养台账详情。
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
-import { useScope } from '@/composables/useScope'
-import { studentService } from '@/api/student/services'
-import type { StudentDashboardVM } from '@/types/student/view'
 import {
   honorGroups,
   disciplinaryRecords,
@@ -23,28 +20,21 @@ import {
   aidProfile,
 } from '../_shared/qualityMock'
 
+/**
+ * 本页为「模拟数据」展示页（顶部已标注「模拟数据」徽标），
+ * 全部内容来自 qualityMock，不依赖真实接口，故直接渲染，无需 loading 等待。
+ */
+const mockProfile = {
+  name: '张三',
+  studentId: '2021210001',
+  className: '计算机科学与技术 21(1)班',
+}
+
 const route = useRoute()
 const router = useRouter()
-const { studentScope } = useScope()
 const activeStudentId = computed(
-  () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
+  () => (route.query.studentId as string | undefined) || mockProfile.studentId,
 )
-
-const dashboard = ref<StudentDashboardVM | null>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
-
-async function load() {
-  loading.value = true
-  error.value = null
-  try {
-    dashboard.value = await studentService.fetchDashboard(activeStudentId.value)
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : '加载失败'
-  } finally {
-    loading.value = false
-  }
-}
 
 function goComprehensive() {
   router.push({ name: 'student-comprehensive-ledger', query: { studentId: activeStudentId.value } })
@@ -61,7 +51,7 @@ const honorTotalCount = computed(() =>
   honorGroups.reduce((sum, g) => sum + groupCount(g.key), 0),
 )
 
-const scholarshipCount = computed(() => dashboard.value?.scholarships?.length ?? groupCount('scholarship'))
+const scholarshipCount = computed(() => groupCount('scholarship'))
 
 /* ─────────── 第一部分：顶部概览卡 ─────────── */
 const overviewCards = computed(() => [
@@ -202,28 +192,17 @@ const growthItems = computed<GrowthItem[]>(() => {
   const toNum = (d: string) => Number(d.replace(/[^0-9]/g, '')) || 0
   return items.sort((a, b) => toNum(b.date) - toNum(a.date))
 })
-
-onMounted(load)
 </script>
 
 <template>
   <StudentDetailLayout
     title="奖惩助贷详情"
-    :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId} · ${dashboard.profile.className}` : ''"
+    :subtitle="`${mockProfile.name} · ${mockProfile.studentId} · ${mockProfile.className}`"
     back-text="← 返回基础信息台账"
     :back-to="{ name: 'student-basic-ledger', query: { studentId: activeStudentId } }"
     mock-badge="模拟数据"
   >
-    <div v-if="loading" class="placeholder">
-      <span class="spinner" /> 正在加载奖惩助贷详情...
-    </div>
-
-    <div v-else-if="error" class="placeholder error">
-      <span>{{ error }}</span>
-      <button type="button" @click="load">重试</button>
-    </div>
-
-    <div v-else-if="dashboard" class="reward-aid-ledger">
+    <div class="reward-aid-ledger">
       <!-- ═══ 第一部分：顶部概览卡 ═══ -->
       <section class="overview-grid">
         <div
@@ -989,47 +968,6 @@ onMounted(load)
     font-size: 13px;
     color: #8fb7cd;
   }
-}
-
-/* ═══ Loading / Error ═══ */
-.placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 320px;
-  font-size: 15px;
-  color: rgba(184, 236, 255, 0.7);
-  border: 1px solid rgba(102, 217, 255, 0.12);
-  border-radius: 8px;
-  background: rgba(4, 14, 38, 0.38);
-
-  &.error { color: #f87171; flex-direction: column; }
-
-  button {
-    padding: 4px 14px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 184, 255, 0.3);
-    background: rgba(0, 184, 255, 0.1);
-    color: #55dfff;
-    cursor: pointer;
-    font-size: 13px;
-
-    &:hover { background: rgba(0, 184, 255, 0.2); }
-  }
-}
-
-.spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #00b8ff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* ═══ Responsive ═══ */
