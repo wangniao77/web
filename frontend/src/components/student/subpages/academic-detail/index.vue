@@ -16,9 +16,8 @@ import { gpaDetailService } from '../_shared/gpa-data'
 import type { StudentDashboardVM } from '@/types/student/view'
 import type { GpaDetailVM, CourseCategory, CourseRecordVM } from '../_shared/gpa-data'
 import { CATEGORY_LABEL } from '../_shared/gpa-data'
-import GradeStructureChart from './components/GradeStructureChart.vue'
+import CourseDifficultyBubble from './components/CourseDifficultyBubble.vue'
 import StabilityGauge from './components/StabilityGauge.vue'
-import DifficultyScatter from './components/DifficultyScatter.vue'
 import AbilityRadar from './components/AbilityRadar.vue'
 import MajorPositionChart from './components/MajorPositionChart.vue'
 import SupportTrajectory from './components/SupportTrajectory.vue'
@@ -30,13 +29,11 @@ const activeStudentId = computed(
   () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
 )
 
-const activeQuadrantKey = ref('advantage')
-
 const sectionNav = [
   { id: 'sec-portrait', label: '学业画像' },
   { id: 'sec-structure', label: '成绩结构' },
-  { id: 'sec-difficulty', label: '难度适应' },
   { id: 'sec-compare', label: '同专业对比' },
+  { id: 'sec-stability', label: '学业稳定性' },
   { id: 'sec-advice', label: '指导建议' },
 ]
 
@@ -223,53 +220,6 @@ const stabilityRisks = computed<string[]>(() => {
   return list
 })
 
-/* ─────────── 4. 课程难度四象限 ─────────── */
-function diffStars(d: number): string {
-  return '★'.repeat(Math.max(1, Math.min(5, Math.round(d / 20))))
-}
-const quadrants = computed(() => {
-  const pts = coursePoints.value
-  const pick = (arr: CoursePoint[], asc = false) =>
-    [...arr]
-      .sort((a, b) => (asc ? a.score - b.score : b.score - a.score))
-      .slice(0, 3)
-      .map((p) => ({ name: p.name, score: p.score, stars: diffStars(p.difficulty) }))
-  return [
-    {
-      key: 'advantage',
-      title: '优势课程',
-      cls: 'good',
-      hint: '高难 · 高分',
-      desc: '难度大且成绩突出，是核心竞争力的体现，建议保持。',
-      items: pick(pts.filter((p) => p.difficulty >= 65 && p.score >= 80)),
-    },
-    {
-      key: 'potential',
-      title: '潜力课程',
-      cls: 'blue',
-      hint: '低难 · 高分',
-      desc: '难度不高但掌握扎实，可作为稳分基本盘。',
-      items: pick(pts.filter((p) => p.difficulty < 65 && p.score >= 80)),
-    },
-    {
-      key: 'weak',
-      title: '基础薄弱',
-      cls: 'warn',
-      hint: '低难 · 低分',
-      desc: '本应易拿分却偏低，多为态度或方法问题，需重点补强。',
-      items: pick(pts.filter((p) => p.difficulty < 65 && p.score < 75), true),
-    },
-    {
-      key: 'risk',
-      title: '风险课程',
-      cls: 'risk',
-      hint: '高难 · 低分',
-      desc: '难度大且成绩不理想，挂科风险最高，需优先干预。',
-      items: pick(pts.filter((p) => p.difficulty >= 65 && p.score < 75), true),
-    },
-  ]
-})
-
 /* ─────────── 7. 毕业达成预测 ─────────── */
 const gradCompletion = computed(() => credit.value?.earnedPercent ?? courseCompletionRate.value)
 const gradProbability = computed(() => {
@@ -357,10 +307,10 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 2. 成绩结构分析 + 成绩能力解析 | 3. 学业稳定性分析 + 稳定性评价 -->
+      <!-- 2. 课程难度适应分析 + 培养完成情况 -->
       <div id="sec-structure" class="detail-grid">
         <section class="composite">
-          <GradeStructureChart :courses="gpaDetail.courses" />
+          <CourseDifficultyBubble :points="coursePoints" />
           <div class="analysis-cards">
             <div class="analysis-card analysis-card--good">
               <span class="analysis-card__badge">优势领域</span>
@@ -386,75 +336,6 @@ onMounted(load)
               </div>
               <div class="analysis-card__courses">趋势：{{ abilityTrend.text }}</div>
             </div>
-          </div>
-        </section>
-
-        <section class="composite">
-          <StabilityGauge
-            :gpa-values="gpaDetail.semesters.map((s) => s.gpa)"
-            :fail-count="failCount"
-            :retake-count="retakeCount"
-            :low-score-count="lowScoreCount"
-          />
-          <div class="stab-eval">
-            <div class="stab-eval__index">
-              稳定指数 <b>{{ stabilityIndex }}</b>
-            </div>
-            <div class="stab-eval__col">
-              <h4 class="stab-eval__title stab-eval__title--good">优势</h4>
-              <ul class="stab-eval__list">
-                <li v-for="a in stabilityAdvantages" :key="a" class="stab-eval__item stab-eval__item--good">✓ {{ a }}</li>
-              </ul>
-            </div>
-            <div class="stab-eval__col">
-              <h4 class="stab-eval__title stab-eval__title--warn">风险</h4>
-              <ul class="stab-eval__list">
-                <li v-for="r in stabilityRisks" :key="r" class="stab-eval__item stab-eval__item--warn">⚠ {{ r }}</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- 4. 课程难度适应分析 + 四象限 | 7. 培养完成情况 + 毕业达成预测 -->
-      <div id="sec-difficulty" class="detail-grid">
-        <section class="composite">
-          <DifficultyScatter :points="coursePoints" />
-          <div class="quadrant">
-            <div class="quadrant__tabs">
-              <button
-                v-for="q in quadrants"
-                :key="q.key"
-                class="quadrant__tab"
-                :class="{
-                  'quadrant__tab--active': activeQuadrantKey === q.key,
-                  [`quadrant__tab--${q.cls}`]: true,
-                }"
-                @click="activeQuadrantKey = q.key"
-              >
-                <span class="quadrant__tab-title">{{ q.title }}</span>
-                <span class="quadrant__tab-hint">{{ q.hint }}</span>
-                <span v-if="q.items.length" class="quadrant__tab-badge">{{ q.items.length }}</span>
-              </button>
-            </div>
-            <div
-              v-for="q in quadrants"
-              v-show="activeQuadrantKey === q.key"
-              :key="`${q.key}-panel`"
-              class="quadrant__panel"
-              :class="`quadrant__panel--${q.cls}`"
-            >
-              <p class="quadrant__desc">{{ q.desc }}</p>
-              <ul v-if="q.items.length" class="quadrant__list">
-                <li v-for="it in q.items" :key="it.name" class="quadrant__item">
-                  <span class="quadrant__name">{{ it.name }}</span>
-                  <span class="quadrant__score">{{ it.score }}分</span>
-                  <span class="quadrant__stars" :title="`难度 ${it.stars.length}/5`">{{ it.stars }}</span>
-                </li>
-              </ul>
-              <div v-else class="quadrant__empty">暂无此类课程</div>
-            </div>
-            <p class="quadrant__legend">★ 星级表示课程难度，★ 越多难度越高（满分 5 星）</p>
           </div>
         </section>
 
@@ -518,7 +399,39 @@ onMounted(load)
         </section>
       </div>
 
-      <!-- 5. 同专业对比分析 · 专业位置分析 | 6. 课程能力雷达图 -->
+      <!-- 7. 学业稳定性分析 | 课程能力雷达图 -->
+      <div id="sec-stability" class="detail-grid">
+        <section class="composite">
+          <StabilityGauge
+            :gpa-values="gpaDetail.semesters.map((s) => s.gpa)"
+            :fail-count="failCount"
+            :retake-count="retakeCount"
+            :low-score-count="lowScoreCount"
+          />
+          <div class="stab-eval">
+            <div class="stab-eval__index">
+              稳定指数 <b>{{ stabilityIndex }}</b>
+            </div>
+            <div class="stab-eval__col">
+              <h4 class="stab-eval__title stab-eval__title--good">优势</h4>
+              <ul class="stab-eval__list">
+                <li v-for="a in stabilityAdvantages" :key="a" class="stab-eval__item stab-eval__item--good">✓ {{ a }}</li>
+              </ul>
+            </div>
+            <div class="stab-eval__col">
+              <h4 class="stab-eval__title stab-eval__title--warn">风险</h4>
+              <ul class="stab-eval__list">
+                <li v-for="r in stabilityRisks" :key="r" class="stab-eval__item stab-eval__item--warn">⚠ {{ r }}</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        <section class="composite">
+          <AbilityRadar :points="coursePoints" :stability-index="stabilityIndex" />
+        </section>
+      </div>
+
+      <!-- 5. 同专业对比分析 · 专业位置分析 | 帮扶轨迹 -->
       <div id="sec-compare" class="detail-grid">
         <MajorPositionChart
           :student-gpa="gpa"
@@ -527,11 +440,8 @@ onMounted(load)
           :major-total="majorTotal"
           :major-rank-percent="gpaDetail.overview.majorRankPercent"
         />
-        <AbilityRadar :points="coursePoints" :stability-index="stabilityIndex" />
+        <SupportTrajectory />
       </div>
-
-      <!-- 帮扶轨迹（横向时间轴） -->
-      <SupportTrajectory />
 
       <!-- 8. 教师指导建议 -->
       <section id="sec-advice" class="advice">

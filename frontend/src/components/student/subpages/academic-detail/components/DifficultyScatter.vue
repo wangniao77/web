@@ -126,7 +126,7 @@ const insight = computed(() => {
 </script>
 
 <template>
-  <ChartCard title="课程难度适应分析" sub="成绩 vs 课程难度">
+  <ChartCard title="成绩-难度分布" sub="成绩 vs 课程难度">
     <ChartContainer :option="option" />
     <template #footer>
       <p class="insight"><span class="insight__tag">分析</span>{{ insight }}</p>

@@ -413,63 +413,72 @@ const opportunityTimeline = computed(() => {
   const certGap = Math.max(1, 2 - (d?.internship.certificateCount ?? 0))
   const projGap = Math.max(1, 5 - (d?.internship.projectCount ?? 0))
   const internGap = Math.max(1, 1 - (d?.internship.internshipCount ?? 0))
-  return [
-    {
-      time: '大一 · 上学期', side: 'up' as const,
-      items: [
-        { type: '证书', title: '英语四级 CET-4', desc: '夯实语言基础，为六级与留学铺路' },
-        { type: '活动', title: '加入技术社团', desc: '参与迎新项目，初步接触工程实践' },
-      ],
-    },
-    {
-      time: '大一 · 下学期', side: 'down' as const,
-      items: [
-        { type: '证书', title: '计算机二级', desc: '巩固办公与编程基础能力' },
-        { type: '比赛', title: '校级编程新生赛', desc: '以赛促学，积累首个竞赛经历' },
-      ],
-    },
-    {
-      time: '大二 · 上学期', side: 'up' as const,
-      items: [
-        { type: '证书', title: '英语六级 CET-6', desc: '提升语言竞争力，对应聘 / 考研加分' },
-        { type: '活动', title: '开源代码贡献', desc: '在 GitHub 参与 1 个开源项目' },
-      ],
-    },
-    {
-      time: '大二 · 下学期', side: 'down' as const,
-      items: [
-        { type: '比赛', title: '蓝桥杯 / 数学建模', desc: '冲击省级奖项，丰富简历亮点' },
-        { type: '证书', title: `行业认证 ×${certGap}`, desc: '考取与方向匹配的 1–2 项认证' },
-      ],
-    },
-    {
-      time: '大三 · 上学期', side: 'up' as const,
-      items: [
-        { type: '实习', title: `首段企业实习 ×${internGap}`, desc: '进入真实工程环境，补足项目经验' },
-        { type: '比赛', title: '互联网+ / 挑战杯', desc: '组队参与双创大赛，锻炼综合能力' },
-      ],
-    },
-    {
-      time: '大三 · 下学期', side: 'down' as const,
-      items: [
-        { type: '项目', title: `企业级项目 ×${projGap}`, desc: '打磨作品集，对齐优秀生均 5 项' },
-        { type: '证书', title: '云架构 / 软考中级', desc: '提升专业深度与背书' },
-      ],
-    },
-    {
-      time: '大四 · 上学期', side: 'up' as const,
-      items: [
-        { type: '升学', title: '考研 / 申请冲刺', desc: '整理成果，联络目标导师' },
-        { type: '就业', title: '秋招集中投递', desc: '完善简历，定向投递目标岗位' },
-      ],
-    },
-    {
-      time: '当前', side: 'down' as const,
-      items: [
-        { type: '行动', title: '补齐最短板', desc: '优先投入当前匹配度最高、收益最大的机会' },
-      ],
-    },
-  ]
+
+  // 仅展示“本学期”这六个月：按当前日期推算所属学期（9–2 月为秋学期，3–8 月为春学期）
+  const now = new Date()
+  const m = now.getMonth() + 1
+  const isAutumn = m >= 9 || m <= 2
+
+  // 本学期六个月，每个月对应的比赛 / 活动 / 考证等机会
+  const monthPlan: Record<string, { type: string; title: string; desc: string }[]> = isAutumn
+    ? {
+        '9月': [
+          { type: '活动', title: '社团招新 / 迎新项目', desc: '参与迎新工程实践，初步接触项目协作' },
+          { type: '证书', title: '计算机二级备考', desc: '巩固办公与编程基础能力' },
+        ],
+        '10月': [
+          { type: '比赛', title: '校级编程新生赛', desc: '以赛促学，积累首个竞赛经历' },
+          { type: '证书', title: '英语四级 CET-4', desc: '夯实语言基础，为六级铺路' },
+        ],
+        '11月': [
+          { type: '比赛', title: '蓝桥杯 / 数学建模报名', desc: '冲击省级奖项，丰富简历亮点' },
+          { type: '活动', title: 'GitHub 开源贡献', desc: '参与 1 个开源项目，积累工程经验' },
+        ],
+        '12月': [
+          { type: '证书', title: '英语六级 CET-6', desc: '提升语言竞争力，对应聘 / 考研加分' },
+          { type: '比赛', title: '期末综合项目', desc: '以课程项目打磨作品集' },
+        ],
+        '1月': [
+          { type: '项目', title: '寒假实训', desc: '参与短期实训，补齐项目经验' },
+          { type: '活动', title: '社会实践', desc: '参加社会实践，拓展综合素养' },
+        ],
+        '2月': [
+          { type: '实习', title: `寒假企业实习 ×${internGap}`, desc: '进入真实工程环境，补足实习经历' },
+          { type: '证书', title: `行业认证 ×${certGap}`, desc: '考取与方向匹配的 1–2 项认证' },
+        ],
+      }
+    : {
+        '3月': [
+          { type: '活动', title: '新学期规划', desc: '制定本学期成长目标与节奏' },
+          { type: '证书', title: '软考 / 云认证备考', desc: '提升专业深度与背书' },
+        ],
+        '4月': [
+          { type: '比赛', title: '蓝桥杯省赛', desc: '冲击更高奖项，丰富简历' },
+          { type: '证书', title: '计算机等级考试', desc: '巩固基础能力认证' },
+        ],
+        '5月': [
+          { type: '比赛', title: '互联网+ / 挑战杯', desc: '组队参与双创大赛，锻炼综合能力' },
+          { type: '项目', title: `企业级项目 ×${projGap}`, desc: '打磨作品集，对齐优秀生均 5 项' },
+        ],
+        '6月': [
+          { type: '实习', title: '暑期实习启动', desc: '定向投递，争取真实工程岗位' },
+          { type: '证书', title: '云架构认证', desc: '提升专业深度' },
+        ],
+        '7月': [
+          { type: '实习', title: `企业实习 ×${internGap}`, desc: '进入真实工程环境，补足项目经验' },
+          { type: '活动', title: '社会实践', desc: '参加社会实践，拓展综合素养' },
+        ],
+        '8月': [
+          { type: '项目', title: '作品集打磨', desc: '整合成果，完善个人作品集' },
+          { type: '升学', title: '考研 / 申请筹备', desc: '整理成果，联络目标导师' },
+        ],
+      }
+
+  return Object.entries(monthPlan).map(([month, items], i) => ({
+    time: month,
+    side: (i % 2 === 0 ? 'up' : 'down') as 'up' | 'down',
+    items,
+  }))
 })
 
 /* ════════════ 4. 学生成长风险雷达 ════════════ */
@@ -647,11 +656,122 @@ const peerCompareOption = computed<EChartsOption>(() => ({
 const actionPlan = computed(() => {
   const d = dashboard.value
   if (!d) return { recent: [], mid: [], long: [] }
-  return {
-    recent: (d.aiPortrait.coachingTasks || []).slice(0, 3).map(t => t.title),
-    mid: d.aiAssistant.shortTermSuggestions || [],
-    long: d.aiAssistant.longTermSuggestions || [],
+
+  const proj = d.internship.projectCount
+  const intern = d.internship.internshipCount
+  const cert = d.internship.certificateCount
+  const award = d.competition.awardCount
+  const topAbility = [...abilities.value].sort((a, b) => b.value - a.value)[0]
+  const topRiskList = [...riskDims.value].sort((a, b) => b.value - a.value).slice(0, 3)
+  const directions = studentPortrait.value.directions.length
+    ? studentPortrait.value.directions
+    : [d.aiAssistant.recommendedDirection].filter(Boolean)
+  // 长期目标只取匹配度最高（结合意愿）的单条路径，不把考研/考公/就业同时罗列
+  const topKey = pathOptionsSorted.value[0]?.key ?? 'job'
+  const topLabel = pathOptionsSorted.value[0]?.label ?? '直接就业'
+  let longDirection: string[]
+  let longCareer: string[]
+  let longTarget: string[]
+  let longCore: string[]
+  if (topKey === 'postgrad') {
+    longDirection = ['继续考研（升学）', ...directions]
+    longCareer = ['锁定目标院校，制定初试 / 复试备考计划', '提前联系导师，关注科研机会']
+    longTarget = (d.careerDev.targetUniversities || []).map(u => `目标院校：${u}`)
+    longCore = ['强化学科基础（数学 / 专业课）', '提升科研与学术表达能力', '形成学术型核心竞争力']
+  } else if (topKey === 'civil') {
+    longDirection = ['考公（公务员 / 事业单位）', ...directions]
+    longCareer = ['系统备考申论与行测', '关注招考动态与岗位要求']
+    longTarget = (d.employment.careerDirections || []).map(r => `意向岗位：${r}`)
+    longCore = ['强化行政能力与综合分析能力', '提升政策理解与文字表达', '形成公共服务核心素养']
+  } else {
+    longDirection = ['直接就业', ...directions]
+    longCareer = ['完善求职材料，定向投递目标岗位', '积累面试与实习转正经验']
+    longTarget = (d.employment.careerDirections || []).map(r => `目标岗位：${r}`)
+    longCore = ['深化工程实践与项目作品集', '提升岗位专业匹配度', '形成行业差异化竞争力']
   }
+  if (!longTarget.length) longTarget = ['结合路径匹配度锁定目标院校 / 岗位']
+  // 核心能力建设统一收尾：以最高匹配方向为主线
+  longCore = [
+    `以匹配度最高的「${topLabel}」方向为核心，系统建设能力`,
+    ...longCore.slice(1),
+    ...(d.aiAssistant.longTermSuggestions || []).slice(0, 1),
+    '形成个人核心竞争力与差异化优势',
+  ]
+
+  const recent: Array<{ title: string; items: string[] }> = [
+    {
+      title: '当前风险处理',
+      items: topRiskList.map(r => `${r.label}：${r.suggest}`),
+    },
+    {
+      title: '短板提升',
+      items: [
+        ...studentPortrait.value.weaknesses.map(w => `补强「${w}」，制定专项提升计划`),
+        proj < 5 ? `项目经验不足（${proj}/5），3 个月内新增 1–2 项企业项目` : '',
+        intern < 1 ? '企业实践不足，尽快争取 1 段实习' : '',
+        cert < 2 ? '证书偏少，考取 1–2 项行业认证' : '',
+      ].filter(Boolean),
+    },
+    {
+      title: '近期目标',
+      items: [
+        '保持核心课程 GPA 稳定',
+        proj < 5 ? '本学期完成 1 项企业级项目' : '打磨现有项目作品集',
+        award === 0 ? '报名 1 项学科竞赛 / 科研' : '冲击更高竞赛奖项',
+        directions.length ? '锁定目标发展方向，明确阶段任务' : '初步明确升学 / 就业方向',
+      ],
+    },
+    {
+      title: '待完成事项',
+      items: (d.aiPortrait.coachingTasks || []).slice(0, 4).map(t => t.title),
+    },
+  ]
+
+  const mid: Array<{ title: string; items: string[] }> = [
+    {
+      title: '专业能力提升',
+      items: [
+        `围绕最强项「${topAbility?.label}」纵深发展，形成个人优势标签`,
+        '跟进专业前沿，参与 1 门高阶 / 认证课程',
+        d.academic.majorTotal
+          ? `巩固专业排名（当前前 ${Math.round(d.academic.majorRank / d.academic.majorTotal * 100)}%）`
+          : '巩固专业基础，拓展知识边界',
+      ],
+    },
+    {
+      title: '实践能力培养',
+      items: [
+        proj < 5 ? `补齐企业项目至 5 项以上（当前 ${proj}）` : '提升项目质量，争取科研成果',
+        intern < 1 ? '补充 1 段企业实习，进入真实工程环境' : '深化实习内容，承担核心任务',
+        '将项目沉淀为可展示的技术作品集',
+      ],
+    },
+    {
+      title: '荣誉成果积累',
+      items: [
+        award < 2 ? `增加竞赛 / 科研获奖（当前 ${award}）` : '冲击更高等级竞赛奖项',
+        '积累可量化的成果与证书，丰富简历亮点',
+        '参与开源 / 行业活动，扩大专业影响力',
+      ],
+    },
+    {
+      title: '综合能力发展',
+      items: [
+        `发挥干部 / 志愿经历优势（干部 ${d.quality.cadreRoles.length} · 志愿 ${d.quality.volunteerHours}h）`,
+        '锻炼沟通协作与领导力等软实力',
+        '拓展跨学科视野，提升综合素养',
+      ],
+    },
+  ]
+
+  const long: Array<{ title: string; items: string[] }> = [
+    { title: '发展方向', items: longDirection },
+    { title: '生涯规划', items: longCareer },
+    { title: '目标岗位/院校', items: longTarget },
+    { title: '核心能力建设', items: longCore },
+  ]
+
+  return { recent, mid, long }
 })
 
 onMounted(load)
@@ -803,21 +923,42 @@ onMounted(load)
         <div class="action-grid">
           <div class="action-col">
             <h4 class="action-col__title action-col__title--now">近期任务</h4>
-            <ul class="action-list">
-              <li v-for="t in actionPlan.recent" :key="t"><i class="dot dot--red" />{{ t }}</li>
-            </ul>
+            <div
+              v-for="g in actionPlan.recent"
+              :key="g.title"
+              class="action-sub"
+            >
+              <div class="action-sub__title">{{ g.title }}</div>
+              <ul class="action-list">
+                <li v-for="(t, i) in g.items" :key="i"><i class="dot dot--red" />{{ t }}</li>
+              </ul>
+            </div>
           </div>
           <div class="action-col">
             <h4 class="action-col__title action-col__title--mid">中期任务</h4>
-            <ul class="action-list">
-              <li v-for="t in actionPlan.mid" :key="t"><i class="dot dot--yellow" />{{ t }}</li>
-            </ul>
+            <div
+              v-for="g in actionPlan.mid"
+              :key="g.title"
+              class="action-sub"
+            >
+              <div class="action-sub__title">{{ g.title }}</div>
+              <ul class="action-list">
+                <li v-for="(t, i) in g.items" :key="i"><i class="dot dot--yellow" />{{ t }}</li>
+              </ul>
+            </div>
           </div>
           <div class="action-col">
             <h4 class="action-col__title action-col__title--long">长期目标</h4>
-            <ul class="action-list">
-              <li v-for="t in actionPlan.long" :key="t"><i class="dot dot--green" />{{ t }}</li>
-            </ul>
+            <div
+              v-for="g in actionPlan.long"
+              :key="g.title"
+              class="action-sub"
+            >
+              <div class="action-sub__title">{{ g.title }}</div>
+              <ul class="action-list">
+                <li v-for="(t, i) in g.items" :key="i"><i class="dot dot--green" />{{ t }}</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -877,7 +1018,7 @@ onMounted(load)
       <!-- ═══════ 3. AI机会雷达 · 成长时间轴 ═══════ -->
       <section id="sec-opportunity" class="deep-card">
         <h3 class="deep-card__title">AI 机会雷达 · 成长时间轴</h3>
-        <p class="opp-timeline__hint">沿时间轴查看每个阶段可参与的比赛、可考取的证书与可推进的实践，卡片上下交替排布</p>
+        <p class="opp-timeline__hint">仅展示本学期六个月内的比赛、可考取的证书与可推进的实践，卡片上下交替排布</p>
         <div class="opp-timeline">
           <div class="opp-timeline__inner">
             <div
@@ -1533,7 +1674,8 @@ onMounted(load)
   position: relative;
   display: flex;
   align-items: flex-start;
-  min-width: max-content;
+  width: max-content;
+  margin: 0 auto;
   padding: 0 28px;
 
   &::before {
@@ -1948,6 +2090,21 @@ onMounted(load)
     &--now { color: #ff9a9a; border-color: #ff7474; }
     &--mid { color: #f7d774; border-color: #facc15; }
     &--long { color: #5ff0bd; border-color: #43e7af; }
+  }
+}
+.action-sub {
+  padding: 12px 12px 4px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: rgba(0, 40, 80, .28);
+  border: 1px solid rgba(102, 217, 255, .08);
+
+  &__title {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #b9e0ff;
+    letter-spacing: .02em;
   }
 }
 .action-list {
