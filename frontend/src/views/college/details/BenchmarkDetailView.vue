@@ -171,7 +171,22 @@ const featuredFilteredItems = computed(() => {
   const items = featuredSection.value?.items ?? []
   const f = featuredLevelFilter.value
   if (!f) return items
-  const matched = items.filter((x) => x.level === f || x.category === f)
+  const matched = items.filter((x) => {
+    if (x.level === f || x.category === f) return true
+    // 图表桶「国家级/省部级…」与原始 level 文案对齐
+    const lv = x.level || ''
+    if (f === '国家级') return /国家|全国|国赛|SCI|SSCI|CSSCI|CNS|Nature|Science/.test(lv)
+    if (f === '省部级') return /省|部|厅|市/.test(lv) && !/国家|全国/.test(lv)
+    if (f === '校级') return lv.includes('校')
+    if (f === '其他') {
+      return !(
+        /国家|全国|国赛|SCI|SSCI|CSSCI|CNS|Nature|Science/.test(lv) ||
+        (/省|部|厅|市/.test(lv) && !/国家|全国/.test(lv)) ||
+        lv.includes('校')
+      )
+    }
+    return lv.includes(f) || (x.category || '').includes(f)
+  })
   return matched.length ? matched : items
 })
 watch(featuredSectionKey, () => {
@@ -329,7 +344,7 @@ watch(() => route.query, () => applyRouteQuery())
 </script>
 
 <template>
-  <CollegeDetailLayout>
+  <CollegeDetailLayout module="精品成果集萃">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">📋 成果总览</button>
@@ -345,18 +360,11 @@ watch(() => route.query, () => applyRouteQuery())
       <!-- ===================== 成果总览 ===================== -->
       <template v-if="currentTab === 'overview'">
         <div class="resource-summary resource-summary--6">
-          <div class="resource-summary__card" @click="switchTab('roster')">
+          <div class="resource-summary__card" @click="switchTab('roster', { filter: 'teaching' })">
             <span class="resource-summary__icon">🏅</span>
             <div class="resource-summary__info">
-              <span class="resource-summary__label">荣誉称号</span>
-              <strong class="resource-summary__value">{{ data.summary.annualHonors }}<small>项</small></strong>
-            </div>
-          </div>
-          <div class="resource-summary__card" @click="switchTab('roster', { filter: 'competition' })">
-            <span class="resource-summary__icon">🏆</span>
-            <div class="resource-summary__info">
-              <span class="resource-summary__label">竞赛获奖</span>
-              <strong class="resource-summary__value">{{ data.summary.competitionAwards }}<small>项</small></strong>
+              <span class="resource-summary__label">教学成果</span>
+              <strong class="resource-summary__value">{{ data.byCategory.find((c) => c.category === 'teaching')?.count ?? 0 }}<small>项</small></strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="switchTab('roster', { filter: 'research' })">
@@ -366,25 +374,32 @@ watch(() => route.query, () => applyRouteQuery())
               <strong class="resource-summary__value">{{ data.summary.researchOutputs }}<small>项</small></strong>
             </div>
           </div>
-          <div class="resource-summary__card" @click="scrollToSection('bm-level')">
-            <span class="resource-summary__icon">🔬</span>
+          <div class="resource-summary__card" @click="switchTab('roster', { filter: 'competition' })">
+            <span class="resource-summary__icon">🏆</span>
             <div class="resource-summary__info">
-              <span class="resource-summary__label">科研项目</span>
-              <strong class="resource-summary__value resource-summary__value--gold">{{ data.summary.nationalProvincial }}<small>项</small></strong>
+              <span class="resource-summary__label">学生竞赛</span>
+              <strong class="resource-summary__value">{{ data.summary.competitionAwards }}<small>项</small></strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="switchTab('roster', { filter: 'platform' })">
-            <span class="resource-summary__icon">🎓</span>
+            <span class="resource-summary__icon">🏛️</span>
             <div class="resource-summary__info">
-              <span class="resource-summary__label">教学成果</span>
+              <span class="resource-summary__label">平台成果</span>
               <strong class="resource-summary__value">{{ data.summary.platformOutputs }}<small>项</small></strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="switchTab('roster', { filter: 'faculty' })">
+            <span class="resource-summary__icon">👥</span>
+            <div class="resource-summary__info">
+              <span class="resource-summary__label">师资成果</span>
+              <strong class="resource-summary__value">{{ data.summary.facultyAchievements }}<small>项</small></strong>
+            </div>
+          </div>
+          <div class="resource-summary__card" @click="switchTab('roster', { filter: 'social' })">
             <span class="resource-summary__icon">🤝</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">社会服务</span>
-              <strong class="resource-summary__value">{{ data.summary.facultyAchievements }}<small>项</small></strong>
+              <strong class="resource-summary__value">{{ data.byCategory.find((c) => c.category === 'social')?.count ?? 0 }}<small>项</small></strong>
             </div>
           </div>
         </div>
@@ -558,6 +573,7 @@ watch(() => route.query, () => applyRouteQuery())
                 <b>{{ item.leader || '—' }}</b>
               </div>
             </button>
+            <div v-if="!filteredAchievements.length" class="ach-empty">该类暂无成果明细</div>
           </div>
         </section>
 
@@ -922,6 +938,15 @@ watch(() => route.query, () => applyRouteQuery())
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.ach-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: rgba(184, 236, 255, 0.55);
+  font-size: 18px;
+  border: 1px dashed rgba(0, 200, 255, 0.2);
+  border-radius: 10px;
 }
 
 .ach-item {

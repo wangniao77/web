@@ -5,6 +5,7 @@ import MarqueeText from '@/components/college/modules/benchmark/MarqueeText.vue'
 import { ROUTES } from '@/constants/routes'
 import type { FacultyHealthLevel, FacultyMetricTone } from '@/types/college/api/teacher-analytics'
 import type { TeacherAnalyticsVM } from '@/types/college/view/teacher-analytics'
+import { fmtFacultyNum, isMissingMark } from '@/utils/facultyDisplay'
 
 const props = defineProps<{
   data: TeacherAnalyticsVM
@@ -67,10 +68,11 @@ function toneClass(tone?: FacultyMetricTone) {
 }
 
 function formatValue(metric: (typeof props.data.metrics)[number]) {
+  if (isMissingMark(metric.value)) return '**'
   if (metric.key === 'load') return `均${metric.value}`
   if (metric.key === 'stuTeacher') return String(metric.value)
-  if (Number.isInteger(metric.value)) return String(metric.value)
-  return String(metric.value)
+  if (typeof metric.value === 'number' && Number.isInteger(metric.value)) return String(metric.value)
+  return fmtFacultyNum(metric.value)
 }
 
 const insightItems = computed(() => {

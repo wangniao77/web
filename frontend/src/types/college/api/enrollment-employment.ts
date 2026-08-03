@@ -25,11 +25,19 @@ export interface EnrollmentEmploymentOverviewDTO {
     years: string[]
     values: number[]
   }
-  /** 一级页桑基预览：专业 → 去向 */
+  /** 一级页桑基预览：专业 → 去向（当前默认学历） */
   flowPreview: {
     title: string
     nodes: Array<{ name: string }>
     links: Array<{ source: string; target: string; value: number }>
+    education?: 'undergrad' | 'graduate' | string
+    cohortYear?: string | null
+    sampleCount?: number
+  }
+  /** 本科 / 研究生两套流向，供一级页轮换 */
+  flowPreviews?: {
+    undergrad: EnrollmentEmploymentOverviewDTO['flowPreview']
+    graduate: EnrollmentEmploymentOverviewDTO['flowPreview']
   }
   mockFields?: string[]
 }

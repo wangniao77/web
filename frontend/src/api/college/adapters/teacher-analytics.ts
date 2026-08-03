@@ -9,6 +9,12 @@ import type {
 
 function adaptBase(dto: TeacherAnalyticsDTO): TeacherAnalyticsVM {
   return {
+    term: dto.term,
+    requestedTerm: dto.requestedTerm,
+    termFallback: dto.termFallback,
+    availableTerms: [...(dto.availableTerms ?? [])],
+    standardHours: dto.standardHours ?? 120,
+    overloadHours: dto.overloadHours ?? 160,
     health: { ...dto.health },
     metrics: dto.metrics.map((m) => ({ ...m })),
     insights: [...dto.insights],

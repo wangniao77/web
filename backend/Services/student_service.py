@@ -8,6 +8,7 @@ from Utils.DB.Models.student_extra_models import (
     CompetitionAward,
     StudentPaper,
     StudentProject,
+    StudentVolunteerHour,
 )
 
 
@@ -36,6 +37,8 @@ class StudentService:
         award_rows = await CompetitionAward.filter(student_id=student_id).order_by("-id").limit(20)
         project_rows = await StudentProject.filter(student_id=student_id).order_by("-id").limit(20)
         paper_rows = await StudentPaper.filter(student_id=student_id).order_by("-id").limit(20)
+        vol = await StudentVolunteerHour.filter(student_id=student_id).order_by("-hours").first()
+        volunteer_hours = _f(vol.hours) if vol and vol.hours is not None else 0
 
         awards = [
             {
@@ -184,7 +187,7 @@ class StudentService:
             },
             "quality": {
                 "cadreRoles": [],
-                "volunteerHours": 0,
+                "volunteerHours": volunteer_hours,
                 "socialPractices": 0,
                 "softSkills": [],
             },

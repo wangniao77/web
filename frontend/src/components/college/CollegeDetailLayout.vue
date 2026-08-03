@@ -6,6 +6,8 @@ import { useSlots } from 'vue'
 defineProps<{
   title?: string
   subtitle?: string
+  /** 模块名称，显示在「返回驾驶舱」之后的面包屑，如「精品成果集萃」 */
+  module?: string
 }>()
 
 const slots = useSlots()
@@ -21,16 +23,21 @@ function goBack() {
     <div class="college-detail__mesh" aria-hidden="true" />
     <header class="college-detail__header">
       <button type="button" class="college-detail__back" @click="goBack">← 返回驾驶舱</button>
-      <div v-if="slots.nav" class="college-detail__nav">
-        <slot name="nav" />
+      <div v-if="module" class="college-detail__crumb">
+        <span class="college-detail__crumb-root">数智洞察视界</span>
+        <span class="college-detail__crumb-sep">·</span>
+        <span class="college-detail__crumb-module">{{ module }}</span>
       </div>
-      <div v-else class="college-detail__title">
-        <h1>{{ title }}</h1>
-        <span v-if="subtitle">{{ subtitle }}</span>
+      <div v-if="slots.nav" class="college-detail__header-nav">
+        <slot name="nav" />
       </div>
       <div class="college-detail__header-glow" aria-hidden="true" />
     </header>
     <main class="college-detail__body">
+      <div v-if="title" class="college-detail__pagehead">
+        <h1 class="college-detail__pagetitle">{{ title }}</h1>
+        <span v-if="subtitle" class="college-detail__pagesub">{{ subtitle }}</span>
+      </div>
       <slot />
     </main>
   </div>
@@ -79,9 +86,9 @@ function goBack() {
   display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 70px;
-  margin: 0 0 12px;
-  padding: 10px 14px;
+  min-height: 72px;
+  margin: 0 0 10px;
+  padding: 10px 16px;
   overflow: hidden;
   border: 1px solid rgba(102, 217, 255, 0.18);
   border-radius: 8px;
@@ -133,41 +140,97 @@ function goBack() {
   }
 }
 
-.college-detail__title {
+.college-detail__crumb {
   position: relative;
   z-index: 1;
+  flex: 0 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
+  max-width: 42%;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 
-  h1 {
-    position: relative;
-    margin: 0 0 4px;
-    color: #f6fbff;
-    font-size: 24px;
-    line-height: 1.15;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    text-shadow: 0 0 16px rgba(0, 242, 255, 0.38);
+  &-root {
+    color: rgba(184, 236, 255, 0.82);
   }
 
-  span {
-    font-size: $college-fs-label;
-    color: rgba(184, 236, 255, 0.74);
+  &-sep {
+    color: rgba(0, 242, 255, 0.55);
+    font-weight: 700;
+  }
+
+  &-module {
+    color: #f6fbff;
+    font-size: 24px;
+    text-shadow: 0 0 14px rgba(0, 242, 255, 0.32);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
-.college-detail__nav {
-  position: relative;
-  z-index: 1;
+.college-detail__header-nav {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
   display: flex;
+  justify-content: center;
   align-items: center;
-  flex: 1 1 auto;
-  min-width: 0;
+  max-width: min(72%, calc(100% - 280px));
+  transform: translate(-50%, -50%);
   overflow-x: auto;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
     display: none;
   }
+
+  :deep(.tab-bar) {
+    margin: 0;
+    width: max-content;
+    max-width: 100%;
+    border-width: 1.5px;
+  }
+
+  :deep(.tab-btn) {
+    padding: 12px 26px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+}
+
+.college-detail__pagehead {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 2px 2px 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(102, 217, 255, 0.16);
+}
+
+.college-detail__pagetitle {
+  margin: 0;
+  color: #f6fbff;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 16px rgba(0, 242, 255, 0.38);
+}
+
+.college-detail__pagesub {
+  font-size: $college-fs-label;
+  color: rgba(184, 236, 255, 0.74);
 }
 
 .college-detail__body {

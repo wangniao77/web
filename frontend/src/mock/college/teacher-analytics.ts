@@ -15,6 +15,12 @@ const seniorCount = (titleStructure[0]?.count ?? 0) + (titleStructure[1]?.count 
 const seniorTitleRatio = Number(((seniorCount / totalTeachers) * 100).toFixed(1))
 
 const base: TeacherAnalyticsDTO = {
+  term: '2025-2026-2',
+  requestedTerm: '2025-2026-2',
+  termFallback: false,
+  availableTerms: ['2025-2026-2', '2025-2026-1'],
+  standardHours: 120,
+  overloadHours: 160,
   health: {
     score: 82,
     structure: '优',
@@ -274,6 +280,9 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
     { name: '王老师', title: '副教授', major: '软件工程' },
   ],
   teachingInvestment: {
+    term: '2025-2026-2',
+    standardHours: 120,
+    overloadHours: 160,
     avgHours: 246,
     maxTeacher: { name: '陈老师', title: '讲师', major: '软件工程', hours: 388 },
     minTeacher: { name: '赵教授', title: '教授', major: '网络空间安全', hours: 108 },

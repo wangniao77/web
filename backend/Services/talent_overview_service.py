@@ -1134,20 +1134,26 @@ class TalentOverviewService:
 
     async def _research_student_ids(self, college: Any) -> set[str]:
         """课题/论文/双百相关学号（科研创新结构真数）。"""
+        from tortoise.exceptions import OperationalError
+
         from Utils.DB.Models.student_extra_models import StudentPaper, StudentProject
 
         ids: set[str] = set()
-        proj_qs = StudentProject.all()
-        paper_qs = StudentPaper.all()
-        if college is not None:
-            proj_qs = proj_qs.filter(college_id=college.id)
-            paper_qs = paper_qs.filter(college_id=college.id)
-        for sid in await proj_qs.values_list("student_id", flat=True):
-            if sid:
-                ids.add(str(sid))
-        for sid in await paper_qs.values_list("student_id", flat=True):
-            if sid:
-                ids.add(str(sid))
+        try:
+            proj_qs = StudentProject.all()
+            paper_qs = StudentPaper.all()
+            if college is not None:
+                proj_qs = proj_qs.filter(college_id=college.id)
+                paper_qs = paper_qs.filter(college_id=college.id)
+            for sid in await proj_qs.values_list("student_id", flat=True):
+                if sid:
+                    ids.add(str(sid))
+            for sid in await paper_qs.values_list("student_id", flat=True):
+                if sid:
+                    ids.add(str(sid))
+        except OperationalError:
+            # 真数库尚未建 student_projects / student_papers 时降级为空集
+            return set()
         return ids
 
     async def _count_graduates(self, college: Any) -> int:
@@ -1222,7 +1228,7 @@ class TalentOverviewService:
             for (s, t), v in link_counter.most_common(40)
             if v > 0
         ]
-        flow = {"title": "专业 → 毕业去向流向", "nodes": nodes, "links": links}
+        flow = {"title": "毕业去向", "nodes": nodes, "links": links}
         return outcomes, placement_rate, hq_rate, flow
 
     async def get_student_dev_quality(
@@ -1552,17 +1558,61 @@ class TalentOverviewService:
             "mockFields": detail_mock,
         }
 
+    def _flow_preview_for_education(
+        self,
+        emp_rows: list[EmploymentRecord],
+        by_sid_all: dict[str, StudentAcademicRecord],
+        *,
+        education: str,
+        year: str | None,
+    ) -> dict[str, Any]:
+        """按学历切片构建一级页桑基预览。"""
+        edu_rows = _filter_employment_rows(
+            emp_rows, education=education, by_sid=by_sid_all
+        )
+        # 优先用该学历下的最新届次；若无独立届次则回退传入的学院最新届次
+        edu_year = _primary_employment_year(edu_rows, by_sid_all) or year
+        scoped = (
+            _filter_employment_rows(edu_rows, year=edu_year, by_sid=by_sid_all)
+            if edu_year
+            else edu_rows
+        )
+        _outcomes, _placement, _hq, flow = self._outcomes_from_employment(
+            scoped, by_sid_all
+        )
+        flow = dict(flow)
+        flow["title"] = "毕业去向"
+        flow["education"] = education
+        flow["cohortYear"] = edu_year
+        flow["sampleCount"] = len(scoped)
+        return flow
+
     async def get_enrollment_employment_overview(
         self, *, college_id: str | None = None
     ) -> dict[str, Any]:
         college, all_students, by_sid_all = await self._ctx(college_id)
         students, _graduates = _partition_students(all_students)
         emp_rows = await self._employment_rows(college)
-        # 默认看最新毕业届次
+        # 默认看最新毕业届次（全学历，供 KPI）
         year_trend = _employment_rates_by_year(emp_rows, by_sid_all)
         latest_year = _primary_employment_year(emp_rows, by_sid_all)
         scoped = _filter_employment_rows(emp_rows, year=latest_year, by_sid=by_sid_all) if latest_year else emp_rows
         _outcomes, placement_rate, hq_rate, flow = self._outcomes_from_employment(scoped, by_sid_all)
+
+        undergrad_flow = self._flow_preview_for_education(
+            emp_rows, by_sid_all, education="undergrad", year=latest_year
+        )
+        graduate_flow = self._flow_preview_for_education(
+            emp_rows, by_sid_all, education="graduate", year=latest_year
+        )
+        # 一级页默认展示本科；无本科样本时回退研究生
+        default_flow = (
+            undergrad_flow
+            if (undergrad_flow.get("links") or undergrad_flow.get("sampleCount"))
+            else graduate_flow
+        )
+        if not default_flow.get("links") and flow.get("links"):
+            default_flow = flow
 
         enrolled = len(students) or 0
 
@@ -1582,7 +1632,11 @@ class TalentOverviewService:
                 "values": year_trend["highQualityRate"]
                 or ([hq_rate] if hq_rate else []),
             },
-            "flowPreview": flow,
+            "flowPreview": default_flow,
+            "flowPreviews": {
+                "undergrad": undergrad_flow,
+                "graduate": graduate_flow,
+            },
             "mockFields": [
                 "sourceQualityIndex",
                 "entranceTrend",
@@ -2225,17 +2279,23 @@ class TalentOverviewService:
         paper_ids: set[str] = set()
         project_ids: set[str] = set()
         if grad_sids:
-            paper_qs = StudentPaper.filter(student_id__in=list(grad_sids))
-            proj_qs = StudentProject.filter(student_id__in=list(grad_sids))
-            if college is not None:
-                paper_qs = paper_qs.filter(college_id=college.id)
-                proj_qs = proj_qs.filter(college_id=college.id)
-            for sid in await paper_qs.values_list("student_id", flat=True):
-                if sid:
-                    paper_ids.add(str(sid))
-            for sid in await proj_qs.values_list("student_id", flat=True):
-                if sid:
-                    project_ids.add(str(sid))
+            from tortoise.exceptions import OperationalError
+
+            try:
+                paper_qs = StudentPaper.filter(student_id__in=list(grad_sids))
+                proj_qs = StudentProject.filter(student_id__in=list(grad_sids))
+                if college is not None:
+                    paper_qs = paper_qs.filter(college_id=college.id)
+                    proj_qs = proj_qs.filter(college_id=college.id)
+                for sid in await paper_qs.values_list("student_id", flat=True):
+                    if sid:
+                        paper_ids.add(str(sid))
+                for sid in await proj_qs.values_list("student_id", flat=True):
+                    if sid:
+                        project_ids.add(str(sid))
+            except OperationalError:
+                paper_ids = set()
+                project_ids = set()
         research_ids = paper_ids | project_ids
         research_rate = round(len(research_ids) / total * 100, 1) if total else 0.0
         advisor_cov = round(advisor_n / total * 100, 1) if total else 0.0

@@ -17,6 +17,11 @@ async def key_tasks(collegeId: str | None = None) -> ApiResponse:
     return ok(await college_service.get_key_tasks(college_id=collegeId))
 
 
+@router.get("/tasks/key-plan-progress", response_model=ApiResponse)
+async def key_plan_progress(collegeId: str | None = None) -> ApiResponse:
+    return ok(await college_service.get_key_plan_progress(college_id=collegeId))
+
+
 @router.get("/tasks/detail", response_model=ApiResponse)
 async def key_tasks_detail(collegeId: str | None = None) -> ApiResponse:
     return ok(await college_service.get_key_tasks_detail(college_id=collegeId))
@@ -173,3 +178,62 @@ async def student_flow_sankey(
 @router.get("/students/evaluation/{key}", response_model=ApiResponse)
 async def student_evaluation_detail(key: str, collegeId: str | None = None) -> ApiResponse:
     return ok(await college_service.get_student_evaluation_detail(key=key, college_id=collegeId))
+
+
+@router.get("/benchmark/achievements", response_model=ApiResponse)
+async def benchmark_achievements(collegeId: str | None = None) -> ApiResponse:
+    return ok(await college_service.get_benchmark_achievements(college_id=collegeId))
+
+
+@router.get("/benchmark/achievements/detail", response_model=ApiResponse)
+async def benchmark_achievements_detail(collegeId: str | None = None) -> ApiResponse:
+    return ok(await college_service.get_benchmark_achievements_detail(college_id=collegeId))
+
+
+@router.get("/benchmark/achievements/featured", response_model=ApiResponse)
+async def benchmark_achievements_featured(collegeId: str | None = None) -> ApiResponse:
+    return ok(await college_service.get_benchmark_featured(college_id=collegeId))
+
+
+@router.get("/discipline/overview", response_model=ApiResponse)
+async def discipline_overview(collegeId: str | None = None) -> ApiResponse:
+    return ok(await college_service.get_discipline_overview(college_id=collegeId))
+
+
+@router.get("/discipline/overview/detail", response_model=ApiResponse)
+async def discipline_overview_detail(collegeId: str | None = None) -> ApiResponse:
+    return ok(await college_service.get_discipline_overview_detail(college_id=collegeId))
+
+
+@router.get("/faculty/analytics", response_model=ApiResponse)
+async def faculty_analytics(
+    collegeId: str | None = None,
+    term: str | None = None,
+    academicYear: str | None = None,
+    semester: str | None = None,
+) -> ApiResponse:
+    return ok(
+        await college_service.get_faculty_analytics(
+            college_id=collegeId,
+            term=term,
+            academic_year=academicYear,
+            semester=semester,
+        )
+    )
+
+
+@router.get("/faculty/analytics/detail", response_model=ApiResponse)
+async def faculty_analytics_detail(
+    collegeId: str | None = None,
+    term: str | None = None,
+    academicYear: str | None = None,
+    semester: str | None = None,
+) -> ApiResponse:
+    return ok(
+        await college_service.get_faculty_analytics_detail(
+            college_id=collegeId,
+            term=term,
+            academic_year=academicYear,
+            semester=semester,
+        )
+    )

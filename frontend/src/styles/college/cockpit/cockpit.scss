@@ -1464,7 +1464,6 @@ $cp-metric-xl: 58px;
   }
 }
 
-.benchmark-slide,
 .teacher-analytics-slide {
   position: relative;
   display: grid;
@@ -1859,7 +1858,7 @@ $cp-metric-xl: 58px;
       background: rgba(0, 90, 160, 0.28);
     }
 
-    span {
+    > span {
       flex: 1 1 auto;
       min-width: 0;
       color: #9ecae8;
@@ -1887,6 +1886,14 @@ $cp-metric-xl: 58px;
         color: #9ecae8;
         font-size: 16px;
         font-weight: 600;
+      }
+
+      // MockText 是内层 span，避免被标签 span 的 15px 压小
+      .mock-text {
+        font-size: inherit;
+        font-weight: inherit;
+        font-family: inherit;
+        line-height: inherit;
       }
     }
 
@@ -1953,8 +1960,8 @@ $cp-metric-xl: 58px;
 
   &__sankey {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 8px;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 6px;
     min-width: 0;
     min-height: 0;
     padding: 10px 8px;
@@ -1970,7 +1977,17 @@ $cp-metric-xl: 58px;
     }
   }
 
+  &__sankey-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+  }
+
   &__sankey-title {
+    flex: 1 1 auto;
+    min-width: 0;
     color: #9fe8ff;
     font-size: $cp-caption;
     font-weight: 800;
@@ -1979,6 +1996,52 @@ $cp-metric-xl: 58px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  &__edu-switch {
+    flex: 0 0 auto;
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 200, 255, 0.22);
+    background: rgba(0, 30, 70, 0.45);
+  }
+
+  &__edu-btn {
+    padding: 2px 8px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #8eb8d8;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: color 0.16s, background 0.16s;
+
+    &:hover {
+      color: #d8f4ff;
+    }
+
+    &.is-active {
+      color: #041428;
+      background: linear-gradient(180deg, #7fe9ff 0%, #39c6ff 100%);
+    }
+  }
+
+  &__edu-progress {
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(0, 120, 180, 0.28);
+    overflow: hidden;
+
+    i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #39e6ff, #7fe9ff);
+      transition: width 0.08s linear;
+    }
   }
 
   &__sankey-chart {
@@ -1990,6 +2053,16 @@ $cp-metric-xl: 58px;
       height: 100%;
       min-height: 96px;
     }
+  }
+
+  &__sankey-empty {
+    display: grid;
+    place-items: center;
+    min-height: 96px;
+    height: 100%;
+    color: #7aa8c8;
+    font-size: 12px;
+    font-weight: 600;
   }
 }
 
@@ -3174,13 +3247,13 @@ $cp-metric-xl: 58px;
 .core-hero-stage {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(148px, 0.92fr) minmax(0, 1.35fr) minmax(148px, 0.92fr);
+  grid-template-columns: minmax(168px, 0.95fr) minmax(0, 1.28fr) minmax(168px, 0.95fr);
   align-items: stretch;
-  gap: 10px 12px;
+  gap: 12px 14px;
   width: 100%;
   height: 100%;
   min-height: 0;
-  padding: 8px 6px 4px;
+  padding: 8px 8px 4px;
   overflow: hidden;
 
   &::before {
@@ -3238,7 +3311,7 @@ $cp-metric-xl: 58px;
   z-index: 3;
   display: grid;
   grid-template-rows: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -3278,16 +3351,19 @@ $cp-metric-xl: 58px;
   z-index: 4;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   max-width: 100%;
   height: 100%;
   min-height: 0;
-  padding: 8px 10px;
-  border: 1px solid rgba(0, 242, 255, 0.5);
-  border-radius: 6px;
-  background: linear-gradient(135deg, rgba(0, 100, 200, 0.35), rgba(2, 14, 40, 0.92));
-  box-shadow: 0 0 28px rgba(0, 200, 255, 0.35), inset 0 0 16px rgba(0, 150, 255, 0.15);
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 229, 255, 0.55);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(0, 90, 170, 0.38), rgba(2, 18, 48, 0.94));
+  box-shadow:
+    0 0 18px rgba(0, 200, 255, 0.28),
+    inset 0 0 14px rgba(0, 150, 255, 0.12);
   animation:
     orbitMetricEnter 0.85s cubic-bezier(0.22, 1, 0.36, 1) both,
     orbitBorderGlow 4s ease-in-out 0.85s infinite;
@@ -3300,7 +3376,7 @@ $cp-metric-xl: 58px;
     left: -100%;
     width: 60%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.32), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.22), transparent);
     animation: orbitShimmer 3.2s ease-in-out infinite;
     content: "";
     pointer-events: none;
@@ -3309,78 +3385,97 @@ $cp-metric-xl: 58px;
   &::before {
     position: absolute;
     top: 50%;
-    width: 18px;
+    width: 16px;
     height: 1px;
-    background: linear-gradient(90deg, rgba(0, 242, 255, 0.85), rgba(0, 242, 255, 0.15));
-    box-shadow: 0 0 10px rgba(0, 242, 255, 0.65);
+    background: linear-gradient(90deg, rgba(0, 242, 255, 0.85), rgba(0, 242, 255, 0.1));
+    box-shadow: 0 0 8px rgba(0, 242, 255, 0.55);
     transform: translateY(-50%);
     animation: orbitLinkPulse 2.8s ease-in-out infinite;
     content: "";
   }
 
   &--left::before {
-    right: -14px;
-    width: 14px;
+    right: -12px;
+    width: 12px;
   }
 
   &--right::before {
-    left: -14px;
-    width: 14px;
+    left: -12px;
+    width: 12px;
     transform: translateY(-50%) scaleX(-1);
   }
 
   &__icon {
     display: grid;
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
     place-items: center;
     border-radius: 50%;
-    border: 1px solid rgba(0, 242, 255, 0.35);
-    background: radial-gradient(circle, rgba(0, 200, 255, 0.25), rgba(0, 60, 120, 0.15));
-    box-shadow: 0 0 16px rgba(57, 230, 255, 0.45);
+    border: 1px solid rgba(0, 242, 255, 0.45);
+    background: radial-gradient(circle, rgba(0, 210, 255, 0.32), rgba(0, 50, 110, 0.2));
+    box-shadow: 0 0 14px rgba(57, 230, 255, 0.4);
     animation: orbitIconPulse 3.6s ease-in-out infinite;
+    color: #9fefff;
+
+    :deep(svg) {
+      width: 18px;
+      height: 18px;
+      color: #9fefff;
+    }
   }
 
   &__body {
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     gap: 2px;
     min-width: 0;
     flex: 1;
   }
 
   &__label {
-    color: #e8f7ff;
-    font-size: $cp-caption;
+    color: #d7f4ff;
+    font-size: 13px;
     font-weight: 700;
-    line-height: 1.3;
+    line-height: 1.25;
     letter-spacing: 0.02em;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: unset;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    word-break: break-all;
   }
 
   &__value {
     color: #fff;
-    font-size: clamp(22px, 1.35vw, 30px);
-    line-height: 1.1;
+    font-size: clamp(20px, 1.45vw, 28px);
+    line-height: 1.05;
     font-weight: 900;
-    text-shadow: 0 0 12px rgba(57, 230, 255, 0.5);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 12px rgba(57, 230, 255, 0.45);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     animation: orbitValueGlow 4.2s ease-in-out infinite;
 
     small {
       margin-left: 2px;
-      font-size: 0.5em;
+      font-size: 0.48em;
       color: #b8f6ff;
+      font-weight: 700;
     }
   }
 
   &__trend {
-    color: #37ffb1;
-    font-size: $cp-link;
+    color: #2dff9a;
+    font-size: 13px;
     font-style: normal;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.2;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 8px rgba(45, 255, 154, 0.35);
     animation: orbitTrendPulse 3s ease-in-out infinite;
   }
 }

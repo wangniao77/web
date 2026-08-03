@@ -617,7 +617,7 @@ function goEmploymentPage() {
 </script>
 
 <template>
-  <CollegeDetailLayout>
+  <CollegeDetailLayout module="人才培养纵览">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">📋 画像总览</button>
@@ -1043,8 +1043,8 @@ function goEmploymentPage() {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 12px;
-  padding: 8px 12px;
+  margin: 0 0 10px;
+  padding: 6px 12px;
   border-radius: 8px;
   background: rgba(255, 77, 79, 0.08);
   border: 1px solid rgba(255, 77, 79, 0.28);
@@ -1065,7 +1065,7 @@ function goEmploymentPage() {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 22px;
+  margin-bottom: 16px;
 
   &--4 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   &--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -1112,7 +1112,7 @@ function goEmploymentPage() {
   border-radius: 12px;
   border: 1px solid rgba(0, 242, 255, 0.12);
   background: linear-gradient(180deg, rgba(4, 22, 52, 0.65), rgba(2, 12, 32, 0.8));
-  scroll-margin-top: 20px;
+  scroll-margin-top: 12px;
   transition: border-color 0.4s, box-shadow 0.4s;
 
   &--active {

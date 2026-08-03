@@ -37,6 +37,7 @@ onMounted(load)
 
 <template>
   <CollegeDetailLayout
+    module="高潜学生发展画像"
     title="高潜学生发展画像"
     :subtitle="module ? `${module.title} · 详情` : '维度详情'"
   >

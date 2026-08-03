@@ -9,6 +9,12 @@ export type FacultyHealthVM = FacultyHealthDTO
 export type FacultyMetricVM = FacultyMetricDTO
 
 export interface TeacherAnalyticsVM {
+  term: string
+  requestedTerm?: string
+  termFallback?: boolean
+  availableTerms: string[]
+  standardHours: number
+  overloadHours: number
   health: FacultyHealthVM
   metrics: FacultyMetricVM[]
   insights: string[]
@@ -20,6 +26,12 @@ export interface TeacherAnalyticsVM {
 }
 
 export interface TeacherAnalyticsDetailVM {
+  term: string
+  requestedTerm?: string
+  termFallback?: boolean
+  availableTerms: string[]
+  standardHours: number
+  overloadHours: number
   health: FacultyHealthVM
   metrics: FacultyMetricVM[]
   insights: string[]

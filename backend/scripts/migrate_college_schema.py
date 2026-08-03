@@ -78,6 +78,24 @@ ALTER_STATEMENTS = [
     "ALTER TABLE student_projects ADD COLUMN IF NOT EXISTS member_role VARCHAR(16) NULL DEFAULT 'leader'",
     "ALTER TABLE student_projects ADD COLUMN IF NOT EXISTS dedupe_key VARCHAR(640) NULL",
     "ALTER TABLE student_papers ADD COLUMN IF NOT EXISTS dedupe_key VARCHAR(640) NULL",
+    # 教师花名册扩展
+    "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS title_level VARCHAR(64) NULL",
+    "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS education VARCHAR(64) NULL",
+    "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS department VARCHAR(128) NULL",
+    "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS position VARCHAR(255) NULL",
+    "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS school_hire_date VARCHAR(32) NULL",
+    "COMMENT ON COLUMN teachers.title_level IS '职称级别'",
+    "COMMENT ON COLUMN teachers.education IS '学历'",
+    "COMMENT ON COLUMN teachers.department IS '部门/系所'",
+    "COMMENT ON COLUMN teachers.position IS '岗位'",
+    "COMMENT ON COLUMN teachers.school_hire_date IS '来校时间'",
+    # 专业排名快照：对标校与同比
+    "ALTER TABLE major_rank_snapshots ADD COLUMN IF NOT EXISTS yoy_change INT NULL",
+    "ALTER TABLE major_rank_snapshots ADD COLUMN IF NOT EXISTS peer_schools JSONB NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE major_rank_snapshots ADD COLUMN IF NOT EXISTS finance_peer_schools JSONB NULL DEFAULT '[]'::jsonb",
+    "COMMENT ON COLUMN major_rank_snapshots.yoy_change IS '全国名次变化，正=上升'",
+    "COMMENT ON COLUMN major_rank_snapshots.peer_schools IS '综合/省内对标校 JSON'",
+    "COMMENT ON COLUMN major_rank_snapshots.finance_peer_schools IS '财经对标校 JSON'",
 ]
 
 INDEX_STATEMENTS = [
@@ -91,6 +109,8 @@ INDEX_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_thesis_student_pk ON thesis_advisors (student_pk)",
     "CREATE INDEX IF NOT EXISTS idx_competition_awards_primary_sid ON competition_awards (primary_student_id)",
     "CREATE INDEX IF NOT EXISTS idx_competition_awards_member_role ON competition_awards (college_id, member_role)",
+    "CREATE INDEX IF NOT EXISTS idx_student_volunteer_hours_college_grade ON student_volunteer_hours (college_id, grade)",
+    "CREATE INDEX IF NOT EXISTS idx_student_volunteer_hours_student_pk ON student_volunteer_hours (student_pk)",
     """
     DO $$ BEGIN
       CREATE UNIQUE INDEX uq_competition_awards_dedupe

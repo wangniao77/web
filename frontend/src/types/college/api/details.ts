@@ -9,7 +9,7 @@ export interface KeyTaskDetailDTO {
   deadline: string
   description: string
   milestones: Array<{ label: string; done: boolean }>
-  category?: 'research' | 'teaching'
+  category?: string
   taskType?: string
   projectLevel?: string
   majorDirection?: string

@@ -6,7 +6,18 @@ export type AchievementCategory =
   | 'faculty'
   | 'social'
 
-export type MilestoneBadge = '历史突破' | '平台跃升' | '育人高光' | '年度里程碑'
+export type MilestoneBadge =
+  | '历史突破'
+  | '科研攻坚'
+  | '顶刊智识'
+  | '科研产出'
+  | '平台跃升'
+  | '育人高光'
+  | '人才荣誉'
+  | '社会服务'
+  | '年度里程碑'
+  | '标志性成果'
+  | '荣誉称号'
 
 export interface BenchmarkAchievementItemDTO {
   id: string
@@ -24,6 +35,10 @@ export interface BenchmarkMilestoneDTO {
   title: string
   interpretation: string
   yearLabel?: string
+  /** 负责人 / 指导教师 */
+  leader?: string
+  /** 同系列归并前的原始条数（如省赛+国赛 → 2） */
+  variantCount?: number
 }
 
 export interface BenchmarkFacultyLeaderDTO {

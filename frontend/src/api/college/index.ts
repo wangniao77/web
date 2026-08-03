@@ -27,6 +27,11 @@ export const collegeApi = {
     client.get<ApiResponse<OverviewHubDTO>>('/college/overview/hub', { params }),
   getKeyTasks: (params?: CollegeScope) =>
     client.get<ApiResponse<KeyTaskDTO[]>>('/college/tasks/annual-progress', { params }),
+  getKeyPlanProgress: (params?: CollegeScope) =>
+    client.get<ApiResponse<import('@/mock/college/key-plan-progress').KeyPlanProgressData>>(
+      '/college/tasks/key-plan-progress',
+      { params },
+    ),
   getStudentOverview: (params?: CollegeScope) =>
     client.get<ApiResponse<StudentOverviewDTO>>('/college/students/overview', { params }),
   getTeachingOverview: (params?: CollegeScope) =>

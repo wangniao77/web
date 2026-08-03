@@ -35,6 +35,7 @@ from Utils.DB.Models import (
     CompetitionAward,
     EmploymentRecord,
     Major,
+    MajorRankSnapshot,
     ResearchIp,
     ResearchPaper,
     ResearchPlatform,
@@ -51,6 +52,7 @@ from Utils.DB.Models import (
     TeachingCourseHour,
     ThesisAdvisor,
     StudentInternship,
+    StudentVolunteerHour,
 )
 from Utils.Excel import list_sheet_names, read_tabular
 from importers_supplement import (
@@ -59,7 +61,10 @@ from importers_supplement import (
     import_graduates,
     import_internships,
     import_leadership,
+    import_major_ranks,
+    import_teacher_roster,
     import_teaching_hours,
+    import_volunteer_hours,
 )
 
 COLLEGE_NAME = "大数据与人工智能学院"
@@ -572,6 +577,17 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
                 continue
             if not name:
                 continue
+            # 跳过把表头当数据的脏行（如 name=平台名称 / org=批准部门）
+            header_noise = {
+                "平台名称",
+                "批准部门",
+                "批准时间",
+                "负责人",
+                "类型",
+                "动态评估通过时间",
+            }
+            if name in header_noise or typ in header_noise:
+                continue
             category = typ or current_team_label or None
             await ResearchPlatform.create(
                 college=college,
@@ -988,6 +1004,12 @@ async def run(data_root: Path, only: set[str]) -> None:
                 results["thesis"] = await import_thesis(data_root, college)
             if "teachers" in only:
                 results["teachers"] = await import_teachers(data_root, college)
+            if "teacher_roster" in only or "teachers_roster" in only or "staff_roster" in only:
+                results["teacher_roster"] = await import_teacher_roster(data_root, college)
+            if "volunteer_hours" in only or "volunteer" in only:
+                results["volunteer_hours"] = await import_volunteer_hours(data_root, college)
+            if "major_ranks" in only or "major-ranks" in only or "discipline_ranks" in only:
+                results["major_ranks"] = await import_major_ranks(data_root, college)
             if "classes" in only:
                 results["classes"] = await sync_classes(college)
             if "tags" in only:
@@ -1019,6 +1041,8 @@ async def run(data_root: Path, only: set[str]) -> None:
                 "student_papers": await StudentPaper.all().count(),
                 "teaching_course_hours": await TeachingCourseHour.all().count(),
                 "student_internships": await StudentInternship.all().count(),
+                "student_volunteer_hours": await StudentVolunteerHour.all().count(),
+                "major_rank_snapshots": await MajorRankSnapshot.all().count(),
             }
             print("RESULTS", results)
             print("COUNTS", counts)
@@ -1033,7 +1057,7 @@ def main() -> None:
         "--only",
         type=str,
         default="students,gpa,cet,dorm,employment,research,thesis,teachers,classes,tags,kpi",
-        help="comma-separated steps; supplement: graduates,leadership,awards,teaching_hours,internships",
+        help="comma-separated steps; supplement: graduates,leadership,awards,teaching_hours,internships,teacher_roster,volunteer_hours,major_ranks",
     )
     args = parser.parse_args()
     only = {x.strip() for x in args.only.split(",") if x.strip()}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import CockpitPanel from '@/components/college/CockpitPanel.vue'
 import CoreHeroGauge from '@/components/college/modules/center-hub/CoreHeroGauge.vue'
@@ -25,83 +25,113 @@ const router = useRouter()
 const { collegeScope } = useScope()
 
 const hub = ref<Awaited<ReturnType<typeof collegeService.fetchOverviewHub>> | null>(null)
+const keyPlan = ref<Awaited<ReturnType<typeof collegeService.fetchKeyPlanProgress>> | null>(null)
 const devQuality = ref<Awaited<ReturnType<typeof studentDevService.fetchStudentDevQuality>> | null>(null)
 const benchmark = ref<Awaited<ReturnType<typeof benchmarkService.fetchBenchmarkAchievements>> | null>(null)
 const teacherAnalytics = ref<Awaited<ReturnType<typeof teacherService.fetchTeacherAnalytics>> | null>(null)
 const discipline = ref<Awaited<ReturnType<typeof disciplineService.fetchDisciplineOverview>> | null>(null)
 const enrollmentEmployment = ref<Awaited<ReturnType<typeof enrollmentEmploymentService.fetchEnrollmentEmploymentOverview>> | null>(null)
+
+/** 仅首屏 gate：hub 一到就出布局，其余面板渐进填入 */
 const loading = ref(true)
 const error = ref<string | null>(null)
+const panelLoading = reactive({
+  keyPlan: true,
+  talent: true,
+  benchmark: true,
+  discipline: true,
+  faculty: true,
+})
 
 function formatError(reason: unknown): string {
   if (reason instanceof Error) return reason.message
   return '加载失败'
 }
 
+async function loadOne<T>(
+  label: string,
+  promise: Promise<T>,
+  assign: (value: T) => void,
+  failures: string[],
+): Promise<void> {
+  try {
+    assign(await promise)
+  } catch (reason) {
+    failures.push(`${label}: ${formatError(reason)}`)
+    console.error(`[college] ${label} 加载失败`, reason)
+  }
+}
+
 async function loadAll() {
-  loading.value = true
+  const isFirstPaint = !hub.value
+  if (isFirstPaint) loading.value = true
   error.value = null
 
-  const scope = collegeScope.value
-  const [
-    hubRes,
-    devQualityRes,
-    benchmarkRes,
-    teacherRes,
-    disciplineRes,
-    enrollmentRes,
-  ] = await Promise.allSettled([
-    collegeService.fetchOverviewHub(scope),
-    studentDevService.fetchStudentDevQuality({ ...scope, dimension: 'major' }),
-    benchmarkService.fetchBenchmarkAchievements(scope),
-    teacherService.fetchTeacherAnalytics(scope),
-    disciplineService.fetchDisciplineOverview(scope),
-    enrollmentEmploymentService.fetchEnrollmentEmploymentOverview(scope),
-  ])
+  panelLoading.keyPlan = true
+  panelLoading.talent = true
+  panelLoading.benchmark = true
+  panelLoading.discipline = true
+  panelLoading.faculty = true
 
+  const scope = collegeScope.value
   const failures: string[] = []
 
-  if (hubRes.status === 'fulfilled') hub.value = hubRes.value
-  else {
-    failures.push(`hub: ${formatError(hubRes.reason)}`)
-    console.error('[college] hub 加载失败', hubRes.reason)
-  }
+  // hub 优先：完成即解除全屏 loading，不必等其余 6 个接口
+  const hubTask = loadOne('hub', collegeService.fetchOverviewHub(scope), (v) => {
+    hub.value = v
+  }, failures).finally(() => {
+    loading.value = false
+  })
 
-  if (devQualityRes.status === 'fulfilled') devQuality.value = devQualityRes.value
-  else {
-    failures.push(`devQuality: ${formatError(devQualityRes.reason)}`)
-    console.error('[college] devQuality 加载失败', devQualityRes.reason)
-  }
+  const panelTasks = [
+    loadOne('keyPlan', collegeService.fetchKeyPlanProgress(scope), (v) => {
+      keyPlan.value = v
+    }, failures).finally(() => {
+      panelLoading.keyPlan = false
+    }),
+    loadOne(
+      'devQuality',
+      studentDevService.fetchStudentDevQuality({ ...scope, dimension: 'major' }),
+      (v) => {
+        devQuality.value = v
+      },
+      failures,
+    ),
+    loadOne(
+      'enrollmentEmployment',
+      enrollmentEmploymentService.fetchEnrollmentEmploymentOverview(scope),
+      (v) => {
+        enrollmentEmployment.value = v
+      },
+      failures,
+    ),
+    loadOne('benchmark', benchmarkService.fetchBenchmarkAchievements(scope), (v) => {
+      benchmark.value = v
+    }, failures).finally(() => {
+      panelLoading.benchmark = false
+    }),
+    loadOne('teacherAnalytics', teacherService.fetchTeacherAnalytics(scope), (v) => {
+      teacherAnalytics.value = v
+    }, failures).finally(() => {
+      panelLoading.faculty = false
+    }),
+    loadOne('discipline', disciplineService.fetchDisciplineOverview(scope), (v) => {
+      discipline.value = v
+    }, failures).finally(() => {
+      panelLoading.discipline = false
+    }),
+  ]
 
-  if (benchmarkRes.status === 'fulfilled') benchmark.value = benchmarkRes.value
-  else {
-    failures.push(`benchmark: ${formatError(benchmarkRes.reason)}`)
-    console.error('[college] benchmark 加载失败', benchmarkRes.reason)
-  }
+  // 人才培养面板依赖 devQuality + enrollment，二者都结束后再关 loading
+  const talentTask = Promise.allSettled([panelTasks[1], panelTasks[2]]).finally(() => {
+    panelLoading.talent = false
+  })
 
-  if (teacherRes.status === 'fulfilled') teacherAnalytics.value = teacherRes.value
-  else {
-    failures.push(`teacherAnalytics: ${formatError(teacherRes.reason)}`)
-    console.error('[college] teacherAnalytics 加载失败', teacherRes.reason)
-  }
-
-  if (disciplineRes.status === 'fulfilled') discipline.value = disciplineRes.value
-  else {
-    failures.push(`discipline: ${formatError(disciplineRes.reason)}`)
-    console.error('[college] discipline 加载失败', disciplineRes.reason)
-  }
-
-  if (enrollmentRes.status === 'fulfilled') enrollmentEmployment.value = enrollmentRes.value
-  else {
-    failures.push(`enrollmentEmployment: ${formatError(enrollmentRes.reason)}`)
-    console.error('[college] enrollmentEmployment 加载失败', enrollmentRes.reason)
-  }
+  await Promise.allSettled([hubTask, ...panelTasks, talentTask])
 
   if (!hub.value && failures.length > 0) {
     error.value = failures.join('；')
   }
-
-  loading.value = false
 }
 
 onMounted(loadAll)
@@ -122,11 +152,11 @@ useAutoRefresh(loadAll)
     <main class="cockpit-main">
       <div class="cockpit-column cockpit-column--left">
         <CockpitPanel
-          title="年度重点规划进展"
+          title="学院重点工作动态监测总览"
           icon="task"
           panel-class="panel--key-tasks"
           module-id="key-tasks"
-          :simulated="true"
+          :simulated="false"
         >
           <template #actions>
             <button
@@ -137,7 +167,10 @@ useAutoRefresh(loadAll)
               详情 →
             </button>
           </template>
-          <KeyPlanProgressPanel />
+          <KeyPlanProgressPanel v-if="keyPlan" :data="keyPlan" />
+          <div v-else class="cockpit-panel-empty">
+            {{ panelLoading.keyPlan ? '加载中…' : '重点工作数据暂不可用' }}
+          </div>
         </CockpitPanel>
         <CockpitPanel
           title="人才培养纵览"
@@ -156,9 +189,13 @@ useAutoRefresh(loadAll)
             </button>
           </template>
           <TalentOverviewCarouselPanel
+            v-if="devQuality || enrollmentEmployment"
             :dev-quality="devQuality"
             :enrollment="enrollmentEmployment"
           />
+          <div v-else class="cockpit-panel-empty">
+            {{ panelLoading.talent ? '加载中…' : '人才培养数据暂不可用' }}
+          </div>
         </CockpitPanel>
       </div>
 
@@ -172,7 +209,7 @@ useAutoRefresh(loadAll)
           icon="support"
           panel-class="panel--professional-support"
           module-id="professional-support"
-          :simulated="true"
+          :simulated="false"
         >
           <template #actions>
             <button
@@ -183,7 +220,10 @@ useAutoRefresh(loadAll)
               详情 →
             </button>
           </template>
-          <ProfessionalSupportPanel :discipline="discipline" />
+          <ProfessionalSupportPanel v-if="discipline" :discipline="discipline" />
+          <div v-else class="cockpit-panel-empty">
+            {{ panelLoading.discipline ? '加载中…' : '专业发展数据暂不可用' }}
+          </div>
         </CockpitPanel>
       </div>
 
@@ -193,7 +233,7 @@ useAutoRefresh(loadAll)
           icon="trophy"
           panel-class="panel--benchmark"
           module-id="benchmark-achievements"
-          :simulated="true"
+          :simulated="false"
         >
           <template #actions>
             <button
@@ -205,14 +245,15 @@ useAutoRefresh(loadAll)
             </button>
           </template>
           <BenchmarkAchievementsPanel v-if="benchmark" :data="benchmark" />
-          <div v-else class="cockpit-panel-empty">精品成果数据暂不可用</div>
+          <div v-else class="cockpit-panel-empty">
+            {{ panelLoading.benchmark ? '加载中…' : '精品成果数据暂不可用' }}
+          </div>
         </CockpitPanel>
         <CockpitPanel
           title="师资建设图谱"
           icon="support"
           panel-class="panel--faculty-atlas"
           module-id="faculty-atlas"
-          :simulated="true"
         >
           <template #actions>
             <button
@@ -224,7 +265,9 @@ useAutoRefresh(loadAll)
             </button>
           </template>
           <FacultyAtlasPanel v-if="teacherAnalytics" :data="teacherAnalytics" />
-          <div v-else class="cockpit-panel-empty">师资建设数据暂不可用</div>
+          <div v-else class="cockpit-panel-empty">
+            {{ panelLoading.faculty ? '加载中…' : '师资建设数据暂不可用' }}
+          </div>
         </CockpitPanel>
       </div>
     </main>

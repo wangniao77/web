@@ -8,6 +8,8 @@ export interface ApiResponse<T> {
 export interface FilterParams {
   academicYear?: string
   semester?: '1' | '2'
+  /** 业务学期码，如 2025-2026-2；师资课时等按学期分析时优先使用 */
+  term?: string
 }
 
 export interface CollegeScope extends FilterParams {

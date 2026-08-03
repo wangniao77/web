@@ -1,0 +1,179 @@
+{
+  "year": 2026,
+  "source": "rank-summary-docx",
+  "selfSchool": "广东财经大学",
+  "majors": [
+    {
+      "name": "人工智能",
+      "grade": "B",
+      "nationalRank": 208,
+      "yoyChange": -14,
+      "provincialRank": 3,
+      "financePeerRank": 2,
+      "softDimensions": [],
+      "peerSchools": [
+        {
+          "school": "广州大学",
+          "rank": 63
+        },
+        {
+          "school": "广东外语外贸大学",
+          "rank": 179
+        },
+        {
+          "school": "广东财经大学",
+          "rank": 208,
+          "isSelf": true
+        },
+        {
+          "school": "广东技术师范大学",
+          "rank": 255
+        }
+      ],
+      "financePeerSchools": [
+        {
+          "school": "南京审计大学",
+          "rank": 147
+        },
+        {
+          "school": "广东财经大学",
+          "rank": 208,
+          "isSelf": true
+        },
+        {
+          "school": "重庆工商大学",
+          "rank": 217
+        }
+      ]
+    },
+    {
+      "name": "计算机科学与技术",
+      "grade": "B",
+      "nationalRank": 368,
+      "yoyChange": -7,
+      "provincialRank": 3,
+      "financePeerRank": 5,
+      "softDimensions": [],
+      "peerSchools": [
+        {
+          "school": "广州大学",
+          "rank": 84
+        },
+        {
+          "school": "广东外语外贸大学",
+          "rank": 172
+        },
+        {
+          "school": "广东财经大学",
+          "rank": 368,
+          "isSelf": true
+        },
+        {
+          "school": "广东技术师范大学",
+          "rank": 373
+        }
+      ],
+      "financePeerSchools": [
+        {
+          "school": "南京审计大学",
+          "rank": 199
+        },
+        {
+          "school": "山西财经大学",
+          "rank": 264
+        },
+        {
+          "school": "天津财经大学",
+          "rank": 286
+        },
+        {
+          "school": "重庆工商大学",
+          "rank": 294
+        },
+        {
+          "school": "广东财经大学",
+          "rank": 368,
+          "isSelf": true
+        },
+        {
+          "school": "吉林财经大学",
+          "rank": 428
+        }
+      ]
+    },
+    {
+      "name": "软件工程",
+      "grade": "B",
+      "nationalRank": 227,
+      "yoyChange": -2,
+      "provincialRank": 3,
+      "financePeerRank": 2,
+      "softDimensions": [],
+      "peerSchools": [
+        {
+          "school": "广州大学",
+          "rank": 73
+        },
+        {
+          "school": "广东外语外贸大学",
+          "rank": 165
+        },
+        {
+          "school": "广东财经大学",
+          "rank": 227,
+          "isSelf": true
+        },
+        {
+          "school": "广东技术师范大学",
+          "rank": 236
+        }
+      ],
+      "financePeerSchools": [
+        {
+          "school": "南京审计大学",
+          "rank": 153
+        },
+        {
+          "school": "广东财经大学",
+          "rank": 227,
+          "isSelf": true
+        },
+        {
+          "school": "天津财经大学",
+          "rank": 227
+        },
+        {
+          "school": "山西财经大学",
+          "rank": 264
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "regionalPool": [
+      "广东外语外贸大学",
+      "广东技术师范大学",
+      "广东财经大学",
+      "广州大学"
+    ],
+    "financePool": [
+      "南京审计大学",
+      "吉林财经大学",
+      "天津财经大学",
+      "山西财经大学",
+      "广东财经大学",
+      "重庆工商大学"
+    ],
+    "docxSchools": [
+      "广东财经大学",
+      "南京审计大学",
+      "天津财经大学",
+      "山西财经大学",
+      "吉林财经大学",
+      "重庆工商大学",
+      "广东外语外贸大学",
+      "广州大学",
+      "广东技术师范大学"
+    ]
+  }
+}

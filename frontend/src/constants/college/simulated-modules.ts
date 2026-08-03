@@ -2,14 +2,7 @@
  * 学院大屏中尚未对接后端、当前展示 mock 数据的模块。
  * 对接完成后从列表中移除对应 id 即可隐藏「模拟数据」标签。
  */
-export const COLLEGE_SIMULATED_MODULE_IDS = [
-  'key-tasks',
-  'benchmark-achievements',
-  'professional-support',
-  'faculty-atlas',
-  'teacher-analytics',
-  'discipline-overview',
-] as const
+export const COLLEGE_SIMULATED_MODULE_IDS: readonly string[] = []
 
 /** 预警模块内尚未对接的预警类别（type 字段） */
 export const COLLEGE_SIMULATED_WARNING_TYPES = [
@@ -35,9 +28,6 @@ export function isCollegeSimulatedWarning(
 }
 
 const simulatedDetailKindSet = new Set<string>([
-  'benchmark-detail',
-  'teacher-detail',
-  'discipline-detail',
 ])
 
 export function isCollegeSimulatedDetailKind(kind: string | null | undefined): boolean {

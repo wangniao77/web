@@ -245,3 +245,33 @@ class StudentInternship(Model):
     class Meta:
         table = "student_internships"
         indexes = (("college_id", "academic_year"), ("student_id", "snapshot_month"))
+
+
+class StudentVolunteerHour(Model):
+    """学生志愿服务时长（按年级/班级导入快照）。"""
+
+    id = fields.IntField(pk=True)
+    college = fields.ForeignKeyField(
+        "models.College",
+        related_name="student_volunteer_hours",
+        null=True,
+    )
+    profile = fields.ForeignKeyField(
+        "models.StudentProfile",
+        related_name="volunteer_hours",
+        null=True,
+        source_field="student_pk",
+    )
+    student_id = fields.CharField(max_length=32, null=True, index=True, description="学号")
+    name = fields.CharField(max_length=64, null=True)
+    grade = fields.IntField(null=True, description="年级，如 2022")
+    class_name = fields.CharField(max_length=128, null=True)
+    hours = fields.DecimalField(max_digits=10, decimal_places=2, null=True, description="志愿时长（小时）")
+    hours_text = fields.CharField(max_length=64, null=True, description="源表原文，如 53小时")
+    source_file = fields.CharField(max_length=255, null=True)
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    class Meta:
+        table = "student_volunteer_hours"
+        indexes = (("college_id", "grade"), ("student_id",), ("name", "grade"))

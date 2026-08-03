@@ -4,12 +4,12 @@ import { useRouter } from 'vue-router'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import { ROUTES } from '@/constants/routes'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
-import type { SoftDimensionDTO } from '@/types/college/api/discipline-overview'
+import type { DisciplineNum } from '@/types/college/api/discipline-overview'
 import type { DisciplineOverviewVM } from '@/types/college/view/discipline-overview'
+import { fmtFacultyNum, isMissingMark } from '@/utils/facultyDisplay'
 import type { EChartsOption } from 'echarts'
 
 type PeerMode = 'regional' | 'finance'
-type SoftTone = 'lead' | 'even' | 'warn' | 'risk'
 
 const props = defineProps<{
   discipline: DisciplineOverviewVM | null
@@ -84,11 +84,13 @@ watch(
       activeIndex.value = 0
       return
     }
-    const rankWeight = (g: string) => (g === 'A' ? 3 : g.startsWith('B+') ? 2 : 1)
-    const best = props.discipline!.majors.reduce(
-      (bestIdx, m, i, arr) => (rankWeight(m.grade) > rankWeight(arr[bestIdx].grade) ? i : bestIdx),
-      0,
-    )
+    // 有真实在校生数时按规模优先，否则保持首项
+    const list = props.discipline!.majors
+    const best = list.reduce((bestIdx, m, i, arr) => {
+      const a = typeof m.studentCount === 'number' ? m.studentCount : -1
+      const b = typeof arr[bestIdx].studentCount === 'number' ? arr[bestIdx].studentCount : -1
+      return a > b ? i : bestIdx
+    }, 0)
     activeIndex.value = best
   },
   { immediate: true },
@@ -111,21 +113,27 @@ watch(
     startMajorRotation()
   },
 )
-const ranking = computed(() => props.discipline?.ranking)
-
-function formatChange(change: number) {
-  if (change > 0) return `↑${change}`
-  if (change < 0) return `↓${Math.abs(change)}`
-  return '→'
+function fmtNum(v: DisciplineNum | string | null | undefined) {
+  return fmtFacultyNum(v as never)
 }
 
-function changeClass(change: number) {
+function formatChange(change: DisciplineNum | undefined) {
+  if (isMissingMark(change)) return '**'
+  if (typeof change !== 'number') return '**'
+  if (change > 0) return `↑${change}位`
+  if (change < 0) return `↓${Math.abs(change)}位`
+  return '持平'
+}
+
+function changeClass(change: DisciplineNum | undefined) {
+  if (isMissingMark(change) || typeof change !== 'number') return 'is-flat'
   if (change > 0) return 'is-up'
   if (change < 0) return 'is-down'
   return 'is-flat'
 }
 
 function gradeClass(grade: string) {
+  if (!grade || isMissingMark(grade)) return 'grade--missing'
   return `grade--${grade.replace('+', 'plus')}`
 }
 
@@ -133,6 +141,8 @@ function shortName(name: string) {
   if (name.includes('计算机')) return '计科'
   if (name.includes('软件')) return '软工'
   if (name.includes('人工')) return '人工智能'
+  if (name.includes('数据')) return '大数据'
+  if (name.includes('网络') || name.includes('安全')) return '网安'
   return name.slice(0, 4)
 }
 
@@ -140,79 +150,183 @@ function openDisciplineDetail() {
   router.push(ROUTES.college.disciplineDetail)
 }
 
-function softDimensionTone(dim: SoftDimensionDTO): SoftTone {
-  const gap = dim.score - dim.peerAverage
-  if (gap >= 0) return 'lead'
-  if (gap >= -3) return 'even'
-  if (gap >= -6) return 'warn'
-  return 'risk'
-}
-
-function softDimensionGap(dim: SoftDimensionDTO) {
-  const gap = dim.score - dim.peerAverage
-  if (gap > 0) return `+${gap}`
-  if (gap < 0) return `${gap}`
-  return '持平'
-}
-
-const softDimensions = computed<SoftDimensionDTO[]>(() => {
+/** 优先本专业多年名次；不足两年时回退学院中位数趋势 */
+const trendSeries = computed(() => {
   const major = active.value
-  if (!major) return []
-  if (major.softDimensions?.length) return major.softDimensions
-  return (props.discipline?.dimensions ?? []).map((d) => ({
-    key: d.key as SoftDimensionDTO['key'],
-    label: d.label,
-    score: d.score,
-    peerAverage: d.peerAverage,
-  }))
+  const majorYears = major?.rankTrend?.years ?? []
+  const majorRanks = major?.rankTrend?.ranks ?? []
+  if (majorYears.length >= 2 && majorRanks.length >= 2) {
+    return {
+      years: majorYears,
+      ranks: majorRanks,
+      peerAvgRanks: [] as number[],
+      scope: 'major' as const,
+      title: '名次走势',
+    }
+  }
+  const t = props.discipline?.trend
+  if (t?.years?.length && t.years.length >= 2 && t.ranks?.length) {
+    const peer = (t.peerAvgRanks ?? []).filter((v): v is number => typeof v === 'number')
+    return {
+      years: t.years.map(String),
+      ranks: t.ranks.map((v) => (typeof v === 'number' ? v : Number.NaN)),
+      peerAvgRanks: peer.length === t.years.length ? peer : [],
+      scope: 'college' as const,
+      title: '学院中位走势',
+    }
+  }
+  return null
 })
 
-const softInsight = computed(() => {
-  const dims = softDimensions.value
-  if (!dims.length) return ''
-  const sorted = [...dims].sort((a, b) => b.score - b.peerAverage - (a.score - a.peerAverage))
-  const strongest = sorted[0]
-  const weakest = sorted[sorted.length - 1]
-  const strongGap = strongest.score - strongest.peerAverage
-  const weakGap = weakest.score - weakest.peerAverage
-
-  if (strongGap <= 0 && weakGap >= 0) return '五维整体与对标均值基本持平'
-
-  const strongText =
-    strongGap > 0
-      ? `${strongest.label}领先对标 ${strongGap} 分`
-      : `${strongest.label}相对最接近对标`
-
-  if (weakGap >= 0) return strongText
-
-  return `${strongText} · ${weakest.label}仍是短板`
+/** 走势短注：放在图表标题旁，避免底部再堆长句 */
+const trendNote = computed(() => {
+  const series = trendSeries.value
+  if (!series) return ''
+  const ranks = series.ranks.filter((v): v is number => Number.isFinite(v))
+  if (ranks.length < 2) return ''
+  const first = ranks[0]
+  const last = ranks[ranks.length - 1]
+  const delta = first - last
+  if (delta > 0) return `${first}→${last} · ↑${delta}`
+  if (delta < 0) return `${first}→${last} · ↓${Math.abs(delta)}`
+  return `${last} · 持平`
 })
 
-const constructionTags = computed(() => {
-  const major = active.value
-  if (!major) return []
-  const tags: string[] = []
-  if (major.constructionType && major.constructionType !== '无') tags.push(major.constructionType)
-  if (major.accreditation) tags.push(major.accreditation)
-  return tags
+const noTrendMessage = computed(() => {
+  if (active.value && isMissingMark(active.value.nationalRank)) {
+    return '本校未进入软科公开发布榜，暂无排名走势'
+  }
+  return '多年排名快照不足'
+})
+
+const trendOption = computed<EChartsOption>(() => {
+  const series = trendSeries.value
+  if (!series) return {}
+
+  const ranks = series.ranks.map((v) => (Number.isFinite(v) ? v : null))
+  const peers = series.peerAvgRanks
+  const values = ranks.filter((v): v is number => v != null)
+  const peerVals = peers.filter((v) => Number.isFinite(v))
+  const all = [...values, ...peerVals]
+  if (!all.length) return {}
+
+  const minR = Math.min(...all)
+  const maxR = Math.max(...all)
+  const pad = Math.max(4, Math.round((maxR - minR) * 0.15) || 8)
+
+  const lineSeries: EChartsOption['series'] = [
+    {
+      name: series.scope === 'major' ? '本专业' : '学院中位',
+      type: 'line',
+      data: ranks,
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      lineStyle: { width: 2.5, color: '#4de0ff' },
+      itemStyle: { color: '#7ff0ff' },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [
+            { offset: 0, color: 'rgba(77, 224, 255, 0.28)' },
+            { offset: 1, color: 'rgba(77, 224, 255, 0.02)' },
+          ],
+        },
+      },
+    },
+  ]
+  if (peers.length === series.years.length) {
+    lineSeries.push({
+      name: '对标均值',
+      type: 'line',
+      data: peers,
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 6,
+      lineStyle: { width: 2, color: '#ffd56a', type: 'dashed' },
+      itemStyle: { color: '#ffe29a' },
+    })
+  }
+
+  return {
+    animationDuration: 550,
+    grid: { left: 8, right: 10, top: 28, bottom: 4, containLabel: true },
+    legend: {
+      show: (lineSeries?.length ?? 0) > 1,
+      top: 0,
+      right: 0,
+      textStyle: { color: '#9ecae8', fontSize: 14 },
+      itemWidth: 16,
+      itemHeight: 9,
+    },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(2, 14, 38, 0.94)',
+      borderColor: 'rgba(0, 242, 255, 0.45)',
+      textStyle: { color: '#f4fbff', fontSize: CHART_FONT.tooltip },
+      formatter: (params: unknown) => {
+        const items = Array.isArray(params) ? params : [params]
+        const head = (items[0] as { axisValue?: string })?.axisValue ?? ''
+        const lines = items
+          .map((p) => {
+            const row = p as { marker?: string; seriesName?: string; data?: number | null }
+            if (row.data == null || Number.isNaN(row.data)) return ''
+            return `${row.marker ?? ''}${row.seriesName} 第${row.data}`
+          })
+          .filter(Boolean)
+        return `${head}<br/>${lines.join('<br/>')}`
+      },
+    },
+    xAxis: {
+      type: 'category',
+      data: series.years,
+      boundaryGap: false,
+      axisLabel: { ...AXIS_LABEL, color: '#b8e6ff', fontSize: 15 },
+      axisLine: { lineStyle: { color: 'rgba(0, 200, 255, 0.25)' } },
+      axisTick: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      inverse: true,
+      min: Math.max(1, minR - pad),
+      max: maxR + pad,
+      axisLabel: {
+        ...AXIS_LABEL,
+        color: '#b8e6ff',
+        fontSize: 15,
+        formatter: (v: number) => `${v}`,
+      },
+      splitLine: { lineStyle: { color: 'rgba(0, 200, 255, 0.1)', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
+    series: lineSeries,
+  }
 })
 
 const activePeers = computed(() => {
   const major = active.value
   if (!major) return []
-  if (peerMode.value === 'finance') {
-    return major.financePeerSchools?.length ? major.financePeerSchools : major.peerSchools
-  }
-  return major.peerSchools ?? []
+  const list =
+    peerMode.value === 'finance'
+      ? major.financePeerSchools?.length
+        ? major.financePeerSchools
+        : major.peerSchools
+      : major.peerSchools ?? []
+  return list.filter((p) => typeof p.rank === 'number' && Number.isFinite(p.rank))
 })
 
 const peerOption = computed<EChartsOption>(() => {
   const peers = [...activePeers.value]
   if (!peers.length) return {}
 
-  const byRank = [...peers].sort((a, b) => a.rank - b.rank)
+  const byRank = [...peers].sort((a, b) => Number(a.rank) - Number(b.rank))
   const display = [...byRank].reverse()
-  const maxRank = Math.max(...display.map((p) => p.rank))
+  const maxRank = Math.max(...display.map((p) => Number(p.rank)))
   const scoreOf = (rank: number) => maxRank + 8 - rank
 
   return {
@@ -237,7 +351,7 @@ const peerOption = computed<EChartsOption>(() => {
     },
     xAxis: {
       type: 'value',
-      max: scoreOf(Math.min(...display.map((p) => p.rank))) + 2,
+      max: scoreOf(Math.min(...display.map((p) => Number(p.rank)))) + 2,
       axisLabel: { show: false },
       splitLine: { show: false },
       axisLine: { show: false },
@@ -249,7 +363,7 @@ const peerOption = computed<EChartsOption>(() => {
       axisLabel: {
         ...AXIS_LABEL,
         color: '#b8e6ff',
-        fontSize: Math.max(13, CHART_FONT.axis - 1),
+        fontSize: Math.max(16, CHART_FONT.axis - 1),
         fontWeight: 600,
       },
       axisLine: { show: false },
@@ -259,7 +373,7 @@ const peerOption = computed<EChartsOption>(() => {
       {
         type: 'bar',
         data: display.map((p) => ({
-          value: scoreOf(p.rank),
+          value: scoreOf(Number(p.rank)),
           itemStyle: {
             borderRadius: [0, 6, 6, 0],
             color: p.isSelf
@@ -287,13 +401,13 @@ const peerOption = computed<EChartsOption>(() => {
                 },
           },
         })),
-        barWidth: 17,
+        barWidth: 18,
         barCategoryGap: '28%',
         label: {
           show: true,
           position: 'right',
           color: '#9fe8ff',
-          fontSize: Math.max(13, CHART_FONT.label - 1),
+          fontSize: Math.max(15, CHART_FONT.label - 2),
           fontWeight: 800,
           formatter: (p: { dataIndex?: number }) => {
             const peer = display[p.dataIndex ?? 0]
@@ -310,22 +424,15 @@ const peerOption = computed<EChartsOption>(() => {
   <div class="pro-panorama">
     <template v-if="active && majors.length">
       <div class="pro-panorama__hub">
-        <div class="pro-panorama__hub-left">
-          <div class="pro-panorama__hub-main">
-            <span>学院均排名</span>
-            <strong>第{{ ranking?.current ?? '—' }}</strong>
-          </div>
-          <div class="pro-panorama__hub-meta">
-            <span :class="changeClass(ranking?.yoyChange ?? 0)">
-              同比 {{ formatChange(ranking?.yoyChange ?? 0) }}
-            </span>
-            <i />
-            <span>省内 第{{ ranking?.provincial ?? '—' }}</span>
-            <i />
-            <span>财经类 第{{ ranking?.peer ?? '—' }}</span>
-          </div>
+        <div class="pro-panorama__hub-meta">
+          <span :class="changeClass(active.yoyChange)">
+            同比 {{ formatChange(active.yoyChange) }}
+          </span>
+          <i />
+          <span>省内 第{{ fmtNum(active.provincialRank) }}</span>
+          <i />
+          <span>财经类 第{{ fmtNum(active.financePeerRank) }}</span>
         </div>
-
         <div
           class="pro-panorama__tabs-wrap"
           :class="{ 'is-paused': tabsPaused }"
@@ -357,51 +464,45 @@ const peerOption = computed<EChartsOption>(() => {
         <button type="button" class="pro-panorama__focus" @click="openDisciplineDetail">
           <header class="pro-panorama__focus-head">
             <h3>{{ active.name }}</h3>
-            <em class="pro-panorama__badge" :class="gradeClass(active.grade)">{{ active.grade }}级</em>
+            <em class="pro-panorama__badge" :class="gradeClass(active.grade)">
+              {{ isMissingMark(active.grade) ? '**' : `${active.grade}级` }}
+            </em>
           </header>
 
           <div class="pro-panorama__hero">
             <div class="pro-panorama__hero-num">
               <span>全国排名</span>
-              <strong><small>第</small>{{ active.nationalRank }}</strong>
+              <strong><small>第</small>{{ fmtNum(active.nationalRank) }}</strong>
             </div>
-            <div class="pro-panorama__hero-side">
-              <div class="pro-panorama__hero-change" :class="changeClass(active.yoyChange)">
-                较上年 {{ formatChange(active.yoyChange) }}
+            <div class="pro-panorama__stats">
+              <div class="pro-panorama__stat">
+                <span>在校</span>
+                <strong>{{ fmtNum(active.studentCount) }}</strong>
               </div>
-              <div class="pro-panorama__hero-ranks">
-                省内第{{ active.provincialRank }} · 财经类第{{ active.financePeerRank }}
+              <div class="pro-panorama__stat">
+                <span>落实率</span>
+                <strong>{{ fmtNum(active.employmentRate) }}<small>%</small></strong>
               </div>
-            </div>
-          </div>
-
-          <div v-if="constructionTags.length" class="pro-panorama__tags">
-            <span v-for="tag in constructionTags" :key="tag">{{ tag }}</span>
-          </div>
-
-          <div class="pro-panorama__soft">
-            <div
-              v-for="dim in softDimensions"
-              :key="dim.key"
-              class="pro-panorama__soft-row"
-              :class="`tone--${softDimensionTone(dim)}`"
-            >
-              <div class="pro-panorama__soft-meta">
-                <span class="pro-panorama__soft-label">{{ dim.label }}</span>
-                <span class="pro-panorama__soft-score">
-                  {{ dim.score }}
-                  <small>/ {{ dim.peerAverage }}</small>
-                  <em>{{ softDimensionGap(dim) }}</em>
-                </span>
-              </div>
-              <div class="pro-panorama__soft-bar">
-                <b :style="{ width: `${dim.score}%` }" />
-                <i class="pro-panorama__soft-peer" :style="{ left: `${dim.peerAverage}%` }" />
+              <div class="pro-panorama__stat">
+                <span>均分</span>
+                <strong>{{ fmtNum(active.avgScore) }}</strong>
               </div>
             </div>
           </div>
 
-          <p v-if="softInsight" class="pro-panorama__insight">{{ softInsight }}</p>
+          <div v-if="trendSeries" class="pro-panorama__trend" @click.stop>
+            <div class="pro-panorama__trend-head">
+              <strong>{{ trendSeries.title }}</strong>
+              <em v-if="trendNote">{{ trendNote }}</em>
+            </div>
+            <div class="pro-panorama__trend-chart">
+              <ChartContainer
+                :option="trendOption"
+                :key="`trend-${active.name}-${trendSeries.scope}`"
+              />
+            </div>
+          </div>
+          <p v-else class="pro-panorama__insight">{{ noTrendMessage }}</p>
         </button>
 
         <div class="pro-panorama__chart">
@@ -432,7 +533,14 @@ const peerOption = computed<EChartsOption>(() => {
           </div>
 
           <div class="pro-panorama__chart-body">
-            <ChartContainer :option="peerOption" :key="`${active.name}-${peerMode}`" />
+            <ChartContainer
+              v-if="activePeers.length"
+              :option="peerOption"
+              :key="`${active.name}-${peerMode}`"
+            />
+            <div v-else class="pro-panorama__empty" style="min-height:160px;display:grid;place-items:center;">
+              对标院校排名缺源
+            </div>
           </div>
         </div>
       </div>
@@ -462,53 +570,23 @@ const peerOption = computed<EChartsOption>(() => {
   border-bottom: 1px solid rgba(0, 200, 255, 0.12);
 }
 
-.pro-panorama__hub-left {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.pro-panorama__hub-main {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-shrink: 0;
-
-  span {
-    color: #8ec8e8;
-    font-size: 14px;
-    font-weight: 650;
-    letter-spacing: 0.06em;
-  }
-
-  strong {
-    color: #9ef6ff;
-    font-size: clamp(26px, 1.7vw, 32px);
-    font-weight: 800;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
-}
-
 .pro-panorama__hub-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
+  gap: 8px 12px;
   min-width: 0;
-  color: #a8d4ec;
-  font-size: 14px;
+  flex: 1 1 auto;
+  color: #cfe8f8;
+  font-size: 18px;
   font-weight: 650;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
 
   i {
     width: 1px;
-    height: 12px;
-    background: rgba(0, 200, 255, 0.22);
+    height: 14px;
+    background: rgba(0, 200, 255, 0.28);
   }
 
   .is-up {
@@ -517,6 +595,10 @@ const peerOption = computed<EChartsOption>(() => {
 
   .is-down {
     color: #ff8f8f;
+  }
+
+  .is-flat {
+    color: #a8d4ec;
   }
 }
 
@@ -566,7 +648,7 @@ const peerOption = computed<EChartsOption>(() => {
   align-items: center;
   gap: 6px;
   min-width: 0;
-  padding: 7px 14px;
+  padding: 8px 16px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
@@ -575,17 +657,17 @@ const peerOption = computed<EChartsOption>(() => {
   transition: color 0.2s, background 0.2s, border-color 0.2s;
 
   span {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 700;
     line-height: 1.2;
   }
 
   em {
     flex-shrink: 0;
-    padding: 1px 6px;
+    padding: 2px 7px;
     border-radius: 4px;
     font-style: normal;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 800;
     line-height: 1.3;
     border: 1px solid transparent;
@@ -621,6 +703,12 @@ const peerOption = computed<EChartsOption>(() => {
   border-color: rgba(100, 180, 220, 0.3) !important;
 }
 
+.grade--missing {
+  color: #9ecae8;
+  background: rgba(30, 60, 90, 0.35);
+  border-color: rgba(158, 202, 232, 0.35) !important;
+}
+
 .pro-panorama__body {
   display: grid;
   grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
@@ -631,12 +719,12 @@ const peerOption = computed<EChartsOption>(() => {
 
 .pro-panorama__focus {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
   min-width: 0;
   min-height: 0;
   height: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid rgba(0, 200, 255, 0.14);
   border-radius: 8px;
   background: rgba(0, 45, 95, 0.22);
@@ -658,19 +746,65 @@ const peerOption = computed<EChartsOption>(() => {
   }
 }
 
+.pro-panorama__trend {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  padding: 6px 8px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 200, 255, 0.12);
+  background: rgba(0, 35, 75, 0.22);
+}
+
+.pro-panorama__trend-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+
+  strong {
+    color: #cfefff;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  em {
+    flex-shrink: 0;
+    color: rgba(158, 202, 232, 0.85);
+    font-style: normal;
+    font-size: 13px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.pro-panorama__trend-chart {
+  min-height: 0;
+  height: 100%;
+  min-width: 0;
+}
+
 .pro-panorama__focus-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 
   h3 {
     margin: 0;
     color: #eef9ff;
-    font-size: clamp(20px, 1.35vw, 24px);
+    font-size: clamp(18px, 1.2vw, 22px);
     font-weight: 800;
-    line-height: 1.3;
-    text-wrap: balance;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -689,24 +823,26 @@ const peerOption = computed<EChartsOption>(() => {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .pro-panorama__hero-num {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  flex-shrink: 0;
 
   span {
     color: #8ec8e8;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 650;
     letter-spacing: 0.04em;
   }
 
   strong {
     color: #9ef6ff;
-    font-size: clamp(36px, 2.5vw, 46px);
+    font-size: clamp(36px, 2.4vw, 46px);
     font-weight: 900;
     line-height: 0.95;
     font-variant-numeric: tabular-nums;
@@ -714,7 +850,7 @@ const peerOption = computed<EChartsOption>(() => {
     transition: color 0.2s;
 
     small {
-      margin-right: 4px;
+      margin-right: 3px;
       color: #7fdfff;
       font-size: 0.36em;
       font-weight: 700;
@@ -722,197 +858,67 @@ const peerOption = computed<EChartsOption>(() => {
   }
 }
 
-.pro-panorama__hero-side {
+.pro-panorama__stats {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  flex: 1 1 auto;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 0;
   min-width: 0;
+  max-width: 220px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 200, 255, 0.12);
+  background: rgba(0, 50, 100, 0.2);
+  overflow: hidden;
 }
 
-.pro-panorama__hero-change {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-
-  &.is-up {
-    color: #63ffe1;
-  }
-
-  &.is-down {
-    color: #ff8f8f;
-  }
-
-  &.is-flat {
-    color: #b8dff5;
-  }
-}
-
-.pro-panorama__hero-ranks {
-  color: #8ec8e8;
-  font-size: 14px;
-  font-weight: 650;
-  line-height: 1.3;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.pro-panorama__tags {
+.pro-panorama__stat {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 4px;
+  text-align: center;
+
+  & + & {
+    border-left: 1px solid rgba(0, 200, 255, 0.12);
+  }
 
   span {
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 200, 255, 0.2);
-    background: rgba(0, 80, 150, 0.18);
-    color: #b8e6ff;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.4;
-    letter-spacing: 0.02em;
-  }
-}
-
-.pro-panorama__soft {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 4px;
-  min-height: 0;
-  height: 100%;
-}
-
-.pro-panorama__soft-row {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  flex: 1 1 0;
-  min-height: 0;
-}
-
-.pro-panorama__soft-meta {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-}
-
-.pro-panorama__soft-label {
-  color: #a8d8f0;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  line-height: 1.2;
-}
-
-.pro-panorama__soft-score {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  color: #eaf7ff;
-  font-size: 15px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-
-  small {
     color: #8ec8e8;
-    font-size: 0.85em;
+    font-size: 11px;
     font-weight: 650;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    white-space: nowrap;
   }
 
-  em {
-    font-style: normal;
-    font-size: 0.85em;
-    font-weight: 700;
-  }
-}
+  strong {
+    color: #eaf7ff;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 
-.pro-panorama__soft-bar {
-  position: relative;
-  height: 7px;
-  border-radius: 3px;
-  background: rgba(0, 60, 120, 0.35);
-  overflow: hidden;
-
-  b,
-  i {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    border-radius: 3px;
-  }
-
-  i {
-    width: 2px;
-    min-width: 2px;
-    background: rgba(255, 255, 255, 0.55);
-    box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
-    z-index: 2;
-    transform: translateX(-1px);
-  }
-
-  b {
-    z-index: 1;
-    transition: width 0.4s ease;
-  }
-}
-
-.tone--lead {
-  .pro-panorama__soft-score em {
-    color: #63ffe1;
-  }
-
-  .pro-panorama__soft-bar b {
-    background: linear-gradient(90deg, rgba(0, 180, 200, 0.7), #00f2ff);
-  }
-}
-
-.tone--even {
-  .pro-panorama__soft-score em {
-    color: #ffe29a;
-  }
-
-  .pro-panorama__soft-bar b {
-    background: linear-gradient(90deg, rgba(200, 160, 40, 0.65), #ffd56a);
-  }
-}
-
-.tone--warn {
-  .pro-panorama__soft-score em {
-    color: #ffb86a;
-  }
-
-  .pro-panorama__soft-bar b {
-    background: linear-gradient(90deg, rgba(220, 120, 30, 0.65), #ff9a3d);
-  }
-}
-
-.tone--risk {
-  .pro-panorama__soft-score em {
-    color: #ff8f8f;
-  }
-
-  .pro-panorama__soft-bar b {
-    background: linear-gradient(90deg, rgba(220, 60, 60, 0.65), #ff6b6b);
+    small {
+      margin-left: 1px;
+      color: #9ecae8;
+      font-size: 10px;
+      font-weight: 650;
+    }
   }
 }
 
 .pro-panorama__insight {
   margin: 0;
-  padding-top: 4px;
-  border-top: 1px solid rgba(0, 200, 255, 0.1);
-  color: #b8e6ff;
+  color: rgba(184, 230, 255, 0.75);
   font-size: 14px;
   font-weight: 650;
-  line-height: 1.45;
-  letter-spacing: 0.02em;
+  line-height: 1.4;
 }
 
 .pro-panorama__chart {
@@ -938,7 +944,7 @@ const peerOption = computed<EChartsOption>(() => {
 
   strong {
     color: #c8e8f8;
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 750;
     letter-spacing: 0.04em;
     line-height: 1.2;
@@ -956,12 +962,12 @@ const peerOption = computed<EChartsOption>(() => {
 }
 
 .pro-panorama__switch-btn {
-  padding: 4px 10px;
+  padding: 5px 12px;
   border: none;
   border-radius: 4px;
   background: transparent;
   color: #9ecae8;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.3;
@@ -993,7 +999,8 @@ const peerOption = computed<EChartsOption>(() => {
   display: grid;
   place-items: center;
   height: 100%;
-  color: rgba(174, 198, 230, 0.55);
-  font-size: 16px;
+  color: rgba(174, 198, 230, 0.6);
+  font-size: 18px;
+  font-weight: 650;
 }
 </style>

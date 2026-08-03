@@ -1,5 +1,9 @@
 import type { TrendInfo } from '@/types/common'
 
+/** 缺源占位：后端无数据时返回该字面量 */
+export type MissingMark = '**'
+export type FacultyNum = number | MissingMark
+
 export type FacultyHealthLevel = '优' | '中' | '紧' | '警'
 
 export type FacultyMetricKey =
@@ -22,7 +26,7 @@ export interface FacultyHealthDTO {
 export interface FacultyMetricDTO {
   key: FacultyMetricKey
   label: string
-  value: number
+  value: FacultyNum
   unit: string
   /** 管理含义，如「距目标还差2pp」「缺编7人」 */
   meaning: string
@@ -32,6 +36,18 @@ export interface FacultyMetricDTO {
 }
 
 export interface TeacherAnalyticsDTO {
+  /** 当前分析学期，如 2025-2026-2 */
+  term: string
+  /** 请求的学期（无数据时可能与 term 不同） */
+  requestedTerm?: string
+  /** 请求学期无数据时是否回退到最新有数据学期 */
+  termFallback?: boolean
+  /** 库中有课时数据的学期列表（新→旧） */
+  availableTerms: string[]
+  /** 学期标准课时 */
+  standardHours: number
+  /** 学期超负荷阈值 */
+  overloadHours: number
   /** L1 健康度总览 */
   health: FacultyHealthDTO
   /** L1 指标+目标差距卡 */
@@ -40,35 +56,35 @@ export interface TeacherAnalyticsDTO {
   insights: string[]
   summary: {
     /** 专任教师 */
-    totalTeachers: number
-    phdRatio: number
+    totalTeachers: FacultyNum
+    phdRatio: FacultyNum
     /** 高级职称占比 */
-    seniorTitleRatio: number
-    /** 平均学年课时 */
-    avgTeachingHours: number
+    seniorTitleRatio: FacultyNum
+    /** 平均学期课时 */
+    avgTeachingHours: FacultyNum
     /** 教师标兵 */
-    modelTeacherCount: number
-    warningCount: number
+    modelTeacherCount: FacultyNum
+    warningCount: FacultyNum
     publicService: {
-      count: number
-      hours: number
+      count: FacultyNum
+      hours: FacultyNum
     }
     /** 高层次人才 */
-    highLevelTalentCount: number
+    highLevelTalentCount: FacultyNum
     /** 生师比 */
     studentTeacherRatio: string
     /** 兼容旧字段 */
-    excellentCount: number
+    excellentCount: FacultyNum
   }
   titleStructure: Array<{ title: string; count: number }>
   profile: {
-    teaching: number
-    research: number
-    socialService: number
+    teaching: FacultyNum
+    research: FacultyNum
+    socialService: FacultyNum
   }
   groups: {
-    excellent: { count: number; ratio: number; momChange: number }
-    warning: { count: number; ratio: number; momChange: number }
+    excellent: { count: FacultyNum; ratio: FacultyNum; momChange: FacultyNum }
+    warning: { count: FacultyNum; ratio: FacultyNum; momChange: FacultyNum }
   }
   highlights: Array<{ label: string; value: string }>
 }
@@ -127,7 +143,7 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
   assessmentIndicators: Array<{
     key: string
     label: string
-    score: number
+    score: FacultyNum
     unit?: string
     trend?: TrendInfo
   }>
@@ -139,15 +155,15 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
     /** 高级职称占比 */
     seniorRatio: number
     /** 平均课时 */
-    avgHours: number
+    avgHours: FacultyNum
     /** 生师比 */
     studentTeacherRatio: string
     /** 核心课程支撑率（有稳定教学团队的课程占比） */
-    coreCourseSupportRate: number
+    coreCourseSupportRate: FacultyNum
     /** 青年教师（35岁以下）比例 */
-    youngTeacherRatio: number
+    youngTeacherRatio: FacultyNum
     /** 高层次人才数 */
-    highTalentCount: number
+    highTalentCount: FacultyNum
     /** 近五年新增教师 */
     newTeachers5yr: number
     /** 专业支撑综合指数 0-100 */
@@ -156,9 +172,12 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
     suggestions: string[]
   }>
   excellentSamples: Array<{ name: string; title: string; major: string }>
-  /** 教学投入 */
+  /** 教学投入（单学期口径） */
   teachingInvestment: {
-    avgHours: number
+    term: string
+    standardHours: number
+    overloadHours: number
+    avgHours: FacultyNum
     /** 最高课时 */
     maxTeacher: { name: string; title: string; major: string; hours: number }
     /** 最低课时 */
@@ -169,7 +188,7 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
       title: string
       major: string
       totalHours: number
-      courses: Array<{ name: string; hours: number; studentCount: number; semester: string }>
+      courses: Array<{ name: string; hours: number; studentCount: number; semester: string; className?: string }>
     }>
     /** 课时分布 */
     hourDistribution: Array<{ range: string; count: number; ratio: number }>
@@ -181,7 +200,7 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
       totalHours: number
       /** 超出基准的学时数 */
       overloadAmount: number
-      courses: Array<{ name: string; hours: number }>
+      courses: Array<{ name: string; hours: number; className?: string }>
       reason: string
     }>
   }
@@ -189,15 +208,15 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
   capacityBuilding: {
     /** 近5年新增博士 */
     newPhds: Array<{ year: string; count: number }>
-    newPhdTotal: number
-    newPhdIntroduced: number
-    newPhdDeveloped: number
+    newPhdTotal: FacultyNum
+    newPhdIntroduced: FacultyNum
+    newPhdDeveloped: FacultyNum
     newPhdPeople: Array<{ name: string; title: string; source: 'introduced' | 'developed'; year: string }>
     /** 近5年新增教授/副教授 */
     newProfessors: Array<{ year: string; count: number }>
-    newProfessorTotal: number
-    newProfessorIntroduced: number
-    newProfessorDeveloped: number
+    newProfessorTotal: FacultyNum
+    newProfessorIntroduced: FacultyNum
+    newProfessorDeveloped: FacultyNum
     newProfessorPeople: Array<{ name: string; title: string; source: 'introduced' | 'developed'; year: string }>
     /** 新增高层次人才 */
     newTalents: Array<{
@@ -207,25 +226,25 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
       year: string
       source: 'introduced' | 'developed'
     }>
-    newTalentTotal: number
-    newTalentIntroduced: number
-    newTalentDeveloped: number
+    newTalentTotal: FacultyNum
+    newTalentIntroduced: FacultyNum
+    newTalentDeveloped: FacultyNum
     /** 培训次数 */
-    trainingCount: number
+    trainingCount: FacultyNum
     trainingByType: Array<{ type: string; count: number; participants: number }>
     /** 访学人数 */
     visitingScholars: Array<{ name: string; title: string; destination: string; duration: string; year: string }>
-    visitingTotal: number
+    visitingTotal: FacultyNum
     /** 各指标规划数（目标值） */
     plans: {
-      newPhd: number
-      newProfessor: number
-      newTalent: number
-      training: number
-      visiting: number
+      newPhd: FacultyNum
+      newProfessor: FacultyNum
+      newTalent: FacultyNum
+      training: FacultyNum
+      visiting: FacultyNum
     }
     /** 青年教师导师制覆盖率 */
-    mentorshipCoverage: number
+    mentorshipCoverage: FacultyNum
     mentorshipDetail: Array<{ label: string; count: number; ratio: number }>
     /** 年度能力建设趋势 */
     yearlyTrend: Array<{ year: string; newPhd: number; newProfessor: number; newTalent: number; training: number; visiting: number }>
@@ -237,8 +256,8 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
       teachingOutstanding: number
       dualExcellent: number
       needsImprovement: number
-      avgTeaching: number
-      avgResearch: number
+      avgTeaching: FacultyNum
+      avgResearch: FacultyNum
     }
     teachers: Array<{
       name: string
@@ -250,13 +269,13 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
       teachingDetail: {
         avgHours: number
         courseCount: number
-        studentEvalScore: number
+        studentEvalScore: FacultyNum
         teachingAwards: string[]
       }
       researchDetail: {
         papers: number
         projects: number
-        funding: number
+        funding: FacultyNum
         researchAwards: string[]
       }
     }>
@@ -264,10 +283,10 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
   /** 预警中心 */
   warningCenter: {
     summary: {
-      totalWarnings: number
-      redCount: number
-      yellowCount: number
-      blueCount: number
+      totalWarnings: FacultyNum
+      redCount: FacultyNum
+      yellowCount: FacultyNum
+      blueCount: FacultyNum
     }
     categories: Array<{
       id: string

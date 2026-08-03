@@ -152,6 +152,10 @@ const majors: DisciplineMajorRankDTO[] = [
       { school: '广东财经大学', rank: 55, isSelf: true },
       { school: '中南财经政法大学', rank: 63 },
     ],
+    rankTrend: {
+      years: ['2023', '2024', '2025', '2026'],
+      ranks: [67, 60, 57, 55],
+    },
   },
 ]
 

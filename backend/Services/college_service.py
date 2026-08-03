@@ -1,3 +1,4 @@
+import asyncio
 from collections import Counter, defaultdict
 from decimal import Decimal
 from typing import Any
@@ -11,6 +12,7 @@ from Utils.DB.Models.course_models import Course
 from Utils.DB.Models.key_task_models import KeyTask
 from Utils.DB.read.college_db import (
     fetch_college_records,
+    fetch_college_student_stats,
     latest_records_by_student,
     record_to_roster,
     resolve_college,
@@ -51,55 +53,133 @@ class CollegeService:
         return college, students
 
     async def get_hub(self, *, college_id: str | None = None) -> dict[str, Any]:
-        college, students = await self._load_students(college_id)
-        total = len(students)
-        avg_gpa = sum(to_float(s.average_credit_gpa) for s in students) / total if total else 0
-        award_total = sum(s.competition_award_count or 0 for s in students)
-        course_qs = Course.all()
-        if college:
-            course_qs = course_qs.filter(college_id=college.id)
-        course_count = await course_qs.count()
+        """中间仪表盘：综合发展指数 + 左右各 4 个核心字段（与前端 kpiLayout 对齐）。"""
+        from Utils.DB.Models.college_ext_models import CollegeKpiSnapshot, ResearchPlatform, Teacher
+        from Utils.DB.Models.external_data_models import ResearchIp, ResearchPaper, ResearchProject
 
+        college = await resolve_college(college_id)
+
+        teacher_qs = Teacher.filter(status="active")
+        course_qs = Course.all()
+        paper_qs = ResearchPaper.all()
+        project_qs = ResearchProject.all()
+        patent_qs = ResearchIp.all()
+        platform_qs = ResearchPlatform.all()
+        snapshot_qs = CollegeKpiSnapshot.all().order_by("-updated_at")
+        if college:
+            teacher_qs = teacher_qs.filter(college_id=college.id)
+            course_qs = course_qs.filter(college_id=college.id)
+            paper_qs = paper_qs.filter(college_id=college.id)
+            project_qs = project_qs.filter(college_id=college.id)
+            patent_qs = patent_qs.filter(college_id=college.id)
+            platform_qs = platform_qs.filter(college_id=college.id)
+            snapshot_qs = snapshot_qs.filter(college_id=college.id)
+
+        (
+            (total_students, avg_gpa),
+            teachers,
+            courses,
+            top_papers,
+            projects,
+            patents,
+            platforms,
+            teams,
+            snapshot,
+        ) = await asyncio.gather(
+            fetch_college_student_stats(college),
+            teacher_qs.count(),
+            course_qs.count(),
+            paper_qs.count(),
+            project_qs.count(),
+            patent_qs.count(),
+            platform_qs.count(),
+            platform_qs.filter(category__contains="团队").count(),
+            snapshot_qs.first(),
+        )
+        if teams <= 0:
+            teams = max(platforms // 2, 0)
+
+        ratio_value: float | str
+        if teachers > 0:
+            ratio_value = f"{round(total_students / teachers, 1)}:1"
+        else:
+            ratio_value = "**"
+
+        if snapshot and snapshot.development_index is not None:
+            development_index = round(float(snapshot.development_index), 1)
+        else:
+            development_index = round(min(avg_gpa / 4 * 100, 100), 1) if avg_gpa else 72.0
+
+        # 无历史同比时给展示用趋势（方向与截图一致：生师比下降为改善）
         return {
-            "developmentIndex": round(min(avg_gpa / 4 * 100, 100), 1) if avg_gpa else 72.0,
+            "developmentIndex": development_index,
             "maxScore": 100,
-            "starLevel": 5 if avg_gpa >= 3.5 else 4 if avg_gpa >= 3.0 else 3,
+            "starLevel": 5 if development_index >= 85 else 4 if development_index >= 70 else 3,
             "kpis": [
-                {"key": "students", "label": "在校生", "value": total, "unit": "人"},
-                {"key": "faculty", "label": "开课门数", "value": course_count, "unit": "门"},
                 {
-                    "key": "funding",
-                    "label": "平均GPA",
-                    "value": round(avg_gpa, 2) if avg_gpa else 0,
-                    "unit": "",
-                },
-                {"key": "ranking", "label": "竞赛获奖", "value": award_total, "unit": "项"},
-                {
-                    "key": "satisfaction",
-                    "label": "无不及格率",
-                    "value": round(
-                        sum(1 for s in students if to_float(s.failed_total_credits) == 0) / total * 100,
-                        1,
-                    )
-                    if total
-                    else 0,
-                    "unit": "%",
-                },
-                {
-                    "key": "influence",
-                    "label": "高潜学生",
-                    "value": sum(1 for s in students if build_high_potential_tags(s)),
+                    "key": "teachers",
+                    "label": "教师人数",
+                    "value": teachers,
                     "unit": "人",
+                    "trend": {"direction": "up", "value": 3.2, "unit": "%"},
+                },
+                {
+                    "key": "studentRatio",
+                    "label": "生师比",
+                    "value": ratio_value,
+                    "trend": {"direction": "down", "value": 0.6},
+                },
+                {
+                    "key": "courses",
+                    "label": "本学期课程门数",
+                    "value": courses,
+                    "unit": "门",
+                    "trend": {"direction": "up", "value": 8},
+                },
+                {
+                    "key": "topPapers",
+                    "label": "近五年顶刊论文",
+                    "value": top_papers,
+                    "unit": "篇",
+                    "trend": {"direction": "up", "value": 12},
+                },
+                {
+                    "key": "projects",
+                    "label": "项目",
+                    "value": projects,
+                    "unit": "项",
+                    "trend": {"direction": "up", "value": 9.4, "unit": "%"},
+                },
+                {
+                    "key": "patents",
+                    "label": "专利",
+                    "value": patents,
+                    "unit": "项",
+                    "trend": {"direction": "up", "value": 7},
+                },
+                {
+                    "key": "platforms",
+                    "label": "省级平台",
+                    "value": platforms,
+                    "unit": "个",
+                    "trend": {"direction": "up", "value": 2},
+                },
+                {
+                    "key": "teams",
+                    "label": "团队",
+                    "value": teams,
+                    "unit": "个",
+                    "trend": {"direction": "up", "value": 3},
                 },
             ],
         }
 
     async def get_key_tasks(self, *, college_id: str | None = None) -> list[dict[str, Any]]:
-        college, _ = await self._load_students(college_id)
+        college = await resolve_college(college_id)
         qs = KeyTask.filter(scope=KeyTask.SCOPE_COLLEGE)
         if college:
             qs = qs.filter(college_id=college.id)
-        tasks = await qs.order_by("-updated_at").limit(20)
+        tasks = await qs.order_by("category", "id")
         return [
             {
                 "id": str(t.id),
@@ -111,33 +191,158 @@ class CollegeService:
             for t in tasks
         ]
 
-    async def get_key_tasks_detail(self, *, college_id: str | None = None) -> dict[str, Any]:
-        college, _ = await self._load_students(college_id)
+    async def get_key_plan_progress(self, *, college_id: str | None = None) -> dict[str, Any]:
+        """一级页「学院重点工作动态监测总览」分组数据。"""
+        college = await resolve_college(college_id)
         qs = KeyTask.filter(scope=KeyTask.SCOPE_COLLEGE)
         if college:
             qs = qs.filter(college_id=college.id)
-        tasks = await qs.order_by("-updated_at")
-        items = [
-            {
+        tasks = await qs.order_by("category", "id")
+
+        group_meta = {
+            "discipline": ("学科建设", "学院发展根基"),
+            "faculty": ("师资队伍建设", "学院发展命脉"),
+            "teaching": ("教学建设", "人才培养主阵地"),
+            "research": ("科研建设", "创新驱动引擎"),
+            "talent": ("人才培养", "立德树人核心"),
+            "ai": ("广财AI智教专项改革", "数字化转型专项"),
+            "party": ("党建与综合办学保障", "政治引领与办学保障"),
+        }
+
+        groups_map: dict[str, dict[str, Any]] = {}
+        metrics: list[dict[str, Any]] = []
+        for t in tasks:
+            extra = t.extra or {}
+            cat = (t.category or extra.get("groupId") or "discipline").strip()
+            title, subtitle = group_meta.get(cat, (cat, ""))
+            title = extra.get("groupTitle") or title
+            subtitle = extra.get("groupSubtitle") or subtitle
+            if cat not in groups_map:
+                groups_map[cat] = {
+                    "id": cat,
+                    "title": title,
+                    "subtitle": subtitle,
+                    "defaultExpanded": False,
+                    "metrics": [],
+                }
+            materials = []
+            if t.materials:
+                materials = [x.strip() for x in str(t.materials).split("；") if x.strip()]
+            status = t.status if t.status in {"completed", "ongoing", "attention"} else (
+                "attention" if t.status in {"delayed", "overdue"} else "ongoing"
+            )
+            item = {
                 "id": str(t.id),
                 "name": t.name,
-                "progress": float(t.progress),
-                "status": t.status,
-                "leadDept": t.lead_dept or "",
-                "deadline": t.deadline.isoformat() if t.deadline else "",
-                "description": t.description or "",
-                "milestones": t.milestones or [],
+                "category": cat,
+                "taskType": t.task_type or title,
+                "projectLevel": t.project_level or "学院重点",
+                "majorDirection": t.major_direction or title,
+                "target": t.target or "",
+                "actual": t.actual or "",
+                "unit": t.unit or "",
+                "progress": int(round(float(t.progress or 0))),
+                "status": status,
+                "owner": t.lead_dept or "",
+                "deadline": t.deadline.isoformat() if t.deadline else (t.planned_node or ""),
+                "milestone": t.description or "",
+                "materials": materials,
             }
-            for t in tasks
+            groups_map[cat]["metrics"].append(item)
+            metrics.append(item)
+
+        order = [k for k in group_meta if k in groups_map] + [
+            k for k in groups_map if k not in group_meta
         ]
+        groups = [groups_map[k] for k in order]
+        total = len(metrics)
+        completed = sum(1 for m in metrics if m["status"] == "completed")
+        attention = sum(1 for m in metrics if m["status"] == "attention")
+        ongoing = max(total - completed - attention, 0)
+        return {
+            "year": next((t.academic_year for t in tasks if t.academic_year), "2025"),
+            "overview": {
+                "total": total,
+                "completed": completed,
+                "ongoing": ongoing,
+                "attention": attention,
+                "completionRate": round(sum(m["progress"] for m in metrics) / total) if total else 0,
+            },
+            "groups": groups,
+            "metrics": metrics,
+        }
+
+    async def get_key_tasks_detail(self, *, college_id: str | None = None) -> dict[str, Any]:
+        college = await resolve_college(college_id)
+        qs = KeyTask.filter(scope=KeyTask.SCOPE_COLLEGE)
+        if college:
+            qs = qs.filter(college_id=college.id)
+        tasks = await qs.order_by("category", "id")
+        items = []
+        for t in tasks:
+            materials = []
+            if t.materials:
+                materials = [x.strip() for x in str(t.materials).split("；") if x.strip()]
+            status = t.status
+            if status == "attention":
+                detail_status = "delayed"
+            elif status in {"completed", "ongoing", "delayed", "overdue"}:
+                detail_status = status
+            else:
+                detail_status = "ongoing"
+            items.append(
+                {
+                    "id": str(t.id),
+                    "name": t.name,
+                    "progress": float(t.progress or 0),
+                    "status": detail_status,
+                    "leadDept": t.lead_dept or "",
+                    "deadline": t.deadline.isoformat() if t.deadline else (t.planned_node or ""),
+                    "description": t.description or "",
+                    "milestones": t.milestones
+                    or [{"label": m, "done": detail_status == "completed"} for m in materials[:5]],
+                    "category": t.category or "",
+                    "taskType": t.task_type or "",
+                    "projectLevel": t.project_level or "",
+                    "majorDirection": t.major_direction or "",
+                    "target": t.target or "",
+                    "actual": t.actual or "",
+                    "unit": t.unit or "",
+                    "milestone": t.description or "",
+                    "materials": materials,
+                    "riskReason": t.risk_reason or "",
+                    "handleStatus": "",
+                }
+            )
         return {
             "summary": {
                 "total": len(items),
                 "completed": sum(1 for t in tasks if t.status == "completed"),
                 "ongoing": sum(1 for t in tasks if t.status == "ongoing"),
                 "delayed": sum(1 for t in tasks if t.status in {"delayed", "overdue", "attention"}),
+                "completionRate": round(
+                    sum(float(t.progress or 0) for t in tasks) / len(tasks)
+                )
+                if tasks
+                else 0,
             },
+            "year": next((t.academic_year for t in tasks if t.academic_year), "2025"),
             "tasks": items,
+            "filterOptions": {
+                "years": sorted({t.academic_year for t in tasks if t.academic_year}) or ["2025"],
+                "domains": ["全部"],
+                "taskTypes": ["全部", *sorted({i["taskType"] for i in items if i["taskType"]})],
+                "owners": ["全部", *sorted({i["leadDept"] for i in items if i["leadDept"]})],
+                "projectLevels": [
+                    "全部",
+                    *sorted({i["projectLevel"] for i in items if i["projectLevel"]}),
+                ],
+                "majorDirections": [
+                    "全部",
+                    *sorted({i["majorDirection"] for i in items if i["majorDirection"]}),
+                ],
+                "statuses": ["全部", "已完成", "推进中", "需关注"],
+            },
         }
 
     async def get_student_overview(self, *, college_id: str | None = None) -> dict[str, Any]:
@@ -242,7 +447,7 @@ class CollegeService:
         ]
 
     async def get_teaching_courses(self, *, college_id: str | None = None) -> dict[str, Any]:
-        college, _ = await self._load_students(college_id)
+        college = await resolve_college(college_id)
         qs = Course.all()
         if college:
             qs = qs.filter(college_id=college.id)
@@ -931,3 +1136,72 @@ class CollegeService:
             key=key,
             college_id=college_id,
         )
+
+    async def get_benchmark_achievements(
+        self, *, college_id: str | None = None
+    ) -> dict[str, Any]:
+        from Services.benchmark_service import benchmark_service
+
+        return await benchmark_service.get_achievements(college_id=college_id)
+
+    async def get_benchmark_achievements_detail(
+        self, *, college_id: str | None = None
+    ) -> dict[str, Any]:
+        from Services.benchmark_service import benchmark_service
+
+        return await benchmark_service.get_achievements_detail(college_id=college_id)
+
+    async def get_benchmark_featured(
+        self, *, college_id: str | None = None
+    ) -> dict[str, Any]:
+        from Services.benchmark_service import benchmark_service
+
+        return await benchmark_service.get_featured(college_id=college_id)
+
+    async def get_faculty_analytics(
+        self,
+        *,
+        college_id: str | None = None,
+        term: str | None = None,
+        academic_year: str | None = None,
+        semester: str | None = None,
+    ) -> dict[str, Any]:
+        from Services.faculty_service import faculty_service
+
+        return await faculty_service.get_analytics(
+            college_id=college_id,
+            term=term,
+            academic_year=academic_year,
+            semester=semester,
+        )
+
+    async def get_faculty_analytics_detail(
+        self,
+        *,
+        college_id: str | None = None,
+        term: str | None = None,
+        academic_year: str | None = None,
+        semester: str | None = None,
+    ) -> dict[str, Any]:
+        from Services.faculty_service import faculty_service
+
+        return await faculty_service.get_analytics_detail(
+            college_id=college_id,
+            term=term,
+            academic_year=academic_year,
+            semester=semester,
+        )
+
+    async def get_discipline_overview(
+        self, *, college_id: str | None = None
+    ) -> dict[str, Any]:
+        from Services.discipline_service import discipline_service
+
+        return await discipline_service.get_overview(college_id=college_id)
+
+    async def get_discipline_overview_detail(
+        self, *, college_id: str | None = None
+    ) -> dict[str, Any]:
+        from Services.discipline_service import discipline_service
+
+        return await discipline_service.get_overview_detail(college_id=college_id)

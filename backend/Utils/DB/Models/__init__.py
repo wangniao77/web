@@ -34,6 +34,7 @@ from Utils.DB.Models.student_extra_models import (
     StudentLeadershipRole,
     StudentPaper,
     StudentProject,
+    StudentVolunteerHour,
     TeachingCourseHour,
 )
 
@@ -71,4 +72,5 @@ __all__ = [
     "StudentPaper",
     "TeachingCourseHour",
     "StudentInternship",
+    "StudentVolunteerHour",
 ]

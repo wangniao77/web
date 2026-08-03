@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import MarqueeText from '@/components/college/modules/benchmark/MarqueeText.vue'
 import { ROUTES } from '@/constants/routes'
@@ -19,28 +19,29 @@ function openDetail(filter: 'all' | AchievementCategory = 'all') {
   })
 }
 
-const facultyHover = ref(false)
+const ROSTER_LINE_H = 22
+const ROSTER_STEP_MS = 2200
 const rosterRef = ref<HTMLElement | null>(null)
+const rosterPaused = ref(false)
 let rosterTimer: number | null = null
 
 function startRosterScroll() {
-  facultyHover.value = true
-  stopRosterScroll(false)
+  stopRosterScroll()
   const el = rosterRef.value
   if (!el) return
   el.scrollTop = 0
+  if ((props.data.facultyLeaders.roster?.length ?? 0) <= 1) return
   rosterTimer = window.setInterval(() => {
-    if (!rosterRef.value) return
+    if (rosterPaused.value || !rosterRef.value) return
     const node = rosterRef.value
     const max = node.scrollHeight - node.clientHeight
     if (max <= 0) return
-    if (node.scrollTop >= max - 1) node.scrollTop = 0
-    else node.scrollTop += 1
-  }, 45)
+    const next = node.scrollTop + ROSTER_LINE_H
+    node.scrollTop = next >= max - 1 ? 0 : next
+  }, ROSTER_STEP_MS)
 }
 
-function stopRosterScroll(resetHover = true) {
-  if (resetHover) facultyHover.value = false
+function stopRosterScroll() {
   if (rosterTimer != null) {
     window.clearInterval(rosterTimer)
     rosterTimer = null
@@ -55,16 +56,88 @@ const tickerItems = computed(() => {
   return [...list, ...list]
 })
 
-const journalLine = computed(() => props.data.topPapers.journals.join(' · '))
-const facultyLine = computed(() => {
-  const f = props.data.facultyLeaders
-  return `博导 ${f.doctoralSupervisors ?? 0} 人 / ESI 高被引 ${f.esiHighCited ?? 0} 人`
+const journalLine = computed(() => {
+  const journals = props.data.topPapers.journals
+  return journals.length ? journals.join(' · ') : '—'
 })
+
+/** 只展示有数的指标，避免「高被引 0 人」这类误导文案 */
+const facultyStatsLine = computed(() => {
+  const f = props.data.facultyLeaders
+  const parts: string[] = []
+  if ((f.national ?? 0) > 0) parts.push(`国家级 ${f.national}`)
+  if ((f.provincial ?? 0) > 0) parts.push(`省级 ${f.provincial}`)
+  if ((f.doctoralSupervisors ?? 0) > 0) parts.push(`博导 ${f.doctoralSupervisors}`)
+  if ((f.esiHighCited ?? 0) > 0) parts.push(`高被引 ${f.esiHighCited}`)
+  if (parts.length) return parts.join(' · ')
+  if (f.roster?.length) return `名录 ${f.roster.length} 人`
+  return '高层次人才建设中'
+})
+
 const projectLine = computed(
   () => `国 ${props.data.keyProjects.national} / 省部 ${props.data.keyProjects.provincial}`,
 )
 const fundingLine = computed(
   () => `${props.data.keyProjects.fundingWan.toLocaleString('zh-CN')} 万元`,
+)
+
+const MILESTONES_PER_PAGE = 3
+const MILESTONE_ROTATE_MS = 8000
+const activeMilestoneIndex = ref(0)
+const milestonePaused = ref(false)
+let milestoneTimer: number | null = null
+
+/** 按成果方向分页，每页最多三条；页面间自动轮换 */
+const milestonePages = computed(() => {
+  const groups = new Map<string, BenchmarkAchievementsVM['milestones']>()
+  for (const item of props.data.milestones ?? []) {
+    const group = groups.get(item.badge) ?? []
+    group.push(item)
+    groups.set(item.badge, group)
+  }
+
+  return [...groups.entries()].flatMap(([badge, items]) => {
+    const pages = []
+    for (let start = 0; start < items.length; start += MILESTONES_PER_PAGE) {
+      pages.push({
+        badge,
+        items: items.slice(start, start + MILESTONES_PER_PAGE),
+      })
+    }
+    return pages
+  })
+})
+const activeMilestoneGroup = computed(
+  () => milestonePages.value[activeMilestoneIndex.value] ?? null,
+)
+const milestoneGroups = computed(() =>
+  activeMilestoneGroup.value ? [activeMilestoneGroup.value] : [],
+)
+const milestoneCount = computed(() => activeMilestoneGroup.value?.items.length ?? 0)
+
+function startMilestoneRotation() {
+  if (milestoneTimer != null) window.clearInterval(milestoneTimer)
+  milestoneTimer = window.setInterval(() => {
+    const pageCount = milestonePages.value.length
+    if (milestonePaused.value || pageCount <= 1) return
+    activeMilestoneIndex.value = (activeMilestoneIndex.value + 1) % pageCount
+  }, MILESTONE_ROTATE_MS)
+}
+
+watch(
+  () => props.data.facultyLeaders.roster?.length ?? 0,
+  async () => {
+    await nextTick()
+    startRosterScroll()
+  },
+)
+
+watch(
+  () => milestonePages.value.length,
+  (pageCount) => {
+    if (pageCount === 0) activeMilestoneIndex.value = 0
+    else if (activeMilestoneIndex.value >= pageCount) activeMilestoneIndex.value = 0
+  },
 )
 
 let loopDistance = 0
@@ -118,11 +191,17 @@ onMounted(async () => {
   }
   pump()
   window.setTimeout(measureLoop, 200)
+  startMilestoneRotation()
+  startRosterScroll()
 })
 
 onBeforeUnmount(() => {
   running = false
   stopRosterScroll()
+  if (milestoneTimer != null) {
+    window.clearInterval(milestoneTimer)
+    milestoneTimer = null
+  }
   if (channel) {
     channel.port1.onmessage = null
     channel.port1.close()
@@ -134,54 +213,42 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="benchmark-slide">
-    <div class="benchmark-slide__matrix">
-      <button
-        type="button"
-        class="benchmark-slide__hero"
-        @click="openDetail('all')"
-      >
-        <header class="benchmark-slide__hero-head">年度里程碑</header>
-        <ul class="benchmark-slide__milestones">
-          <li
-            v-for="(item, index) in data.milestones"
-            :key="item.id"
-            class="benchmark-slide__milestone"
-            :style="{ '--i': index }"
-            :title="item.interpretation"
-          >
-            <em>{{ item.badge }}</em>
-            <MarqueeText class="benchmark-slide__title-marquee" :text="item.title" :duration="9" />
-          </li>
-        </ul>
-      </button>
-
+    <div class="benchmark-slide__cards">
       <button
         type="button"
         class="benchmark-slide__card benchmark-slide__card--faculty"
-        :class="{ 'is-hover': facultyHover }"
         @click="openDetail('faculty')"
-        @mouseenter="startRosterScroll"
-        @mouseleave="stopRosterScroll()"
+        @mouseenter="rosterPaused = true"
+        @mouseleave="rosterPaused = false"
       >
         <div class="benchmark-slide__card-top">
           <span>名师·头雁</span>
           <strong>{{ data.facultyLeaders.total }}<small>人</small></strong>
         </div>
-        <MarqueeText class="benchmark-slide__line-marquee" :text="facultyLine" :duration="7" />
-        <div ref="rosterRef" class="benchmark-slide__roster">
-          <span v-for="(r, idx) in data.facultyLeaders.roster" :key="`${r.name}-${idx}`">
-            {{ r.name }} · {{ r.honor }}
-          </span>
-          <span v-for="(r, idx) in data.facultyLeaders.roster" :key="`dup-${r.name}-${idx}`">
-            {{ r.name }} · {{ r.honor }}
-          </span>
+        <p class="benchmark-slide__line">{{ facultyStatsLine }}</p>
+        <div ref="rosterRef" class="benchmark-slide__roster" aria-live="polite">
+          <template v-if="data.facultyLeaders.roster.length">
+            <span v-for="(r, idx) in data.facultyLeaders.roster" :key="`${r.name}-${idx}`">
+              {{ r.name }} · {{ r.honor }}
+            </span>
+            <template v-if="data.facultyLeaders.roster.length > 1">
+              <span
+                v-for="(r, idx) in data.facultyLeaders.roster"
+                :key="`dup-${r.name}-${idx}`"
+                aria-hidden="true"
+              >
+                {{ r.name }} · {{ r.honor }}
+              </span>
+            </template>
+          </template>
+          <span v-else>暂无名师名录</span>
         </div>
       </button>
 
       <button type="button" class="benchmark-slide__card" @click="openDetail('research')">
         <div class="benchmark-slide__card-top">
           <span>顶刊·智识</span>
-          <strong>{{ data.topPapers.count }}<small>篇</small></strong>
+          <strong>{{ data.topPapers.count }}</strong>
         </div>
         <p class="benchmark-slide__line">
           中科院一区 {{ data.topPapers.firstTierCount }} 篇
@@ -192,10 +259,10 @@ onBeforeUnmount(() => {
       <button type="button" class="benchmark-slide__card" @click="openDetail('research')">
         <div class="benchmark-slide__card-top">
           <span>攻坚·课题</span>
-          <strong>{{ data.keyProjects.national + data.keyProjects.provincial }}<small>项</small></strong>
+          <strong>{{ data.keyProjects.national + data.keyProjects.provincial }}</strong>
         </div>
-        <MarqueeText class="benchmark-slide__line-marquee" :text="projectLine" :duration="7" />
-        <MarqueeText class="benchmark-slide__foot-marquee" :text="fundingLine" :duration="6" />
+        <p class="benchmark-slide__line">{{ projectLine }}</p>
+        <p class="benchmark-slide__foot">{{ fundingLine }}</p>
       </button>
 
       <button
@@ -213,6 +280,74 @@ onBeforeUnmount(() => {
         </p>
       </button>
     </div>
+
+    <section
+      class="benchmark-slide__hero"
+      role="button"
+      tabindex="0"
+      aria-label="查看年度里程碑详情"
+      @click="openDetail('all')"
+      @keydown.enter="openDetail('all')"
+      @keydown.space.prevent="openDetail('all')"
+      @mouseenter="milestonePaused = true"
+      @mouseleave="milestonePaused = false"
+      @focusin="milestonePaused = true"
+      @focusout="milestonePaused = false"
+    >
+      <header class="benchmark-slide__hero-head">
+        <span>年度里程碑</span>
+        <div v-if="milestoneCount" class="benchmark-slide__hero-status">
+          <small>
+            {{ activeMilestoneIndex + 1 }}/{{ milestonePages.length }} ·
+            {{ milestoneCount }} 项成果
+          </small>
+          <span
+            v-if="milestonePages.length > 1"
+            class="benchmark-slide__hero-dots"
+            aria-hidden="true"
+          >
+            <i
+              v-for="(_, index) in milestonePages"
+              :key="index"
+              :class="{ 'is-active': index === activeMilestoneIndex }"
+            ></i>
+          </span>
+        </div>
+      </header>
+      <Transition name="milestone-swap" mode="out-in">
+        <div
+          v-if="milestoneGroups.length"
+          :key="`${activeMilestoneIndex}-${activeMilestoneGroup?.badge}`"
+          class="benchmark-slide__milestones"
+        >
+          <article
+            v-for="(group, gIndex) in milestoneGroups"
+            :key="`${group.badge}-${group.items[0]?.id ?? gIndex}`"
+            class="benchmark-slide__milestone"
+          >
+            <div class="benchmark-slide__milestone-meta">
+              <em>{{ group.badge }}</em>
+              <span>{{ group.items.length }} 项</span>
+            </div>
+            <ul class="benchmark-slide__milestone-list">
+              <li
+                v-for="item in group.items"
+                :key="item.id"
+                class="benchmark-slide__milestone-row"
+                :title="`${item.title}｜${item.interpretation}`"
+              >
+                <i aria-hidden="true"></i>
+                <span class="benchmark-slide__milestone-title">{{ item.title }}</span>
+                <time v-if="item.yearLabel">{{ item.yearLabel }}</time>
+              </li>
+            </ul>
+          </article>
+        </div>
+      </Transition>
+      <p v-if="!milestoneGroups.length" class="benchmark-slide__milestone-empty">
+        暂无年度里程碑
+      </p>
+    </section>
 
     <div class="benchmark-slide__ticker" @click="openDetail('all')">
       <em class="benchmark-slide__ticker-label">成果长廊</em>
@@ -237,148 +372,239 @@ onBeforeUnmount(() => {
 .benchmark-slide {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
-.benchmark-slide__matrix {
-  flex: 1 1 0;
+.benchmark-slide__cards {
+  flex: 0 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.3fr) minmax(0, 0.95fr);
-  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  min-height: 0;
+  min-height: 108px;
+
+  .benchmark-slide__card {
+    min-width: 0;
+    min-height: 108px;
+  }
 }
 
 .benchmark-slide__hero {
-  grid-row: 1 / span 2;
-  grid-column: 2;
+  flex: 1 1 0;
+  min-height: 120px;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
-  min-height: 0;
-  padding: 10px 14px;
-  border: 1px solid rgba(255, 213, 106, 0.34);
-  border-radius: 8px;
-  background:
-    radial-gradient(ellipse at 18% 0%, rgba(255, 200, 80, 0.12), transparent 52%),
-    rgba(0, 40, 80, 0.28);
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-  overflow: hidden;
-  animation: bm-hero-in 0.55s ease-out both;
-  transition: border-color 0.22s, box-shadow 0.22s, transform 0.2s;
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      110deg,
-      transparent 40%,
-      rgba(255, 230, 150, 0.08) 50%,
-      transparent 60%
-    );
-    transform: translateX(-120%);
-    animation: bm-sheen 4.5s ease-in-out infinite;
-  }
-
-  &:hover {
-    border-color: rgba(255, 213, 106, 0.58);
-    box-shadow: 0 0 22px rgba(255, 180, 60, 0.2);
-    transform: translateY(-1px);
-  }
-}
-
-.benchmark-slide__hero-head {
-  flex-shrink: 0;
-  color: #ffe29a;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  line-height: 1.2;
-  text-shadow: 0 0 12px rgba(255, 200, 80, 0.35);
-}
-
-.benchmark-slide__milestones {
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.benchmark-slide__milestone {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1 1 0;
-  justify-content: center;
-  min-height: 0;
-  min-width: 0;
-  max-width: 100%;
-  padding: 4px 0;
-  border-top: 1px solid rgba(255, 213, 106, 0.14);
-  animation: bm-in 0.5s ease-out both;
-  animation-delay: calc(0.12s + var(--i, 0) * 0.1s);
-
-  &:first-child {
-    border-top: none;
-  }
-
-  em {
-    display: inline-flex;
-    align-self: flex-start;
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 213, 106, 0.45);
-    background: rgba(255, 200, 80, 0.14);
-    color: #ffe29a;
-    font-style: normal;
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    line-height: 1.35;
-    white-space: nowrap;
-    animation: bm-badge-pulse 2.8s ease-in-out infinite;
-    animation-delay: calc(var(--i, 0) * 0.35s);
-  }
-}
-
-.benchmark-slide__title-marquee {
-  display: block;
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
-
-  :deep(.bm-marquee__item) {
-    color: #eef9ff;
-    font-size: clamp(16px, 1.1vw, 20px);
-    font-weight: 700;
-    line-height: 1.25;
-  }
-}
-
-.benchmark-slide__card {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
   max-width: 100%;
   width: 100%;
+  padding: 10px 14px 12px;
+  border: 1px solid rgba(255, 213, 106, 0.3);
+  border-radius: 8px;
+  background: rgba(0, 31, 66, 0.58);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s ease-out, background 0.2s ease-out;
+
+  &:hover {
+    border-color: rgba(255, 213, 106, 0.52);
+    background: rgba(0, 38, 78, 0.68);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #7fe9ff;
+    outline-offset: 2px;
+  }
+}
+
+.benchmark-slide__hero-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: #ffe29a;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.25;
+
+  small {
+    color: rgba(195, 222, 240, 0.78);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+}
+
+.benchmark-slide__hero-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.benchmark-slide__hero-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(158, 202, 232, 0.36);
+    transition: width 0.2s ease-out, background 0.2s ease-out;
+
+    &.is-active {
+      width: 12px;
+      border-radius: 3px;
+      background: #ffd56a;
+    }
+  }
+}
+
+.benchmark-slide__milestones {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0;
   min-height: 0;
+}
+
+.benchmark-slide__milestone {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-height: 34px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 213, 106, 0.14);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.benchmark-slide__milestone-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  em {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 213, 106, 0.38);
+    background: rgba(255, 200, 80, 0.1);
+    color: #ffe29a;
+    font-style: normal;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+
+  span {
+    color: rgba(171, 207, 231, 0.78);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+}
+
+.benchmark-slide__milestone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.benchmark-slide__milestone-row {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 26px;
+
+  i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #ffd56a;
+    box-shadow: 0 0 5px rgba(255, 213, 106, 0.45);
+  }
+
+  time {
+    color: rgba(151, 198, 228, 0.78);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+.benchmark-slide__milestone-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #eef8ff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.benchmark-slide__milestone-empty {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  margin: 0;
+  color: rgba(171, 207, 231, 0.7);
+  font-size: 15px;
+}
+
+.milestone-swap-enter-active,
+.milestone-swap-leave-active {
+  transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+}
+
+.milestone-swap-enter-from {
+  opacity: 0;
+  transform: translateY(3px);
+}
+
+.milestone-swap-leave-to {
+  opacity: 0;
+  transform: translateY(-3px);
+}
+
+.benchmark-slide__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  min-height: 108px;
   padding: 12px 14px;
   border: 1px solid rgba(0, 200, 255, 0.18);
   border-radius: 8px;
@@ -424,7 +650,7 @@ onBeforeUnmount(() => {
 
   span {
     color: #9ecae8;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     letter-spacing: 0.05em;
     white-space: nowrap;
@@ -432,7 +658,7 @@ onBeforeUnmount(() => {
 
   strong {
     color: #eaf7ff;
-    font-size: clamp(28px, 2vw, 36px);
+    font-size: clamp(26px, 1.6vw, 32px);
     font-weight: 800;
     line-height: 1;
     font-variant-numeric: tabular-nums;
@@ -442,19 +668,22 @@ onBeforeUnmount(() => {
     small {
       margin-left: 3px;
       color: #9ecae8;
-      font-size: 0.4em;
+      font-size: 0.42em;
       font-weight: 600;
     }
   }
 }
 
 .benchmark-slide__line {
+  flex-shrink: 0;
   margin: 0;
   color: #8ec8e8;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .benchmark-slide__line-marquee {
@@ -465,20 +694,22 @@ onBeforeUnmount(() => {
 
   :deep(.bm-marquee__item) {
     color: #8ec8e8;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.2;
   }
 }
 
 .benchmark-slide__foot {
+  flex-shrink: 0;
   margin: 0;
-  margin-top: auto;
   color: #b8e8ff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &--gold {
     color: #ffd98a;
@@ -490,38 +721,34 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 100%;
   width: 100%;
-  margin-top: auto;
 
   :deep(.bm-marquee__item) {
     color: #b8e8ff;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.2;
   }
 }
 
 .benchmark-slide__roster {
-  flex: 1 1 0;
-  min-height: 0;
-  max-height: 26px;
+  flex: 0 0 auto;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
   overflow: hidden;
-  opacity: 0.75;
-  transition: max-height 0.25s, opacity 0.25s;
+  scroll-behavior: smooth;
 
   span {
     display: block;
-    height: 26px;
+    height: 22px;
     color: #9fe8ff;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    line-height: 26px;
+    line-height: 22px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-}
-
-.benchmark-slide__card--faculty.is-hover .benchmark-slide__roster {
-  max-height: 52px;
-  opacity: 1;
 }
 
 .benchmark-slide__ticker {
@@ -531,7 +758,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   flex: 0 0 auto;
   min-width: 0;
-  min-height: 42px;
+  min-height: 40px;
   padding: 8px 14px;
   border-radius: 6px;
   border: 1px solid rgba(0, 200, 255, 0.18);
@@ -602,28 +829,6 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes bm-in {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes bm-hero-in {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @keyframes bm-card-in {
   from {
     opacity: 0;
@@ -666,14 +871,21 @@ onBeforeUnmount(() => {
   }
 }
 
-@keyframes bm-sheen {
-  0%,
-  55% {
-    transform: translateX(-120%);
+@media (prefers-reduced-motion: reduce) {
+  .benchmark-slide__card,
+  .benchmark-slide__ticker,
+  .benchmark-slide__ticker-label,
+  .benchmark-slide__card-top strong {
+    animation: none;
   }
-  75%,
-  100% {
-    transform: translateX(120%);
+
+  .benchmark-slide__card,
+  .benchmark-slide__hero,
+  .benchmark-slide__ticker,
+  .benchmark-slide__hero-dots i,
+  .milestone-swap-enter-active,
+  .milestone-swap-leave-active {
+    transition: none;
   }
 }
 </style>

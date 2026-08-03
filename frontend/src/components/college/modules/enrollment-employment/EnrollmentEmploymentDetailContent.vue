@@ -673,8 +673,8 @@ const sourceMapOption = computed<EChartsOption>(() => {
       layoutCenter: ['50%', '35%'],
       layoutSize: '100%',
       itemStyle: {
-        borderColor: mock ? 'rgba(255, 150, 140, 0.45)' : 'rgba(120, 200, 230, 0.45)',
-        borderWidth: 0.6,
+        borderColor: mock ? 'rgba(255, 150, 140, 0.45)' : 'rgba(165, 232, 255, 0.85)',
+        borderWidth: 0.8,
         areaColor: '#0a1c2b',
       },
       emphasis: {

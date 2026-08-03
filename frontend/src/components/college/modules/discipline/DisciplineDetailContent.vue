@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 import type { DisciplineOverviewDetailVM } from '@/types/college/view/discipline-overview'
+import type { DisciplineNum } from '@/types/college/api/discipline-overview'
+import { fmtFacultyNum, isMissingMark } from '@/utils/facultyDisplay'
 import type { EChartsOption } from 'echarts'
 
 const props = defineProps<{
@@ -25,10 +27,15 @@ const profile = computed(() =>
   props.data.majorProfiles.find((p) => p.name === activeMajor.value) ?? null,
 )
 
-function formatChange(change: number) {
+function formatChange(change: DisciplineNum | undefined) {
+  if (isMissingMark(change) || typeof change !== 'number') return '**'
   if (change > 0) return `↑${change}`
   if (change < 0) return `↓${Math.abs(change)}`
   return '→'
+}
+
+function fmtNum(v: DisciplineNum | string | null | undefined) {
+  return fmtFacultyNum(v as never)
 }
 
 const nationalTrendOption = computed<EChartsOption>(() => {
@@ -88,8 +95,8 @@ const nationalTrendOption = computed<EChartsOption>(() => {
           <tbody>
             <tr v-for="item in data.majorRankings" :key="item.major">
               <td>{{ item.major }}</td>
-              <td><em class="discipline-detail__grade">{{ item.grade }}</em></td>
-              <td>第{{ item.currentRank }}名</td>
+              <td><em class="discipline-detail__grade">{{ fmtNum(item.grade) }}</em></td>
+              <td>第{{ fmtNum(item.currentRank) }}名</td>
               <td>{{ formatChange(item.yoyChange) }}</td>
               <td>第{{ item.provincialRank }}名</td>
               <td>第{{ item.financePeerRank }}名</td>
@@ -118,7 +125,7 @@ const nationalTrendOption = computed<EChartsOption>(() => {
         <div class="discipline-detail__profile-head">
           <div>
             <strong>{{ profile.name }}</strong>
-            <em>{{ profile.grade }}级</em>
+            <em>{{ isMissingMark(profile.grade) ? '**' : `${profile.grade}级` }}</em>
           </div>
           <p>{{ profile.orientation }}</p>
         </div>
@@ -132,7 +139,7 @@ const nationalTrendOption = computed<EChartsOption>(() => {
               <li><span>建设类型</span><strong>{{ profile.constructionType }}</strong></li>
               <li><span>官方 / 软科排名</span><strong>第{{ profile.officialRank }} / 第{{ profile.softRank }}</strong></li>
               <li><span>年度招生</span><strong>{{ profile.enrollmentPlan }} 人</strong></li>
-              <li><span>在校生</span><strong>{{ profile.studentCount }} 人</strong></li>
+              <li><span>在校生</span><strong>{{ fmtNum(profile.studentCount) }} 人</strong></li>
               <li><span>学制</span><strong>{{ profile.educationYears }} 年</strong></li>
               <li>
                 <span>年级分布</span>
@@ -216,7 +223,7 @@ const nationalTrendOption = computed<EChartsOption>(() => {
               <li><span>平均绩点</span><strong>{{ profile.cultivation.avgGpa }}</strong></li>
               <li><span>学科竞赛获奖</span><strong>{{ profile.cultivation.competitionAwards }} 项</strong></li>
               <li><span>大创 / 科创立项</span><strong>{{ profile.cultivation.innovationProjects }} 项</strong></li>
-              <li><span>去向落实率</span><strong>{{ profile.cultivation.employmentRate }}%</strong></li>
+              <li><span>去向落实率</span><strong>{{ fmtNum(profile.cultivation.employmentRate) }}%</strong></li>
               <li>
                 <span>升学 / 优质就业</span>
                 <strong>{{ profile.cultivation.furtherStudyRate }}% / {{ profile.cultivation.qualityJobRatio }}%</strong>

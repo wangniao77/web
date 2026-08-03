@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import asyncio
+import time
 from decimal import Decimal
 from typing import Any
 
@@ -7,6 +11,11 @@ from tortoise.expressions import Q
 from Utils.DB.Models.college_models import College
 from Utils.DB.Models.college_student_models import StudentProfile
 from Utils.DB.Models.student_academic_record_models import StudentAcademicRecord
+
+# 总览页会并发打多个接口，同一学院学籍只拉一次（singleflight + 短 TTL）
+_RECORDS_TTL_SEC = 45.0
+_records_cache: dict[str, tuple[float, list[StudentAcademicRecord]]] = {}
+_records_inflight: dict[str, asyncio.Future[list[StudentAcademicRecord]]] = {}
 
 
 def to_float(value: Decimal | float | int | None) -> float:
@@ -57,12 +66,8 @@ async def fetch_college_records_from_view(college: College | None) -> list[Stude
     return [_hydrate_academic_record(r) for r in rows]
 
 
-async def fetch_college_records(college: College | None) -> list[StudentAcademicRecord]:
-    """获取学院范围内的学籍记录。
-
-    若已规范化（students 有数据）则读 v_student_academic_records；
-    否则回退宽表 student_academic_records。
-    """
+async def _fetch_college_records_uncached(college: College | None) -> list[StudentAcademicRecord]:
+    """获取学院范围内的学籍记录（无缓存）。"""
     try:
         has_profiles = await StudentProfile.all().limit(1).exists()
     except Exception:
@@ -85,6 +90,92 @@ async def fetch_college_records(college: College | None) -> list[StudentAcademic
             | Q(teaching_department__icontains=short_name)
         )
     return await qs
+
+
+def _college_cache_key(college: College | None) -> str:
+    return str(college.id) if college else "all"
+
+
+async def fetch_college_records(college: College | None) -> list[StudentAcademicRecord]:
+    """获取学院范围内的学籍记录。
+
+    若已规范化（students 有数据）则读 v_student_academic_records；
+    否则回退宽表 student_academic_records。
+
+    并发请求同一学院时合并为一次查询（singleflight），并缓存约 45s。
+    """
+    key = _college_cache_key(college)
+    now = time.monotonic()
+    hit = _records_cache.get(key)
+    if hit and now - hit[0] < _RECORDS_TTL_SEC:
+        return hit[1]
+
+    inflight = _records_inflight.get(key)
+    if inflight is not None and not inflight.done():
+        return await asyncio.shield(inflight)
+
+    loop = asyncio.get_running_loop()
+    fut: asyncio.Future[list[StudentAcademicRecord]] = loop.create_future()
+    _records_inflight[key] = fut
+    try:
+        records = await _fetch_college_records_uncached(college)
+        _records_cache[key] = (time.monotonic(), records)
+        fut.set_result(records)
+        return records
+    except Exception as exc:
+        if not fut.done():
+            fut.set_exception(exc)
+        raise
+    finally:
+        if _records_inflight.get(key) is fut:
+            _records_inflight.pop(key, None)
+
+
+async def fetch_college_student_stats(college: College | None) -> tuple[int, float]:
+    """仅取在籍人数与平均 GPA，供 hub 等轻量接口，避免全量灌模。"""
+    conn = Tortoise.get_connection("default")
+    try:
+        has_profiles = await StudentProfile.all().limit(1).exists()
+    except Exception:
+        has_profiles = False
+
+    if has_profiles:
+        try:
+            if college:
+                short = college.short_name or ""
+                sql = """
+                    SELECT COUNT(*)::int AS n,
+                           COALESCE(AVG(NULLIF(average_credit_gpa, 0)), 0)::float AS avg_gpa
+                    FROM v_student_academic_records
+                    WHERE college_id = $1
+                       OR teaching_department ILIKE $2
+                       OR ($3 <> '' AND teaching_department ILIKE $3)
+                """
+                rows = await conn.execute_query_dict(
+                    sql,
+                    [college.id, f"%{college.name}%", f"%{short}%" if short else ""],
+                )
+            else:
+                rows = await conn.execute_query_dict(
+                    """
+                    SELECT COUNT(*)::int AS n,
+                           COALESCE(AVG(NULLIF(average_credit_gpa, 0)), 0)::float AS avg_gpa
+                    FROM v_student_academic_records
+                    """,
+                    [],
+                )
+            if rows:
+                return int(rows[0].get("n") or 0), float(rows[0].get("avg_gpa") or 0)
+        except Exception:
+            pass
+
+    # 回退：走缓存全量路径再聚合（仍受益于 singleflight）
+    students = latest_records_by_student(await fetch_college_records(college))
+    n = len(students)
+    if not n:
+        return 0, 0.0
+    avg = sum(to_float(s.average_credit_gpa) for s in students) / n
+    return n, avg
 
 
 def latest_records_by_student(records: list[StudentAcademicRecord]) -> list[StudentAcademicRecord]:

@@ -146,7 +146,7 @@ const serviceMonthOption = computed<EChartsOption>(() => {
         </div>
       </div>
       <div class="teacher-detail__section">
-        <h3>平均学年课时明细</h3>
+        <h3>学期课时明细（{{ data.term }}）</h3>
         <ul class="teacher-detail__list">
           <li v-for="item in data.teachingHoursDetail" :key="item.name">
             <strong>{{ item.name }}</strong>

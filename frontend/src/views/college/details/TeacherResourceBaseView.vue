@@ -7,13 +7,59 @@ import { teacherService } from '@/api/college/services/teacher'
 import { useScope } from '@/composables/useScope'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 import type { TeacherAnalyticsDetailVM } from '@/types/college/view/teacher-analytics'
+import {
+  facultyNumOrZero,
+  fmtFacultyNum,
+  isMissingMark,
+} from '@/utils/facultyDisplay'
 
 const route = useRoute()
 const { collegeScope } = useScope()
 
+function parseStuTeacherRatio(raw: string | undefined | null): number {
+  if (!raw || isMissingMark(raw)) return NaN
+  const m = raw.match(/(\d+(?:\.\d+)?)\s*:/)
+  if (m) return parseFloat(m[1])
+  const m2 = raw.match(/:(\d+(?:\.\d+)?)/)
+  return m2 ? parseFloat(m2[1]) : NaN
+}
 const data = ref<TeacherAnalyticsDetailVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+/** 教学投入页本地学期选择（覆盖全局 scope） */
+const selectedTerm = ref<string>('')
+
+const standardHours = computed(
+  () => data.value?.teachingInvestment.standardHours ?? data.value?.standardHours ?? 120,
+)
+const overloadHours = computed(
+  () => data.value?.teachingInvestment.overloadHours ?? data.value?.overloadHours ?? 160,
+)
+const warnHours = computed(() => standardHours.value)
+
+async function loadDetail(term?: string) {
+  loading.value = true
+  error.value = null
+  try {
+    const params = {
+      ...collegeScope.value,
+      ...(term ? { term } : {}),
+    }
+    data.value = await teacherService.fetchTeacherDetail(params)
+    if (!selectedTerm.value && data.value.term && data.value.term !== '**') {
+      selectedTerm.value = data.value.term
+    }
+  } catch (e: any) {
+    error.value = e?.message || '加载失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function onTermChange(term: string) {
+  selectedTerm.value = term
+  await loadDetail(term)
+}
 
 // Tab 切换
 type TabKey = 'resource-base' | 'structure-analysis' | 'teaching-investment' | 'capacity-building' | 'performance-analysis' | 'warning-center' | 'major-support'
@@ -62,24 +108,15 @@ function scrollToSection(id: string) {
 }
 
 onMounted(async () => {
-  loading.value = true
-  error.value = null
-  try {
-    data.value = await teacherService.fetchTeacherDetail(collegeScope.value)
-    const hash = route.hash?.replace('#', '')
-    if (hash) {
-      // 如果在 Part 1 的 section，切换到 Part 1
-      if (sections.some((s) => s.id === hash)) {
-        currentTab.value = 'resource-base'
-        setTimeout(() => scrollToSection(hash), 300)
-      } else if (hash === 'structure-analysis') {
-        currentTab.value = 'structure-analysis'
-      }
+  await loadDetail()
+  const hash = route.hash?.replace('#', '')
+  if (hash) {
+    if (sections.some((s) => s.id === hash)) {
+      currentTab.value = 'resource-base'
+      setTimeout(() => scrollToSection(hash), 300)
+    } else if (hash === 'structure-analysis') {
+      currentTab.value = 'structure-analysis'
     }
-  } catch (e: any) {
-    error.value = e?.message || '加载失败'
-  } finally {
-    loading.value = false
   }
 })
 
@@ -180,10 +217,23 @@ const titlePieOption = computed(() => {
 const stRatioBarOption = computed(() => {
   if (!data.value) return {}
   const comparisons = data.value.majorComparison
+  const collegeRatio = parseStuTeacherRatio(data.value.summary.studentTeacherRatio)
   const allItems = [
-    { name: '学院整体', ratio: parseFloat(data.value.summary.studentTeacherRatio.replace('1:', '')) || 18.5 },
-    ...comparisons.map((c) => ({ name: c.major, ratio: parseFloat(c.studentTeacherRatio.replace('1:', '')) || 18 })),
+    ...(Number.isFinite(collegeRatio) ? [{ name: '学院整体', ratio: collegeRatio }] : []),
+    ...comparisons
+      .map((c) => ({ name: c.major, ratio: parseStuTeacherRatio(c.studentTeacherRatio) }))
+      .filter((i) => Number.isFinite(i.ratio)),
   ]
+  if (!allItems.length) {
+    return {
+      title: {
+        text: '生师比明细暂缺（**）',
+        left: 'center',
+        top: 'middle',
+        textStyle: { color: '#9ecae8', fontSize: 18 },
+      },
+    }
+  }
   return {
     grid: { left: 8, right: 30, top: 10, bottom: 6, outerBoundsMode: 'same', outerBoundsContain: 'axisLabel' },
     xAxis: { type: 'value', name: '生师比 (1:N)', nameTextStyle: { color: '#8ec8e8', fontSize: 18 }, axisLabel: { ...AXIS_LABEL, color: '#c6e6ff' }, splitLine: { lineStyle: { color: 'rgba(57,230,255,0.08)' } } },
@@ -204,7 +254,7 @@ const stRatioBarOption = computed(() => {
   }
 })
 
-const highTalentCount = computed(() => data.value?.summary.highLevelTalentCount ?? 0)
+const highTalentCount = computed(() => facultyNumOrZero(data.value?.summary.highLevelTalentCount))
 
 // ============ 资源基础总体评价（对照学科评估 / 博士点申请标准） ============
 interface StandardItem {
@@ -215,22 +265,26 @@ interface StandardItem {
   passed: boolean
 }
 
-// 生师比数值（如 "18:1" -> 18）
+// 生师比数值（如 "1:17.2" -> 17.2）
 const stRatioNum = computed(() => {
-  const m = (data.value?.summary.studentTeacherRatio ?? '').match(/(\d+(?:\.\d+)?)\s*:/)
-  return m ? parseFloat(m[1]) : 99
+  const n = parseStuTeacherRatio(data.value?.summary.studentTeacherRatio)
+  return Number.isFinite(n) ? n : 99
 })
 
 // 学科评估（申报 / 参评）参考线：博士占比取优势学科常见目标 80%，其余为通用门槛
 const disciplineEval = computed<StandardItem[]>(() => {
   const s = data.value?.summary
   if (!s) return []
+  const total = facultyNumOrZero(s.totalTeachers)
+  const phd = facultyNumOrZero(s.phdRatio)
+  const senior = facultyNumOrZero(s.seniorTitleRatio)
+  const talent = facultyNumOrZero(s.highLevelTalentCount)
   return [
-    { key: 'teacher', name: '专任教师规模', actual: `${s.totalTeachers} 人`, requirement: '≥ 120 人', passed: s.totalTeachers >= 120 },
-    { key: 'phd', name: '博士学历占比', actual: `${s.phdRatio}%`, requirement: '≥ 80%', passed: s.phdRatio >= 80 },
-    { key: 'senior', name: '高级职称占比', actual: `${s.seniorTitleRatio}%`, requirement: '≥ 50%', passed: s.seniorTitleRatio >= 50 },
-    { key: 'talent', name: '高层次人才', actual: `${s.highLevelTalentCount} 人`, requirement: '≥ 5 人', passed: s.highLevelTalentCount >= 5 },
-    { key: 'st', name: '生师比', actual: s.studentTeacherRatio, requirement: '≤ 18:1', passed: stRatioNum.value <= 18 },
+    { key: 'teacher', name: '专任教师规模', actual: fmtFacultyNum(s.totalTeachers, ' 人'), requirement: '≥ 120 人', passed: !isMissingMark(s.totalTeachers) && total >= 120 },
+    { key: 'phd', name: '博士学历占比', actual: fmtFacultyNum(s.phdRatio, '%'), requirement: '≥ 80%', passed: !isMissingMark(s.phdRatio) && phd >= 80 },
+    { key: 'senior', name: '高级职称占比', actual: fmtFacultyNum(s.seniorTitleRatio, '%'), requirement: '≥ 50%', passed: !isMissingMark(s.seniorTitleRatio) && senior >= 50 },
+    { key: 'talent', name: '高层次人才', actual: fmtFacultyNum(s.highLevelTalentCount, ' 人'), requirement: '≥ 5 人', passed: !isMissingMark(s.highLevelTalentCount) && talent >= 5 },
+    { key: 'st', name: '生师比', actual: isMissingMark(s.studentTeacherRatio) ? '**' : s.studentTeacherRatio, requirement: '≤ 18:1', passed: !isMissingMark(s.studentTeacherRatio) && stRatioNum.value <= 18 },
   ]
 })
 
@@ -238,12 +292,16 @@ const disciplineEval = computed<StandardItem[]>(() => {
 const phdProgramEval = computed<StandardItem[]>(() => {
   const s = data.value?.summary
   if (!s) return []
+  const total = facultyNumOrZero(s.totalTeachers)
+  const phd = facultyNumOrZero(s.phdRatio)
+  const senior = facultyNumOrZero(s.seniorTitleRatio)
+  const talent = facultyNumOrZero(s.highLevelTalentCount)
   return [
-    { key: 'teacher', name: '专任教师规模', actual: `${s.totalTeachers} 人`, requirement: '≥ 100 人', passed: s.totalTeachers >= 100 },
-    { key: 'phd', name: '博士学历占比', actual: `${s.phdRatio}%`, requirement: '≥ 60%', passed: s.phdRatio >= 60 },
-    { key: 'senior', name: '高级职称占比', actual: `${s.seniorTitleRatio}%`, requirement: '≥ 55%', passed: s.seniorTitleRatio >= 55 },
-    { key: 'talent', name: '省部级以上人才', actual: `${s.highLevelTalentCount} 人`, requirement: '≥ 5 人', passed: s.highLevelTalentCount >= 5 },
-    { key: 'st', name: '生师比', actual: s.studentTeacherRatio, requirement: '≤ 18:1', passed: stRatioNum.value <= 18 },
+    { key: 'teacher', name: '专任教师规模', actual: fmtFacultyNum(s.totalTeachers, ' 人'), requirement: '≥ 100 人', passed: !isMissingMark(s.totalTeachers) && total >= 100 },
+    { key: 'phd', name: '博士学历占比', actual: fmtFacultyNum(s.phdRatio, '%'), requirement: '≥ 60%', passed: !isMissingMark(s.phdRatio) && phd >= 60 },
+    { key: 'senior', name: '高级职称占比', actual: fmtFacultyNum(s.seniorTitleRatio, '%'), requirement: '≥ 55%', passed: !isMissingMark(s.seniorTitleRatio) && senior >= 55 },
+    { key: 'talent', name: '省部级以上人才', actual: fmtFacultyNum(s.highLevelTalentCount, ' 人'), requirement: '≥ 5 人', passed: !isMissingMark(s.highLevelTalentCount) && talent >= 5 },
+    { key: 'st', name: '生师比', actual: isMissingMark(s.studentTeacherRatio) ? '**' : s.studentTeacherRatio, requirement: '≤ 18:1', passed: !isMissingMark(s.studentTeacherRatio) && stRatioNum.value <= 18 },
   ]
 })
 
@@ -273,9 +331,12 @@ const phdLevel = computed(() => {
 // ============ 结构分析整体评价 ============
 const structureEvaluation = computed(() => {
   const s = data.value?.structure
-  const total = data.value?.summary.totalTeachers ?? 0
+  const total = facultyNumOrZero(data.value?.summary.totalTeachers)
   if (!s) return ''
   const age = s.age
+  if (!age.length || age.every((a) => a.label === '**' || a.count === 0)) {
+    return '年龄结构：**（缺出生日期/年龄字段，暂无法评价梯队形态与退休压力）。'
+  }
   const young = age[0]?.ratio ?? 0 // 35岁以下
   const mid = (age[1]?.ratio ?? 0) + (age[2]?.ratio ?? 0) // 35-55岁
   const old = age[3]?.ratio ?? 0 // 55岁以上
@@ -393,7 +454,7 @@ const hourDistBarOption = computed(() => {
   }
 })
 
-/** 教师学年课时标准差（总体），反映课时均衡度 */
+/** 教师学期课时标准差（总体），反映课时均衡度 */
 const hoursStdDev = computed(() => {
   const list = data.value?.teachingInvestment.teacherCourses ?? []
   if (list.length === 0) return 0
@@ -651,8 +712,8 @@ const supportIndexBarOption = computed(() => {
 const supportRadarOption = computed(() => {
   if (!data.value) return {}
   const list = data.value.majorComparison
-  const maxTalent = Math.max(...list.map((m) => m.highTalentCount)) || 1
-  const maxNew = Math.max(...list.map((m) => m.newTeachers5yr)) || 1
+  const maxTalent = Math.max(...list.map((m) => facultyNumOrZero(m.highTalentCount)), 1)
+  const maxNew = Math.max(...list.map((m) => m.newTeachers5yr), 1)
   const palette = ['#5cecff', '#ffd56a', '#6effc2', '#ff8a65', '#a78bfa', '#ff6b9d']
   return {
     tooltip: { trigger: 'item' },
@@ -687,9 +748,9 @@ const supportRadarOption = computed(() => {
           value: [
             m.phdRatio,
             m.seniorRatio,
-            m.coreCourseSupportRate,
-            m.youngTeacherRatio,
-            Math.round((m.highTalentCount / maxTalent) * 100),
+            facultyNumOrZero(m.coreCourseSupportRate),
+            facultyNumOrZero(m.youngTeacherRatio),
+            Math.round((facultyNumOrZero(m.highTalentCount) / maxTalent) * 100),
             Math.round((m.newTeachers5yr / maxNew) * 100),
           ],
           symbolSize: 4,
@@ -704,7 +765,7 @@ const supportRadarOption = computed(() => {
 </script>
 
 <template>
-  <CollegeDetailLayout>
+  <CollegeDetailLayout module="师资建设图谱">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button
@@ -776,35 +837,35 @@ const supportRadarOption = computed(() => {
             <span class="resource-summary__icon">👨‍🏫</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">专任教师</span>
-              <strong class="resource-summary__value">{{ data.summary.totalTeachers }}<small>人</small></strong>
+              <strong class="resource-summary__value">{{ fmtFacultyNum(data.summary.totalTeachers) }}<small>人</small></strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="scrollToSection('phd-ratio')">
             <span class="resource-summary__icon">🎓</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">博士占比</span>
-              <strong class="resource-summary__value">{{ data.summary.phdRatio }}<small>%</small></strong>
+              <strong class="resource-summary__value">{{ fmtFacultyNum(data.summary.phdRatio) }}<small>%</small></strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="scrollToSection('senior-title')">
             <span class="resource-summary__icon">📊</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">高级职称占比</span>
-              <strong class="resource-summary__value">{{ data.summary.seniorTitleRatio }}<small>%</small></strong>
+              <strong class="resource-summary__value">{{ fmtFacultyNum(data.summary.seniorTitleRatio) }}<small>%</small></strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="scrollToSection('high-talent')">
             <span class="resource-summary__icon">🏆</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">高层次人才</span>
-              <strong class="resource-summary__value">{{ highTalentCount }}<small>人</small></strong>
+              <strong class="resource-summary__value">{{ fmtFacultyNum(data.summary.highLevelTalentCount) }}<small>人</small></strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="scrollToSection('student-teacher')">
             <span class="resource-summary__icon">📐</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">生师比</span>
-              <strong class="resource-summary__value">{{ data.summary.studentTeacherRatio }}</strong>
+              <strong class="resource-summary__value">{{ isMissingMark(data.summary.studentTeacherRatio) ? '**' : data.summary.studentTeacherRatio }}</strong>
             </div>
           </div>
         </div>
@@ -952,14 +1013,18 @@ const supportRadarOption = computed(() => {
               <div class="resource-card__insight resource-card__insight--large">
                 <span class="resource-card__insight-icon">📋</span>
                 <div>
-                  <p><strong>学院整体生师比：{{ data.summary.studentTeacherRatio }}</strong></p>
-                  <p>该比值表示每位专任教师平均对应 {{ data.summary.studentTeacherRatio.replace('1:', '') }} 名学生。</p>
-                  <p><span v-if="parseFloat(data.summary.studentTeacherRatio.replace('1:', '')) <= 18" class="resource-tag resource-tag--high">✅ 优于国家标准（≤18:1）</span><span v-else class="resource-tag resource-tag--low">⚠️ 高于国家标准（>18:1）</span></p>
+                  <p><strong>学院整体生师比：{{ isMissingMark(data.summary.studentTeacherRatio) ? '**' : data.summary.studentTeacherRatio }}</strong></p>
+                  <p v-if="!isMissingMark(data.summary.studentTeacherRatio)">该比值表示每位专任教师平均对应 {{ data.summary.studentTeacherRatio.replace('1:', '') }} 名学生。</p>
+                  <p v-else>生师比明细：**</p>
+                  <p v-if="!isMissingMark(data.summary.studentTeacherRatio)">
+                    <span v-if="stRatioNum <= 18" class="resource-tag resource-tag--high">✅ 优于国家标准（≤18:1）</span>
+                    <span v-else class="resource-tag resource-tag--low">⚠️ 高于国家标准（>18:1）</span>
+                  </p>
                 </div>
               </div>
               <ul class="resource-list resource-list--mt">
-                <li class="resource-list__item"><span class="resource-list__label">专任教师总数</span><strong class="resource-list__value">{{ data.summary.totalTeachers }}人</strong></li>
-                <li class="resource-list__item"><span class="resource-list__label">在校学生总数</span><strong class="resource-list__value">约 {{ Math.round(data.summary.totalTeachers * parseFloat(data.summary.studentTeacherRatio.replace('1:', ''))) }}人</strong></li>
+                <li class="resource-list__item"><span class="resource-list__label">专任教师总数</span><strong class="resource-list__value">{{ fmtFacultyNum(data.summary.totalTeachers) }}人</strong></li>
+                <li class="resource-list__item"><span class="resource-list__label">在校学生总数</span><strong class="resource-list__value">{{ Number.isFinite(stRatioNum) && !isMissingMark(data.summary.totalTeachers) ? `约 ${Math.round(facultyNumOrZero(data.summary.totalTeachers) * stRatioNum)}人` : '**' }}</strong></li>
                 <li class="resource-list__item"><span class="resource-list__label">国家标准线</span><strong class="resource-list__value">1:18</strong></li>
               </ul>
             </div>
@@ -1083,15 +1148,36 @@ const supportRadarOption = computed(() => {
 
       <!-- ===================== Part 3: 教学投入 ===================== -->
       <template v-if="currentTab === 'teaching-investment'">
+        <div class="resource-section" style="margin-bottom:16px;">
+          <label class="term-switch">
+            <span>分析学期</span>
+            <select
+              :value="selectedTerm || data.term"
+              aria-label="分析学期"
+              @change="onTermChange(($event.target as HTMLSelectElement).value)"
+            >
+              <option
+                v-for="t in (data.availableTerms?.length ? data.availableTerms : [data.term])"
+                :key="t"
+                :value="t"
+              >
+                {{ t }}
+              </option>
+            </select>
+            <em v-if="data.termFallback">已回退到有数据的最新学期</em>
+          </label>
+        </div>
         <!-- 课时分布 & 超负荷概览 -->
         <div class="resource-section__grid resource-section__grid--2" style="margin-bottom:20px;">
           <section class="resource-section" style="margin-bottom:0;">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">📈</span>课时分布</h2>
-            <p class="resource-section__desc">教师学年课时分布情况，标准课时为240学时/年。红色区域为超负荷区间（>300学时），需重点关注。</p>
+            <p class="resource-section__desc">
+              教师学期课时分布（{{ data.term }}）。标准课时 {{ standardHours }} 学时/学期；红色区域为超负荷区间（>{{ overloadHours }} 学时），需重点关注。
+            </p>
             <div class="ti-metrics">
               <div class="ti-metric">
-                <span class="ti-metric__label">平均学年课时</span>
-                <strong class="ti-metric__value">{{ data.teachingInvestment.avgHours }}<small>学时</small></strong>
+                <span class="ti-metric__label">平均学期课时</span>
+                <strong class="ti-metric__value">{{ fmtFacultyNum(data.teachingInvestment.avgHours) }}<small>学时</small></strong>
                 <span class="ti-metric__sub">标准差 ±{{ hoursStdDev }} ｜ 均衡度(基尼) {{ hoursGini }}</span>
               </div>
               <div class="ti-metric">
@@ -1109,12 +1195,12 @@ const supportRadarOption = computed(() => {
           </section>
           <section class="resource-section" style="margin-bottom:0;">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">🚨</span>超课时教师名单</h2>
-            <p class="resource-section__desc">超过标准课时（240学时）的教师，点击可展开查看课程详情。共计 {{ data.teachingInvestment.overloadedTeachers.length }} 人超负荷。</p>
+            <p class="resource-section__desc">超过超负荷阈值（{{ overloadHours }} 学时/学期）的教师，点击可展开查看课程详情。共计 {{ data.teachingInvestment.overloadedTeachers.length }} 人超负荷。</p>
             <div class="ti-metrics">
               <div class="ti-metric">
                 <span class="ti-metric__label">超负荷教师</span>
                 <strong class="ti-metric__value" style="color:#ff9b6a;">{{ data.teachingInvestment.overloadedTeachers.length }}<small>人</small></strong>
-                <span class="ti-metric__sub">标准课时240学时</span>
+                <span class="ti-metric__sub">标准课时 {{ standardHours }} 学时/学期</span>
               </div>
               <div class="ti-metric">
                 <span class="ti-metric__label">教师总人数</span>
@@ -1142,10 +1228,11 @@ const supportRadarOption = computed(() => {
                 <div v-if="expandedOverload.has(idx)" class="overload-card__body">
                   <p class="overload-card__reason">📌 {{ item.reason }}</p>
                   <table class="resource-table">
-                    <thead><tr><th>课程名称</th><th>学时</th></tr></thead>
+                    <thead><tr><th>课程名称</th><th>班级</th><th>学时</th></tr></thead>
                     <tbody>
-                      <tr v-for="c in item.courses" :key="c.name">
+                      <tr v-for="(c, ci) in item.courses" :key="`${c.name}-${c.className || ''}-${c.hours}-${ci}`">
                         <td>{{ c.name }}</td>
+                        <td>{{ c.className && c.className !== '**' ? c.className : '—' }}</td>
                         <td>{{ c.hours }}学时</td>
                       </tr>
                     </tbody>
@@ -1159,7 +1246,7 @@ const supportRadarOption = computed(() => {
         <!-- 每位教师课程明细 -->
         <section class="resource-section">
           <h2 class="resource-section__title"><span class="resource-section__title-icon">📖</span>教师课程明细</h2>
-          <p class="resource-section__desc">全部专任教师的学年授课安排及课时统计，按总课时从高到低排列。</p>
+          <p class="resource-section__desc">本学期（{{ data.term }}）专任教师授课安排及课时统计，按总课时从高到低排列。</p>
           <div class="resource-table-wrap">
             <table class="resource-table">
               <thead>
@@ -1176,24 +1263,24 @@ const supportRadarOption = computed(() => {
                 <tr
                   v-for="row in [...data.teachingInvestment.teacherCourses].sort((a, b) => b.totalHours - a.totalHours)"
                   :key="row.name"
-                  :class="{ 'row--overload': row.totalHours > 300, 'row--warn': row.totalHours > 240 && row.totalHours <= 300 }"
+                  :class="{ 'row--overload': row.totalHours > overloadHours, 'row--warn': row.totalHours > warnHours && row.totalHours <= overloadHours }"
                 >
                   <td class="resource-table__name">{{ row.name }}</td>
                   <td>{{ row.title }}</td>
                   <td>{{ row.major }}</td>
                   <td>
-                    <strong :style="{ color: row.totalHours > 300 ? '#ff8a65' : row.totalHours > 240 ? '#ffd56a' : '#6effc2' }">
+                    <strong :style="{ color: row.totalHours > overloadHours ? '#ff8a65' : row.totalHours > warnHours ? '#ffd56a' : '#6effc2' }">
                       {{ row.totalHours }}<small>学时</small>
                     </strong>
                   </td>
                   <td class="course-cell">
-                    <span v-for="c in row.courses" :key="c.name" class="course-tag">
+                    <span v-for="(c, ci) in row.courses" :key="`${c.name}-${c.className || ''}-${c.hours}-${ci}`" class="course-tag">
                       {{ c.name }}<em>{{ c.hours }}h</em>
                     </span>
                   </td>
                   <td>
-                    <span v-if="row.totalHours > 300" class="resource-tag resource-tag--low">⚠ 严重超负荷</span>
-                    <span v-else-if="row.totalHours > 240" class="resource-tag resource-tag--mid">⚡ 超课时</span>
+                    <span v-if="row.totalHours > overloadHours" class="resource-tag resource-tag--low">⚠ 严重超负荷</span>
+                    <span v-else-if="row.totalHours > warnHours" class="resource-tag resource-tag--mid">⚡ 超课时</span>
                     <span v-else class="resource-tag resource-tag--high">✓ 正常</span>
                   </td>
                 </tr>
@@ -1523,7 +1610,7 @@ const supportRadarOption = computed(() => {
           <h2 class="resource-section__title"><span class="resource-section__title-icon">👥</span>教师绩效详情</h2>
           <p class="resource-section__desc">按综合评分排序，点击可展开查看教学与科研明细。共 {{ perfTeachers.length }} 名教师。</p>
           <div class="resource-card__note" style="margin-bottom:14px;">
-            <p><strong>评分计算方法：</strong>教学贡献 = 学年课时（标准化）× 0.6 + 学生评教分数 × 0.2 + 教学获奖加分；科研贡献 = 论文数 × 0.35 + 在研项目 × 0.3 + 科研经费（标准化）× 0.25 + 科研获奖加分。满分均为 100 分，60 分以上为合格线。</p>
+            <p><strong>评分计算方法：</strong>教学贡献 = 学期课时（标准化）× 0.6 + 学生评教分数 × 0.2 + 教学获奖加分；科研贡献 = 论文数 × 0.35 + 在研项目 × 0.3 + 科研经费（标准化）× 0.25 + 科研获奖加分。满分均为 100 分，60 分以上为合格线。</p>
           </div>
           <div class="perf-cards">
             <div
@@ -1570,7 +1657,7 @@ const supportRadarOption = computed(() => {
                   <div class="perf-card__detail">
                     <h4>📖 教学详情</h4>
                     <ul>
-                      <li><span>学年课时</span><strong>{{ t.teachingDetail.avgHours }} 学时</strong></li>
+                      <li><span>学期课时</span><strong>{{ t.teachingDetail.avgHours }} 学时</strong></li>
                       <li><span>授课门数</span><strong>{{ t.teachingDetail.courseCount }} 门</strong></li>
                       <li><span>学生评教</span><strong :style="{ color: t.teachingDetail.studentEvalScore >= 90 ? '#6effc2' : t.teachingDetail.studentEvalScore >= 80 ? '#ffd56a' : '#ff8a65' }">{{ t.teachingDetail.studentEvalScore }} 分</strong></li>
                       <li v-if="t.teachingDetail.teachingAwards.length"><span>教学获奖</span><strong>{{ t.teachingDetail.teachingAwards.join('、') }}</strong></li>
@@ -1784,23 +1871,23 @@ const supportRadarOption = computed(() => {
               </div>
               <div class="major-metric">
                 <span>平均课时</span>
-                <strong>{{ m.avgHours }}<small>h</small></strong>
+                <strong>{{ fmtFacultyNum(m.avgHours) }}<small>h</small></strong>
               </div>
               <div class="major-metric">
                 <span>生师比</span>
-                <strong>{{ m.studentTeacherRatio }}</strong>
+                <strong>{{ isMissingMark(m.studentTeacherRatio) ? '**' : m.studentTeacherRatio }}</strong>
               </div>
               <div class="major-metric">
                 <span>核心课程支撑率</span>
-                <strong :style="{ color: m.coreCourseSupportRate >= 80 ? '#6effc2' : m.coreCourseSupportRate >= 50 ? '#ffd56a' : '#ff8a65' }">{{ m.coreCourseSupportRate }}<small>%</small></strong>
+                <strong>{{ fmtFacultyNum(m.coreCourseSupportRate, '%') }}</strong>
               </div>
               <div class="major-metric">
                 <span>青年教师比例</span>
-                <strong>{{ m.youngTeacherRatio }}<small>%</small></strong>
+                <strong>{{ fmtFacultyNum(m.youngTeacherRatio, '%') }}</strong>
               </div>
               <div class="major-metric">
                 <span>高层次人才</span>
-                <strong :style="{ color: m.highTalentCount >= 3 ? '#6effc2' : m.highTalentCount >= 1 ? '#ffd56a' : '#ff8a65' }">{{ m.highTalentCount }}<small>人</small></strong>
+                <strong>{{ fmtFacultyNum(m.highTalentCount) }}<small>人</small></strong>
               </div>
               <div class="major-metric">
                 <span>近5年新增</span>
@@ -1994,6 +2081,22 @@ const supportRadarOption = computed(() => {
 
 // ===== Part 3 教学投入 =====
 .ti-metrics { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 16px; }
+.term-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(200, 230, 255, 0.85);
+  select {
+    min-width: 160px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(90, 170, 255, 0.35);
+    background: rgba(0, 40, 80, 0.55);
+    color: #e8f6ff;
+  }
+  em { font-style: normal; color: #ffd56a; font-size: 12px; }
+}
 .ti-metric {
   flex: 1 1 0; min-width: 150px;
   display: flex; flex-direction: column; gap: 3px;

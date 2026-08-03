@@ -1,7 +1,8 @@
-"""读写 .xls / .xlsx，自动探测表头行。"""
+"""读写 .xls / .xlsx / .csv，自动探测表头行。"""
 
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +24,22 @@ def read_tabular(path: str | Path, *, sheet_index: int = 0, sheet_name: str | No
         return _read_xlsx(path, sheet_index=sheet_index, sheet_name=sheet_name)
     if suffix == ".xls":
         return _read_xls(path, sheet_index=sheet_index, sheet_name=sheet_name)
+    if suffix == ".csv":
+        return _read_csv(path)
     raise ValueError(f"unsupported file type: {path}")
+
+
+def _read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
+        sample = f.read(4096)
+        f.seek(0)
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=",\t;")
+        except csv.Error:
+            dialect = csv.excel
+        reader = csv.reader(f, dialect)
+        matrix = [[_norm(c) for c in row] for row in reader]
+    return _rows_to_dicts(matrix)
 
 
 def _detect_header_row(rows: list[list[str]], keywords: tuple[str, ...] = ("学号", "姓名", "年级")) -> int:

@@ -15,6 +15,8 @@ from Utils.DB.Models import (
     College,
     CompetitionAward,
     EmploymentRecord,
+    Major,
+    MajorRankSnapshot,
     StudentAcademicRecord,
     StudentInternship,
     StudentLeadershipRole,
@@ -22,6 +24,8 @@ from Utils.DB.Models import (
     StudentProfile,
     StudentProject,
     StudentTag,
+    StudentVolunteerHour,
+    Teacher,
     TeachingCourseHour,
 )
 from Utils.Excel import list_sheet_names, read_tabular
@@ -1210,4 +1214,539 @@ async def import_internships(data_root: Path, college: College) -> dict[str, Any
                     source="import",
                 )
                 stats["tags"] += 1
+    return stats
+
+
+def _read_excel_dicts(path: Path, *, sheet_name: str | None = None) -> list[dict[str, str]]:
+    """用 pandas 按字符串读 xlsx，避免工号/手机被误判为日期。"""
+    import pandas as pd
+
+    kw: dict[str, Any] = {"dtype": str}
+    if sheet_name:
+        kw["sheet_name"] = sheet_name
+    df = pd.read_excel(path, **kw)
+    if not isinstance(df, pd.DataFrame):
+        # sheet_name 未指定且多表时可能返回 dict；取第一张
+        df = next(iter(df.values()))
+    rows: list[dict[str, str]] = []
+    for rec in df.fillna("").to_dict(orient="records"):
+        item = {str(k).strip(): str(v).strip() if v is not None else "" for k, v in rec.items()}
+        if not any(item.values()):
+            continue
+        rows.append(item)
+    return rows
+
+
+def _date_text(v: str | None) -> str | None:
+    s = (v or "").strip()
+    if not s or s.upper() in {"#VALUE!", "NAN", "NONE", "NAT"}:
+        return None
+    # 2023-08-24 00:00:00 → 2023-08-24
+    m = re.match(r"^(\d{4}-\d{2}-\d{2})", s)
+    if m:
+        return m.group(1)
+    m = re.match(r"^(\d{4}/\d{1,2}/\d{1,2})", s)
+    if m:
+        return m.group(1).replace("/", "-")
+    return s[:32]
+
+
+def _parse_hours(v: str | None) -> Decimal | None:
+    s = (v or "").strip()
+    if not s:
+        return None
+    m = re.search(r"(\d+(?:\.\d+)?)", s)
+    if not m:
+        return None
+    try:
+        return Decimal(m.group(1))
+    except InvalidOperation:
+        return None
+
+
+# 班级简称 → 全称（志愿表/学籍混用）
+_CLASS_MAJOR_ALIASES: tuple[tuple[str, str], ...] = (
+    ("计算机科学与技术(实验区)", "计算机科学与技术(实验区)"),
+    ("计算机科学与技术", "计算机科学与技术"),
+    ("计实", "计算机科学与技术(实验区)"),
+    ("计科", "计算机科学与技术"),
+    ("软件工程", "软件工程"),
+    ("软工", "软件工程"),
+    ("大数据管理与应用", "大数据管理与应用"),
+    ("电子商务", "电子商务"),
+    ("电商", "电子商务"),
+    ("信息管理与信息系统", "信息管理与信息系统"),
+    ("信管", "信息管理与信息系统"),
+    ("人工智能", "人工智能"),
+)
+
+
+def _norm_class_name(v: str | None) -> str:
+    """班级名规范化：去空格、22级→2022、全半角括号。"""
+    s = (v or "").strip().replace(" ", "").replace("　", "")
+    s = s.replace("（", "(").replace("）", ")").replace("【", "[").replace("】", "]")
+    s = re.sub(r"^(\d{2})级", lambda m: f"20{m.group(1)}", s)
+    s = re.sub(r"^(\d{4})级", r"\1", s)
+    return s
+
+
+def _class_match_key(v: str | None) -> str:
+    """匹配用班级键：在规范化基础上展开专业简称。"""
+    s = _norm_class_name(v)
+    for short, full in sorted(_CLASS_MAJOR_ALIASES, key=lambda x: len(x[0]), reverse=True):
+        if short != full and short in s:
+            s = s.replace(short, full)
+    return s
+
+
+def _class_year_from_name(v: str | None) -> int | None:
+    """从班级名提取班级年级（如 2023计算机… → 2023），不是入学年。"""
+    s = _norm_class_name(v)
+    m = re.match(r"^(20\d{2})", s)
+    return int(m.group(1)) if m else None
+
+
+def _pick_unique(cands: list[StudentProfile]) -> StudentProfile | None:
+    return cands[0] if len(cands) == 1 else None
+
+
+def _is_phd(degree: str | None, education: str | None) -> bool | None:
+    blob = f"{degree or ''}{education or ''}"
+    if not blob.strip():
+        return None
+    if "博士" in blob:
+        return True
+    if "硕士" in blob or "学士" in blob or "本科" in blob:
+        return False
+    return None
+
+
+def _teacher_roster_files(data_root: Path) -> list[Path]:
+    pats = [
+        "*教职工名单*.xlsx",
+        "*教职工*花名册*.xlsx",
+        "*花名册*.xlsx",
+    ]
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for pat in pats:
+        for p in data_root.glob(pat):
+            if p.name.startswith("~$"):
+                continue
+            if p.resolve() in seen:
+                continue
+            seen.add(p.resolve())
+            out.append(p)
+    return sorted(out)
+
+
+def _volunteer_files(data_root: Path) -> list[Path]:
+    pats = ["*志愿时长*.xlsx", "*志愿时长*.xls", "*志愿服务*时长*.xlsx"]
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for pat in pats:
+        for p in data_root.glob(pat):
+            if p.name.startswith("~$"):
+                continue
+            if p.resolve() in seen:
+                continue
+            seen.add(p.resolve())
+            out.append(p)
+    return sorted(out)
+
+
+async def import_teacher_roster(data_root: Path, college: College) -> dict[str, Any]:
+    """导入学院教职工花名册 → teachers（不入库身份证/手机）。
+
+    仅读取「教职工名单」sheet（本院）；忽略校级其他 sheet。
+    """
+    stats: dict[str, Any] = {"create": 0, "update": 0, "skip": 0, "files": 0}
+    paths = _teacher_roster_files(data_root)
+    if not paths:
+        return {"missing": 1}
+
+    for path in paths:
+        names = list_sheet_names(path)
+        sheet = None
+        for cand in ("教职工名单",):
+            if cand in names:
+                sheet = cand
+                break
+        if sheet is None:
+            for n in names:
+                if "教职工" in n and "名单" in n:
+                    sheet = n
+                    break
+        if sheet is None:
+            print(f"[teacher_roster] skip (no 教职工名单 sheet): {path.name} sheets={names}")
+            stats["skip"] += 1
+            continue
+
+        rows = _read_excel_dicts(path, sheet_name=sheet)
+        stats["files"] += 1
+        print(f"[teacher_roster] {path.name} sheet={sheet} rows={len(rows)}")
+
+        for row in rows:
+            name = _clean_name(_pick(row, "姓名"))
+            if not name:
+                stats["skip"] += 1
+                continue
+            teacher_no = _norm_sid(_pick(row, "工号"))
+            if teacher_no.upper() in {"#VALUE!", "NAN", "NONE"}:
+                teacher_no = ""
+            gender = _pick(row, "性别") or None
+            title = _pick(row, "职称") or None
+            title_level = _pick(row, "职称级别") or None
+            degree = _pick(row, "学位") or None
+            education = _pick(row, "学历") or None
+            department = _pick(row, "部门") or None
+            position = _pick(row, "岗位") or None
+            hire_date = _date_text(_pick(row, "工作时间"))
+            school_hire_date = _date_text(_pick(row, "来校时间"))
+            is_phd = _is_phd(degree, education)
+
+            # 优先工号匹配，其次姓名
+            existing = None
+            if teacher_no:
+                existing = await Teacher.get_or_none(
+                    college_id=college.id, teacher_no=teacher_no
+                )
+            if existing is None:
+                existing = await Teacher.get_or_none(college_id=college.id, name=name)
+
+            payload = {
+                "name": name,
+                "teacher_no": teacher_no or None,
+                "gender": gender,
+                "title": title,
+                "title_level": title_level,
+                "degree": degree,
+                "education": education,
+                "is_phd": is_phd,
+                "department": department,
+                "position": position,
+                "hire_date": hire_date,
+                "school_hire_date": school_hire_date,
+                "status": "active",
+            }
+
+            if existing:
+                changed = False
+                for k, v in payload.items():
+                    if v is None or v == "":
+                        continue
+                    if getattr(existing, k) != v:
+                        setattr(existing, k, v)
+                        changed = True
+                src = existing.source or ""
+                if "roster" not in src.split(","):
+                    existing.source = f"{src},roster" if src else "roster"
+                    changed = True
+                if changed:
+                    await existing.save()
+                    stats["update"] += 1
+                else:
+                    stats["skip"] += 1
+            else:
+                await Teacher.create(
+                    college=college,
+                    source="roster",
+                    **payload,
+                )
+                stats["create"] += 1
+    return stats
+
+
+def _match_volunteer_profile(
+    *,
+    name: str,
+    grade: int | None,
+    class_name_raw: str,
+    by_name: dict[str, list[StudentProfile]],
+    by_name_class: dict[tuple[str, str], list[StudentProfile]],
+) -> StudentProfile | None:
+    """挂接主档：姓名+班级为主；入学年不参与匹配（入伍返校/延毕等会导致入学年≠班级年）。"""
+    cls_key = _class_match_key(class_name_raw)
+    same_name = by_name.get(name, [])
+    if not same_name:
+        return None
+
+    # 1) 姓名 + 规范化班级（含简称展开）精确唯一
+    hit = _pick_unique(by_name_class.get((name, cls_key), []))
+    if hit:
+        return hit
+
+    # 2) 同名中班级键互相包含 / 去数字年级后相等
+    if cls_key:
+        cls_body = re.sub(r"^20\d{2}", "", cls_key)
+        fuzzy: list[StudentProfile] = []
+        for p in same_name:
+            pk = _class_match_key(p.class_name)
+            if not pk:
+                continue
+            pb = re.sub(r"^20\d{2}", "", pk)
+            if (
+                cls_key == pk
+                or cls_key in pk
+                or pk in cls_key
+                or (cls_body and pb and (cls_body == pb or cls_body in pb or pb in cls_body))
+            ):
+                fuzzy.append(p)
+        hit = _pick_unique(fuzzy)
+        if hit:
+            return hit
+
+    # 3) 同名 + 志愿「年级」= 学籍班级名前缀年级（不是 enrollment_year）
+    if grade is not None:
+        by_class_year = [
+            p for p in same_name if _class_year_from_name(p.class_name) == grade
+        ]
+        hit = _pick_unique(by_class_year)
+        if hit:
+            return hit
+
+    # 4) 全院同名唯一
+    return _pick_unique(same_name)
+
+
+async def import_volunteer_hours(data_root: Path, college: College) -> dict[str, Any]:
+    """导入志愿时长 → student_volunteer_hours（姓名+班级挂主档；不用入学年匹配）。"""
+    stats: dict[str, Any] = {
+        "create": 0,
+        "files": 0,
+        "skip": 0,
+        "matched": 0,
+        "unmatched": 0,
+    }
+    paths = _volunteer_files(data_root)
+    if not paths:
+        return {"missing": 1}
+
+    profiles = await StudentProfile.filter(college_id=college.id).all()
+    by_name: dict[str, list[StudentProfile]] = {}
+    by_name_class: dict[tuple[str, str], list[StudentProfile]] = {}
+    for p in profiles:
+        name = _clean_name(p.name)
+        if not name:
+            continue
+        by_name.setdefault(name, []).append(p)
+        cls_key = _class_match_key(p.class_name)
+        if cls_key:
+            by_name_class.setdefault((name, cls_key), []).append(p)
+
+    await StudentVolunteerHour.filter(college_id=college.id).delete()
+
+    for path in paths:
+        rows = _read_excel_dicts(path)
+        stats["files"] += 1
+        print(f"[volunteer_hours] {path.name} rows={len(rows)}")
+        for row in rows:
+            name = _clean_name(_pick(row, "姓名"))
+            if not name:
+                stats["skip"] += 1
+                continue
+            grade = _to_int(_pick(row, "年级"))
+            class_name_raw = _pick(row, "班级")
+            class_name = class_name_raw or None
+            hours_text = _pick(row, "志愿时长") or None
+            hours = _parse_hours(hours_text)
+
+            profile = _match_volunteer_profile(
+                name=name,
+                grade=grade,
+                class_name_raw=class_name_raw,
+                by_name=by_name,
+                by_name_class=by_name_class,
+            )
+
+            if profile:
+                stats["matched"] += 1
+            else:
+                stats["unmatched"] += 1
+
+            await StudentVolunteerHour.create(
+                college=college,
+                profile=profile,
+                student_id=profile.student_no if profile else None,
+                name=name,
+                grade=grade,
+                class_name=class_name,
+                hours=hours,
+                hours_text=hours_text,
+                source_file=path.name,
+            )
+            stats["create"] += 1
+    return stats
+
+
+# ---------- major rank snapshots ----------
+
+
+def _norm_major_name(name: str) -> str:
+    n = (name or "").strip().replace("（", "(").replace("）", ")")
+    for suffix in ("专业", "（本科）", "(本科)"):
+        if n.endswith(suffix):
+            n = n[: -len(suffix)]
+    return n.strip()
+
+
+def _match_major_row(raw: str, majors: list[Major]) -> Major | None:
+    n = _norm_major_name(raw)
+    if not n:
+        return None
+    for m in majors:
+        cn = _norm_major_name(m.name or "")
+        if n == cn or n in cn or cn in n:
+            return m
+    return None
+
+
+def _as_int(v: Any) -> int | None:
+    if v is None or v == "" or v == "**":
+        return None
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return None
+
+
+def _peer_list(raw: Any) -> list[dict[str, Any]]:
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        school = str(item.get("school") or "").strip()
+        rank = _as_int(item.get("rank"))
+        if not school or rank is None:
+            continue
+        row: dict[str, Any] = {"school": school, "rank": rank}
+        if item.get("isSelf"):
+            row["isSelf"] = True
+        out.append(row)
+    return out
+
+
+def _soft_dimensions(raw: Any) -> list[dict[str, Any]]:
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get("key") or "").strip()
+        label = str(item.get("label") or "").strip()
+        try:
+            score = float(item.get("score"))
+            peer_avg = float(item.get("peerAverage"))
+        except (TypeError, ValueError):
+            continue
+        if not key or not label:
+            continue
+        out.append(
+            {
+                "key": key,
+                "label": label,
+                "score": score,
+                "peerAverage": peer_avg,
+            }
+        )
+    return out
+
+
+def _discover_major_rank_files(data_root: Path) -> list[Path]:
+    """优先 data_root/major_ranks/*.json，其次 *major_ranks*.json；并回退仓库样例。"""
+    files: list[Path] = []
+    sub = data_root / "major_ranks"
+    if sub.is_dir():
+        files.extend(sorted(sub.glob("*.json")))
+    files.extend(sorted(data_root.glob("*major_ranks*.json")))
+    # 仓库内联调样例
+    repo_sample = Path(__file__).resolve().parents[1] / "data" / "major_ranks"
+    if repo_sample.is_dir():
+        for p in sorted(repo_sample.glob("*.json")):
+            if p.resolve() not in {x.resolve() for x in files}:
+                files.append(p)
+    # 去重保序
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for p in files:
+        rp = p.resolve()
+        if rp in seen or p.name.startswith("~$"):
+            continue
+        seen.add(rp)
+        out.append(p)
+    return out
+
+
+async def import_major_ranks(data_root: Path, college: College) -> dict[str, int]:
+    """导入专业排名/对标快照 JSON → major_rank_snapshots。"""
+    import json
+
+    stats = {"create": 0, "update": 0, "skip": 0, "files": 0}
+    files = _discover_major_rank_files(data_root)
+    if not files:
+        print("[major_ranks] no json found under", data_root)
+        return {"missing": 1}
+
+    majors = list(await Major.filter(college_id=college.id))
+    for path in files:
+        stats["files"] += 1
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            print(f"[major_ranks] read fail {path.name}: {exc}")
+            stats["skip"] += 1
+            continue
+
+        year = _as_int(payload.get("year"))
+        source = str(payload.get("source") or "softke").strip() or "softke"
+        items = payload.get("majors") or []
+        if not year or not isinstance(items, list):
+            print(f"[major_ranks] invalid payload {path.name}")
+            stats["skip"] += 1
+            continue
+
+        print(f"[major_ranks] {path.name} year={year} majors={len(items)}")
+        for item in items:
+            if not isinstance(item, dict):
+                stats["skip"] += 1
+                continue
+            name = str(item.get("name") or "").strip()
+            major = _match_major_row(name, majors)
+            if not major:
+                print(f"[major_ranks] skip unmatched major: {name}")
+                stats["skip"] += 1
+                continue
+
+            fields = {
+                "college": college,
+                "grade_label": str(item.get("grade") or "").strip() or None,
+                "national_rank": _as_int(item.get("nationalRank")),
+                "province_rank": _as_int(item.get("provincialRank")),
+                "finance_rank": _as_int(item.get("financePeerRank")),
+                "yoy_change": _as_int(item.get("yoyChange")),
+                "soft_dimensions": _soft_dimensions(item.get("softDimensions")),
+                "peer_schools": _peer_list(item.get("peerSchools")),
+                "finance_peer_schools": _peer_list(item.get("financePeerSchools")),
+                "source": source,
+            }
+            existing = await MajorRankSnapshot.get_or_none(major_id=major.id, year=year)
+            if existing:
+                existing.college = college
+                existing.grade_label = fields["grade_label"]
+                existing.national_rank = fields["national_rank"]
+                existing.province_rank = fields["province_rank"]
+                existing.finance_rank = fields["finance_rank"]
+                existing.yoy_change = fields["yoy_change"]
+                existing.soft_dimensions = fields["soft_dimensions"]
+                existing.peer_schools = fields["peer_schools"]
+                existing.finance_peer_schools = fields["finance_peer_schools"]
+                existing.source = fields["source"]
+                await existing.save()
+                stats["update"] += 1
+            else:
+                await MajorRankSnapshot.create(major=major, year=year, **fields)
+                stats["create"] += 1
     return stats

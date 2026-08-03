@@ -8,6 +8,8 @@ import { useScope } from '@/composables/useScope'
 import { ROUTES } from '@/constants/routes'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 import type { DisciplineOverviewDetailVM } from '@/types/college/view/discipline-overview'
+import type { DisciplineNum } from '@/types/college/api/discipline-overview'
+import { fmtFacultyNum, isMissingMark } from '@/utils/facultyDisplay'
 import type { EChartsOption } from 'echarts'
 
 const route = useRoute()
@@ -59,10 +61,20 @@ function scrollToSection(id: string) {
   scroller.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' })
 }
 
-function formatChange(change: number) {
+function formatChange(change: DisciplineNum | undefined) {
+  if (isMissingMark(change) || typeof change !== 'number') return '**'
   if (change > 0) return `↑${change}`
   if (change < 0) return `↓${Math.abs(change)}`
   return '→'
+}
+
+function fmtNum(v: DisciplineNum | string | null | undefined) {
+  return fmtFacultyNum(v as never)
+}
+
+function rankOrInf(v: DisciplineNum | undefined, missingAs = Infinity) {
+  if (typeof v === 'number' && Number.isFinite(v)) return v
+  return missingAs
 }
 
 function shortMajor(name: string) {
@@ -76,14 +88,179 @@ const profile = computed(() =>
   data.value?.majorProfiles.find((p) => p.name === activeMajor.value) ?? null,
 )
 
+type MajorProfile = NonNullable<DisciplineOverviewDetailVM['majorProfiles'][number]>
+type DimStatus = 'best' | 'mid' | 'worst'
+
+function numOrZero(v: DisciplineNum | undefined): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : 0
+}
+
+function rankOf(value: number, values: number[]): DimStatus {
+  const sorted = [...values].sort((a, b) => b - a)
+  const idx = sorted.indexOf(value)
+  if (idx === 0) return 'best'
+  if (idx === sorted.length - 1) return 'worst'
+  return 'mid'
+}
+
+const STATUS_LABEL: Record<DimStatus, string> = {
+  best: '🟢 优势',
+  mid: '🟡 持平',
+  worst: '🔴 劣势',
+}
+
+type DimRow = {
+  key: string
+  icon: string
+  format: string
+  status: DimStatus
+  why: string
+}
+
+const analysisGrade = computed(() => {
+  const g = profile.value?.grade
+  return g && !isMissingMark(g) ? String(g) : ''
+})
+
+const dimensionRowsForMajor = computed<DimRow[]>(() => {
+  const profiles = data.value?.majorProfiles
+  const p = profile.value
+  if (!profiles || !p) return []
+  const others = profiles.filter((x) => x.name !== p.name).map((x) => x.name)
+
+  const configs: {
+    key: string
+    icon: string
+    value: (x: MajorProfile) => number
+    format: (x: MajorProfile) => string
+    why: (x: MajorProfile, status: DimStatus, others: string[]) => string
+  }[] = [
+    {
+      key: '课程质量',
+      icon: '📚',
+      value: (x) => numOrZero(x.outcomes.eliteCourses),
+      format: (x) =>
+        `${fmtNum(x.outcomes.eliteCourses)} 门一流课程 · 教学获奖 ${fmtNum(x.outcomes.teachingAwards)} 项 · 教改 ${fmtNum(x.outcomes.reformProjects)} 项`,
+      why: (x, s, o) => {
+        if (s === 'best')
+          return `「${x.name}」建成一流课程 ${fmtNum(x.outcomes.eliteCourses)} 门（居全院之首），教学获奖 ${fmtNum(x.outcomes.teachingAwards)} 项、教改立项 ${fmtNum(x.outcomes.reformProjects)} 项同步领先，课程体系成熟，是核心优势维度。`
+        if (s === 'worst')
+          return `「${x.name}」仅 ${fmtNum(x.outcomes.eliteCourses)} 门一流课程，明显少于 ${o.join('、')}，金课建设与教改投入不足，是主要短板。`
+        return `「${x.name}」一流课程 ${fmtNum(x.outcomes.eliteCourses)} 门、教学获奖 ${fmtNum(x.outcomes.teachingAwards)} 项，处于院系中游，需向头部专业看齐。`
+      },
+    },
+    {
+      key: '教师评价',
+      icon: '👨‍🏫',
+      value: (x) => numOrZero(x.faculty.phdRatio),
+      format: (x) =>
+        `博士占比 ${fmtNum(x.faculty.phdRatio)}% · 专任 ${fmtNum(x.faculty.total)} 人 · 省级人才 ${fmtNum(x.faculty.talentCount)} 人 · 名师 ${fmtNum(x.faculty.teachingMasters)} 人`,
+      why: (x, s, o) => {
+        if (s === 'best')
+          return `「${x.name}」博士占比 ${fmtNum(x.faculty.phdRatio)}%、专任 ${fmtNum(x.faculty.total)} 人、省级人才 ${fmtNum(x.faculty.talentCount)} 人、教学名师 ${fmtNum(x.faculty.teachingMasters)} 人，高水平师资厚实、评价高，是优势维度。`
+        if (s === 'worst')
+          return `「${x.name}」博士占比仅 ${fmtNum(x.faculty.phdRatio)}%，低于 ${o.join('、')}，省级人才 ${fmtNum(x.faculty.talentCount)} 人、教学名师 ${fmtNum(x.faculty.teachingMasters)} 人偏少，高水平师资支撑不足，拖累培养与科研，是短板。`
+        return `「${x.name}」博士占比 ${fmtNum(x.faculty.phdRatio)}%、师资规模 ${fmtNum(x.faculty.total)} 人，表现居中，可借人才引育补强。`
+      },
+    },
+    {
+      key: '学生情况',
+      icon: '🎓',
+      value: (x) => numOrZero(x.enrollment.firstChoiceRate),
+      format: (x) =>
+        `第一志愿率 ${fmtNum(x.enrollment.firstChoiceRate)}% · 录取均分 ${fmtNum(x.enrollment.avgScore)} · 落实率 ${fmtNum(x.cultivation.employmentRate)}%`,
+      why: (x, s, o) => {
+        if (s === 'best')
+          return `「${x.name}」第一志愿率 ${fmtNum(x.enrollment.firstChoiceRate)}%、录取均分 ${fmtNum(x.enrollment.avgScore)}，生源吸引力居首，配合毕业落实率 ${fmtNum(x.cultivation.employmentRate)}% 出口俱佳，学生竞争力是优势。`
+        if (s === 'worst')
+          return `「${x.name}」第一志愿率 ${fmtNum(x.enrollment.firstChoiceRate)}%、落实率 ${fmtNum(x.cultivation.employmentRate)}%，弱于 ${o.join('、')}，生源质量与就业竞争力偏弱，是短板。`
+        return `「${x.name}」第一志愿率 ${fmtNum(x.enrollment.firstChoiceRate)}%、落实率 ${fmtNum(x.cultivation.employmentRate)}%，表现居中，仍有提升空间。`
+      },
+    },
+    {
+      key: '培养成效',
+      icon: '🌱',
+      value: (x) => numOrZero(x.cultivation.competitionAwards),
+      format: (x) =>
+        `竞赛获奖 ${fmtNum(x.cultivation.competitionAwards)} 项 · 大创 ${fmtNum(x.cultivation.innovationProjects)} 项 · 升学率 ${fmtNum(x.cultivation.furtherStudyRate)}%`,
+      why: (x, s, o) => {
+        if (s === 'best')
+          return `「${x.name}」学科竞赛获奖 ${fmtNum(x.cultivation.competitionAwards)} 项、大创 ${fmtNum(x.cultivation.innovationProjects)} 项、升学率 ${fmtNum(x.cultivation.furtherStudyRate)}%，育人成果厚度居首，是优势维度。`
+        if (s === 'worst')
+          return `「${x.name}」竞赛获奖 ${fmtNum(x.cultivation.competitionAwards)} 项、大创 ${fmtNum(x.cultivation.innovationProjects)} 项、升学率 ${fmtNum(x.cultivation.furtherStudyRate)}%，少于 ${o.join('、')}，育人成果厚度不足，是短板。`
+        return `「${x.name}」竞赛获奖 ${fmtNum(x.cultivation.competitionAwards)} 项、升学率 ${fmtNum(x.cultivation.furtherStudyRate)}%，处于中游。`
+      },
+    },
+    {
+      key: '科研成果',
+      icon: '🔬',
+      value: (x) => numOrZero(x.outcomes.papers),
+      format: (x) =>
+        `高水平论文 ${fmtNum(x.outcomes.papers)} 篇 · 纵向项目 ${fmtNum(x.outcomes.verticalProjects)} 项`,
+      why: (x, s, o) => {
+        if (s === 'best')
+          return `「${x.name}」近五年高水平论文 ${fmtNum(x.outcomes.papers)} 篇、纵向项目 ${fmtNum(x.outcomes.verticalProjects)} 项，科研增量居首，反哺教学明显，是优势维度。`
+        if (s === 'worst')
+          return `「${x.name}」论文 ${fmtNum(x.outcomes.papers)} 篇、纵向 ${fmtNum(x.outcomes.verticalProjects)} 项，落后于 ${o.join('、')}，缺乏标志性科研增量，是短板。`
+        return `「${x.name}」论文 ${fmtNum(x.outcomes.papers)} 篇、纵向 ${fmtNum(x.outcomes.verticalProjects)} 项，居于中游。`
+      },
+    },
+  ]
+
+  return configs.map((c) => {
+    const status = rankOf(
+      c.value(p),
+      profiles.map((x) => c.value(x)),
+    )
+    return {
+      key: c.key,
+      icon: c.icon,
+      format: c.format(p),
+      status,
+      why: c.why(p, status, others),
+    }
+  })
+})
+
+const advantageCount = computed(
+  () => dimensionRowsForMajor.value.filter((r) => r.status === 'best').length,
+)
+const weaknessCount = computed(
+  () => dimensionRowsForMajor.value.filter((r) => r.status === 'worst').length,
+)
+const midCount = computed(
+  () => dimensionRowsForMajor.value.filter((r) => r.status === 'mid').length,
+)
+
 const leadMajor = computed(() => {
-  if (!data.value?.majorRankings.length) return null
-  return [...data.value.majorRankings].sort((a, b) => a.currentRank - b.currentRank)[0]
+  const list = (data.value?.majorRankings ?? []).filter(
+    (m) => typeof m.currentRank === 'number',
+  )
+  if (!list.length) {
+    const majors = data.value?.majors ?? []
+    if (!majors.length) return null
+    const top = [...majors].sort(
+      (a, b) => rankOrInf(b.studentCount, -Infinity) - rankOrInf(a.studentCount, -Infinity),
+    )[0]
+    return {
+      major: top.name,
+      grade: top.grade,
+      currentRank: top.nationalRank,
+      yoyChange: top.yoyChange,
+      provincialRank: top.provincialRank,
+      peerRank: top.financePeerRank,
+      financePeerRank: top.financePeerRank,
+    }
+  }
+  return [...list].sort((a, b) => Number(a.currentRank) - Number(b.currentRank))[0]
 })
 
 const worstMajor = computed(() => {
-  if (!data.value?.majorRankings.length) return null
-  return [...data.value.majorRankings].sort((a, b) => b.currentRank - a.currentRank)[0]
+  const list = (data.value?.majorRankings ?? []).filter(
+    (m) => typeof m.currentRank === 'number',
+  )
+  if (!list.length) return null
+  return [...list].sort((a, b) => Number(b.currentRank) - Number(a.currentRank))[0]
 })
 
 function profileOf(major?: string) {
@@ -98,8 +275,21 @@ const bestReasons = computed<string[]>(() => bestProfile.value?.judgment.strengt
 const worstReasons = computed<string[]>(() => worstProfile.value?.judgment.weaknesses ?? [])
 
 const judgmentAnalysis = computed(() => {
-  if (!leadMajor.value || !worstMajor.value) return ''
-  const gap = worstMajor.value.currentRank - leadMajor.value.currentRank
+  if (!leadMajor.value) return data.value?.benchmarkNote || ''
+  if (!worstMajor.value || worstMajor.value.major === leadMajor.value.major) {
+    return bestProfile.value?.judgment.trendSummary
+      || data.value?.radarConclusion
+      || ''
+  }
+  const leadRank = leadMajor.value.currentRank
+  const worstRank = worstMajor.value.currentRank
+  if (typeof leadRank !== 'number' || typeof worstRank !== 'number') {
+    return (
+      bestProfile.value?.judgment.trendSummary
+      || '排名缺源，当前仅可按在校生规模与就业出口做研判。'
+    )
+  }
+  const gap = worstRank - leadRank
   const bestTrend = bestProfile.value?.judgment.trendSummary ?? ''
   const worstPrio = worstProfile.value?.judgment.priorities ?? []
   const lead = leadMajor.value
@@ -110,21 +300,24 @@ const judgmentAnalysis = computed(() => {
 const insights = computed(() => {
   if (!data.value) return []
   const lead = leadMajor.value
-  const rising = data.value.majorRankings.filter((m) => m.yoyChange > 0)
+  const rising = data.value.majorRankings.filter((m) => typeof m.yoyChange === 'number' && m.yoyChange > 0)
   const flat = data.value.majorRankings.filter((m) => m.yoyChange === 0)
+  const hasRank = typeof lead?.currentRank === 'number'
   return [
     {
-      title: '头部专业带动明显',
+      title: hasRank ? '头部专业带动明显' : '专业规模快览',
       detail: lead
-        ? `${lead.major} 全国第 ${lead.currentRank}、${lead.grade} 级，较上年 ${formatChange(lead.yoyChange)}，是学院专业矩阵的压舱石。`
-        : '头部专业贡献主要排名红利。',
+        ? hasRank
+          ? `${lead.major} 全国第 ${lead.currentRank}、${lead.grade} 级，较上年 ${formatChange(lead.yoyChange)}，是学院专业矩阵的压舱石。`
+          : `${lead.major} 在校生规模居前；排名/等级缺源，待导入软科快照后补全。`
+        : '暂无专业学籍数据。',
       tone: 'good' as const,
     },
     {
-      title: rising.length ? '上升通道仍在打开' : '部分专业进入平台期',
+      title: rising.length ? '上升通道仍在打开' : '出口与生源可观测',
       detail: rising.length
         ? `${rising.map((m) => shortMajor(m.major)).join('、')} 排名上行；建议把增量资源继续投向可冲击更高等级的赛道。`
-        : `${flat.map((m) => shortMajor(m.major)).join('、') || '部分专业'} 排名持平，需用标志性成果打破平台期。`,
+        : (data.value.strengths[0] || data.value.suggestions[0] || '可基于就业落实率与录取均分跟踪各专业出口质量。'),
       tone: rising.length ? ('info' as const) : ('warn' as const),
     },
     {
@@ -328,7 +521,7 @@ watch(activeMajor, (name) => {
 </script>
 
 <template>
-  <CollegeDetailLayout>
+  <CollegeDetailLayout module="专业发展全景">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">📋 专业总览</button>
@@ -350,10 +543,10 @@ watch(activeMajor, (name) => {
             class="resource-summary__card"
             @click="switchTab('profile', { major: item.major })"
           >
-            <span class="resource-summary__icon">{{ item.grade }}</span>
+            <span class="resource-summary__icon">{{ fmtNum(item.grade) }}</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">{{ shortMajor(item.major) }}</span>
-              <strong class="resource-summary__value">第{{ item.currentRank }}<small>名</small></strong>
+              <strong class="resource-summary__value">第{{ fmtNum(item.currentRank) }}<small>名</small></strong>
             </div>
           </div>
           <div class="resource-summary__card" @click="scrollToSection('grade-history')">
@@ -361,7 +554,7 @@ watch(activeMajor, (name) => {
             <div class="resource-summary__info">
               <span class="resource-summary__label">上行专业</span>
               <strong class="resource-summary__value resource-summary__value--ok">
-                {{ data.majorRankings.filter((m) => m.yoyChange > 0).length }}<small>个</small>
+                {{ data.majorRankings.filter((m) => typeof m.yoyChange === 'number' && m.yoyChange > 0).length }}<small>个</small>
               </strong>
             </div>
           </div>
@@ -370,7 +563,7 @@ watch(activeMajor, (name) => {
         <section id="major-table" class="resource-section">
           <h2 class="resource-section__title">
             <span class="resource-section__title-icon">📋</span>
-            三个本科专业总览
+            {{ data.majorRankings.length }} 个本科专业总览
             <em class="resource-section__hint">点击卡片进入单专业全景</em>
           </h2>
           <p class="resource-section__desc">从等级、全国排名、省内与财经类位置一眼看清学院专业矩阵格局。</p>
@@ -384,10 +577,10 @@ watch(activeMajor, (name) => {
             >
               <header>
                 <strong>{{ item.major }}</strong>
-                <em>{{ item.grade }}级</em>
+                <em>{{ isMissingMark(item.grade) ? '**' : `${item.grade}级` }}</em>
               </header>
               <div class="major-card__grid">
-                <div><span>全国</span><b>第{{ item.currentRank }}</b></div>
+                <div><span>全国</span><b>第{{ fmtNum(item.currentRank) }}</b></div>
                 <div><span>较上年</span><b>{{ formatChange(item.yoyChange) }}</b></div>
                 <div><span>省内</span><b>第{{ item.provincialRank }}</b></div>
                 <div><span>财经类</span><b>第{{ item.financePeerRank }}</b></div>
@@ -419,14 +612,14 @@ watch(activeMajor, (name) => {
               <div class="judgment-pick judgment-pick--best">
                 <h4>🏆 最佳专业 · {{ leadMajor?.major }}</h4>
                 <p class="judgment-pick__rank">
-                  全国第 {{ leadMajor?.currentRank }} 名 · {{ leadMajor?.grade }} 级 · 较上年 {{ formatChange(leadMajor?.yoyChange ?? 0) }}
+                  全国第 {{ fmtNum(leadMajor?.currentRank) }} 名 · {{ isMissingMark(leadMajor?.grade) ? '**' : `${leadMajor?.grade} 级` }} · 较上年 {{ formatChange(leadMajor?.yoyChange) }}
                 </p>
                 <p class="judgment-pick__why"><b>为什么最好：</b>{{ bestReasons.join('；') }}</p>
               </div>
               <div class="judgment-pick judgment-pick--worst">
                 <h4>⚠️ 待提升专业 · {{ worstMajor?.major }}</h4>
                 <p class="judgment-pick__rank">
-                  全国第 {{ worstMajor?.currentRank }} 名 · {{ worstMajor?.grade }} 级 · 较上年 {{ formatChange(worstMajor?.yoyChange ?? 0) }}
+                  全国第 {{ fmtNum(worstMajor?.currentRank) }} 名 · {{ isMissingMark(worstMajor?.grade) ? '**' : `${worstMajor?.grade} 级` }} · 较上年 {{ formatChange(worstMajor?.yoyChange) }}
                 </p>
                 <p class="judgment-pick__why"><b>为什么最差：</b>{{ worstReasons.join('；') }}</p>
               </div>
@@ -458,13 +651,13 @@ watch(activeMajor, (name) => {
         <template v-if="profile">
           <div class="profile-hero">
             <div>
-              <h2>{{ profile.name }} <em>{{ profile.grade }}级</em></h2>
+              <h2>{{ profile.name }} <em>{{ isMissingMark(profile.grade) ? '**' : `${profile.grade}级` }}</em></h2>
               <p>{{ profile.orientation }}</p>
             </div>
             <div class="profile-hero__meta">
               <span>全国第 {{ profile.officialRank }}</span>
               <span>软科第 {{ profile.softRank }}</span>
-              <span>在校 {{ profile.studentCount }} 人</span>
+              <span>在校 {{ fmtNum(profile.studentCount) }} 人</span>
             </div>
           </div>
 
@@ -485,7 +678,7 @@ watch(activeMajor, (name) => {
               <li><span>建设类型</span><strong>{{ profile.constructionType }}</strong></li>
               <li><span>官方 / 软科</span><strong>第{{ profile.officialRank }} / 第{{ profile.softRank }}</strong></li>
               <li><span>年度招生</span><strong>{{ profile.enrollmentPlan }} 人</strong></li>
-              <li><span>在校生</span><strong>{{ profile.studentCount }} 人</strong></li>
+              <li><span>在校生</span><strong>{{ fmtNum(profile.studentCount) }} 人</strong></li>
               <li><span>学制</span><strong>{{ profile.educationYears }} 年</strong></li>
               <li><span>核心方向</span><strong>{{ profile.directions.join(' · ') }}</strong></li>
             </ul>
@@ -537,7 +730,7 @@ watch(activeMajor, (name) => {
               <li><span>平均绩点</span><strong>{{ profile.cultivation.avgGpa }}</strong></li>
               <li><span>学科竞赛获奖</span><strong>{{ profile.cultivation.competitionAwards }} 项</strong></li>
               <li><span>大创 / 科创立项</span><strong>{{ profile.cultivation.innovationProjects }} 项</strong></li>
-              <li><span>去向落实率</span><strong>{{ profile.cultivation.employmentRate }}%</strong></li>
+              <li><span>去向落实率</span><strong>{{ fmtNum(profile.cultivation.employmentRate) }}%</strong></li>
               <li><span>升学 / 优质就业</span><strong>{{ profile.cultivation.furtherStudyRate }}% / {{ profile.cultivation.qualityJobRatio }}%</strong></li>
               <li><span>主要行业</span><strong>{{ profile.cultivation.topIndustries.join(' · ') }}</strong></li>
               <li><span>主要地区</span><strong>{{ profile.cultivation.topRegions.join(' · ') }}</strong></li>
@@ -629,6 +822,60 @@ watch(activeMajor, (name) => {
               <h4>{{ item.title }}</h4>
               <p>{{ item.detail }}</p>
             </article>
+          </div>
+        </section>
+
+        <section class="resource-section">
+          <h2 class="resource-section__title">
+            <span class="resource-section__title-icon">⚖️</span>
+            单专业优势 · 劣势剖析
+            <em class="resource-section__hint">切换专业，按维度拆解优势来源与短板所在</em>
+          </h2>
+          <p class="resource-section__desc">从课程质量、教师评价、学生情况、培养成效、科研成果五个维度，剖析所选专业的优势维度与劣势维度（与本院其他专业横向对比）。</p>
+
+          <div class="dim-tabs">
+            <button
+              v-for="item in data.majorProfiles"
+              :key="item.name"
+              type="button"
+              class="dim-tab"
+              :class="{ 'dim-tab--active': activeMajor === item.name }"
+              @click="activeMajor = item.name"
+            >
+              {{ item.name }}
+            </button>
+          </div>
+
+          <div v-if="profile" class="analysis-hero">
+            <h3>{{ profile.name }} <em v-if="analysisGrade">{{ analysisGrade }}</em></h3>
+            <div class="analysis-summary">
+              <span class="analysis-badge analysis-badge--best">🟢 优势维度 {{ advantageCount }}</span>
+              <span class="analysis-badge analysis-badge--mid">🟡 持平 {{ midCount }}</span>
+              <span class="analysis-badge analysis-badge--worst">🔴 劣势维度 {{ weaknessCount }}</span>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="detail-table analysis-table">
+              <thead>
+                <tr>
+                  <th>剖析维度</th>
+                  <th>关键指标</th>
+                  <th>研判</th>
+                  <th>为什么优势 / 为什么差</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in dimensionRowsForMajor" :key="row.key">
+                  <td class="analysis-dim"><span class="analysis-dim__icon">{{ row.icon }}</span>{{ row.key }}</td>
+                  <td class="analysis-value">{{ row.format }}</td>
+                  <td class="analysis-status">
+                    <span class="analysis-tag" :class="`analysis-tag--${row.status}`">{{ STATUS_LABEL[row.status] }}</span>
+                  </td>
+                  <td class="analysis-why">{{ row.why }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -1193,6 +1440,88 @@ watch(activeMajor, (name) => {
   color: #d7ecff;
   background: rgba(0, 200, 255, 0.06);
   border: 1px dashed rgba(0, 200, 255, 0.2);
+}
+
+.analysis-table {
+  th:nth-child(3) { width: 120px; text-align: center; }
+  th:nth-child(4) { min-width: 340px; }
+
+  .analysis-dim {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #b8ecff;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &__icon { font-size: 20px; }
+  }
+
+  .analysis-value {
+    color: #eaf7ff;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .analysis-status { text-align: center; }
+
+  .analysis-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 15px;
+    white-space: nowrap;
+
+    &--best { color: #6effc2; background: rgba(20, 80, 60, 0.4); border: 1px solid rgba(110, 255, 194, 0.45); }
+    &--mid { color: #ffd56a; background: rgba(90, 70, 10, 0.35); border: 1px solid rgba(255, 213, 106, 0.45); }
+    &--worst { color: #ff9a7a; background: rgba(90, 30, 10, 0.4); border: 1px solid rgba(255, 154, 122, 0.45); }
+  }
+
+  .analysis-why {
+    line-height: 1.65;
+    color: #cfe6ff;
+    min-width: 340px;
+  }
+}
+
+.analysis-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 2px 0 14px;
+
+  h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #eaf7ff;
+
+    em {
+      margin-left: 8px;
+      font-style: normal;
+      font-size: 17px;
+      color: #ffd56a;
+    }
+  }
+}
+
+.analysis-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analysis-badge {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 800;
+
+  &--best { color: #6effc2; background: rgba(20, 80, 60, 0.35); border: 1px solid rgba(110, 255, 194, 0.35); }
+  &--mid { color: #ffd56a; background: rgba(90, 70, 10, 0.3); border: 1px solid rgba(255, 213, 106, 0.35); }
+  &--worst { color: #ff9a7a; background: rgba(90, 30, 10, 0.35); border: 1px solid rgba(255, 154, 122, 0.35); }
 }
 
 @media (max-width: 1280px) {

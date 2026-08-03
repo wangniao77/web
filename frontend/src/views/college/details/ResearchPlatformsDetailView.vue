@@ -18,7 +18,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <CollegeDetailLayout title="科研创新与团队平台" subtitle="平台与团队明细">
+  <CollegeDetailLayout module="科研创新与团队平台" title="科研创新与团队平台" subtitle="平台与团队明细">
     <div v-if="loading" class="detail-placeholder">加载中...</div>
     <template v-else-if="data">
       <section v-for="group in data.categories" :key="group.category" class="group">
