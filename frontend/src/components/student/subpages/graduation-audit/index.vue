@@ -356,7 +356,7 @@ onMounted(load)
 
 .warn-section__title {
   margin: 0 0 12px;
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -393,13 +393,13 @@ onMounted(load)
 
   &__label {
     color: #8fb7cd;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
   }
 
   &__value {
     color: #d0e8f8;
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 700;
   }
 
@@ -429,8 +429,8 @@ onMounted(load)
     justify-content: space-between;
     align-items: center;
 
-    span { color: #8fb7cd; font-size: 17px; font-weight: 600; }
-    strong { color: #43e7af; font-size: 18px; font-weight: 700; }
+    span { color: #8fb7cd; font-size: 19px; font-weight: 600; }
+    strong { color: #43e7af; font-size: 20px; font-weight: 700; }
   }
 
   &__bar {
@@ -462,7 +462,7 @@ onMounted(load)
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
 
-  &__label { color: #8fb7cd; font-size: 16px; font-weight: 600; }
+  &__label { color: #8fb7cd; font-size: 18px; font-weight: 600; }
 
   &__bar {
     height: 5px;
@@ -477,7 +477,7 @@ onMounted(load)
     background: linear-gradient(90deg, #00b8ff, #62dfff);
   }
 
-  &__value { color: #d0e8f8; font-size: 16px; text-align: right; }
+  &__value { color: #d0e8f8; font-size: 18px; text-align: right; }
 }
 
 /* ─── 3. 毕设进度跟踪 ─── */
@@ -492,7 +492,7 @@ onMounted(load)
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font-size: 17px;
+  font-size: 19px;
 
   em { color: #8fb7cd; font-style: normal; font-weight: 600; flex-shrink: 0; }
   span { color: #d0e8f8; font-weight: 600; }
@@ -528,7 +528,7 @@ onMounted(load)
 
   &__name {
     color: #8fb7cd;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
   }
 
@@ -564,7 +564,7 @@ onMounted(load)
   &__badge {
     padding: 2px 8px;
     border-radius: 3px;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     text-align: center;
   }
@@ -575,13 +575,13 @@ onMounted(load)
 
   &__type {
     color: #d0e8f8;
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 700;
   }
 
   &__desc {
     color: #8fb7cd;
-    font-size: 16px;
+    font-size: 18px;
   }
 }
 
@@ -625,7 +625,7 @@ onMounted(load)
 
     .timeline__name {
       color: #8fb7cd;
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 600;
     }
 
@@ -658,7 +658,7 @@ onMounted(load)
     border-radius: 4px;
     background: rgba(0, 38, 73, 0.3);
     color: #d0e8f8;
-    font-size: 17px;
+    font-size: 19px;
     line-height: 1.45;
   }
 }
@@ -680,7 +680,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -692,7 +692,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 17px;
+    font-size: 19px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }

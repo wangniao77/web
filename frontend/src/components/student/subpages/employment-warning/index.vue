@@ -24,7 +24,7 @@ import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, JobMatchVM, AttentionItemVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
-import { AXIS_LABEL } from '@/styles/echarts-theme'
+import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,6 +65,45 @@ const LEVEL_COLOR: Record<Level, string> = { low: '#55e995', medium: '#facc15', 
 const LEVEL_TEXT: Record<Level, string> = { low: '正常', medium: '需关注', high: '高危' }
 const levelColor = (lv: string) => LEVEL_COLOR[(lv as Level)] || '#8fb7cd'
 const levelText = (lv: string) => LEVEL_TEXT[(lv as Level)] || '—'
+const levelOfAbility = (v: number): Level => (v >= 70 ? 'low' : v >= 40 ? 'medium' : 'high')
+
+/** 准备度仪表：越高越好，绿/黄/红 */
+function readinessGradient(v: number) {
+  if (v >= 75) {
+    return {
+      progressColor: {
+        type: 'linear' as const, x: 0, y: 1, x2: 1, y2: 0,
+        colorStops: [
+          { offset: 0, color: '#6ee7b7' },
+          { offset: 1, color: '#34d399' },
+        ],
+      },
+      solidColor: '#34d399',
+    }
+  }
+  if (v >= 50) {
+    return {
+      progressColor: {
+        type: 'linear' as const, x: 0, y: 1, x2: 1, y2: 0,
+        colorStops: [
+          { offset: 0, color: '#fde68a' },
+          { offset: 1, color: '#fb923c' },
+        ],
+      },
+      solidColor: '#fbbf24',
+    }
+  }
+  return {
+    progressColor: {
+      type: 'linear' as const, x: 0, y: 1, x2: 1, y2: 0,
+      colorStops: [
+        { offset: 0, color: '#fda4af' },
+        { offset: 1, color: '#ef4444' },
+      ],
+    },
+    solidColor: '#fb7185',
+  }
+}
 
 /** 页面分区导航（点击跳转到对应模块） */
 const sectionNav = [
@@ -134,34 +173,99 @@ const recommendedDirection = computed(() =>
 
 const currentStage = computed(() => dashboard.value?.careerDev?.employmentDestination ?? '待明确')
 
-const readinessGaugeOption = computed<EChartsOption>(() => ({
-  series: [{
-    type: 'gauge',
-    startAngle: 210,
-    endAngle: -30,
-    min: 0,
-    max: 100,
-    radius: '94%',
-    center: ['50%', '58%'],
-    progress: { show: true, width: 12, itemStyle: { color: levelColor(employmentLevel.value) } },
-    axisLine: { lineStyle: { width: 12, color: [[0.4, '#ff7474'], [0.7, '#facc15'], [1, '#55e995']] } },
-    pointer: { width: 4, length: '58%', itemStyle: { color: '#f6fbff' } },
-    axisTick: { show: false },
-    splitLine: { length: 10, lineStyle: { color: 'rgba(255,255,255,0.25)', width: 1 } },
-    axisLabel: { distance: 14, color: '#7eb4d8', fontSize: 16 },
-    anchor: { show: true, size: 8, itemStyle: { color: '#f6fbff' } },
-    title: { show: false },
-    detail: {
-      valueAnimation: true,
-      formatter: '{value}',
-      color: '#f6fbff',
-      fontSize: 30,
-      fontWeight: 'bolder',
-      offsetCenter: [0, '36%'],
-    },
-    data: [{ value: jobReadiness.value }],
-  }],
-}))
+const readinessGaugeOption = computed<EChartsOption>(() => {
+  const v = Number(jobReadiness.value) || 0
+  const { progressColor, solidColor } = readinessGradient(v)
+  const glow = `${solidColor}aa`
+  const center: [string, string] = ['50%', '58%']
+  const radius = '78%'
+  const startAngle = 210
+  const endAngle = -30
+  return {
+    animation: true,
+    animationDuration: 1100,
+    animationEasing: 'cubicOut',
+    series: [
+      {
+        type: 'gauge',
+        center,
+        radius,
+        startAngle,
+        endAngle,
+        min: 0,
+        max: 100,
+        splitNumber: 4,
+        pointer: { show: false },
+        anchor: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        title: { show: false },
+        detail: {
+          valueAnimation: true,
+          offsetCenter: [0, '8%'],
+          formatter: (n: number) => `{num|${Number(n).toFixed(n % 1 === 0 ? 0 : 1)}}`,
+          rich: {
+            num: {
+              fontSize: CHART_FONT.gaugeCompact + 16,
+              fontFamily: 'DIN Alternate, Segoe UI, sans-serif',
+              fontWeight: 900,
+              color: '#ffffff',
+              textShadowColor: solidColor,
+              textShadowBlur: 22,
+              lineHeight: 46,
+            },
+          },
+        },
+        axisLine: {
+          roundCap: true,
+          lineStyle: { width: 16, color: [[1, 'rgba(20, 60, 110, 0.45)']] },
+        },
+        progress: {
+          show: true,
+          roundCap: true,
+          width: 16,
+          itemStyle: { color: progressColor, shadowBlur: 16, shadowColor: glow },
+        },
+        data: [{ value: v }],
+        z: 2,
+      },
+      {
+        type: 'gauge',
+        center,
+        radius,
+        startAngle,
+        endAngle,
+        min: 0,
+        max: 100,
+        pointer: {
+          show: true,
+          icon: 'circle',
+          length: '5%',
+          width: 11,
+          offsetCenter: [0, '-90%'],
+          itemStyle: {
+            color: '#ffffff',
+            borderColor: solidColor,
+            borderWidth: 3,
+            shadowBlur: 12,
+            shadowColor: glow,
+          },
+        },
+        anchor: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        detail: { show: false },
+        title: { show: false },
+        axisLine: { lineStyle: { width: 0, color: [[1, 'transparent']] } },
+        progress: { show: false },
+        data: [{ value: v }],
+        z: 3,
+      },
+    ],
+  }
+})
 
 const employmentStatusText = computed(() => {
   if (employmentLevel.value === 'high') return '就业准备度偏低、风险项集中，已触发高危预警，须立即介入帮扶。'
@@ -208,10 +312,15 @@ const abilityRadarValues = computed<number[]>(() => {
 })
 
 const abilityRadarOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'item' },
+  tooltip: {
+    trigger: 'item',
+    backgroundColor: 'rgba(4, 16, 40, 0.94)',
+    borderColor: 'rgba(0, 212, 255, 0.4)',
+    textStyle: { color: '#e8f7ff', fontSize: 18 },
+  },
   radar: {
-    center: ['50%', '54%'],
-    radius: '66%',
+    center: ['50%', '50%'],
+    radius: '72%',
     indicator: [
       { name: '专业能力', max: 100 },
       { name: '项目经历', max: 100 },
@@ -219,31 +328,94 @@ const abilityRadarOption = computed<EChartsOption>(() => ({
       { name: '技能证书', max: 100 },
       { name: '面试能力', max: 100 },
     ],
-    axisName: { color: '#b8ecff', fontSize: 19 },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
-    splitArea: { areaStyle: { color: ['rgba(0,184,255,0.04)', 'rgba(0,184,255,0.08)'] } },
-    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
+    axisName: {
+      color: '#e8f7ff',
+      fontSize: 18,
+      fontWeight: 800,
+      padding: [8, 10],
+      textShadowColor: 'rgba(0, 40, 80, 0.9)',
+      textShadowBlur: 6,
+    },
+    splitNumber: 4,
+    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.2)', width: 1.2 } },
+    splitArea: {
+      areaStyle: {
+        color: ['rgba(0,184,255,0.03)', 'rgba(0,184,255,0.09)', 'rgba(0,184,255,0.03)', 'rgba(0,184,255,0.14)'],
+      },
+    },
+    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.28)' } },
   },
   series: [{
     type: 'radar',
     data: [{
       value: abilityRadarValues.value,
       name: '就业能力',
-      symbolSize: 5,
-      areaStyle: { color: 'rgba(0, 229, 255, 0.22)' },
-      lineStyle: { color: '#00e5ff', width: 2 },
-      itemStyle: { color: '#00e5ff' },
+      symbol: 'circle',
+      symbolSize: 10,
+      areaStyle: {
+        color: {
+          type: 'radial', x: 0.5, y: 0.5, r: 0.75,
+          colorStops: [
+            { offset: 0, color: 'rgba(0, 229, 255, 0.52)' },
+            { offset: 1, color: 'rgba(0, 160, 255, 0.05)' },
+          ],
+        },
+      },
+      lineStyle: { color: '#5ee7ff', width: 3.2, shadowBlur: 18, shadowColor: 'rgba(0,220,255,0.75)' },
+      itemStyle: {
+        color: '#fff',
+        borderColor: '#00e5ff',
+        borderWidth: 2.5,
+        shadowBlur: 14,
+        shadowColor: 'rgba(0,220,255,0.8)',
+      },
     }],
   }],
 }))
 
+/** 岗位适配雷达：居中铺满，轴名加大 */
+const jobFitRadarOption = computed<EChartsOption>(() => {
+  const base = abilityRadarOption.value
+  const radar = (base.radar ?? {}) as Record<string, unknown>
+  return {
+    ...base,
+    radar: {
+      ...radar,
+      center: ['50%', '50%'],
+      radius: '68%',
+      axisName: {
+        color: '#e8f7ff',
+        fontSize: 20,
+        fontWeight: 800,
+        padding: [10, 12],
+        textShadowColor: 'rgba(0, 40, 80, 0.9)',
+        textShadowBlur: 6,
+      },
+    },
+  }
+})
+
 const abilityFactorList = computed(() => {
   const names = ['专业能力', '项目经历', '实习经历', '技能证书', '面试能力']
-  return abilityRadarValues.value.map((v, i) => ({
-    name: names[i],
-    level: (v >= 70 ? 'low' : v >= 40 ? 'medium' : 'high') as Level,
-    desc: `评分 ${v}/100`,
-  }))
+  const tips = [
+    (s: number) => (s >= 70 ? '专业基础扎实' : s >= 40 ? '专业尚可' : '专业偏弱'),
+    (s: number) => (s >= 70 ? '项目积累充足' : s >= 40 ? '项目偏少' : '项目严重不足'),
+    (s: number) => (s >= 70 ? '实习经验充分' : s >= 40 ? '实习偏少' : '缺少实习'),
+    (s: number) => (s >= 70 ? '证书储备良好' : s >= 40 ? '证书一般' : '证书不足'),
+    (s: number) => (s >= 70 ? '面试准备充分' : s >= 40 ? '面试待加强' : '面试经验少'),
+  ]
+  return abilityRadarValues.value.map((v, i) => {
+    const score = Math.round(v)
+    const level = levelOfAbility(score)
+    return {
+      name: names[i],
+      score,
+      level,
+      tip: tips[i](score),
+      desc: `评分 ${score}/100`,
+      tone: LEVEL_COLOR[level],
+    }
+  })
 })
 
 /* ---------- 4. 就业风险原因分析（风险矩阵） ---------- */
@@ -260,44 +432,103 @@ const riskMatrix = computed<RiskMatrixItem[]>(() => {
   }
   return [
     mk('实践经历不足', Math.max(20, 90 - intern * 30), 82),
-    mk('项目经验不足', Math.max(20, 88 - proj * 24), 70),
-    mk('简历准备不足', resumeBad ? 72 : 38, resumeBad ? 60 : 35),
-    mk('技能匹配不足', Math.max(20, 92 - certR), 62),
+    mk('项目经验不足', Math.max(20, 88 - proj * 24) + 8, 66),
+    mk('简历准备不足', resumeBad ? 72 : 32, resumeBad ? 60 : 28),
+    mk('技能匹配不足', Math.max(20, 92 - certR) - 4, 58),
   ]
 })
 
-const riskMatrixOption = computed<EChartsOption>(() => ({
-  grid: { top: 18, bottom: 28, left: 38, right: 16 },
-  tooltip: {
-    trigger: 'item',
-    formatter: (params: unknown) => {
-      const p = params as { data: { name: string; value: number[] } }
-      return `${p.data.name}<br/>发生可能性：${p.data.value[0]}<br/>影响程度：${p.data.value[1]}`
+const riskMatrixOption = computed<EChartsOption>(() => {
+  const labelPos = ['top', 'bottom', 'left', 'right'] as const
+  return {
+    grid: { top: 40, bottom: 48, left: 58, right: 48, containLabel: false },
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(4, 16, 40, 0.94)',
+      borderColor: 'rgba(0, 212, 255, 0.45)',
+      textStyle: { color: '#e8f7ff', fontSize: 18 },
+      extraCssText: 'border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.45);',
+      formatter: (params: unknown) => {
+        const p = params as { data: { name: string; value: number[] } }
+        return `<b style="color:#8ef6ff;font-size:18px">${p.data.name}</b><br/>发生可能性：<b style="color:#7ff6ff">${p.data.value[0]}</b><br/>影响程度：<b style="color:#7ff6ff">${p.data.value[1]}</b>`
+      },
     },
-  },
-  xAxis: {
-    type: 'value', min: 0, max: 100, name: '可能性',
-    nameTextStyle: { color: '#7eb4d8', fontSize: 18 },
-    axisLabel: { ...AXIS_LABEL, fontSize: 18 },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
-  },
-  yAxis: {
-    type: 'value', min: 0, max: 100, name: '影响程度',
-    nameTextStyle: { color: '#7eb4d8', fontSize: 18 },
-    axisLabel: { ...AXIS_LABEL, fontSize: 18 },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
-  },
-  series: [{
-    type: 'scatter',
-    data: riskMatrix.value.map((r) => ({
-      name: r.name,
-      value: [r.x, r.y],
-      symbolSize: 20 + (r.x + r.y) / 8,
-      itemStyle: { color: LEVEL_COLOR[r.level], opacity: 0.85 },
-      label: { show: true, formatter: r.name, position: 'top', color: '#d0e8f8', fontSize: 18 },
-    })),
-  }],
-}))
+    xAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      name: '可能性 →',
+      nameLocation: 'middle',
+      nameGap: 28,
+      nameTextStyle: { color: '#c8f0ff', fontSize: 18, fontWeight: 800 },
+      axisLabel: { ...AXIS_LABEL, fontSize: 17, color: '#9ec7e0', fontWeight: 700 },
+      splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.1)', type: 'dashed' } },
+      axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.3)' } },
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      name: '影响程度',
+      nameLocation: 'middle',
+      nameGap: 38,
+      nameTextStyle: { color: '#c8f0ff', fontSize: 18, fontWeight: 800 },
+      axisLabel: { ...AXIS_LABEL, fontSize: 17, color: '#9ec7e0', fontWeight: 700 },
+      splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.1)', type: 'dashed' } },
+    },
+    series: [{
+      type: 'scatter',
+      data: riskMatrix.value.map((r, idx) => ({
+        name: r.name,
+        value: [r.x, r.y],
+        symbolSize: 26 + (r.x + r.y) / 12,
+        itemStyle: {
+          color: {
+            type: 'radial', x: 0.35, y: 0.3, r: 0.85,
+            colorStops: [
+              { offset: 0, color: '#ffffff' },
+              { offset: 0.28, color: LEVEL_COLOR[r.level] },
+              { offset: 1, color: LEVEL_COLOR[r.level] },
+            ],
+          },
+          opacity: 0.95,
+          shadowBlur: 16,
+          shadowColor: `${LEVEL_COLOR[r.level]}aa`,
+        },
+        label: {
+          show: true,
+          formatter: r.name,
+          position: labelPos[idx % labelPos.length],
+          color: '#e8f7ff',
+          fontSize: 16,
+          fontWeight: 800,
+          distance: 12,
+          textShadowColor: 'rgba(0,0,0,0.75)',
+          textShadowBlur: 8,
+        },
+      })),
+      markArea: {
+        silent: true,
+        data: [[
+          {
+            xAxis: 50,
+            yAxis: 50,
+            itemStyle: { color: 'rgba(255, 116, 116, 0.08)' },
+            label: {
+              show: true,
+              position: 'insideTopRight',
+              formatter: '高风险区',
+              color: 'rgba(255, 160, 160, 0.8)',
+              fontSize: 16,
+              fontWeight: 800,
+            },
+          },
+          { xAxis: 100, yAxis: 100 },
+        ]],
+      },
+    }],
+  }
+})
 
 /* ---------- 5. 求职进展跟踪（流程图） ---------- */
 interface ProgressStep { name: string; value: number; unit: string; status: 'done' | 'active' | 'pending' }
@@ -412,23 +643,27 @@ onMounted(load)
       <AiAnalysisCard title="AI 就业分析" :text="aiAnalysis" class="sec-full" />
 
       <!-- 3. 就业能力画像 + 求职进展/意向（并排） -->
-      <section id="sec-ability" class="warn-section">
+      <section id="sec-ability" class="warn-section ability-panel">
         <h3 class="warn-section__title">就业能力画像</h3>
-        <div class="radar-wrap">
-          <ChartContainer :option="abilityRadarOption" />
-        </div>
-        <div class="factor-list">
-          <div
-            v-for="f in abilityFactorList"
-            :key="f.name"
-            class="factor-item"
-            :class="`factor-item--${f.level}`"
-          >
-            <div class="factor-item__head">
-              <span class="factor-item__name">{{ f.name }}</span>
-              <span class="factor-item__badge">{{ levelText(f.level) }}</span>
+        <div class="ability-panel__body">
+          <div class="ability-panel__radar">
+            <ChartContainer :option="abilityRadarOption" />
+          </div>
+          <div class="meter-list">
+            <div
+              v-for="f in abilityFactorList"
+              :key="f.name"
+              class="meter"
+              :style="{ '--tone': f.tone }"
+            >
+              <div class="meter__head">
+                <span class="meter__name">{{ f.name }}</span>
+                <span class="meter__badge">{{ levelText(f.level) }}</span>
+                <strong class="meter__score">{{ f.score }}</strong>
+              </div>
+              <div class="meter__track"><i :style="{ width: `${f.score}%` }" /></div>
+              <p class="meter__tip">{{ f.tip }}</p>
             </div>
-            <span class="factor-item__desc">{{ f.desc }}</span>
           </div>
         </div>
       </section>
@@ -443,7 +678,7 @@ onMounted(load)
               <span class="progress-step__name">{{ s.name }}</span>
               <span class="progress-step__value">{{ s.value }}<span class="progress-step__unit">{{ s.unit }}</span></span>
             </div>
-            <span v-if="i < jobProgress.length - 1" class="progress-connector">→</span>
+            <span v-if="i < jobProgress.length - 1" class="progress-connector" aria-hidden="true" />
           </template>
         </div>
         <h4 class="combine__sub">就业意向与准备状态</h4>
@@ -455,78 +690,103 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 4. 就业风险原因分析（风险分析放上面） -->
-      <section id="sec-risk" class="warn-section sec-full">
+      <!-- 4. 就业风险原因分析 -->
+      <section id="sec-risk" class="warn-section sec-full risk-panel">
         <h3 class="warn-section__title">就业风险原因分析</h3>
-        <div class="risk-sub">风险矩阵（横轴=发生可能性，纵轴=影响程度，越靠右上风险越高）</div>
-        <div class="matrix-wrap">
-          <ChartContainer :option="riskMatrixOption" />
-        </div>
-        <div class="risk-tag-list">
-          <div
-            v-for="r in riskMatrix"
-            :key="r.name"
-            class="risk-tag"
-            :class="`risk-tag--${r.level}`"
-          >
-            <span class="risk-tag__dot" :style="{ background: levelColor(r.level) }" />
-            <span class="risk-tag__name">{{ r.name }}</span>
-            <span class="risk-tag__val">{{ levelText(r.level) }}</span>
+        <p class="risk-sub">风险矩阵 · 横轴=发生可能性 · 纵轴=影响程度 · 越靠右上风险越高</p>
+        <div class="risk-layout">
+          <div class="matrix-wrap">
+            <ChartContainer :option="riskMatrixOption" />
+          </div>
+          <div class="risk-tag-list">
+            <div
+              v-for="r in riskMatrix"
+              :key="r.name"
+              class="risk-tag"
+              :class="`risk-tag--${r.level}`"
+              :style="{ '--tone': levelColor(r.level) }"
+            >
+              <div class="risk-tag__head">
+                <span class="risk-tag__name">{{ r.name }}</span>
+                <span class="risk-tag__val">{{ levelText(r.level) }}</span>
+              </div>
+              <div class="risk-tag__bars">
+                <div class="risk-tag__bar">
+                  <span>可能性</span>
+                  <i><em :style="{ width: `${r.x}%` }" /></i>
+                  <b>{{ r.x }}</b>
+                </div>
+                <div class="risk-tag__bar">
+                  <span>影响度</span>
+                  <i><em :style="{ width: `${r.y}%` }" /></i>
+                  <b>{{ r.y }}</b>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- 岗位适配雷达图 + 推荐目标岗位 / 优势 / 缺失能力 -->
-      <section id="sec-jobradar" class="warn-section sec-full">
+      <section id="sec-jobradar" class="warn-section sec-full job-fit-panel">
         <h3 class="warn-section__title">岗位适配雷达图 <i class="mock-tag">模拟数据</i></h3>
         <div class="job-radar-layout">
-          <!-- 左侧：岗位适配雷达图 -->
           <div class="job-radar-left">
             <div class="radar-chart-wrap">
-              <ChartContainer :option="abilityRadarOption" />
+              <ChartContainer :option="jobFitRadarOption" />
             </div>
           </div>
-          <!-- 右侧：岗位标签 / 优势 / 缺失能力 -->
           <div class="job-radar-right">
-            <!-- 推荐目标岗位标签（顶部） -->
             <div v-if="jobMatches.length" class="job-tags-top">
               <label class="job-tags-label">推荐目标岗位</label>
               <div class="job-tags-row">
-                <span
+                <button
                   v-for="(job, idx) in jobMatches.slice(0, 4)"
                   :key="idx"
+                  type="button"
                   class="job-tag-chip"
                   :class="{ 'is-active': selectedJob === idx }"
                   @click="selectedJob = idx"
                 >
                   <span class="job-tag-chip__rank">TOP{{ idx + 1 }}</span>
-                  {{ job.role }}
-                  <strong class="job-tag-chip__match" :style="{ color: job.match >= 80 ? '#55e995' : job.match >= 60 ? '#facc15' : '#ff7474' }">{{ job.match }}%</strong>
-                </span>
+                  <span class="job-tag-chip__role">{{ job.role }}</span>
+                  <strong
+                    class="job-tag-chip__match"
+                    :style="{ color: job.match >= 80 ? '#55e995' : job.match >= 60 ? '#facc15' : '#ff7474' }"
+                  >{{ job.match }}%</strong>
+                </button>
               </div>
             </div>
-            <!-- 优势（能力画像因子） -->
             <div class="job-ability-section">
               <label class="job-section-label job-section-label--good">优势能力</label>
               <div class="job-ability-grid">
                 <div
-                  v-for="f in abilityFactorList.filter(a => a.level === 'low')"
+                  v-for="f in abilityFactorList.filter((a) => a.level === 'low')"
                   :key="f.name"
                   class="job-ability-chip job-ability-chip--good"
                 >
                   <span class="job-ability-chip__name">{{ f.name }}</span>
-                  <span class="job-ability-chip__val">{{ f.desc.split(' ')[1] }}</span>
+                  <span class="job-ability-chip__val">{{ f.score }}/100</span>
                 </div>
-                <div v-if="!abilityFactorList.filter(a => a.level === 'low').length" class="job-ability-empty">暂无突出优势</div>
+                <div v-if="!abilityFactorList.filter((a) => a.level === 'low').length" class="job-ability-empty">
+                  暂无突出优势
+                </div>
               </div>
             </div>
-            <!-- 缺失能力 -->
             <div class="job-ability-section">
               <label class="job-section-label job-section-label--warn">缺失能力</label>
               <div class="job-weakness-list">
-                <div v-for="(w, idx) in weaknesses" :key="idx" class="job-weakness-chip" :class="`job-weakness-chip--${w.level}`">
+                <div
+                  v-for="(w, idx) in weaknesses"
+                  :key="idx"
+                  class="job-weakness-chip"
+                  :class="`job-weakness-chip--${w.level}`"
+                  :style="{ '--tone': levelColor(w.level) }"
+                >
                   <span class="job-weakness-chip__label">{{ w.label }}</span>
-                  <span class="job-weakness-chip__level" :style="{ color: levelColor(w.level) }">{{ { low: '良好', medium: '需关注', high: '短板' }[w.level] }}</span>
+                  <span class="job-weakness-chip__level">
+                    {{ { low: '良好', medium: '需关注', high: '短板' }[w.level] }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -594,29 +854,47 @@ onMounted(load)
 .sec-full { grid-column: 1 / -1; }
 
 .warn-section {
-  padding: 14px 18px;
-  border-radius: 6px;
+  position: relative;
+  padding: 14px 18px 16px;
+  border-radius: 10px;
   min-width: 0;
   background:
-    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
-    rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(102, 217, 255, 0.1);
-}
-
-.warn-section__title {
-  margin: 0 0 12px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #b8ecff;
-  letter-spacing: 0.04em;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+    linear-gradient(145deg, rgba(0, 113, 206, 0.16), rgba(3, 12, 34, 0.78)),
+    rgba(5, 18, 48, 0.54);
+  border: 1px solid rgba(102, 217, 255, 0.18);
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 22px rgba(0, 184, 255, 0.06);
+  overflow: hidden;
 
   &::before {
     content: '';
-    width: 3px;
-    height: 13px;
+    position: absolute;
+    top: 0;
+    left: 14px;
+    right: 14px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.62), transparent);
+    pointer-events: none;
+  }
+}
+
+.warn-section__title {
+  margin: 0 0 14px;
+  font-size: 26px;
+  font-weight: 800;
+  color: #f4fbff;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 16px;
     border-radius: 2px;
     background: linear-gradient(180deg, #00e5ff, #00b8ff);
     box-shadow: 0 0 8px rgba(0, 212, 255, 0.45);
@@ -625,10 +903,11 @@ onMounted(load)
   .mock-tag {
     margin-left: 4px;
     font-style: normal;
-    font-size: 17px;
-    padding: 1px 7px;
-    border-radius: 999px;
+    font-size: 14px;
+    padding: 3px 10px;
+    border-radius: 6px;
     background: rgba(0, 184, 255, 0.12);
+    border: 1px solid rgba(0, 184, 255, 0.28);
     color: #8ef6ff;
     font-weight: 700;
   }
@@ -636,10 +915,11 @@ onMounted(load)
 
 /* 合并卡片内的二级小标题 */
 .combine__sub {
-  margin: 14px 0 8px;
-  font-size: 21px;
-  font-weight: 700;
-  color: #9ecae8;
+  margin: 14px 0 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #b8ecff;
+  letter-spacing: 0.03em;
 
   &:first-of-type { margin-top: 0; }
 }
@@ -647,24 +927,25 @@ onMounted(load)
 /* 1. 总览 */
 .overview__body {
   display: flex;
-  gap: 16px;
+  gap: 18px;
   align-items: stretch;
 }
 
 .overview__gauge {
-  width: 180px;
+  width: 200px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 
-  :deep(.chart-container) { width: 180px; height: 160px; }
+  :deep(.chart-container) { width: 200px; height: 168px; }
 
   &-cap {
-    margin-top: -6px;
-    font-size: 20px;
-    color: #7eb4d8;
-    font-weight: 600;
+    margin-top: -2px;
+    font-size: 15px;
+    color: #8fc4e4;
+    font-weight: 650;
+    letter-spacing: 0.06em;
   }
 }
 
@@ -679,178 +960,348 @@ onMounted(load)
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
 }
 
 .kpi-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 12px 14px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.45);
-  border-left: 3px solid #65dfff;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgba(0, 90, 160, 0.28), rgba(4, 20, 48, 0.55));
+  border: 1px solid rgba(90, 200, 255, 0.22);
+  border-left: 3px solid rgba(0, 220, 255, 0.75);
+  box-shadow:
+    inset 0 0 18px rgba(0, 140, 220, 0.1),
+    0 0 16px rgba(0, 160, 255, 0.06);
+  overflow: hidden;
 
-  &--low { border-color: #55e995; }
-  &--medium { border-color: #facc15; }
-  &--high { border-color: #ff7474; }
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(140, 230, 255, 0.12), transparent);
+    animation: ewKpiSweep 5.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  &--low { border-left-color: #55e995; }
+  &--medium { border-left-color: #facc15; }
+  &--high { border-left-color: #ff7474; }
 
   &__label {
-    font-size: 21px;
-    color: #7eb4d8;
-    font-weight: 600;
+    font-size: 17px;
+    color: #8fc4e4;
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
 
   &__value {
     font-size: 32px;
     font-weight: 900;
     color: #f6fbff;
+    font-family: 'DIN Alternate', 'Segoe UI', sans-serif;
+    line-height: 1.2;
+    text-shadow: 0 0 12px rgba(80, 200, 255, 0.35);
 
     &--small {
-      font-size: 22px;
-      line-height: 1.3;
+      font-size: 20px;
+      line-height: 1.35;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      font-family: inherit;
     }
   }
+}
+
+@keyframes ewKpiSweep {
+  0% { left: -40%; opacity: 0; }
+  20% { opacity: 1; }
+  100% { left: 120%; opacity: 0; }
 }
 
 .risk-note {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 12px 16px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.35);
-  border: 1px solid rgba(102, 217, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(0, 38, 73, 0.42);
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  box-shadow: inset 0 0 18px rgba(0, 140, 220, 0.06);
 
   &__tag {
     flex-shrink: 0;
-    padding: 4px 14px;
-    border-radius: 999px;
-    font-size: 21px;
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 16px;
     font-weight: 800;
     color: #06122e;
+    letter-spacing: 0.04em;
   }
 
   &__text {
-    font-size: 21px;
+    font-size: 17px;
     color: #d0e8f8;
-    line-height: 1.6;
+    line-height: 1.55;
   }
 
-  &--low .risk-note__tag { background: #55e995; }
-  &--medium .risk-note__tag { background: #facc15; }
-  &--high .risk-note__tag { background: #ff7474; color: #fff; }
+  &--low .risk-note__tag { background: #55e995; box-shadow: 0 0 12px rgba(85, 233, 149, 0.35); }
+  &--medium .risk-note__tag { background: #facc15; box-shadow: 0 0 12px rgba(250, 204, 21, 0.3); }
+  &--high .risk-note__tag { background: #ff7474; color: #fff; box-shadow: 0 0 12px rgba(255, 116, 116, 0.35); }
 }
 
-/* 雷达 + 因素 */
+/* 能力画像：大雷达 + 指数条 */
+.ability-panel__body {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+  min-height: 360px;
+}
+
+.ability-panel__radar {
+  min-width: 0;
+  min-height: 360px;
+  height: 100%;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 200, 255, 0.12), transparent 65%);
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  :deep(.chart-container) {
+    width: 100%;
+    height: 360px;
+  }
+}
+
+.meter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.meter {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(0, 80, 140, 0.28), rgba(4, 18, 42, 0.55));
+  border: 1px solid rgba(102, 217, 255, 0.16);
+  border-left: 4px solid var(--tone);
+  box-shadow: inset 0 0 16px rgba(0, 140, 220, 0.08);
+
+  &__head {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  &__name {
+    font-size: 18px;
+    font-weight: 800;
+    color: #e8f7ff;
+  }
+
+  &__badge {
+    font-size: 14px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 6px;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+  }
+
+  &__score {
+    font-size: 24px;
+    font-weight: 900;
+    font-family: 'DIN Alternate', sans-serif;
+    color: var(--tone);
+    min-width: 36px;
+    text-align: right;
+    text-shadow: 0 0 12px color-mix(in srgb, var(--tone) 50%, transparent);
+  }
+
+  &__track {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(101, 146, 183, 0.22);
+    overflow: hidden;
+
+    i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 55%, #06203a), var(--tone));
+      box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 55%, transparent);
+    }
+  }
+
+  &__tip {
+    margin: 8px 0 0;
+    font-size: 15px;
+    color: rgba(184, 220, 245, 0.82);
+    font-weight: 650;
+  }
+}
+
+/* legacy */
 .radar-wrap {
-  height: 200px;
-  :deep(.chart-container) { height: 200px; }
+  height: 280px;
+  :deep(.chart-container) { height: 280px; }
 }
 
 .factor-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 8px;
+  display: none;
 }
 
-.factor-item {
+/* 风险矩阵 + 侧栏指标卡 */
+.risk-sub {
+  margin: -4px 0 14px;
+  font-size: 17px;
+  color: #9ecae8;
+  font-weight: 650;
+}
+
+.risk-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 420px;
+}
+
+.matrix-wrap {
+  min-width: 0;
+  min-height: 420px;
+  height: 100%;
+  align-self: stretch;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.3);
-  border-left: 3px solid #65dfff;
+  background:
+    radial-gradient(ellipse at 70% 30%, rgba(255, 100, 100, 0.1), transparent 55%),
+    linear-gradient(145deg, rgba(0, 50, 100, 0.18), rgba(4, 14, 36, 0.35));
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  overflow: hidden;
 
-  &--low { border-color: #55e995; }
-  &--medium { border-color: #facc15; }
-  &--high { border-color: #ff7474; }
+  :deep(.chart-container) {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+  }
+}
+
+.risk-tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  height: 100%;
+  align-self: stretch;
+}
+
+.risk-tag {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(0, 80, 140, 0.26), rgba(4, 18, 42, 0.55));
+  border: 1px solid rgba(102, 217, 255, 0.16);
+  border-left: 4px solid var(--tone);
+  box-shadow: inset 0 0 18px rgba(0, 140, 220, 0.06);
 
   &__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
-  }
-  &__name { font-size: 21px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
-  &__badge {
-    flex-shrink: 0;
-    font-size: 19px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-  &--low &__badge { background: rgba(85, 233, 149, 0.14); color: #55e995; }
-  &--medium &__badge { background: rgba(250, 204, 21, 0.14); color: #facc15; }
-  &--high &__badge { background: rgba(255, 116, 116, 0.14); color: #ff7474; }
-
-  &__desc {
-    font-size: 20px;
-    color: #9ecae8;
-    line-height: 1.4;
-  }
-}
-
-/* 风险矩阵 + 标签 */
-.risk-sub {
-  font-size: 20px;
-  color: #7eb4d8;
-  margin-bottom: 8px;
-}
-
-.matrix-wrap {
-  min-width: 0;
-  height: 220px;
-  :deep(.chart-container) { height: 220px; }
-}
-
-.risk-tag-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.risk-tag {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 3px;
-  background: rgba(0, 38, 73, 0.3);
-  font-size: 20px;
-
-  &__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
+    gap: 12px;
   }
 
   &__name {
-    flex: 1;
-    color: #d0e8f8;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 24px;
+    color: #f0f9ff;
+    font-weight: 800;
+    letter-spacing: 0.02em;
   }
 
   &__val {
-    color: #f6fbff;
+    flex-shrink: 0;
+    font-size: 18px;
     font-weight: 800;
-    font-variant-numeric: tabular-nums;
+    padding: 5px 14px;
+    border-radius: 6px;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
   }
 
-  &--low &__val { color: #55e995; }
-  &--medium &__val { color: #facc15; }
-  &--high &__val { color: #ff7474; }
+  &__bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__bar {
+    display: grid;
+    grid-template-columns: 78px 1fr 48px;
+    align-items: center;
+    gap: 12px;
+
+    span {
+      font-size: 20px;
+      color: #b8ecff;
+      font-weight: 750;
+    }
+
+    i {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(101, 146, 183, 0.24);
+      overflow: hidden;
+    }
+
+    em {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 50%, #06203a), var(--tone));
+      box-shadow: 0 0 10px color-mix(in srgb, var(--tone) 50%, transparent);
+    }
+
+    b {
+      font-size: 24px;
+      font-weight: 900;
+      font-family: 'DIN Alternate', sans-serif;
+      color: var(--tone);
+      text-align: right;
+      text-shadow: 0 0 10px color-mix(in srgb, var(--tone) 45%, transparent);
+    }
+  }
 }
 
 /* 求职进展流程 */
@@ -865,50 +1316,75 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 12px 8px;
-  border-radius: 5px;
-  background: rgba(0, 38, 73, 0.3);
+  gap: 8px;
+  padding: 14px 10px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(0, 90, 160, 0.22), rgba(4, 18, 42, 0.5));
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  box-shadow: inset 0 0 16px rgba(0, 140, 220, 0.06);
 
   &__dot {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.55);
   }
-  &--done &__dot { background: #55e995; }
+  &--done &__dot { background: #55e995; box-shadow: 0 0 10px rgba(85, 233, 149, 0.55); }
   &--active &__dot { background: #00d4ff; animation: pulse 1.4s infinite; }
-  &--pending &__dot { background: #5a7d96; }
+  &--pending &__dot { background: #5a7d96; box-shadow: none; }
 
   &__name {
-    font-size: 20px;
+    font-size: 16px;
     color: #b8ecff;
-    font-weight: 700;
+    font-weight: 800;
   }
 
   &__value {
-    font-size: 29px;
+    font-size: 30px;
     font-weight: 900;
     color: #f6fbff;
+    font-family: 'DIN Alternate', sans-serif;
     font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 12px rgba(80, 200, 255, 0.3);
   }
 
   &__unit {
-    font-size: 18px;
+    font-size: 13px;
     color: #7eb4d8;
     margin-left: 2px;
     font-weight: 600;
+    font-family: inherit;
   }
 }
 
 .progress-connector {
-  flex: 0 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #3b6e92;
-  font-size: 25px;
-  font-weight: 900;
+  flex: 0 0 20px;
+  position: relative;
+  align-self: center;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    top: 50%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.55), rgba(0, 212, 255, 0.15));
+    transform: translateY(-50%);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid rgba(0, 212, 255, 0.55);
+    transform: translateY(-50%);
+  }
 }
 
 @keyframes pulse {
@@ -950,7 +1426,7 @@ onMounted(load)
   }
 
   &__rank {
-    font-size: 18px;
+    font-size: 20px;
     padding: 1px 5px;
     border-radius: 999px;
     background: rgba(0, 184, 255, 0.12);
@@ -960,7 +1436,7 @@ onMounted(load)
   }
 
   &__role {
-    font-size: 21px;
+    font-size: 23px;
     font-weight: 700;
     color: #d0e8f8;
     overflow: hidden;
@@ -969,7 +1445,7 @@ onMounted(load)
   }
 
   &__match {
-    font-size: 21px;
+    font-size: 23px;
     font-weight: 900;
     white-space: nowrap;
   }
@@ -985,7 +1461,7 @@ onMounted(load)
   gap: 10px;
 
   &__role {
-    font-size: 25px;
+    font-size: 27px;
     font-weight: 800;
     color: #f6fbff;
     padding-bottom: 8px;
@@ -1007,19 +1483,19 @@ onMounted(load)
     gap: 2px;
 
     label {
-      font-size: 19px;
+      font-size: 21px;
       color: #7eb4d8;
       font-weight: 600;
     }
 
     strong {
-      font-size: 25px;
+      font-size: 27px;
       font-weight: 900;
       color: #f6fbff;
     }
 
     span {
-      font-size: 21px;
+      font-size: 23px;
       font-weight: 700;
       color: #d0e8f8;
     }
@@ -1028,7 +1504,7 @@ onMounted(load)
   &__section {
     label {
       display: block;
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
       color: #7eb4d8;
       margin-bottom: 4px;
@@ -1036,7 +1512,7 @@ onMounted(load)
 
     p {
       margin: 0;
-      font-size: 20px;
+      font-size: 22px;
       color: #c8dff0;
       line-height: 1.5;
     }
@@ -1058,7 +1534,7 @@ onMounted(load)
   padding: 6px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 20px;
+  font-size: 22px;
 
   &__dot {
     width: 7px;
@@ -1072,7 +1548,7 @@ onMounted(load)
   }
 
   &__level {
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 800;
   }
 
@@ -1086,40 +1562,46 @@ onMounted(load)
 .action-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
+  height: 100%;
 }
 
 .action-item {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
-  border-radius: 3px;
-  background: rgba(0, 38, 73, 0.3);
-  font-size: 20px;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(0, 80, 140, 0.26), rgba(4, 18, 42, 0.52));
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  font-size: 17px;
 
   &__time {
-    width: 56px;
-    color: #7eb4d8;
-    font-weight: 700;
+    width: 64px;
+    color: #9ecae8;
+    font-weight: 800;
     flex-shrink: 0;
+    font-size: 16px;
   }
 
   &__text {
     flex: 1;
-    color: #d0e8f8;
-    line-height: 1.4;
+    color: #e8f4ff;
+    line-height: 1.45;
+    font-weight: 650;
   }
 
   &__tag {
-    font-size: 21px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(0, 184, 255, 0.12);
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: rgba(0, 184, 255, 0.14);
+    border: 1px solid rgba(0, 184, 255, 0.32);
     color: #8ef6ff;
-    font-weight: 700;
+    font-weight: 800;
     flex-shrink: 0;
-    min-width: 56px;
+    min-width: 52px;
     text-align: center;
   }
 }
@@ -1128,97 +1610,110 @@ onMounted(load)
 .warn-table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  background: rgba(0, 24, 52, 0.35);
 }
 
 .warn-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 20px;
-  color: rgba(184, 236, 255, 0.85);
+  font-size: 17px;
+  color: rgba(184, 236, 255, 0.92);
 
   th {
     text-align: left;
-    padding: 8px 10px;
-    font-size: 19px;
-    font-weight: 700;
-    color: #9ecae8;
-    border-bottom: 1px solid rgba(102, 217, 255, 0.12);
+    padding: 14px 16px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #b8ecff;
+    letter-spacing: 0.04em;
+    background: rgba(0, 60, 110, 0.4);
+    border-bottom: 1px solid rgba(102, 217, 255, 0.18);
     white-space: nowrap;
   }
 
   td {
-    padding: 7px 10px;
-    border-bottom: 1px solid rgba(102, 217, 255, 0.05);
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(102, 217, 255, 0.07);
+    vertical-align: middle;
   }
 
-  tbody tr:hover { background: rgba(0, 184, 255, 0.04); }
+  tbody tr {
+    transition: background 0.15s ease;
+    &:hover { background: rgba(0, 184, 255, 0.07); }
+    &:last-child td { border-bottom: none; }
+  }
 
-  .row--low td:first-child { border-left: 2px solid rgba(74, 222, 128, 0.5); }
-  .row--medium td:first-child { border-left: 2px solid rgba(250, 204, 21, 0.5); }
-  .row--high td:first-child { border-left: 2px solid rgba(248, 91, 91, 0.5); }
+  .row--low td:first-child { box-shadow: inset 3px 0 0 #55e995; }
+  .row--medium td:first-child { box-shadow: inset 3px 0 0 #facc15; }
+  .row--high td:first-child { box-shadow: inset 3px 0 0 #ff7474; }
 
   .cell-label {
-    font-weight: 600;
-    color: #d0e8f8;
+    font-weight: 650;
+    color: #e2f4ff;
     line-height: 1.4;
   }
 }
 
 .cat-badge {
   display: inline-block;
-  font-weight: 700;
-  font-size: 18px;
-  padding: 1px 5px;
-  border-radius: 999px;
-  background: rgba(0, 184, 255, 0.08);
-  border: 1px solid rgba(0, 212, 255, 0.12);
+  font-weight: 750;
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 184, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.22);
   color: #8ef6ff;
   white-space: nowrap;
 }
 
 .level-badge {
-  font-size: 20px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-weight: 700;
+  font-size: 15px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 800;
   display: inline-block;
-  min-width: 56px;
+  min-width: 60px;
   text-align: center;
 
-  &--low { background: rgba(74, 222, 128, 0.12); color: #55e995; }
-  &--medium { background: rgba(250, 204, 21, 0.12); color: #facc15; }
-  &--high { background: rgba(248, 91, 91, 0.12); color: #ff7474; }
+  &--low { background: rgba(74, 222, 128, 0.14); color: #55e995; border: 1px solid rgba(74, 222, 128, 0.28); }
+  &--medium { background: rgba(250, 204, 21, 0.14); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.28); }
+  &--high { background: rgba(248, 91, 91, 0.14); color: #ff7474; border: 1px solid rgba(248, 91, 91, 0.28); }
 }
 
 .empty-cell {
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 20px;
+  font-size: 14px;
 }
 
 /* Info grid */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  border-radius: 3px;
-  background: rgba(0, 38, 73, 0.3);
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(0, 70, 130, 0.22), rgba(4, 18, 42, 0.5));
+  border: 1px solid rgba(102, 217, 255, 0.12);
 
   &__label {
-    font-size: 19px;
-    color: #7eb4d8;
+    font-size: 15px;
+    color: #8fc4e4;
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
 
   &__value {
-    font-size: 21px;
+    font-size: 20px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -1227,22 +1722,35 @@ onMounted(load)
 /* ── 岗位适配雷达图 + 标签/优势/缺失能力布局 ── */
 .job-radar-layout {
   display: flex;
-  gap: 14px;
+  gap: 18px;
   align-items: stretch;
-  min-height: 380px;
+  min-height: 440px;
 }
 
 .job-radar-left {
-  flex: 0 0 42%;
-  min-width: 320px;
+  flex: 0 0 44%;
+  min-width: 340px;
   display: flex;
   flex-direction: column;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(0, 200, 255, 0.12), transparent 60%),
+    linear-gradient(145deg, rgba(0, 50, 100, 0.18), rgba(4, 14, 36, 0.35));
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  overflow: hidden;
 }
 
 .radar-chart-wrap {
   flex: 1;
-  min-height: 340px;
-  :deep(.chart-container) { height: 340px; }
+  min-height: 420px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  :deep(.chart-container) {
+    width: 100%;
+    height: 420px;
+  }
 }
 
 .job-radar-right {
@@ -1250,77 +1758,87 @@ onMounted(load)
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
-/* 推荐目标岗位标签（顶部） */
 .job-tags-label {
   display: block;
-  font-size: 21px;
-  font-weight: 700;
-  color: #b8ecff;
-  margin-bottom: 8px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #c8f0ff;
+  margin-bottom: 12px;
+  letter-spacing: 0.04em;
 }
 
 .job-tags-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .job-tag-chip {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: rgba(0, 38, 73, 0.4);
-  border: 1px solid rgba(102, 217, 255, 0.15);
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(0, 80, 150, 0.3), rgba(4, 18, 42, 0.55));
+  border: 1px solid rgba(102, 217, 255, 0.18);
   cursor: pointer;
-  font-size: 21px;
-  font-weight: 700;
-  color: #d0e8f8;
-  transition: border-color 0.2s, background 0.2s;
-  white-space: nowrap;
+  font-size: 20px;
+  font-weight: 800;
+  color: #e8f7ff;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
 
   &:hover {
-    background: rgba(0, 56, 100, 0.5);
-    border-color: rgba(0, 184, 255, 0.35);
+    background: rgba(0, 56, 100, 0.55);
+    border-color: rgba(0, 184, 255, 0.4);
+    transform: translateY(-1px);
   }
 
   &.is-active {
-    border-color: rgba(0, 229, 255, 0.55);
-    background: rgba(0, 74, 130, 0.45);
+    border-color: rgba(0, 229, 255, 0.6);
+    background: linear-gradient(145deg, rgba(0, 100, 170, 0.4), rgba(0, 50, 100, 0.55));
     color: #f6fbff;
-    box-shadow: 0 0 12px rgba(0, 184, 255, 0.15);
+    box-shadow: 0 0 18px rgba(0, 184, 255, 0.22);
   }
 
   &__rank {
-    font-size: 18px;
-    padding: 1px 6px;
-    border-radius: 999px;
-    background: rgba(0, 184, 255, 0.14);
+    font-size: 15px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(0, 184, 255, 0.16);
+    border: 1px solid rgba(0, 184, 255, 0.3);
     color: #8ef6ff;
-    font-weight: 700;
+    font-weight: 800;
+  }
+
+  &__role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__match {
-    font-size: 21px;
+    font-size: 26px;
     font-weight: 900;
     font-family: 'DIN Alternate', sans-serif;
+    text-shadow: 0 0 10px currentColor;
   }
 }
 
-/* 优势 / 缺失能力区域 */
 .job-ability-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
 .job-section-label {
-  font-size: 21px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 
   &--good { color: #55e995; }
   &--warn { color: #facc15; }
@@ -1329,63 +1847,61 @@ onMounted(load)
 .job-ability-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  gap: 12px;
 }
 
 .job-ability-chip {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.35);
-  font-size: 21px;
-
-  &--good {
-    background: rgba(0, 38, 73, 0.35);
-  }
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(20, 90, 70, 0.28), rgba(4, 18, 42, 0.5));
+  border: 1px solid rgba(85, 233, 149, 0.28);
+  border-left: 4px solid #55e995;
 
   &__name {
-    color: #d0e8f8;
-    font-weight: 700;
+    font-size: 22px;
+    color: #e8fff4;
+    font-weight: 800;
   }
 
   &__val {
+    font-size: 28px;
     color: #7ff6c4;
-    font-weight: 800;
+    font-weight: 900;
     font-family: 'DIN Alternate', sans-serif;
+    text-shadow: 0 0 12px rgba(85, 233, 149, 0.4);
   }
 }
 
 .job-ability-empty {
-  font-size: 20px;
+  font-size: 18px;
   color: #5a7d96;
-  padding: 6px 0;
+  padding: 10px 0;
 }
 
 .job-weakness-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 5px;
+  gap: 12px;
 }
 
 .job-weakness-chip {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.35);
-  font-size: 21px;
-
-  &--high { background: rgba(0, 38, 73, 0.35); }
-  &--medium { background: rgba(0, 38, 73, 0.35); }
-  &--low { background: rgba(0, 38, 73, 0.35); }
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(0, 70, 130, 0.22), rgba(4, 18, 42, 0.5));
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  border-left: 4px solid var(--tone, #facc15);
 
   &__label {
-    color: #d0e8f8;
-    font-weight: 700;
+    font-size: 22px;
+    color: #e8f4ff;
+    font-weight: 800;
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -1394,9 +1910,14 @@ onMounted(load)
   }
 
   &__level {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 800;
     flex-shrink: 0;
+    color: var(--tone, #facc15);
+    padding: 5px 14px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--tone, #facc15) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tone, #facc15) 30%, transparent);
   }
 }
 
@@ -1404,7 +1925,7 @@ onMounted(load)
 .job-detail-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .job-detail-kv {
@@ -1412,28 +1933,33 @@ onMounted(load)
   min-width: 160px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.35);
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 18px;
+  min-height: 88px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(0, 80, 140, 0.26), rgba(4, 18, 42, 0.52));
+  border: 1px solid rgba(102, 217, 255, 0.14);
 
   label {
-    font-size: 20px;
-    color: #7eb4d8;
-    font-weight: 600;
+    font-size: 16px;
+    color: #9ecae8;
+    font-weight: 750;
+    letter-spacing: 0.04em;
   }
 
   strong {
-    font-size: 27px;
+    font-size: 32px;
     font-weight: 900;
     color: #f6fbff;
     font-family: 'DIN Alternate', sans-serif;
+    text-shadow: 0 0 12px rgba(80, 200, 255, 0.3);
   }
 
   span {
-    font-size: 21px;
+    font-size: 18px;
     font-weight: 700;
-    color: #d0e8f8;
+    color: #e2f4ff;
     line-height: 1.5;
   }
 }
@@ -1446,18 +1972,20 @@ onMounted(load)
   padding: 6px 0 12px;
 
   &__btn {
-    padding: 7px 18px;
-    border-radius: 4px;
+    padding: 9px 20px;
+    border-radius: 8px;
     border: 1px solid rgba(0, 184, 255, 0.35);
-    background: rgba(0, 184, 255, 0.1);
+    background: linear-gradient(145deg, rgba(0, 113, 206, 0.22), rgba(0, 40, 80, 0.45));
     color: #8ef6ff;
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 750;
     cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
 
     &:hover {
       background: rgba(0, 184, 255, 0.18);
-      border-color: rgba(0, 184, 255, 0.6);
+      border-color: rgba(0, 212, 255, 0.55);
+      box-shadow: 0 0 16px rgba(0, 160, 255, 0.15);
     }
   }
 }
@@ -1469,7 +1997,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 21px;
+  font-size: 23px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -1481,7 +2009,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 21px;
+    font-size: 23px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }
@@ -1504,17 +2032,25 @@ onMounted(load)
   .employment-warning { grid-template-columns: 1fr; }
   .overview__body { flex-direction: column; align-items: center; }
   .overview__main { width: 100%; }
+  .ability-panel__body { grid-template-columns: 1fr; }
+  .ability-panel__radar {
+    min-height: 320px;
+    :deep(.chart-container) { height: 320px; }
+  }
+  .risk-layout { grid-template-columns: 1fr; }
+  .matrix-wrap {
+    min-height: 360px;
+    :deep(.chart-container) { min-height: 360px; height: 100%; }
+  }
   .job-match-layout { grid-template-columns: 1fr; }
   .job-radar-layout { flex-direction: column; }
   .job-radar-left { flex: none; min-width: 0; }
-  .radar-chart-wrap { min-height: 280px; :deep(.chart-container) { height: 280px; } }
-  .job-tags-row { flex-direction: column; }
-  .job-tag-chip { width: 100%; }
+  .radar-chart-wrap { min-height: 340px; :deep(.chart-container) { height: 340px; } }
+  .job-tags-row { grid-template-columns: 1fr; }
   .job-ability-grid { grid-template-columns: 1fr; }
   .job-weakness-list { grid-template-columns: 1fr; }
   .job-detail-row { flex-direction: column; }
-  .info-grid { grid-template-columns: repeat(2, 1fr); }
-  .risk-tag-list { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr 1fr; }
   .weakness-item { grid-template-columns: 12px 80px 48px 1fr; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }

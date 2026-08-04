@@ -1,23 +1,25 @@
 <script setup lang="ts">
 /**
- * GPA 详情页 · 课程成绩散点气泡图
+ * GPA 详情页 · 课程成绩散点概览
  *
- * 横轴：学期（按时间顺序）
- * 纵轴：分数（0-100）
- * 气泡大小：学分（越大表示学分越多）
- * 颜色：课程类别
+ * 横轴：学期 · 纵轴：分数 · 气泡大小：学分 · 颜色：课程类别
+ * 逐课明细已移至 /student/gpa-semester
  */
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
-import { AXIS_LABEL, CHART_FONT, CHART_GRID } from '@/styles/echarts-theme'
+import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from '../../_shared/gpa-data'
 import type { CourseCategory, CourseRecordVM } from '../../_shared/gpa-data'
 import type { EChartsOption } from 'echarts'
+import { ROUTES } from '@/constants/routes'
 
 const props = defineProps<{
   courses: CourseRecordVM[]
   semesters: string[]
 }>()
+
+const router = useRouter()
 
 interface SeriesItem {
   name: string
@@ -25,7 +27,6 @@ interface SeriesItem {
   data: Array<[number, number, number, CourseRecordVM]>
 }
 
-/** 把 hex 颜色按比例向白色提亮，得到气泡高光色 */
 function lightenHex(hex: string, amt = 0.4): string {
   const h = hex.replace('#', '')
   const r = parseInt(h.slice(0, 2), 16)
@@ -35,7 +36,6 @@ function lightenHex(hex: string, amt = 0.4): string {
   return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`
 }
 
-/** 气泡填充：径向渐变（中心高光 → 类别色边缘），比纯色更有质感 */
 function bubbleColor(base: string) {
   return {
     type: 'radial' as const,
@@ -49,7 +49,6 @@ function bubbleColor(base: string) {
   }
 }
 
-/** 确定性抖动：同一学期、同分数的课程错开避免完全重叠 */
 function jitterSeed(seed: string): number {
   let h = 2166136261
   for (let i = 0; i < seed.length; i++) {
@@ -59,40 +58,57 @@ function jitterSeed(seed: string): number {
   return ((h >>> 0) % 1000) / 1000 - 0.5
 }
 
+/** 同学期内按成绩排序后横向均匀铺开，避免挤成一竖条 */
 const series = computed<SeriesItem[]>(() => {
+  const counted = props.courses.filter((c) => c.counted)
+  const bySem = new Map<string, CourseRecordVM[]>()
+  for (const c of counted) {
+    if (!bySem.has(c.semester)) bySem.set(c.semester, [])
+    bySem.get(c.semester)!.push(c)
+  }
+  for (const list of bySem.values()) {
+    list.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name, 'zh'))
+  }
+
   const map = new Map<CourseCategory, SeriesItem>()
-  for (const c of props.courses) {
-    if (!c.counted) continue
-    if (!map.has(c.category)) {
-      map.set(c.category, {
-        name: CATEGORY_LABEL[c.category],
-        color: CATEGORY_COLOR[c.category],
-        data: [],
-      })
-    }
-    const x = props.semesters.indexOf(c.semester)
-    const seed = c.id ?? c.name
-    const jx = jitterSeed(seed) * 0.34
-    const jy = jitterSeed(seed + 'y') * 2.2
-    map.get(c.category)!.data.push([x + jx, c.score + jy, c.credit, c])
+  for (const [semester, list] of bySem) {
+    const xBase = props.semesters.indexOf(semester)
+    if (xBase < 0) continue
+    const n = list.length
+    list.forEach((c, i) => {
+      if (!map.has(c.category)) {
+        map.set(c.category, {
+          name: CATEGORY_LABEL[c.category],
+          color: CATEGORY_COLOR[c.category],
+          data: [],
+        })
+      }
+      // 学期带内横向均匀分布（约 ±0.38），再加轻微抖动避免完全对齐
+      const slot = n <= 1 ? 0 : (i / (n - 1)) * 2 - 1
+      const jx = slot * 0.38 + jitterSeed(c.id ?? c.name) * 0.06
+      const jy = jitterSeed((c.id ?? c.name) + 'y') * 1.2
+      map.get(c.category)!.data.push([xBase + jx, c.score + jy, c.credit, c])
+    })
   }
   return Array.from(map.values())
 })
 
 const WARNING_SCORE = 75
+const totalCount = computed(() => props.courses.filter((c) => c.counted).length)
 
 const option = computed<EChartsOption>(() => ({
-  grid: { top: 40, bottom: 28, left: 40, right: 18, containLabel: false },
+  grid: { top: 44, bottom: 36, left: 48, right: 22, containLabel: false },
   tooltip: {
     trigger: 'item',
     confine: true,
     backgroundColor: 'rgba(6, 20, 44, 0.94)',
     borderColor: 'rgba(0, 212, 255, 0.35)',
     borderWidth: 1,
-    textStyle: { color: '#dcefff', fontSize: 17 },
+    textStyle: { color: '#dcefff', fontSize: 18 },
     formatter: (p: unknown) => {
       const it = p as { data: [number, number, number, CourseRecordVM] }
       const course = it.data[3]
+      if (!course) return ''
       const danger = course.score < WARNING_SCORE
       return `<div style="line-height:1.6">
         <b style="color:#8ef6ff">${course.name}</b><br/>
@@ -103,32 +119,47 @@ const option = computed<EChartsOption>(() => ({
     },
   },
   legend: {
-    top: 4,
-    right: 4,
-    itemWidth: 11,
-    itemHeight: 11,
-    itemGap: 12,
+    top: 2,
+    right: 8,
+    itemWidth: 12,
+    itemHeight: 12,
+    itemGap: 14,
     icon: 'circle',
-    textStyle: { color: '#9eefff', fontSize: CHART_FONT.legend - 1 },
+    textStyle: { color: '#9eefff', fontSize: Math.max(14, CHART_FONT.legend) },
     data: series.value.map((s) => s.name),
   },
   xAxis: {
-    type: 'category',
-    data: props.semesters,
-    boundaryGap: true,
+    type: 'value',
+    min: -0.55,
+    max: Math.max(0, props.semesters.length - 1) + 0.55,
+    interval: 1,
     axisTick: { show: false },
-    axisLabel: { ...AXIS_LABEL, fontSize: 17, margin: 10, color: '#9ec7e0' },
+    axisLabel: {
+      ...AXIS_LABEL,
+      fontSize: 18,
+      margin: 12,
+      color: '#b8dff2',
+      fontWeight: 700,
+      formatter: (v: number) => {
+        const i = Math.round(v)
+        if (Math.abs(v - i) > 0.2) return ''
+        return props.semesters[i] ?? ''
+      },
+    },
     axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.22)' } },
-    splitLine: { show: false },
+    splitLine: {
+      show: true,
+      lineStyle: { color: 'rgba(0, 212, 255, 0.06)', type: 'dashed' },
+    },
   },
   yAxis: {
     type: 'value',
     name: '分数',
-    nameTextStyle: { color: '#7fb4d4', fontSize: 16, padding: [0, 0, 0, -28] },
-    min: 50,
+    nameTextStyle: { color: '#9ec7e0', fontSize: 17, padding: [0, 0, 0, -24], fontWeight: 700 },
+    min: 55,
     max: 100,
-    interval: 10,
-    axisLabel: { ...AXIS_LABEL, fontSize: 17, margin: 8, color: '#9ec7e0' },
+    interval: 5,
+    axisLabel: { ...AXIS_LABEL, fontSize: 17, margin: 10, color: '#9ec7e0' },
     axisLine: { show: false },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.07)' } },
     markLine: {
@@ -142,16 +173,17 @@ const option = computed<EChartsOption>(() => ({
   series: series.value.map((s, idx) => ({
     name: s.name,
     type: 'scatter',
-    data: s.data.map((d) => [d[0], d[1], d[2]]),
-    symbolSize: (val: number[]) => Math.min(42, 12 + val[2] * 6),
+    data: s.data,
+    symbolSize: (val: number[]) => Math.min(22, 9 + val[2] * 3.2),
     itemStyle: {
       color: bubbleColor(s.color),
-      opacity: 0.9,
-      borderColor: lightenHex(s.color, 0.3),
+      opacity: 0.78,
+      borderColor: lightenHex(s.color, 0.35),
       borderWidth: 1,
     },
     emphasis: {
-      scale: 1.18,
+      scale: 1.35,
+      focus: 'series',
       itemStyle: { opacity: 1, borderColor: '#ffffff', borderWidth: 2, shadowBlur: 14, shadowColor: s.color },
     },
     ...(idx === 0
@@ -159,23 +191,34 @@ const option = computed<EChartsOption>(() => ({
           markArea: {
             silent: true,
             itemStyle: { color: 'rgba(248, 113, 113, 0.07)' },
-            label: { show: true, position: 'insideTopLeft', color: 'rgba(248, 113, 113, 0.7)', fontSize: 15, formatter: '预警区' },
-            data: [[{ yAxis: 50 }, { yAxis: WARNING_SCORE }]],
+            label: {
+              show: true,
+              position: 'insideTopLeft',
+              color: 'rgba(248, 113, 113, 0.7)',
+              fontSize: 15,
+              formatter: '预警区',
+            },
+            data: [[{ yAxis: 55 }, { yAxis: WARNING_SCORE }]],
           },
         }
       : {}),
   })),
 }))
 
-const totalCount = computed(() => props.courses.filter((c) => c.counted).length)
+function gotoSemester() {
+  router.push(ROUTES.student.gpaSemester)
+}
 </script>
 
 <template>
   <div class="chart-card">
     <header class="chart-card__head">
       <span class="chart-card__bar" aria-hidden="true" />
-      <h3 class="chart-card__title">课程成绩散点（气泡=学分）</h3>
-      <span class="chart-card__sub">共 {{ totalCount }} 门 · 颜色=类别</span>
+      <h3 class="chart-card__title">课程成绩分布</h3>
+      <span class="chart-card__sub">共 {{ totalCount }} 门 · 气泡=学分 · 颜色=类别</span>
+      <button type="button" class="chart-card__link" @click="gotoSemester">
+        逐课明细 →
+      </button>
     </header>
     <div class="chart-card__body">
       <ChartContainer :option="option" />
@@ -232,7 +275,7 @@ const totalCount = computed(() => props.courses.filter((c) => c.counted).length)
 
 .chart-card__title {
   margin: 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -241,7 +284,24 @@ const totalCount = computed(() => props.courses.filter((c) => c.counted).length)
 .chart-card__sub {
   margin-left: auto;
   font-size: 16px;
-  color: rgba(184, 236, 255, 0.6);
+  color: rgba(184, 236, 255, 0.55);
+}
+
+.chart-card__link {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-radius: 4px;
+  background: rgba(0, 184, 255, 0.1);
+  color: #66d9ff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: rgba(0, 184, 255, 0.22);
+    border-color: rgba(0, 212, 255, 0.6);
+  }
 }
 
 .chart-card__body {

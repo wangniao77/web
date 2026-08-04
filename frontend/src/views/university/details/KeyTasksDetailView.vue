@@ -86,7 +86,7 @@ onMounted(async () => {
     margin-bottom: 8px;
 
     h3 {
-      font-size: 17px;
+      font-size: 19px;
       color: #f3f8ff;
     }
   }

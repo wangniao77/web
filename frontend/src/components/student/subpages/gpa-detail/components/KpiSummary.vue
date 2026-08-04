@@ -99,21 +99,21 @@ defineProps<{
 }
 
 .kpi-label {
-  font-size: 17px;
+  font-size: 19px;
   color: rgba(190, 210, 238, 0.8);
   letter-spacing: 0.04em;
 }
 
 .kpi-value {
   font-family: 'DIN Alternate', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
-  font-size: 36px;
+  font-size: 38px;
   font-weight: 700;
   color: #f4f8ff;
   line-height: 1.1;
   text-shadow: 0 1px 2px rgba(0, 10, 30, 0.9), 0 0 12px rgba(57, 230, 255, 0.42);
 
   small {
-    font-size: 17px;
+    font-size: 19px;
     color: rgba(186, 208, 236, 0.7);
     font-weight: 400;
     margin-left: 2px;
@@ -121,7 +121,7 @@ defineProps<{
 }
 
 .kpi-tag {
-  font-size: 16px;
+  font-size: 18px;
   padding: 2px 10px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);

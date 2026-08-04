@@ -2,7 +2,7 @@
 /**
  * 帮扶轨迹模块（针对预警学生）
  * 展示学业预警后的帮扶干预记录：约谈时间 / 帮扶老师 / 辅导内容 / 阶段性效果
- * 以横向时间轴形式呈现，由左至右按时间推进。
+ * 以双列时间卡片呈现，兼顾时间顺序与长文本阅读。
  */
 interface SupportRecord {
   date: string
@@ -59,15 +59,14 @@ const records: SupportRecord[] = [
     </header>
 
     <div class="support-card__body">
-      <ul class="timeline-h">
+      <ul class="timeline-grid">
         <li
-          v-for="(r, i) in records"
+          v-for="r in records"
           :key="r.date"
           class="tl-item"
           :class="{ 'tl-item--doing': r.status === 'doing' }"
         >
           <div class="tl-axis">
-            <span class="tl-connector" :class="{ 'tl-connector--start': i === 0 }" />
             <span class="tl-node" :class="{ 'is-doing': r.status === 'doing' }" />
           </div>
           <div class="tl-card">
@@ -99,16 +98,17 @@ const records: SupportRecord[] = [
   position: relative;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(102, 217, 255, 0.16);
-  border-radius: 8px;
+  height: 100%;
+  min-height: 404px;
+  border: 1px solid rgba(102, 217, 255, 0.22);
+  border-radius: 12px;
   background:
-    linear-gradient(145deg, rgba(0, 113, 206, 0.16), rgba(3, 12, 34, 0.78)),
-    rgba(5, 18, 48, 0.54);
+    radial-gradient(90% 70% at 100% 100%, rgba(0, 184, 255, 0.1), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.72), rgba(3, 12, 34, 0.88));
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 0 22px rgba(0, 184, 255, 0.06);
-  padding: 12px 16px 14px;
+    0 16px 36px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  padding: 14px 16px 14px;
   overflow: hidden;
 
   &::before {
@@ -140,7 +140,7 @@ const records: SupportRecord[] = [
 
   &__title {
     margin: 0;
-    font-size: 21px;
+    font-size: 23px;
     font-weight: 700;
     color: #f4fbff;
     text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
@@ -148,7 +148,7 @@ const records: SupportRecord[] = [
 
   &__sub {
     margin-left: auto;
-    font-size: 16px;
+    font-size: 18px;
     color: rgba(184, 236, 255, 0.6);
     white-space: nowrap;
   }
@@ -156,45 +156,41 @@ const records: SupportRecord[] = [
   &__body {
     flex: 1;
     min-width: 0;
-    overflow-x: auto;
-    padding-bottom: 4px;
+    overflow: visible;
   }
 }
 
-.timeline-h {
-  display: flex;
-  gap: 14px;
-  min-width: min-content;
+.timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .tl-item {
-  flex: 1 0 200px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
   min-width: 0;
 }
 
 .tl-axis {
   position: relative;
-  height: 26px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-}
+  padding-top: 18px;
 
-.tl-connector {
-  position: absolute;
-  top: 50%;
-  left: -50%;
-  right: 50%;
-  height: 2px;
-  transform: translateY(-50%);
-  background: linear-gradient(90deg, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.55));
-
-  &--start { display: none; }
+  &::after {
+    position: absolute;
+    top: 34px;
+    bottom: 12px;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(92, 223, 255, 0.6), rgba(92, 223, 255, 0.05));
+    content: '';
+  }
 }
 
 .tl-node {
@@ -216,28 +212,32 @@ const records: SupportRecord[] = [
 .tl-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
+  gap: 8px;
+  min-height: 188px;
+  padding: 13px 16px 14px;
   border-radius: 6px;
-  background: rgba(0, 38, 73, 0.32);
-  border: 1px solid rgba(102, 217, 255, 0.1);
+  background: linear-gradient(145deg, rgba(0, 62, 111, 0.42), rgba(0, 27, 62, 0.32));
+  border: 1px solid rgba(102, 217, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(160, 237, 255, 0.05);
 }
 
 .tl-top {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .tl-date {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   color: #8ef6ff;
 }
 
 .tl-role {
-  font-size: 15px;
+  flex-shrink: 0;
+  font-size: 16px;
   font-weight: 700;
   color: #04101f;
   background: linear-gradient(90deg, #7ef0d0, #34d399);
@@ -274,17 +274,39 @@ const records: SupportRecord[] = [
   margin-top: 1px;
   font-size: 16px;
   color: #7eb4d8;
-  width: 56px;
+  width: 64px;
 }
 
 .tl-text {
   margin: 0;
   font-size: 17px;
-  line-height: 1.5;
+  line-height: 1.52;
   color: #cfe8ff;
 
   &--effect {
     color: #7ff6c4;
   }
+}
+
+@media (max-width: 900px) {
+  .support-card {
+    &__head {
+      align-items: flex-start;
+    }
+
+    &__sub {
+      max-width: 54%;
+      font-size: 14px;
+      line-height: 1.35;
+      white-space: normal;
+      text-align: right;
+    }
+  }
+
+  .timeline-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tl-card { min-height: 0; }
 }
 </style>

@@ -117,7 +117,7 @@ watch(
   border: 1px solid transparent;
   background: transparent;
   color: #9ec7e0;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.2;

@@ -107,19 +107,19 @@ const riskTypeOption = computed<EChartsOption>(() => {
 .summary-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
 .summary-item {
   padding: 10px; border-radius: 8px; border: 1px solid rgba(85, 168, 255, 0.12); background: rgba(4, 14, 38, 0.55);
-  span { display: block; font-size: 13px; color: rgba(174, 198, 230, 0.68); }
-  strong { font-size: 22px; color: #55dfff; font-family: var(--university-font-number); }
+  span { display: block; font-size: 15px; color: rgba(174, 198, 230, 0.68); }
+  strong { font-size: 24px; color: #55dfff; font-family: var(--university-font-number); }
 }
 .charts-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 12px; margin-bottom: 16px; }
 .chart-section { padding: 12px; border-radius: 8px; border: 1px solid rgba(85, 168, 255, 0.12); background: rgba(4, 14, 38, 0.45); }
-.chart-section h3 { font-size: 16px; color: #f3f8ff; margin-bottom: 8px; }
+.chart-section h3 { font-size: 18px; color: #f3f8ff; margin-bottom: 8px; }
 .chart-lg { height: 260px; }
-.group h3 { font-size: 16px; color: #f3f8ff; margin-bottom: 8px; }
+.group h3 { font-size: 18px; color: #f3f8ff; margin-bottom: 8px; }
 .detail-table {
   width: 100%; border-collapse: collapse; font-size: $detail-fs-body;
   th, td { padding: 10px 12px; border-bottom: 1px solid rgba(85, 168, 255, 0.1); text-align: left; }
   th { color: rgba(174, 198, 230, 0.68); }
   td { color: #eef9ff; }
 }
-.note { margin-top: 12px; font-size: 13px; color: rgba(174, 198, 230, 0.48); }
+.note { margin-top: 12px; font-size: 15px; color: rgba(174, 198, 230, 0.48); }
 </style>

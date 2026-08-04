@@ -50,10 +50,10 @@ onMounted(async () => {
   border: 1px solid rgba(85, 168, 255, 0.12);
   background: rgba(4, 14, 38, 0.45);
   header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .tag { font-size: 12px; padding: 2px 8px; border-radius: 4px; background: rgba(85, 168, 255, 0.12); color: #55a8ff; }
-  .status { margin-left: auto; font-size: 12px; color: rgba(174, 198, 230, 0.62); }
-  h3 { font-size: 16px; color: #f3f8ff; margin-bottom: 6px; }
-  p { font-size: 14px; color: rgba(174, 198, 230, 0.78); line-height: 1.5; margin-bottom: 8px; }
-  footer { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: rgba(174, 198, 230, 0.58); }
+  .tag { font-size: 14px; padding: 2px 8px; border-radius: 4px; background: rgba(85, 168, 255, 0.12); color: #55a8ff; }
+  .status { margin-left: auto; font-size: 14px; color: rgba(174, 198, 230, 0.62); }
+  h3 { font-size: 18px; color: #f3f8ff; margin-bottom: 6px; }
+  p { font-size: 16px; color: rgba(174, 198, 230, 0.78); line-height: 1.5; margin-bottom: 8px; }
+  footer { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; color: rgba(174, 198, 230, 0.58); }
 }
 </style>

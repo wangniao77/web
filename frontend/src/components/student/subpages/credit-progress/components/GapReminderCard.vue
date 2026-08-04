@@ -126,7 +126,7 @@ function severityLabel(sev: GapItemDTO['severity']) {
 
 .gap-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(248, 113, 113, 0.22);
@@ -135,14 +135,14 @@ function severityLabel(sev: GapItemDTO['severity']) {
 
 .gap-count {
   margin-left: auto;
-  font-size: 17px;
+  font-size: 19px;
   color: rgba(254, 202, 202, 0.7);
 
   b {
       color: #f87171;
       font-weight: 800;
       font-family: 'DIN Alternate', sans-serif;
-      font-size: 22px;
+      font-size: 24px;
       margin: 0 2px;
   }
 }
@@ -189,7 +189,7 @@ function severityLabel(sev: GapItemDTO['severity']) {
 }
 
 .gap-tag {
-  font-size: 16px;
+  font-size: 18px;
   padding: 2px 10px;
   border-radius: 3px;
   font-weight: 700;
@@ -201,14 +201,14 @@ function severityLabel(sev: GapItemDTO['severity']) {
 }
 
 .gap-cat {
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 700;
   color: #f4fbff;
 }
 
 .gap-type {
   margin-left: auto;
-  font-size: 16px;
+  font-size: 18px;
   color: rgba(184, 236, 255, 0.6);
   padding: 2px 8px;
   border-radius: 3px;
@@ -218,7 +218,7 @@ function severityLabel(sev: GapItemDTO['severity']) {
 
 .gap-desc {
   margin: 0;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(230, 242, 255, 0.92);
   line-height: 1.55;
   font-weight: 500;
@@ -229,7 +229,7 @@ function severityLabel(sev: GapItemDTO['severity']) {
   align-items: center;
   gap: 5px;
   flex-wrap: wrap;
-  font-size: 17px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.75);
 }
 
@@ -239,7 +239,7 @@ function severityLabel(sev: GapItemDTO['severity']) {
 }
 
 .course-pill {
-  font-size: 16px;
+  font-size: 18px;
   padding: 2px 8px;
   border-radius: 3px;
   background: rgba(0, 184, 255, 0.08);
@@ -255,7 +255,7 @@ function severityLabel(sev: GapItemDTO['severity']) {
   gap: 8px;
   padding-top: 8px;
   border-top: 1px dashed rgba(0, 212, 255, 0.12);
-  font-size: 17px;
+  font-size: 19px;
   line-height: 1.55;
 }
 
@@ -269,7 +269,7 @@ function severityLabel(sev: GapItemDTO['severity']) {
   border: 1px solid rgba(240, 192, 64, 0.22);
   align-self: flex-start;
   line-height: 1.5;
-  font-size: 16px;
+  font-size: 18px;
 
   &::after { content: '：'; }
 }

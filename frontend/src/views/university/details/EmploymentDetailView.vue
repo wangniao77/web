@@ -170,12 +170,12 @@ const pieOption = computed<EChartsOption>(() => {
   }
 
   strong {
-    font-size: 22px;
+    font-size: 24px;
     color: #00e5ff;
     font-family: var(--university-font-number);
 
     small {
-      font-size: 14px;
+      font-size: 16px;
       margin-left: 2px;
     }
   }
@@ -195,7 +195,7 @@ const pieOption = computed<EChartsOption>(() => {
   background: rgba(4, 14, 38, 0.45);
 
   h3 {
-    font-size: 16px;
+    font-size: 18px;
     color: #f3f8ff;
     margin-bottom: 8px;
   }
@@ -206,7 +206,7 @@ const pieOption = computed<EChartsOption>(() => {
 }
 
 .group h3 {
-  font-size: 16px;
+  font-size: 18px;
   color: #f3f8ff;
   margin-bottom: 8px;
 }

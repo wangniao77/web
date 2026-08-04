@@ -21,7 +21,7 @@ import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, AttentionItemVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
-import { AXIS_LABEL, CHART_COLORS } from '@/styles/echarts-theme'
+import { AXIS_LABEL, CHART_COLORS, CHART_FONT } from '@/styles/echarts-theme'
 
 const route = useRoute()
 const router = useRouter()
@@ -52,15 +52,12 @@ function goLedger() {
 function goGpa() {
   router.push({ name: 'student-gpa-detail', query: { studentId: activeStudentId.value } })
 }
-function goFail() {
-  router.push({ name: 'student-fail-detail', query: { studentId: activeStudentId.value } })
-}
 
 type Level = 'low' | 'medium' | 'high'
-const LEVEL_COLOR: Record<Level, string> = { low: '#55e995', medium: '#facc15', high: '#ff7474' }
 const LEVEL_TEXT: Record<Level, string> = { low: '正常', medium: '需关注', high: '高危' }
-const levelColor = (lv: string) => LEVEL_COLOR[(lv as Level)] || '#8fb7cd'
+const LEVEL_TONE: Record<Level, string> = { low: '#55e995', medium: '#facc15', high: '#ff7474' }
 const levelText = (lv: string) => LEVEL_TEXT[(lv as Level)] || '—'
+const levelTone = (lv: string) => LEVEL_TONE[(lv as Level)] || '#65dfff'
 const levelOf = (v: number): Level => (v >= 70 ? 'high' : v >= 40 ? 'medium' : 'low')
 
 /** 页面分区导航（点击跳转到对应模块） */
@@ -174,34 +171,137 @@ const delayGradLabel = computed(
   () => ({ low: '低风险', medium: '中风险', high: '高风险' }[delayGradRisk.value]),
 )
 
-const gaugeOption = computed<EChartsOption>(() => ({
-  series: [{
-    type: 'gauge',
-    startAngle: 210,
-    endAngle: -30,
-    min: 0,
-    max: 100,
-    radius: '94%',
-    center: ['50%', '58%'],
-    progress: { show: true, width: 12, itemStyle: { color: levelColor(levelOf(riskIndex.value)) } },
-    axisLine: { lineStyle: { width: 12, color: [[0.4, '#55e995'], [0.7, '#facc15'], [1, '#ff7474']] } },
-    pointer: { width: 4, length: '58%', itemStyle: { color: '#f6fbff' } },
-    axisTick: { show: false },
-    splitLine: { length: 10, lineStyle: { color: 'rgba(255,255,255,0.25)', width: 1 } },
-    axisLabel: { distance: 14, color: '#7eb4d8', fontSize: 14 },
-    anchor: { show: true, size: 8, itemStyle: { color: '#f6fbff' } },
-    title: { show: false },
-    detail: {
-      valueAnimation: true,
-      formatter: '{value}',
-      color: '#f6fbff',
-      fontSize: 30,
-      fontWeight: 'bolder',
-      offsetCenter: [0, '36%'],
+/** 风险仪表：单层同心半环 + 端点光晕（对齐就业竞争力表盘） */
+function riskGaugeGradient(v: number) {
+  if (v >= 70) {
+    return {
+      progressColor: {
+        type: 'linear' as const, x: 0, y: 1, x2: 1, y2: 0,
+        colorStops: [
+          { offset: 0, color: '#fda4af' },
+          { offset: 1, color: '#ef4444' },
+        ],
+      },
+      solidColor: '#fb7185',
+    }
+  }
+  if (v >= 40) {
+    return {
+      progressColor: {
+        type: 'linear' as const, x: 0, y: 1, x2: 1, y2: 0,
+        colorStops: [
+          { offset: 0, color: '#fde68a' },
+          { offset: 1, color: '#fb923c' },
+        ],
+      },
+      solidColor: '#fbbf24',
+    }
+  }
+  return {
+    progressColor: {
+      type: 'linear' as const, x: 0, y: 1, x2: 1, y2: 0,
+      colorStops: [
+        { offset: 0, color: '#6ee7b7' },
+        { offset: 1, color: '#34d399' },
+      ],
     },
-    data: [{ value: riskIndex.value }],
-  }],
-}))
+    solidColor: '#34d399',
+  }
+}
+
+const gaugeOption = computed<EChartsOption>(() => {
+  const v = riskIndex.value
+  const { progressColor, solidColor } = riskGaugeGradient(v)
+  const glow = `${solidColor}aa`
+  const center: [string, string] = ['50%', '58%']
+  const radius = '78%'
+  const startAngle = 210
+  const endAngle = -30
+  return {
+    animation: true,
+    animationDuration: 1100,
+    animationEasing: 'cubicOut',
+    series: [
+      {
+        type: 'gauge',
+        center,
+        radius,
+        startAngle,
+        endAngle,
+        min: 0,
+        max: 100,
+        splitNumber: 4,
+        pointer: { show: false },
+        anchor: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        title: { show: false },
+        detail: {
+          valueAnimation: true,
+          offsetCenter: [0, '8%'],
+          formatter: (n: number) => `{num|${Math.round(n)}}`,
+          rich: {
+            num: {
+              fontSize: CHART_FONT.gaugeCompact + 18,
+              fontFamily: 'DIN Alternate, Segoe UI, sans-serif',
+              fontWeight: 900,
+              color: '#ffffff',
+              textShadowColor: solidColor,
+              textShadowBlur: 22,
+              lineHeight: 48,
+            },
+          },
+        },
+        axisLine: {
+          roundCap: true,
+          lineStyle: { width: 16, color: [[1, 'rgba(20, 60, 110, 0.45)']] },
+        },
+        progress: {
+          show: true,
+          roundCap: true,
+          width: 16,
+          itemStyle: { color: progressColor, shadowBlur: 16, shadowColor: glow },
+        },
+        data: [{ value: v }],
+        z: 2,
+      },
+      {
+        type: 'gauge',
+        center,
+        radius,
+        startAngle,
+        endAngle,
+        min: 0,
+        max: 100,
+        pointer: {
+          show: true,
+          icon: 'circle',
+          length: '5%',
+          width: 11,
+          offsetCenter: [0, '-90%'],
+          itemStyle: {
+            color: '#ffffff',
+            borderColor: solidColor,
+            borderWidth: 3,
+            shadowBlur: 12,
+            shadowColor: glow,
+          },
+        },
+        anchor: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        detail: { show: false },
+        title: { show: false },
+        axisLine: { lineStyle: { width: 0, color: [[1, 'transparent']] } },
+        progress: { show: false },
+        data: [{ value: v }],
+        z: 3,
+      },
+    ],
+  }
+})
 
 /* ---------- 2. 学业风险来源分析 ---------- */
 const riskRadarValues = computed<number[]>(() => {
@@ -227,65 +327,94 @@ const riskRadarValues = computed<number[]>(() => {
 })
 
 const radarOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'item' },
+  tooltip: {
+    trigger: 'item',
+    backgroundColor: 'rgba(4, 16, 40, 0.94)',
+    borderColor: 'rgba(255, 120, 120, 0.4)',
+    textStyle: { color: '#e8f7ff', fontSize: 14 },
+  },
   radar: {
-    center: ['50%', '54%'],
-    radius: '66%',
+    center: ['50%', '52%'],
+    radius: '72%',
     indicator: [
       { name: '成绩稳定性', max: 100 },
       { name: '课程压力', max: 100 },
       { name: '培养进度', max: 100 },
       { name: '毕业风险', max: 100 },
     ],
-    axisName: { color: '#b8ecff', fontSize: 17 },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
-    splitArea: { areaStyle: { color: ['rgba(0,184,255,0.04)', 'rgba(0,184,255,0.08)'] } },
-    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
+    axisName: {
+      color: '#d4f2ff',
+      fontSize: 14,
+      fontWeight: 700,
+      padding: [3, 4],
+    },
+    splitNumber: 4,
+    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.16)', width: 1 } },
+    splitArea: {
+      areaStyle: {
+        color: ['rgba(0,184,255,0.02)', 'rgba(0,184,255,0.07)', 'rgba(0,184,255,0.02)', 'rgba(0,184,255,0.1)'],
+      },
+    },
+    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.22)' } },
   },
   series: [{
     type: 'radar',
     data: [{
       value: riskRadarValues.value,
       name: '学业风险',
-      symbolSize: 5,
-      areaStyle: { color: 'rgba(248, 113, 113, 0.26)' },
-      lineStyle: { color: '#ff7474', width: 2 },
-      itemStyle: { color: '#ff7474' },
+      symbol: 'circle',
+      symbolSize: 8,
+      areaStyle: {
+        color: {
+          type: 'radial', x: 0.5, y: 0.5, r: 0.75,
+          colorStops: [
+            { offset: 0, color: 'rgba(255, 130, 130, 0.5)' },
+            { offset: 1, color: 'rgba(255, 80, 80, 0.06)' },
+          ],
+        },
+      },
+      lineStyle: { color: '#ff9a9a', width: 2.8, shadowBlur: 14, shadowColor: 'rgba(255,100,100,0.7)' },
+      itemStyle: {
+        color: '#fff',
+        borderColor: '#ff7474',
+        borderWidth: 2,
+        shadowBlur: 12,
+        shadowColor: 'rgba(255,100,100,0.75)',
+      },
     }],
   }],
 }))
 
+/** 与雷达四轴对齐的风险指数条（替代大段文字卡） */
 const riskFactors = computed(() => {
-  const d = dashboard.value
-  if (!d) return []
   const v = riskRadarValues.value
-  const scores = d.academic.courseGrades.map((c) => c.score).filter((s) => s > 0)
-  const avgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 75
-  const failN = d.failedCritical.length + d.academic.failedElective.length
-  const courseLevel = levelOf(100 - avgScore)
-  const failLevel = failN > 0 ? 'high' : d.academic.gpa < 2.5 ? 'medium' : 'low'
-  return [
+  const labels = [
     {
-      name: '成绩稳定性', level: levelOf(v[0]),
-      desc: v[0] >= 70 ? 'GPA 波动明显，学业状态不稳定' : v[0] >= 40 ? 'GPA 存在一定波动，需关注' : 'GPA 走势平稳，成绩稳定',
+      name: '成绩稳定性',
+      tip: (s: number) => (s >= 70 ? '波动明显' : s >= 40 ? '轻度波动' : '走势平稳'),
     },
     {
-      name: '课程完成情况', level: courseLevel,
-      desc: courseLevel === 'low' ? '课程成绩整体良好，完成度高' : '部分课程成绩偏低，完成质量待提升',
+      name: '课程压力',
+      tip: (s: number) => (s >= 70 ? '压力偏高' : s >= 40 ? '压力中等' : '压力可控'),
     },
     {
-      name: '培养方案进度', level: levelOf(v[2]),
-      desc: v[2] >= 70 ? '学分进度明显滞后，需加快选课' : v[2] >= 40 ? '学分进度偏慢，需合理规划' : '培养方案进度正常',
+      name: '培养进度',
+      tip: (s: number) => (s >= 70 ? '进度滞后' : s >= 40 ? '进度偏慢' : '进度正常'),
     },
     {
-      name: '挂科风险', level: failLevel,
-      desc: failLevel === 'high' ? `存在 ${failN} 项不及格记录，挂科风险高` : failLevel === 'medium' ? '存在临界成绩课程，挂科风险需关注' : '暂无明显挂科风险',
-    },
-    {
-      name: '毕业要求完成情况', level: levelOf(v[3]),
-      desc: v[3] >= 70 ? '距毕业要求差距较大，须重点跟踪' : v[3] >= 40 ? '毕业要求部分未达，需持续跟进' : '毕业要求完成情况良好',
+      name: '毕业风险',
+      tip: (s: number) => (s >= 70 ? '须重点跟踪' : s >= 40 ? '需持续跟进' : '完成良好'),
     },
   ]
+  return labels.map((item, i) => {
+    const score = Math.round(v[i] ?? 0)
+    return {
+      name: item.name,
+      score,
+      level: levelOf(score),
+      tip: item.tip(score),
+    }
+  })
 })
 
 /* ---------- 3. 学业成绩趋势分析 ---------- */
@@ -316,48 +445,75 @@ const gpaTrendOption = computed<EChartsOption>(() => {
   const yMin = Math.max(0, Math.floor((lo - 0.3) * 2) / 2)
   const yMax = Math.min(4, Math.ceil((hi + 0.3) * 2) / 2)
   return {
-    grid: { top: 14, bottom: 16, left: 2, right: 12 },
+    animation: true,
+    animationDuration: 1200,
+    grid: { top: 22, bottom: 8, left: 8, right: 14, containLabel: true },
     tooltip: {
       trigger: 'axis',
+      backgroundColor: 'rgba(4, 16, 40, 0.94)',
+      borderColor: 'rgba(85, 224, 255, 0.4)',
+      textStyle: { color: '#e8f7ff', fontSize: 15 },
+      extraCssText: 'border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.45);',
       formatter: (params: unknown) => {
         const arr = params as Array<{ axisValue: string; marker: string; value: number }>
         if (!Array.isArray(arr) || !arr.length) return ''
         const p = arr[0]
-        return `${p.axisValue}<br/>${p.marker}学期 GPA：${typeof p.value === 'number' ? p.value.toFixed(2) : p.value}`
+        return `${p.axisValue}<br/>${p.marker}学期 GPA：<b style="color:#7ff6ff">${typeof p.value === 'number' ? p.value.toFixed(2) : p.value}</b>`
       },
     },
     xAxis: {
       type: 'category',
       data: semesters,
       boundaryGap: false,
-      axisLabel: { ...AXIS_LABEL, fontSize: 17, margin: 6 },
-      axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.18)' } },
+      axisLabel: { ...AXIS_LABEL, fontSize: 16, margin: 8, color: '#9ec7e0' },
+      axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.22)' } },
+      axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
       min: yMin,
       max: yMax,
       interval: 0.5,
-      axisLabel: { ...AXIS_LABEL, fontSize: 17 },
-      splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
+      axisLabel: { ...AXIS_LABEL, fontSize: 16, color: '#9ec7e0' },
+      splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.08)', type: 'dashed' } },
     },
     series: [{
       name: '学期 GPA',
       type: 'line',
-      smooth: true,
+      smooth: 0.35,
       data: values,
-      lineStyle: { color: CHART_COLORS.cyan, width: 2.5 },
-      itemStyle: { color: CHART_COLORS.cyan },
+      lineStyle: {
+        color: CHART_COLORS.cyan,
+        width: 3,
+        shadowBlur: 14,
+        shadowColor: 'rgba(0, 229, 255, 0.55)',
+      },
+      itemStyle: {
+        color: '#06122e',
+        borderColor: '#7ff6ff',
+        borderWidth: 2.5,
+        shadowBlur: 10,
+        shadowColor: 'rgba(0, 229, 255, 0.7)',
+      },
       symbol: 'circle',
-      symbolSize: 7,
+      symbolSize: 10,
+      emphasis: { scale: 1.25, itemStyle: { borderWidth: 3 } },
       areaStyle: {
         color: {
           type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: 'rgba(0, 229, 255, 0.28)' },
+            { offset: 0, color: 'rgba(0, 229, 255, 0.38)' },
+            { offset: 0.55, color: 'rgba(0, 160, 255, 0.12)' },
             { offset: 1, color: 'rgba(0, 229, 255, 0)' },
           ],
         },
+      },
+      markLine: {
+        silent: true,
+        symbol: 'none',
+        lineStyle: { color: 'rgba(250, 204, 21, 0.45)', type: 'dashed', width: 1.5 },
+        label: { color: '#facc15', fontSize: 13, formatter: '关注线 2.5', position: 'insideEndTop' },
+        data: [{ yAxis: 2.5 }],
       },
     }],
   }
@@ -439,51 +595,93 @@ const courseRadarValues = computed<number[]>(() => {
 })
 
 const courseRadarOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'item' },
+  tooltip: {
+    trigger: 'item',
+    backgroundColor: 'rgba(4, 16, 40, 0.94)',
+    borderColor: 'rgba(255, 180, 84, 0.45)',
+    textStyle: { color: '#e8f7ff', fontSize: 15 },
+  },
   radar: {
-    center: ['50%', '54%'],
-    radius: '66%',
+    center: ['50%', '52%'],
+    radius: '72%',
     indicator: [
       { name: '挂科风险', max: 100 },
       { name: '学分影响', max: 100 },
       { name: '毕业影响', max: 100 },
       { name: '课程压力', max: 100 },
     ],
-    axisName: { color: '#b8ecff', fontSize: 17 },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
-    splitArea: { areaStyle: { color: ['rgba(0,184,255,0.04)', 'rgba(0,184,255,0.08)'] } },
-    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
+    axisName: {
+      color: '#d4f2ff',
+      fontSize: 14,
+      fontWeight: 700,
+      padding: [3, 4],
+    },
+    splitNumber: 4,
+    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.16)' } },
+    splitArea: {
+      areaStyle: {
+        color: ['rgba(0,184,255,0.02)', 'rgba(255,180,84,0.05)', 'rgba(0,184,255,0.02)', 'rgba(255,180,84,0.09)'],
+      },
+    },
+    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.22)' } },
   },
   series: [{
     type: 'radar',
     data: [{
       value: courseRadarValues.value,
       name: '课程风险画像',
-      symbolSize: 5,
-      areaStyle: { color: 'rgba(255, 180, 84, 0.26)' },
-      lineStyle: { color: '#ffb454', width: 2 },
-      itemStyle: { color: '#ffb454' },
+      symbol: 'circle',
+      symbolSize: 8,
+      areaStyle: {
+        color: {
+          type: 'radial', x: 0.5, y: 0.5, r: 0.75,
+          colorStops: [
+            { offset: 0, color: 'rgba(255, 200, 100, 0.48)' },
+            { offset: 1, color: 'rgba(255, 160, 60, 0.05)' },
+          ],
+        },
+      },
+      lineStyle: { color: '#ffc46a', width: 2.8, shadowBlur: 14, shadowColor: 'rgba(255,180,84,0.7)' },
+      itemStyle: {
+        color: '#fff',
+        borderColor: '#ffb454',
+        borderWidth: 2,
+        shadowBlur: 12,
+        shadowColor: 'rgba(255,180,84,0.75)',
+      },
     }],
   }],
 }))
 
-/** 红绿灯课表卡片：在 courseRiskList 基础上补充「风险/处理/报名」文案，按颜色分组展示 */
+const courseRiskTone = (level: Level) =>
+  ({ low: '#55e995', medium: '#facc15', high: '#ff7474' }[level])
+
+/** 红绿灯课表：精简为成绩色条行，高风险可展开资源 */
 const courseRiskCards = computed(() => {
   return courseRiskList.value.map((c) => {
     let risk = ''
     let handle = ''
-    let signup = ''
     if (c.level === 'high') {
       if (c.score < 60) { risk = '挂科'; handle = '需重修' }
       else { risk = '补考/重修'; handle = '安排补考' }
-      signup = '报名时间：2026年9月'
     } else if (c.level === 'medium') {
-      risk = '需关注'; handle = '建议加强复习'
+      risk = '需关注'
+      handle = '加强复习'
     } else {
       risk = '正常'
+      handle = ''
     }
-    return { ...c, risk, handle, signup }
+    return { ...c, risk, handle, tone: courseRiskTone(c.level) }
   })
+})
+
+const courseRiskSummary = computed(() => {
+  const cards = courseRiskCards.value
+  return {
+    high: cards.filter((c) => c.level === 'high').length,
+    medium: cards.filter((c) => c.level === 'medium').length,
+    low: cards.filter((c) => c.level === 'low').length,
+  }
 })
 
 /** 保留当前版增强：高风险课程可展开查看通过率与帮扶资源 */
@@ -566,7 +764,16 @@ onMounted(load)
           <div class="overview__left">
             <div class="overview__gauge">
               <ChartContainer :option="gaugeOption" />
-              <div class="overview__gauge-cap">综合风险指数</div>
+              <div class="overview__gauge-cap">
+                <StuHint
+                  tip="综合学业风险指数（0–100），越高越危险"
+                  formula="综合风险 = GPA偏离风险(≤40) + 学分缺口风险(≤30) + 挂科风险(≤30)
+GPA偏离 = max(0, (3.6−GPA)/3.6×40)
+学分缺口 = (要求学分−已修学分)/要求学分×30
+挂科风险 = min(30, 不及格门数×12)"
+                  :delay="280"
+                >综合风险指数</StuHint>
+              </div>
             </div>
             <div class="grad-check">
               <div class="grad-check__head">
@@ -642,7 +849,11 @@ onMounted(load)
                 <span :class="progressPercent < 60 ? 'text-risk' : progressPercent < 80 ? 'text-warn' : 'text-safe'">{{ progressPercent }}%</span>
               </div>
               <div class="core-progress__bar">
-                <div class="core-progress__bar-inner" :style="{ width: `${Math.min(100, progressPercent)}%`, background: progressPercent < 60 ? '#ff7474' : progressPercent < 80 ? '#facc15' : '#55e995' }" />
+                <div
+                  class="core-progress__bar-inner"
+                  :class="progressPercent < 60 ? 'is-risk' : progressPercent < 80 ? 'is-warn' : 'is-safe'"
+                  :style="{ width: `${Math.min(100, progressPercent)}%` }"
+                />
               </div>
               <div class="bucket-grid">
                 <div v-for="b in dashboard.creditProgress.buckets" :key="b.label" class="bucket-card">
@@ -663,91 +874,99 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 学业风险来源分析（置于合并卡片之后） -->
-      <section id="sec-source" class="warn-section">
+      <!-- 学业风险来源分析 -->
+      <section id="sec-source" class="warn-section source-panel">
         <h3 class="warn-section__title">学业风险来源分析</h3>
-        <div class="radar-wrap">
-          <ChartContainer :option="radarOption" />
-        </div>
-        <div class="factor-list">
-          <div
-            v-for="f in riskFactors"
-            :key="f.name"
-            class="factor-item"
-            :class="`factor-item--${f.level}`"
-          >
-            <span class="factor-item__name">{{ f.name }}</span>
-            <div class="factor-item__row">
-              <span class="factor-item__badge">{{ levelText(f.level) }}</span>
-              <span class="factor-item__desc">{{ f.desc }}</span>
+        <div class="source-panel__body">
+          <div class="source-panel__radar">
+            <ChartContainer :option="radarOption" />
+          </div>
+          <div class="meter-list">
+            <div
+              v-for="f in riskFactors"
+              :key="f.name"
+              class="meter"
+              :class="`meter--${f.level}`"
+              :style="{ '--tone': levelTone(f.level) }"
+            >
+              <div class="meter__head">
+                <span class="meter__name">{{ f.name }}</span>
+                <span class="meter__badge">{{ levelText(f.level) }}</span>
+                <strong class="meter__score">{{ f.score }}</strong>
+              </div>
+              <div class="meter__track"><i :style="{ width: `${f.score}%` }" /></div>
+              <p class="meter__tip">{{ f.tip }}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 课程风险分析（红绿灯课表） -->
-      <section id="sec-course" class="warn-section">
-        <h3 class="warn-section__title">课程风险分析（红绿灯课表）</h3>
-        <div class="course-risk__grid">
-          <div class="course-risk__radar">
-            <h4 class="course-risk__sub">课程风险画像</h4>
-            <div class="radar-wrap">
-              <ChartContainer :option="courseRadarOption" />
-            </div>
+      <!-- 课程风险分析 -->
+      <section id="sec-course" class="warn-section course-panel">
+        <h3 class="warn-section__title">
+          课程风险分析
+          <span class="warn-section__meta">
+            高风险 {{ courseRiskSummary.high }} · 关注 {{ courseRiskSummary.medium }}
+          </span>
+        </h3>
+        <div class="course-panel__body">
+          <div class="course-panel__radar">
+            <div class="panel-caption">风险画像</div>
+            <ChartContainer :option="courseRadarOption" />
           </div>
-          <div class="course-risk__list">
-            <h4 class="course-risk__sub">本学期课程风险清单</h4>
-            <div class="light-list">
-              <template v-for="grp in [['high','🔴','高风险'],['medium','🟡','关注'],['low','🟢','正常']]" :key="grp[0]">
-                <template v-for="c in courseRiskCards.filter((x) => x.level === grp[0])" :key="c.name">
-                  <div
-                    class="light-card"
-                    :class="[`light-card--${c.level}`, { 'is-open': expandedCourse === c.name }]"
-                  >
-                    <div
-                      class="light-card__head"
-                      :class="{ 'is-clickable': c.level === 'high' }"
-                      @click="c.level === 'high' && toggleCourseExpand(c.name)"
-                    >
-                      <span class="light-card__light">{{ grp[1] }} {{ grp[2] }}</span>
-                      <span class="light-card__name">{{ c.name }}</span>
-                      <span v-if="c.level === 'high'" class="light-card__toggle">{{ expandedCourse === c.name ? '收起' : '展开资源' }}</span>
-                    </div>
-                    <div class="light-card__body">
-                      <span>成绩：{{ c.score }}</span>
-                      <span v-if="c.level !== 'low'">风险：{{ c.risk }}</span>
-                      <span v-if="c.level === 'high'">处理：{{ c.handle }}</span>
-                      <span v-if="c.level === 'high'">学院通过率：{{ coursePassRate(c.name, c.score) }}%</span>
-                      <span v-if="c.signup">重修{{ c.signup }}</span>
-                      <span v-if="c.level === 'medium'">建议：持续关注</span>
-                      <span v-if="c.level === 'low'">成绩稳定</span>
-                    </div>
-                    <div v-if="c.level === 'high' && expandedCourse === c.name" class="light-card__expand">
-                      <p class="light-card__hint">
-                        学院平均通过率 {{ coursePassRate(c.name, c.score) }}% —
-                        {{ coursePassRate(c.name, c.score) < 70 ? '课程客观难度偏高，建议优先安排课程辅导。' : '通过率整体正常，更需重点改善复习安排与学习投入。' }}
-                      </p>
-                      <div class="light-card__links">
-                        <a
-                          v-for="r in courseResources(c.name)"
-                          :key="r.label"
-                          class="light-card__link"
-                          :href="r.href"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >{{ r.label }} ›</a>
-                      </div>
-                    </div>
+          <div class="course-panel__list">
+            <div class="panel-caption">风险课程</div>
+            <div class="score-list">
+              <div
+                v-for="c in courseRiskCards"
+                :key="c.name"
+                class="score-row"
+                :class="[`score-row--${c.level}`, { 'is-open': expandedCourse === c.name }]"
+                :style="{ '--tone': c.tone }"
+              >
+                <button
+                  type="button"
+                  class="score-row__main"
+                  :class="{ 'is-clickable': c.level === 'high' }"
+                  @click="c.level === 'high' && toggleCourseExpand(c.name)"
+                >
+                  <div class="score-row__top">
+                    <span class="score-row__badge">{{ c.level === 'high' ? '高风险' : c.level === 'medium' ? '关注' : '正常' }}</span>
+                    <span class="score-row__name" :title="c.name">{{ c.name }}</span>
+                    <strong class="score-row__score">{{ c.score }}</strong>
                   </div>
-                </template>
-              </template>
+                  <div class="score-row__track"><i :style="{ width: `${c.score}%` }" /></div>
+                  <div class="score-row__meta">
+                    <span>{{ c.risk }}</span>
+                    <span v-if="c.handle">{{ c.handle }}</span>
+                    <span v-if="c.level === 'high'" class="score-row__more">
+                      {{ expandedCourse === c.name ? '收起' : '资源' }}
+                    </span>
+                  </div>
+                </button>
+                <div v-if="c.level === 'high' && expandedCourse === c.name" class="score-row__expand">
+                  <p class="score-row__hint">
+                    学院通过率 {{ coursePassRate(c.name, c.score) }}% —
+                    {{ coursePassRate(c.name, c.score) < 70 ? '课程难度偏高，建议优先辅导。' : '通过率正常，重点改善复习投入。' }}
+                  </p>
+                  <div class="score-row__links">
+                    <a
+                      v-for="r in courseResources(c.name)"
+                      :key="r.label"
+                      class="score-row__link"
+                      :href="r.href"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >{{ r.label }}</a>
+                  </div>
+                </div>
+              </div>
               <div v-if="!courseRiskCards.length" class="empty-cell">暂无课程风险</div>
             </div>
           </div>
         </div>
         <div class="section-actions">
-          <button class="section-actions__btn" @click="goFail">查看挂科详情</button>
-          <button class="section-actions__btn" @click="goGpa">查看 GPA 详情</button>
+          <button type="button" class="section-actions__btn" @click="goGpa">查看 GPA 详情</button>
         </div>
       </section>
 
@@ -797,9 +1016,7 @@ onMounted(load)
             :class="`task-card--${t.priority}`"
           >
             <div class="task-card__head">
-              <span class="task-card__light">
-                {{ t.priority === 'high' ? '🔴' : t.priority === 'medium' ? '🟡' : '🟢' }} {{ t.statusText }}
-              </span>
+              <span class="task-card__light">{{ t.statusText }}</span>
               <span class="task-card__title">{{ t.title }}</span>
             </div>
             <div class="task-card__body">
@@ -821,7 +1038,7 @@ onMounted(load)
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sec-full { grid-column: 1 / -1; }
@@ -835,61 +1052,81 @@ onMounted(load)
 
 .develop__col { min-width: 0; }
 
-.develop__sub {
-  margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #9ecae8;
-}
-
 .warn-section {
-  padding: 12px 16px;
-  border-radius: 5px;
+  position: relative;
+  padding: 14px 18px 16px;
+  border-radius: 10px;
   min-width: 0;
   background:
-    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
-    rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(102, 217, 255, 0.28);
+    linear-gradient(145deg, rgba(0, 113, 206, 0.16), rgba(3, 12, 34, 0.78)),
+    rgba(5, 18, 48, 0.54);
+  border: 1px solid rgba(102, 217, 255, 0.18);
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 22px rgba(0, 184, 255, 0.06);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 14px;
+    right: 14px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.62), transparent);
+    pointer-events: none;
+  }
 }
 
-/* 学业风险状态总览保持原暗边框 */
+/* 学业风险状态总览 */
 .overview {
-  border-color: rgba(102, 217, 255, 0.1);
+  border-color: rgba(102, 217, 255, 0.22);
 }
 
 .warn-section__title {
-  margin: 0 0 10px;
-  font-size: 20px;
-  font-weight: 700;
-  color: #b8ecff;
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #f4fbff;
   letter-spacing: 0.04em;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
 
   &::before {
     content: '';
     width: 3px;
-    height: 13px;
+    height: 14px;
     border-radius: 2px;
     background: linear-gradient(180deg, #00e5ff, #00b8ff);
     box-shadow: 0 0 8px rgba(0, 212, 255, 0.45);
   }
 }
 
-/* 1. 总览：左=综合风险指数+毕业核查（固定 180px，对齐心理预警仪表盘宽度），右=四个基本情况+状态说明 */
+.warn-section__meta {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 650;
+  color: rgba(184, 236, 255, 0.55);
+  letter-spacing: 0.02em;
+  text-shadow: none;
+}
+
+/* 1. 总览：左=综合风险指数+毕业核查，右=四个基本情况+状态说明 */
 .overview__body {
   display: flex;
-  gap: 16px;
+  gap: 18px;
   align-items: stretch;
 }
 
 .overview__left {
-  width: 180px;
+  width: 200px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -902,73 +1139,105 @@ onMounted(load)
 }
 
 .overview__gauge {
-  width: 180px;
+  width: 200px;
   align-self: center;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 
-  :deep(.chart-container) { width: 180px; height: 160px; }
+  :deep(.chart-container) { width: 200px; height: 168px; }
 
   &-cap {
-    margin-top: -6px;
-    font-size: 17px;
-    color: #7eb4d8;
-    font-weight: 600;
+    margin-top: -2px;
+    font-size: 16px;
+    color: #8fc4e4;
+    font-weight: 650;
+    letter-spacing: 0.06em;
   }
 }
 
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
 }
 
 .kpi-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 12px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.45);
-  border-left: 3px solid #65dfff;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgba(0, 90, 160, 0.28), rgba(4, 20, 48, 0.55));
+  border: 1px solid rgba(90, 200, 255, 0.22);
+  border-left: 3px solid rgba(0, 220, 255, 0.75);
+  box-shadow:
+    inset 0 0 18px rgba(0, 140, 220, 0.1),
+    0 0 16px rgba(0, 160, 255, 0.06);
+  overflow: hidden;
 
-  &--low { border-color: #55e995; }
-  &--medium { border-color: #facc15; }
-  &--high { border-color: #ff7474; }
-  &--safe { border-color: #55e995; }
-  &--warn { border-color: #facc15; }
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(140, 230, 255, 0.12), transparent);
+    animation: awKpiSweep 5.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  &--low { border-left-color: #55e995; }
+  &--medium { border-left-color: #facc15; }
+  &--high { border-left-color: #ff7474; }
+  &--safe { border-left-color: #55e995; }
+  &--warn { border-left-color: #facc15; }
 
   &__label {
-    font-size: 18px;
-    color: #7eb4d8;
-    font-weight: 600;
+    font-size: 16px;
+    color: #8fc4e4;
+    font-weight: 650;
+    letter-spacing: 0.04em;
   }
 
   &__value {
-    font-size: 27px;
+    font-size: 28px;
     font-weight: 900;
     color: #f6fbff;
+    line-height: 1.2;
+    font-family: 'DIN Alternate', 'Segoe UI', sans-serif;
+    text-shadow: 0 0 12px rgba(80, 200, 255, 0.35);
   }
+}
+
+@keyframes awKpiSweep {
+  0% { left: -40%; opacity: 0; }
+  20% { opacity: 1; }
+  100% { left: 120%; opacity: 0; }
 }
 
 .risk-note {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.35);
-  border: 1px solid rgba(102, 217, 255, 0.1);
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(0, 38, 73, 0.42);
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  box-shadow: inset 0 0 18px rgba(0, 140, 220, 0.06);
 
   &__tag {
     flex-shrink: 0;
-    padding: 3px 12px;
-    border-radius: 999px;
-    font-size: 18px;
+    padding: 4px 14px;
+    border-radius: 6px;
+    font-size: 16px;
     font-weight: 800;
     color: #06122e;
+    letter-spacing: 0.04em;
   }
 
   &__text {
@@ -977,34 +1246,34 @@ onMounted(load)
     line-height: 1.5;
   }
 
-  &--low .risk-note__tag { background: #55e995; }
-  &--medium .risk-note__tag { background: #facc15; }
-  &--high .risk-note__tag { background: #ff7474; color: #fff; }
+  &--low .risk-note__tag { background: #55e995; box-shadow: 0 0 12px rgba(85, 233, 149, 0.35); }
+  &--medium .risk-note__tag { background: #facc15; box-shadow: 0 0 12px rgba(250, 204, 21, 0.3); }
+  &--high .risk-note__tag { background: #ff7474; color: #fff; box-shadow: 0 0 12px rgba(255, 116, 116, 0.35); }
 }
 
 /* 毕业核查进度条 */
 .grad-check {
   width: 100%;
-  padding: 10px 14px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.35);
-  border: 1px solid rgba(102, 217, 255, 0.1);
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(0, 38, 73, 0.4);
+  border: 1px solid rgba(102, 217, 255, 0.14);
 
   &__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
   &__title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     color: #b8ecff;
   }
   &__tag {
     padding: 2px 10px;
-    border-radius: 999px;
-    font-size: 17px;
+    border-radius: 6px;
+    font-size: 14px;
     font-weight: 800;
     color: #06122e;
     &--low { background: #55e995; }
@@ -1012,102 +1281,339 @@ onMounted(load)
     &--high { background: #ff7474; color: #fff; }
   }
   &__bar {
-    height: 10px;
+    position: relative;
+    height: 8px;
     border-radius: 999px;
     background: rgba(102, 217, 255, 0.12);
     overflow: hidden;
   }
   &__inner {
+    position: relative;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #00b8ff, #00e5ff);
+    background: linear-gradient(90deg, #0090d0, #00e5ff);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.45);
     transition: width 0.4s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+      animation: awBarShine 2.8s ease-in-out infinite;
+    }
   }
   &__foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 6px;
-    font-size: 17px;
+    margin-top: 8px;
+    font-size: 14px;
     color: #9ecae8;
   }
   &__pct {
     font-size: 18px;
     font-weight: 800;
     color: #7ff6ff;
-    font-family: var(--student-font-number);
+    font-family: 'DIN Alternate', sans-serif;
   }
 }
 
-/* 2. 风险来源：雷达（上） + 因素（下） */
-.radar-wrap {
-  height: 200px;
-  :deep(.chart-container) { height: 200px; }
+@keyframes awBarShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
 
-.factor-list {
+/* 2. 风险来源：大雷达 + 指数条 */
+.source-panel__body {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 8px;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+  min-height: 280px;
 }
 
-.factor-item {
+.source-panel__radar {
+  min-width: 0;
+  min-height: 280px;
+  border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 80, 80, 0.08), transparent 62%);
+  :deep(.chart-container) { height: 280px; }
+}
+
+.meter-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 7px 10px;
-  border-radius: 3px;
-  background: rgba(0, 38, 73, 0.3);
-  border-left: 3px solid #65dfff;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
 
-  &--low { border-color: #55e995; }
-  &--medium { border-color: #facc15; }
-  &--high { border-color: #ff7474; }
+.meter {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(0, 70, 130, 0.22), rgba(4, 18, 42, 0.5));
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  border-left: 3px solid var(--tone);
 
-  &__name { font-size: 18px; color: #b8ecff; font-weight: 700; white-space: nowrap; }
-  &__row {
-    display: flex;
+  &__head {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 750;
+    color: #c8f0ff;
+  }
+
+  &__badge {
+    font-size: 11px;
+    font-weight: 750;
+    padding: 2px 7px;
+    border-radius: 5px;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+  }
+
+  &__score {
+    font-size: 18px;
+    font-weight: 900;
+    font-family: 'DIN Alternate', sans-serif;
+    color: var(--tone);
+    min-width: 28px;
+    text-align: right;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--tone) 45%, transparent);
+  }
+
+  &__track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(101, 146, 183, 0.2);
+    overflow: hidden;
+
+    i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 55%, #06203a), var(--tone));
+      box-shadow: 0 0 10px color-mix(in srgb, var(--tone) 55%, transparent);
+    }
+  }
+
+  &__tip {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(158, 202, 232, 0.75);
+  }
+}
+
+/* 课程风险：大雷达 + 成绩色条 */
+.course-panel__body {
+  display: grid;
+  grid-template-columns: 0.95fr 1.15fr;
+  gap: 14px;
+  align-items: stretch;
+  min-height: 280px;
+}
+
+.course-panel__radar {
+  min-width: 0;
+  min-height: 260px;
+  border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 180, 60, 0.08), transparent 62%);
+  display: flex;
+  flex-direction: column;
+
+  :deep(.chart-container) { flex: 1; min-height: 240px; height: 240px; }
+}
+
+.course-panel__list {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-caption {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8fc4e4;
+  letter-spacing: 0.04em;
+}
+
+.score-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 184, 255, 0.35);
+    border-radius: 4px;
+  }
+}
+
+.score-row {
+  border-radius: 8px;
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  background: linear-gradient(145deg, rgba(0, 70, 130, 0.18), rgba(4, 18, 42, 0.48));
+  border-left: 3px solid var(--tone);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &.is-open {
+    border-color: color-mix(in srgb, var(--tone) 45%, rgba(102, 217, 255, 0.3));
+    box-shadow: 0 0 16px color-mix(in srgb, var(--tone) 18%, transparent);
+  }
+
+  &__main {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    color: inherit;
+    cursor: default;
+
+    &.is-clickable { cursor: pointer; }
+  }
+
+  &__top {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
   }
+
   &__badge {
-    flex-shrink: 0;
-    font-size: 16px;
-    padding: 2px 6px;
-    border-radius: 999px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 5px;
+    color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
     white-space: nowrap;
   }
-  &--low &__badge { background: rgba(85, 233, 149, 0.14); color: #55e995; }
-  &--medium &__badge { background: rgba(250, 204, 21, 0.14); color: #facc15; }
-  &--high &__badge { background: rgba(255, 116, 116, 0.14); color: #ff7474; }
 
-  &__desc {
-    font-size: 17px;
-    color: #9ecae8;
-    line-height: 1.35;
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+    font-weight: 800;
+    color: #f4fbff;
   }
+
+  &__score {
+    font-size: 20px;
+    font-weight: 900;
+    font-family: 'DIN Alternate', sans-serif;
+    color: var(--tone);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--tone) 45%, transparent);
+  }
+
+  &__track {
+    margin-top: 7px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(101, 146, 183, 0.2);
+    overflow: hidden;
+
+    i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 50%, #06203a), var(--tone));
+      box-shadow: 0 0 8px color-mix(in srgb, var(--tone) 55%, transparent);
+    }
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(184, 216, 240, 0.78);
+  }
+
+  &__more {
+    margin-left: auto;
+    color: #8ef6ff;
+    font-weight: 700;
+  }
+
+  &__expand {
+    padding: 0 12px 12px;
+    border-top: 1px solid rgba(102, 217, 255, 0.12);
+  }
+
+  &__hint {
+    margin: 10px 0 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #ffe7a8;
+  }
+
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__link {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 206, 255, 0.35);
+    background: rgba(0, 80, 140, 0.3);
+    color: #8ee9ff;
+    font-size: 12px;
+    text-decoration: none;
+
+    &:hover {
+      border-color: rgba(120, 230, 255, 0.7);
+      color: #fff;
+    }
+  }
+}
+
+/* legacy radar wrap kept for other sections */
+.radar-wrap {
+  height: 220px;
+  :deep(.chart-container) { height: 220px; }
 }
 
 /* 3. 成绩趋势 */
 .trend-wrap {
-  height: 150px;
-  :deep(.chart-container) { height: 150px; }
+  height: 180px;
+  :deep(.chart-container) { height: 180px; }
 }
 
 .trend-desc {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px 12px;
-  border-radius: 3px;
-  background: rgba(0, 38, 73, 0.3);
-  font-size: 18px;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(0, 38, 73, 0.4);
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  font-size: 16px;
   color: #d0e8f8;
 
-  &__icon { font-size: 20px; font-weight: 900; }
+  &__icon { font-size: 18px; font-weight: 900; }
   &--low &__icon { color: #55e995; }
   &--medium &__icon { color: #facc15; }
   &--high &__icon { color: #ff7474; }
@@ -1115,7 +1621,7 @@ onMounted(load)
 
 /* 4. 课程风险 */
 .risk-sub {
-  font-size: 17px;
+  font-size: 19px;
   color: #7eb4d8;
   margin-bottom: 8px;
 }
@@ -1127,7 +1633,7 @@ onMounted(load)
 }
 
 .risk-list-head {
-  font-size: 17px;
+  font-size: 19px;
   color: #7eb4d8;
   margin-bottom: 7px;
   font-weight: 600;
@@ -1149,7 +1655,7 @@ onMounted(load)
   padding: 7px 10px;
   border-radius: 3px;
   background: rgba(0, 38, 73, 0.3);
-  font-size: 18px;
+  font-size: 20px;
 
   &__dot {
     width: 7px;
@@ -1175,7 +1681,7 @@ onMounted(load)
 
   &__tag {
     justify-self: end;
-    font-size: 15px;
+    font-size: 17px;
     padding: 1px 6px;
     border-radius: 999px;
     font-weight: 700;
@@ -1191,85 +1697,119 @@ onMounted(load)
   &__head {
     display: flex;
     justify-content: space-between;
-    font-size: 18px;
+    font-size: 15px;
     color: #9ecae8;
-    margin-bottom: 6px;
-    font-weight: 600;
+    margin-bottom: 8px;
+    font-weight: 650;
   }
 
   &__bar {
-    height: 9px;
-    border-radius: 5px;
+    height: 10px;
+    border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
     overflow: hidden;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.25);
   }
 
   &__bar-inner {
+    position: relative;
     height: 100%;
-    border-radius: 5px;
+    border-radius: 999px;
     transition: width 0.5s ease;
+    overflow: hidden;
+
+    &.is-safe {
+      background: linear-gradient(90deg, #059669, #34d399, #6ee7b7);
+      box-shadow: 0 0 12px rgba(52, 211, 153, 0.4);
+    }
+    &.is-warn {
+      background: linear-gradient(90deg, #d97706, #facc15);
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.35);
+    }
+    &.is-risk {
+      background: linear-gradient(90deg, #dc2626, #ff7474);
+      box-shadow: 0 0 12px rgba(255, 116, 116, 0.4);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+      animation: awBarShine 2.8s ease-in-out infinite;
+    }
   }
 
   &__note {
-    margin-top: 6px;
-    font-size: 17px;
+    margin-top: 10px;
+    font-size: 15px;
     color: #9ecae8;
 
-    b { font-size: 18px; }
+    b { font-size: 17px; }
   }
 }
 
 .bucket-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .bucket-card {
-  padding: 7px 8px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.3);
+  padding: 10px 12px;
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(0, 70, 130, 0.22), rgba(4, 18, 42, 0.5));
+  border: 1px solid rgba(102, 217, 255, 0.12);
 
-  &__label { font-size: 17px; color: #7eb4d8; }
+  &__label { font-size: 14px; color: #8fc4e4; font-weight: 650; }
   &__value {
     float: right;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 800;
     color: #f6fbff;
+    font-family: 'DIN Alternate', sans-serif;
   }
   &__bar {
     clear: both;
     height: 5px;
-    border-radius: 3px;
+    border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
-    margin-top: 6px;
+    margin-top: 8px;
     overflow: hidden;
   }
   &__bar-inner {
     height: 100%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, #00b8ff, #00e5ff);
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0090d0, #00e5ff);
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
   }
 }
 
 .section-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 10px;
+  margin-top: 14px;
 
   &__btn {
     flex: 1;
-    padding: 6px 0;
-    border-radius: 3px;
-    border: 1px solid rgba(0, 184, 255, 0.3);
-    background: rgba(0, 184, 255, 0.08);
+    padding: 9px 0;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 184, 255, 0.35);
+    background:
+      linear-gradient(145deg, rgba(0, 113, 206, 0.22), rgba(0, 40, 80, 0.45));
     color: #8ef6ff;
-    font-size: 17px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 750;
     cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 
-    &:hover { background: rgba(0, 184, 255, 0.16); }
+    &:hover {
+      background: rgba(0, 184, 255, 0.18);
+      border-color: rgba(0, 212, 255, 0.55);
+      box-shadow: 0 0 16px rgba(0, 160, 255, 0.15);
+    }
   }
 }
 
@@ -1316,26 +1856,26 @@ onMounted(load)
   }
 
   &__label {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #f6fbff;
   }
 
   &__time {
-    font-size: 16px;
+    font-size: 18px;
     color: #7eb4d8;
     font-weight: 700;
   }
 
   &__title {
-    font-size: 17px;
+    font-size: 19px;
     color: #8ef6ff;
     font-weight: 700;
     margin: 2px 0;
   }
 
   &__content {
-    font-size: 17px;
+    font-size: 19px;
     color: #d0e8f8;
     line-height: 1.5;
     display: flex;
@@ -1345,7 +1885,7 @@ onMounted(load)
   }
 
   &__status {
-    font-size: 16px;
+    font-size: 18px;
     padding: 1px 8px;
     border-radius: 999px;
     font-weight: 800;
@@ -1361,68 +1901,79 @@ onMounted(load)
 .warn-table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  background: rgba(0, 24, 52, 0.35);
 }
 
 .warn-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 18px;
-  color: rgba(184, 236, 255, 0.85);
+  font-size: 15px;
+  color: rgba(184, 236, 255, 0.88);
 
   th {
     text-align: left;
-    padding: 8px 10px;
-    font-size: 17px;
-    font-weight: 700;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 750;
     color: #9ecae8;
-    border-bottom: 1px solid rgba(102, 217, 255, 0.12);
+    letter-spacing: 0.04em;
+    background: rgba(0, 60, 110, 0.35);
+    border-bottom: 1px solid rgba(102, 217, 255, 0.16);
     white-space: nowrap;
   }
 
   td {
-    padding: 7px 10px;
-    border-bottom: 1px solid rgba(102, 217, 255, 0.05);
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(102, 217, 255, 0.06);
+    vertical-align: middle;
   }
 
-  tbody tr:hover { background: rgba(0, 184, 255, 0.04); }
+  tbody tr {
+    transition: background 0.15s ease;
+    &:hover { background: rgba(0, 184, 255, 0.07); }
+    &:last-child td { border-bottom: none; }
+  }
 
-  .row--low td:first-child { border-left: 2px solid rgba(74, 222, 128, 0.5); }
-  .row--medium td:first-child { border-left: 2px solid rgba(250, 204, 21, 0.5); }
-  .row--high td:first-child { border-left: 2px solid rgba(248, 91, 91, 0.5); }
+  .row--low td:first-child { box-shadow: inset 3px 0 0 #55e995; }
+  .row--medium td:first-child { box-shadow: inset 3px 0 0 #facc15; }
+  .row--high td:first-child { box-shadow: inset 3px 0 0 #ff7474; }
 
   .cell-label {
-    font-weight: 600;
-    color: #d0e8f8;
+    font-weight: 650;
+    color: #e2f4ff;
     line-height: 1.4;
   }
 }
 
 .cat-badge {
-  font-size: 16px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: rgba(0, 184, 255, 0.08);
-  border: 1px solid rgba(0, 212, 255, 0.12);
+  font-size: 13px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(0, 184, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.22);
   color: #8ef6ff;
   white-space: nowrap;
+  font-weight: 650;
 }
 
 .level-badge {
-  font-size: 17px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-weight: 700;
+  font-size: 13px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 750;
 
-  &--low { background: rgba(74, 222, 128, 0.12); color: #55e995; }
-  &--medium { background: rgba(250, 204, 21, 0.12); color: #facc15; }
-  &--high { background: rgba(248, 91, 91, 0.12); color: #ff7474; }
+  &--low { background: rgba(74, 222, 128, 0.14); color: #55e995; border: 1px solid rgba(74, 222, 128, 0.28); }
+  &--medium { background: rgba(250, 204, 21, 0.14); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.28); }
+  &--high { background: rgba(248, 91, 91, 0.14); color: #ff7474; border: 1px solid rgba(248, 91, 91, 0.28); }
 }
 
 .empty-cell {
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 /* Footer */
@@ -1438,7 +1989,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     cursor: pointer;
 
@@ -1457,156 +2008,58 @@ onMounted(load)
 .develop__tag {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 10px;
-  font-size: 13.5px;
-  color: #9ecae8;
+  gap: 10px;
+  margin-bottom: 12px;
 
-  &__item b {
-    color: #7ff6ff;
-    font-weight: 800;
-    margin-left: 2px;
-  }
-}
+  &__item {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #9ecae8;
+    background: rgba(0, 50, 95, 0.4);
+    border: 1px solid rgba(102, 217, 255, 0.14);
 
-/* 课程风险分析 · 红绿灯课表 */
-.course-risk__grid {
-  display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
-  gap: 18px;
-}
-
-.course-risk__sub {
-  margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #9ecae8;
-}
-
-.course-risk__list { min-width: 0; }
-
-.light-list {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.light-card {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 8px 12px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.32);
-
-  &--high { background: rgba(255, 116, 116, 0.08); }
-  &--medium { background: rgba(250, 204, 21, 0.06); }
-  &--low { background: rgba(85, 233, 149, 0.06); }
-
-  &__head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    &.is-clickable {
-      cursor: pointer;
+    b {
+      color: #7ff6ff;
+      font-weight: 800;
+      margin-left: 4px;
     }
   }
+}
 
-  &__light {
-    flex-shrink: 0;
-    font-size: 16px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-  &--high &__light { color: #ff7474; }
-  &--medium &__light { color: #facc15; }
-  &--low &__light { color: #55e995; }
-
-  &__name {
-    font-size: 19px;
-    font-weight: 800;
-    color: #f6fbff;
-  }
-
-  &__toggle {
-    margin-left: auto;
-    font-size: 16px;
-    color: #8ef6ff;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  &__body {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    font-size: 17px;
-    color: #cfe8ff;
-
-    span {
-      white-space: nowrap;
-    }
-  }
-
-  &__expand {
-    padding-top: 6px;
-    border-top: 1px solid rgba(102, 217, 255, 0.12);
-  }
-
-  &__hint {
-    margin: 0 0 8px;
-    color: #ffe7a8;
-    font-size: 17px;
-    line-height: 1.5;
-  }
-
-  &__links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  &__link {
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(0, 206, 255, 0.35);
-    background: rgba(0, 80, 140, 0.3);
-    color: #8ee9ff;
-    font-size: 16px;
-    text-decoration: none;
-
-    &:hover {
-      border-color: rgba(120, 230, 255, 0.7);
-      color: #fff;
-    }
-  }
+.develop__sub {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 750;
+  color: #b8ecff;
+  letter-spacing: 0.03em;
 }
 
 /* 学业预警台账 · 闭环状态面板 */
 .ledger-grid {
   display: grid;
-  grid-template-columns: 1fr 200px;
-  gap: 16px;
+  grid-template-columns: 1fr 210px;
+  gap: 14px;
   align-items: start;
 }
 
 .ledger-status {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.32);
-  border: 1px solid rgba(102, 217, 255, 0.12);
+  gap: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgba(0, 90, 160, 0.22), rgba(4, 18, 42, 0.55));
+  border: 1px solid rgba(102, 217, 255, 0.16);
+  box-shadow: inset 0 0 18px rgba(0, 140, 220, 0.08);
 
   &__title {
     margin: 0 0 2px;
-    font-size: 18px;
-    font-weight: 700;
-    color: #b8ecff;
+    font-size: 15px;
+    font-weight: 750;
+    color: #c8f0ff;
+    letter-spacing: 0.04em;
   }
 }
 
@@ -1614,12 +2067,18 @@ onMounted(load)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 10px;
-  border-radius: 3px;
-  background: rgba(0, 38, 73, 0.3);
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 30, 60, 0.45);
+  border: 1px solid rgba(102, 217, 255, 0.1);
 
-  &__label { font-size: 17px; color: #9ecae8; }
-  &__value { font-size: 21px; font-weight: 900; font-family: 'DIN Alternate', sans-serif; }
+  &__label { font-size: 14px; color: #9ecae8; font-weight: 650; }
+  &__value {
+    font-size: 22px;
+    font-weight: 900;
+    font-family: 'DIN Alternate', sans-serif;
+    text-shadow: 0 0 10px currentColor;
+  }
 
   &--done &__value { color: #55e995; }
   &--doing &__value { color: #facc15; }
@@ -1630,39 +2089,66 @@ onMounted(load)
 .task-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .task-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 11px 14px;
-  border-radius: 5px;
-  background: rgba(0, 38, 73, 0.32);
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgba(0, 70, 130, 0.2), rgba(4, 18, 42, 0.5));
+  border: 1px solid rgba(102, 217, 255, 0.12);
+  border-left: 3px solid rgba(102, 217, 255, 0.35);
 
-  &--high { background: rgba(255, 116, 116, 0.08); }
-  &--medium { background: rgba(250, 204, 21, 0.06); }
-  &--low { background: rgba(85, 233, 149, 0.06); }
+  &--high {
+    border-left-color: #ff7474;
+    background: linear-gradient(145deg, rgba(120, 30, 40, 0.26), rgba(4, 18, 42, 0.5));
+  }
+  &--medium {
+    border-left-color: #facc15;
+    background: linear-gradient(145deg, rgba(90, 70, 10, 0.2), rgba(4, 18, 42, 0.5));
+  }
+  &--low {
+    border-left-color: #55e995;
+    background: linear-gradient(145deg, rgba(20, 80, 50, 0.2), rgba(4, 18, 42, 0.5));
+  }
 
   &__head {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
 
   &__light {
     flex-shrink: 0;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 800;
     white-space: nowrap;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
   }
-  &--high &__light { color: #ff7474; }
-  &--medium &__light { color: #facc15; }
-  &--low &__light { color: #55e995; }
+  &--high &__light {
+    color: #ffb0b0;
+    background: rgba(255, 116, 116, 0.16);
+    border: 1px solid rgba(255, 116, 116, 0.3);
+  }
+  &--medium &__light {
+    color: #fde68a;
+    background: rgba(250, 204, 21, 0.14);
+    border: 1px solid rgba(250, 204, 21, 0.28);
+  }
+  &--low &__light {
+    color: #86efac;
+    background: rgba(85, 233, 149, 0.14);
+    border: 1px solid rgba(85, 233, 149, 0.28);
+  }
 
   &__title {
-    font-size: 19px;
+    font-size: 16px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -1671,8 +2157,8 @@ onMounted(load)
     display: flex;
     flex-wrap: wrap;
     gap: 4px 14px;
-    font-size: 17px;
-    color: #cfe8ff;
+    font-size: 14px;
+    color: #b8d8f0;
   }
 
   &__line { white-space: nowrap; }
@@ -1685,7 +2171,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -1696,7 +2182,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.3);
     background: rgba(0, 184, 255, 0.1);
     cursor: pointer;
-    font-size: 19px;
+    font-size: 21px;
     color: #55dfff;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
@@ -1721,7 +2207,13 @@ onMounted(load)
   .overview__body { flex-direction: column; align-items: center; }
   .overview__main { width: 100%; }
   .develop__grid { grid-template-columns: 1fr; }
-  .course-risk__grid { grid-template-columns: 1fr; }
+  .source-panel__body,
+  .course-panel__body { grid-template-columns: 1fr; }
+  .source-panel__radar,
+  .course-panel__radar {
+    min-height: 240px;
+    :deep(.chart-container) { height: 240px; }
+  }
   .ledger-grid { grid-template-columns: 1fr; }
   .task-list { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }

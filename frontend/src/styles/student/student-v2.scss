@@ -82,7 +82,10 @@
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      filter: drop-shadow(0 0 14px rgba(0, 220, 255, 0.45));
+      filter:
+        drop-shadow(0 0 10px rgba(120, 230, 255, 0.7))
+        drop-shadow(0 0 28px rgba(0, 180, 255, 0.45))
+        drop-shadow(0 0 48px rgba(40, 120, 255, 0.25));
       animation: stuTitleShine 6s ease-in-out infinite;
     }
   }
@@ -98,6 +101,7 @@
     font-weight: 600;
     color: rgba(140, 230, 255, 0.88);
     letter-spacing: 0.14em;
+    text-shadow: 0 0 10px rgba(80, 200, 255, 0.35);
 
     b {
       margin-left: 12px;
@@ -112,10 +116,11 @@
     height: 62px;
     pointer-events: none;
     background:
-      linear-gradient(135deg, transparent 0 20%, rgba(120, 230, 255, 0.55) 20.6%, transparent 21.4% 100%) left 4px top 22px / 190px 40px no-repeat,
-      linear-gradient(225deg, transparent 0 20%, rgba(120, 230, 255, 0.55) 20.6%, transparent 21.4% 100%) right 4px top 22px / 190px 40px no-repeat,
-      linear-gradient(90deg, transparent, rgba(200, 170, 100, 0.35), rgba(90, 220, 255, 0.45), rgba(200, 170, 100, 0.35), transparent) center 52px / 78% 1px no-repeat;
-    opacity: 0.9;
+      linear-gradient(135deg, transparent 0 20%, rgba(140, 240, 255, 0.7) 20.6%, transparent 21.4% 100%) left 4px top 22px / 190px 40px no-repeat,
+      linear-gradient(225deg, transparent 0 20%, rgba(140, 240, 255, 0.7) 20.6%, transparent 21.4% 100%) right 4px top 22px / 190px 40px no-repeat,
+      linear-gradient(90deg, transparent, rgba(200, 170, 100, 0.45), rgba(90, 220, 255, 0.6), rgba(200, 170, 100, 0.45), transparent) center 52px / 78% 1px no-repeat;
+    filter: drop-shadow(0 0 8px rgba(80, 210, 255, 0.45));
+    opacity: 0.95;
   }
 
   .cockpit-header__meta {

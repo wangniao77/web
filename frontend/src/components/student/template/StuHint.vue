@@ -5,6 +5,8 @@ const props = withDefaults(
   defineProps<{
     /** 新手说明文案 */
     tip: string
+    /** 悬停展示的计算公式 */
+    formula?: string
     /** 块级包裹（用于卡片标题、整块指标等） */
     block?: boolean
     /** 浮层位置；auto 会按视口空间选择 */
@@ -38,7 +40,7 @@ function hide() {
 }
 
 function show() {
-  if (!props.tip?.trim()) return
+  if (!props.tip?.trim() && !props.formula?.trim()) return
   clearTimer()
   timer = setTimeout(() => {
     const el = rootRef.value
@@ -69,7 +71,7 @@ onBeforeUnmount(hide)
     :is="block ? 'div' : 'span'"
     ref="rootRef"
     class="stu-hint"
-    :class="{ 'stu-hint--block': block }"
+    :class="{ 'stu-hint--block': block, 'stu-hint--formula': Boolean(formula) }"
     @mouseenter="show"
     @mouseleave="hide"
     @focusin="show"
@@ -78,13 +80,20 @@ onBeforeUnmount(hide)
     <slot />
     <Teleport to="body">
       <div
-        v-if="open && tip"
+        v-if="open && (tip || formula)"
         class="stu-hint__float"
-        :class="`stu-hint__float--${resolvedPlacement}`"
+        :class="[
+          `stu-hint__float--${resolvedPlacement}`,
+          { 'stu-hint__float--rich': Boolean(formula) },
+        ]"
         :style="floatStyle"
         role="tooltip"
       >
-        {{ tip }}
+        <p v-if="tip" class="stu-hint__text">{{ tip }}</p>
+        <div v-if="formula" class="stu-hint__formula">
+          <span class="stu-hint__formula-tag">计算公式</span>
+          <pre>{{ formula }}</pre>
+        </div>
       </div>
     </Teleport>
   </component>
@@ -99,6 +108,10 @@ onBeforeUnmount(hide)
 
   &--block {
     display: block;
+  }
+
+  &--formula {
+    border-bottom: 1px dashed rgba(127, 246, 255, 0.35);
   }
 }
 </style>
@@ -123,6 +136,50 @@ onBeforeUnmount(hide)
   text-align: left;
   white-space: normal;
   pointer-events: none;
+
+  &--rich {
+    max-width: min(340px, calc(100vw - 24px));
+  }
+}
+
+.stu-hint__text {
+  margin: 0;
+}
+
+.stu-hint__formula {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(120, 200, 255, 0.28);
+
+  &:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+.stu-hint__formula-tag {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  background: rgba(0, 184, 255, 0.12);
+  color: #7ff6ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.stu-hint__formula pre {
+  margin: 0;
+  color: #b8ecff;
+  font-family: 'DIN Alternate', Consolas, 'Courier New', monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .stu-hint__float--top::after,

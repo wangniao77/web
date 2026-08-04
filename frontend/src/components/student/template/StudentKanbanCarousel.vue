@@ -167,7 +167,7 @@ const academicSpark = computed(() => {
 
   const width = 240
   const height = 100
-  const pad = { top: 8, right: 8, bottom: 22, left: 28 }
+  const pad = { top: 8, right: 8, bottom: 24, left: 32 }
   const plotW = width - pad.left - pad.right
   const plotH = height - pad.top - pad.bottom
   const n = Math.max(1, gpaValues.length - 1)
@@ -784,8 +784,18 @@ function goCreditProgress() {
                 >
                   {{ item }}
                 </div>
-                <div v-if="!activeCatItems.length" class="quality-empty">
-                  暂无记录
+                <div
+                  v-if="!activeCatItems.length"
+                  class="quality-empty"
+                  :class="{ 'quality-empty--safe': qualityTab === 'discipline' && disciplineTotalCount === 0 }"
+                >
+                  <template v-if="qualityTab === 'discipline' && disciplineTotalCount === 0">
+                    <strong>纪律表现良好</strong>
+                    <span>暂无处分记录，保持良好学风即可</span>
+                  </template>
+                  <template v-else>
+                    暂无记录
+                  </template>
                 </div>
               </div>
             </div>
@@ -815,11 +825,11 @@ function goCreditProgress() {
 
 .development-card {
   --card-accent: #1ed6ff;
-  --fs: 19px;
-  --fs-sm: 17px;
-  --fs-label: 16px;
-  --fs-title: 20px;
-  --fs-num: 24px;
+  --fs: 21px;
+  --fs-sm: 19px;
+  --fs-label: 18px;
+  --fs-title: 22px;
+  --fs-num: 26px;
   height: 100%;
   min-width: 0;
   min-height: 0;
@@ -831,8 +841,10 @@ function goCreditProgress() {
   font-size: var(--fs);
   line-height: 1.4;
   border: 1px solid color-mix(in srgb, var(--card-accent) 34%, transparent);
-  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  border-radius: 12px;
+  clip-path: none;
   background:
+    radial-gradient(90% 70% at 0% 0%, color-mix(in srgb, var(--card-accent) 14%, transparent), transparent 55%),
     linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 10%, transparent), transparent 42%),
     linear-gradient(160deg, rgba(6, 40, 78, 0.88), rgba(0, 16, 38, 0.9));
   box-shadow:
@@ -1106,13 +1118,13 @@ function goCreditProgress() {
 
 .q-disc-tag,
 .q-reward-tag {
-  padding: 3px 8px;
+  padding: 4px 10px;
   border: 1px solid rgba(248, 113, 113, 0.42);
-  border-radius: 2px;
+  border-radius: 999px;
   background: rgba(248, 113, 113, 0.12);
   color: #ffb4b4;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 750;
   letter-spacing: 0.04em;
   white-space: nowrap;
   cursor: pointer;
@@ -1137,7 +1149,7 @@ function goCreditProgress() {
 .quality-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
   overflow: hidden;
 }
@@ -1155,13 +1167,13 @@ function goCreditProgress() {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 36px;
-  padding: 6px 10px;
+  min-height: 42px;
+  padding: 8px 12px;
   border: 1px solid rgba(232, 200, 120, 0.22);
-  border-radius: 4px;
+  border-radius: 10px;
   background: rgba(0, 36, 68, 0.35);
   color: #c8dff0;
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 800;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -1174,7 +1186,7 @@ function goCreditProgress() {
     background: rgba(232, 200, 120, 0.16);
     color: #ffe59d;
     font-style: normal;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 900;
     font-family: var(--student-font-number);
     line-height: 1.4;
@@ -1201,21 +1213,21 @@ function goCreditProgress() {
 .quality-explorer {
   display: flex;
   align-items: stretch;
-  gap: 10px;
+  gap: 12px;
   min-height: 0;
   flex: 1 1 auto;
 }
 
 /* 右侧分类导航（可滚动） */
 .quality-nav {
-  flex: 0 0 160px;
+  flex: 0 0 190px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   max-height: 100%;
   overflow-y: auto;
-  padding: 6px;
-  border-radius: 6px;
+  padding: 8px;
+  border-radius: 12px;
   border: 1px solid rgba(232, 200, 120, 0.18);
   background: rgba(0, 28, 58, 0.45);
   scrollbar-width: none;
@@ -1229,32 +1241,45 @@ function goCreditProgress() {
 }
 
 .quality-nav__item {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 12px;
   border-radius: 4px;
   border: 1px solid transparent;
   background: transparent;
   color: #a8c8e0;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s ease;
   text-align: left;
 
+  > span {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   em {
-    min-width: 20px;
-    padding: 0 5px;
+    flex: 0 0 28px;
+    min-width: 28px;
+    padding: 1px 0;
     border-radius: 999px;
     background: rgba(232, 200, 120, 0.12);
     color: #ffe59d;
     font-style: normal;
-    font-size: 11px;
+    font-size: 15px;
     font-weight: 900;
     font-family: var(--student-font-number);
     line-height: 1.4;
+    text-align: center;
   }
 
   &:hover {
@@ -1295,13 +1320,13 @@ function goCreditProgress() {
 
 .quality-shortboard-tip {
   margin: 0;
-  padding: 5px 8px;
+  padding: 8px 10px;
   border: 1px solid rgba(232, 200, 120, 0.35);
   border-radius: 2px;
   background: rgba(232, 200, 120, 0.08);
   color: #f0d9a0;
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 16px;
+  line-height: 1.5;
   letter-spacing: 0.02em;
   flex-shrink: 0;
 }
@@ -1311,26 +1336,34 @@ function goCreditProgress() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 10px;
-  border-radius: 4px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 10px;
   border: 1px solid rgba(232, 200, 120, 0.2);
   background: rgba(0, 36, 68, 0.35);
   color: #c8dff0;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 800;
   flex-shrink: 0;
 
   strong {
+    flex: 1 1 auto;
+    min-width: 0;
     color: #f2faff;
-    font-size: 15px;
+    font-size: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   em {
+    flex: 0 0 auto;
     font-style: normal;
     color: #ffe59d;
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 900;
     font-family: var(--student-font-number);
+    white-space: nowrap;
   }
 }
 
@@ -1340,7 +1373,7 @@ function goCreditProgress() {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   padding-right: 4px;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1353,21 +1386,51 @@ function goCreditProgress() {
 }
 
 .quality-item {
-  padding: 7px 10px;
-  border-radius: 3px;
-  border: 1px solid rgba(232, 200, 120, 0.12);
-  background: rgba(0, 36, 68, 0.3);
-  color: #c8dff0;
-  font-size: 13px;
-  line-height: 1.5;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(232, 200, 120, 0.14);
+  background: rgba(0, 36, 68, 0.35);
+  color: #d8eefc;
+  font-size: 18px;
+  line-height: 1.55;
   word-break: break-all;
 }
 
 .quality-empty {
-  padding: 20px;
+  flex: 1 1 auto;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  border-radius: 10px;
+  border: 1px dashed rgba(120, 190, 230, 0.28);
+  background: rgba(0, 32, 60, 0.35);
   text-align: center;
-  color: rgba(184, 220, 255, 0.5);
-  font-size: 13px;
+  color: rgba(184, 220, 255, 0.55);
+  font-size: 17px;
+
+  strong {
+    color: #7ef0a8;
+    font-size: 20px;
+    font-weight: 850;
+    letter-spacing: 0.04em;
+  }
+
+  span {
+    color: #9ecae8;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  &--safe {
+    border-color: rgba(85, 233, 149, 0.28);
+    background:
+      radial-gradient(80% 80% at 50% 0%, rgba(85, 233, 149, 0.1), transparent 60%),
+      rgba(0, 40, 48, 0.4);
+  }
 }
 
 .quality-panels {
@@ -1638,7 +1701,7 @@ function goCreditProgress() {
   gap: 6px;
   padding: 10px 12px;
   border: 1px solid rgba(30, 214, 255, 0.28);
-  border-radius: 4px;
+  border-radius: 12px;
   background: rgba(0, 36, 68, 0.42);
 }
 
@@ -1649,7 +1712,7 @@ function goCreditProgress() {
   gap: 6px;
 
   span { color: #9ed8f5; font-size: 19px; font-weight: 800; }
-  strong { color: #75f0ac; font-size: 21px; font-weight: 900; }
+  strong { color: #75f0ac; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
 }
 
 .academic-spark {
@@ -1673,9 +1736,9 @@ function goCreditProgress() {
 
 .academic-spark__ylabels text,
 .academic-spark__xlabels text {
-  fill: #8eb8d4;
-  font-size: 10px;
-  font-weight: 600;
+  fill: #9ecae8;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .academic-spark__gpa { stroke: #55e995; }
@@ -1695,14 +1758,14 @@ function goCreditProgress() {
 
 .academic-spark-card__legend {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 
   em {
-    color: #8eb8d4;
-    font-size: 15px;
+    color: #9ecae8;
+    font-size: 16px;
     font-style: normal;
-    font-weight: 600;
+    font-weight: 650;
   }
 }
 
@@ -1744,8 +1807,8 @@ function goCreditProgress() {
 .credit-bars__header {
   flex-shrink: 0;
   color: #b8ecff;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 750;
   letter-spacing: 0.04em;
   white-space: nowrap;
   margin-bottom: 2px;
@@ -1850,13 +1913,13 @@ function goCreditProgress() {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 6px;
+  gap: 8px;
   min-height: 0;
-  padding: 10px 12px 8px;
+  padding: 12px 14px 10px;
   overflow: hidden;
-  border: 1px solid rgba(0, 190, 255, 0.12);
-  border-radius: 4px;
-  background: rgba(0, 35, 73, 0.28);
+  border: 1px solid rgba(0, 190, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(0, 35, 73, 0.32);
 
   :deep(.stu-hint--block) {
     display: block;
@@ -1865,42 +1928,47 @@ function goCreditProgress() {
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: 10px;
   }
 
   &__total {
     margin-top: 2px;
-    padding-top: 3px;
-    border-top: 1px dashed rgba(120, 190, 240, 0.18);
-    color: #9ecae8;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(120, 190, 240, 0.22);
+    color: #b8ecff;
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
   }
 
   &__row {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
 
-    span { color: #9ecae8; font-size: 19px; font-weight: 700; text-align: center; }
+    span { color: #9ecae8; font-size: 18px; font-weight: 750; text-align: center; }
     i {
       width: 100%;
-      height: 8px;
+      height: 10px;
       overflow: hidden;
       border-radius: 99px;
       background: rgba(0, 60, 100, 0.55);
+      border: 1px solid rgba(102, 217, 255, 0.12);
       b {
         display: block;
         height: 100%;
         border-radius: inherit;
         background: linear-gradient(90deg, #1ed6ff, #43e7af);
+        box-shadow: 0 0 10px rgba(85, 224, 255, 0.35);
       }
     }
     em {
-      color: #cfe6f8;
-      font-size: 18px;
+      color: #e0f2ff;
+      font-size: 19px;
       font-style: normal;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
       text-align: center;
       white-space: nowrap;
     }

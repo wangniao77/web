@@ -18,6 +18,8 @@ const props = defineProps<{
   levelText?: string
   scoreTone?: ScoreTone
   tip?: string
+  /** 悬停展示的计算公式 */
+  formula?: string
 }>()
 
 const deltaDown = computed(() => /↓|回落|下降/.test(props.valueDelta || ''))
@@ -30,6 +32,7 @@ const toneClass = computed(() =>
     ? `core-orbit-metric__value--${props.scoreTone}`
     : '',
 )
+const hasTip = computed(() => Boolean(props.tip?.trim() || props.formula?.trim()))
 </script>
 
 <template>
@@ -40,7 +43,7 @@ const toneClass = computed(() =>
       `core-orbit--${position}`,
       {
         'core-orbit-metric--rich': isRich,
-        'core-orbit-metric--has-tip': Boolean(tip),
+        'core-orbit-metric--has-tip': hasTip,
       },
     ]"
   >
@@ -83,7 +86,13 @@ const toneClass = computed(() =>
       </p>
     </div>
 
-    <p v-if="tip" class="core-orbit-metric__tip" role="tooltip">{{ tip }}</p>
+    <div v-if="hasTip" class="core-orbit-metric__tip" role="tooltip">
+      <p v-if="tip" class="core-orbit-metric__tip-text">{{ tip }}</p>
+      <div v-if="formula" class="core-orbit-metric__formula">
+        <span class="core-orbit-metric__formula-tag">计算公式</span>
+        <pre>{{ formula }}</pre>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -183,7 +192,7 @@ const toneClass = computed(() =>
   left: 50%;
   bottom: calc(100% + 8px);
   width: max-content;
-  max-width: 220px;
+  max-width: min(320px, calc(100vw - 24px));
   padding: 8px 10px;
   border: 1px solid rgba(120, 200, 255, 0.35);
   border-radius: 6px;
@@ -204,6 +213,46 @@ const toneClass = computed(() =>
   transition:
     opacity 0.18s ease,
     visibility 0s linear 0.45s;
+}
+
+.core-orbit-metric__tip-text {
+  margin: 0;
+}
+
+.core-orbit-metric__formula {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(120, 200, 255, 0.28);
+
+  &:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+.core-orbit-metric__formula-tag {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  background: rgba(0, 184, 255, 0.12);
+  color: #7ff6ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.core-orbit-metric__formula pre {
+  margin: 0;
+  color: #b8ecff;
+  font-family: 'DIN Alternate', Consolas, 'Courier New', monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .core-orbit-metric:hover > .core-orbit-metric__tip,

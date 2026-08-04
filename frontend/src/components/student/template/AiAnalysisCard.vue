@@ -19,32 +19,49 @@ defineProps<{
 
 <style scoped lang="scss">
 .ai-analysis-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 16px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   background:
-    linear-gradient(120deg, rgba(0, 113, 206, 0.22), rgba(3, 12, 34, 0.7)),
+    linear-gradient(145deg, rgba(0, 113, 206, 0.2), rgba(3, 12, 34, 0.78)),
     rgba(5, 18, 48, 0.55);
   border: 1px solid rgba(102, 217, 255, 0.2);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 22px rgba(0, 184, 255, 0.07);
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 22px rgba(0, 184, 255, 0.08);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.55), transparent);
+    pointer-events: none;
+  }
 
   &__tag {
     align-self: flex-start;
-    padding: 2px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 750;
     color: #8ef6ff;
     background: rgba(0, 184, 255, 0.14);
-    border: 1px solid rgba(0, 184, 255, 0.3);
+    border: 1px solid rgba(0, 184, 255, 0.32);
+    letter-spacing: 0.04em;
   }
 
   &__text {
     margin: 0;
     font-size: 15px;
-    line-height: 1.8;
+    line-height: 1.75;
     color: #dbeeff;
   }
 }

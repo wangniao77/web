@@ -10,6 +10,8 @@ const props = defineProps<{
   centerLabel?: string
   /** 中心指数悬停说明（学生舱新手引导） */
   centerTip?: string
+  /** 中心指数计算公式公式 */
+  centerFormula?: string
 }>()
 
 const gaugeDeg = computed(() => {
@@ -71,6 +73,7 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
       :level-text="kpi.levelText"
       :score-tone="kpi.scoreTone"
       :tip="kpi.tip"
+      :formula="kpi.formula"
     />
 
     <div class="core-hero-core">
@@ -80,7 +83,7 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
           :class="[
             `core-gauge--tone-${centerTone}`,
             {
-              'core-gauge--has-tip': Boolean(centerTip) || Boolean(rankPeers),
+              'core-gauge--has-tip': Boolean(centerTip) || Boolean(centerFormula) || Boolean(rankPeers),
               'core-gauge--has-rank': showRank,
             },
           ]"
@@ -138,8 +141,22 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
                 </ul>
               </div>
             </div>
+            <div v-if="centerFormula" class="core-gauge__formula">
+              <span class="core-gauge__formula-tag">计算公式</span>
+              <pre>{{ centerFormula }}</pre>
+            </div>
           </div>
-          <p v-else-if="centerTip" class="core-gauge__tip" role="tooltip">{{ centerTip }}</p>
+          <div
+            v-else-if="centerTip || centerFormula"
+            class="core-gauge__tip"
+            role="tooltip"
+          >
+            <p v-if="centerTip" class="core-gauge__tip-text">{{ centerTip }}</p>
+            <div v-if="centerFormula" class="core-gauge__formula">
+              <span class="core-gauge__formula-tag">计算公式</span>
+              <pre>{{ centerFormula }}</pre>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -236,7 +253,7 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
   left: 50%;
   bottom: calc(100% - 18px);
   width: max-content;
-  max-width: 280px;
+  max-width: min(340px, calc(100vw - 24px));
   padding: 8px 10px;
   border: 1px solid rgba(120, 200, 255, 0.35);
   border-radius: 6px;
@@ -255,6 +272,40 @@ function kpiPosition(kpi: OverviewHubKpiVM) {
   transition:
     opacity 0.18s ease,
     visibility 0s linear 0.45s;
+}
+
+.core-gauge__tip-text {
+  margin: 0;
+}
+
+.core-gauge__formula {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(120, 200, 255, 0.28);
+}
+
+.core-gauge__formula-tag {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  background: rgba(0, 184, 255, 0.12);
+  color: #7ff6ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.core-gauge__formula pre {
+  margin: 0;
+  color: #b8ecff;
+  font-family: 'DIN Alternate', Consolas, 'Courier New', monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .core-gauge__peers-tip {

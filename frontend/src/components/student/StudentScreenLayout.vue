@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { useScreenScale } from '@/composables/useScreenScale'
 import StudentScreenHeader from '@/components/student/StudentScreenHeader.vue'
 
@@ -22,7 +22,7 @@ const { scaleStyle, canvasStyle } = useScreenScale({ mode: 'contain' })
         <span class="stu-tech-energy stu-tech-energy--primary" />
         <span class="stu-tech-energy stu-tech-energy--secondary" />
         <span
-          v-for="n in 7"
+          v-for="n in 10"
           :key="n"
           class="stu-tech-particle"
           :style="{ '--i': n }"

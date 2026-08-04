@@ -100,12 +100,9 @@ const focusTags = computed(() =>
     : props.portrait.portraitTags.filter((t) => /待|不足|短板|关注/.test(t)).concat(['实践经历不足']).slice(0, 3),
 )
 
-/** 深色底上的扁平多色（无霓虹） */
-const CLOUD_COLORS = [
-  '#6ec8ff', '#5ad1c4', '#7aa8ff', '#ff9f5a', '#ff7b72',
-  '#c084fc', '#f472b6', '#4ade80', '#fbbf24', '#38bdf8',
-  '#a78bfa', '#fb7185', '#2dd4bf', '#86efac', '#f59e0b',
-]
+/** 语义色：优势青绿 / 关注琥珀，避免随机色叠读 */
+const CLOUD_GOOD = ['#67e8a3', '#34d399', '#5eead4', '#6ee7b7', '#4ade80']
+const CLOUD_WARN = ['#fbbf24', '#f59e0b', '#fb923c', '#facc15', '#fdba74']
 
 function shortTag(text: string) {
   const t = text
@@ -119,22 +116,21 @@ function shortTag(text: string) {
   return t.slice(0, 6)
 }
 
-function hashHue(text: string, i: number) {
-  let h = i * 19
-  for (let k = 0; k < text.length; k++) h += text.charCodeAt(k) * (k + 3)
-  return CLOUD_COLORS[Math.abs(h) % CLOUD_COLORS.length]!
+function kindColor(kind: 'good' | 'warn', i: number) {
+  const palette = kind === 'good' ? CLOUD_GOOD : CLOUD_WARN
+  return palette[Math.abs(i) % palette.length]!
 }
 
 type CloudSeed = { text: string; kind: 'good' | 'warn'; weight: number; size: number }
 
-/** 无重叠排布：加大字号 + 显式间距，宁可少词也不叠 */
+/** 无重叠排布：加大间距 + 保守字宽，宁可少词也不叠 */
 function packCloudWords(seeds: CloudSeed[]) {
-  const VW = 480
-  const VH = 200
+  const VW = 500
+  const VH = 220
   const cx = VW * 0.5
-  const cy = VH * 0.52
-  const GAP_X = 10
-  const GAP_Y = 8
+  const cy = VH * 0.54
+  const GAP_X = 16
+  const GAP_Y = 12
   const placed: Array<{
     text: string
     kind: 'good' | 'warn'
@@ -145,8 +141,8 @@ function packCloudWords(seeds: CloudSeed[]) {
     h: number
   }> = []
 
-  const estimateW = (text: string, size: number) => text.length * size * 1.02
-  const estimateH = (size: number) => size * 1.2
+  const estimateW = (text: string, size: number) => text.length * size * 1.12
+  const estimateH = (size: number) => size * 1.28
   const overlaps = (a: { x: number; y: number; w: number; h: number }, b: typeof a) =>
     Math.abs(a.x - b.x) < (a.w + b.w) * 0.5 + GAP_X
     && Math.abs(a.y - b.y) < (a.h + b.h) * 0.5 + GAP_Y
@@ -158,14 +154,14 @@ function packCloudWords(seeds: CloudSeed[]) {
     const h = estimateH(item.size)
     let best: { x: number; y: number } | null = null
 
-    for (let step = 0; step < 720; step++) {
-      const t = step * 0.42
-      const r = 0.7 * t
-      const ang = t * 0.88
+    for (let step = 0; step < 900; step++) {
+      const t = step * 0.4
+      const r = 0.78 * t
+      const ang = t * 0.9
       const x = cx + Math.cos(ang) * r
-      const y = cy + Math.sin(ang) * r * 0.72
-      if (x < w * 0.5 + 6 || x > VW - w * 0.5 - 6) continue
-      if (y < h * 0.5 + 18 || y > VH - h * 0.5 - 6) continue
+      const y = cy + Math.sin(ang) * r * 0.68
+      if (x < w * 0.5 + 8 || x > VW - w * 0.5 - 8) continue
+      if (y < h * 0.5 + 22 || y > VH - h * 0.5 - 8) continue
       const cand = { x, y, w, h }
       if (placed.some((p) => overlaps(cand, p))) continue
       best = { x, y }
@@ -183,13 +179,13 @@ function packCloudWords(seeds: CloudSeed[]) {
       left: `${(p.x / VW) * 100}%`,
       top: `${(p.y / VH) * 100}%`,
       fontSize: `${p.size}px`,
-      color: hashHue(p.text, i),
+      color: kindColor(p.kind, i),
       transform: 'translate(-50%, -50%)',
     },
   }))
 }
 
-/** 优势/关注词云：大字、无重叠、深色底 */
+/** 优势/关注词云：大字、无重叠、语义色 */
 const cloudWords = computed(() => {
   const seen = new Set<string>()
   const seed: CloudSeed[] = []
@@ -202,18 +198,18 @@ const cloudWords = computed(() => {
 
   strengthTags.value.forEach((t, i) => push(t, 'good', 5 - i, i === 0 ? 26 : 20))
   focusTags.value.forEach((t, i) => push(t, 'warn', 4 - i, 18))
-  props.portrait.portraitTags.slice(0, 4).forEach((t) => {
+  props.portrait.portraitTags.slice(0, 3).forEach((t) => {
     push(t, /待|不足|短板|关注/.test(t) ? 'warn' : 'good', 3, 17)
   })
   ;(props.competition?.highlights ?? [])
     .filter((h) => h.label && !h.label.includes('暂无'))
-    .slice(0, 2)
+    .slice(0, 1)
     .forEach((h) => push(h.label.replace(/全国大学生|全国/g, '').slice(0, 6), 'good', 2, 16))
 
-  const fillers = ['学业', '竞赛', '实践', '成长', '英语', '项目', '优秀', '正向', '稳定', '进取']
+  const fillers = ['学业', '竞赛', '实践', '成长', '项目']
   fillers.forEach((f, i) => {
-    if (seed.length >= 14) return
-    push(f, i % 4 === 0 ? 'warn' : 'good', 1, 15)
+    if (seed.length >= 10) return
+    push(f, i % 3 === 0 ? 'warn' : 'good', 1, 15)
   })
 
   return packCloudWords(seed)
@@ -768,9 +764,13 @@ onBeforeUnmount(stopAutoplay)
 
 .navi-card__summary-wrap {
   min-height: 0;
-  background: transparent;
-  box-shadow: none;
-  filter: none;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(102, 217, 255, 0.18);
+  background:
+    radial-gradient(90% 80% at 0% 0%, rgba(0, 184, 255, 0.1), transparent 55%),
+    rgba(0, 28, 58, 0.42);
+  box-shadow: inset 0 1px 0 rgba(180, 230, 255, 0.08);
 
   :deep(.stu-hint--block) {
     display: block;
@@ -784,9 +784,9 @@ onBeforeUnmount(stopAutoplay)
 .navi-card__summary {
   margin: 0;
   padding: 0;
-  color: #d8eeff;
-  font-size: 19px;
-  line-height: 1.58;
+  color: #e8f7ff;
+  font-size: 20px;
+  line-height: 1.65;
   white-space: normal;
   word-break: break-word;
   overflow: visible;
@@ -832,20 +832,20 @@ onBeforeUnmount(stopAutoplay)
 .navi-cloud {
   position: relative;
   min-height: 0;
-  padding: 4px 6px 6px;
+  padding: 10px 10px 12px;
   border: 1px solid rgba(100, 170, 220, 0.28);
-  border-radius: 6px;
+  border-radius: 10px;
   background: linear-gradient(165deg, rgba(10, 42, 78, 0.92), rgba(4, 22, 48, 0.95));
   overflow: hidden;
 }
 
 .navi-cloud__title {
   position: absolute;
-  top: 6px;
-  left: 8px;
+  top: 8px;
+  left: 12px;
   z-index: 2;
   color: #9ec9e6;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
   pointer-events: none;
@@ -853,7 +853,7 @@ onBeforeUnmount(stopAutoplay)
 
 .navi-cloud__stage {
   position: relative;
-  height: 168px;
+  height: 196px;
   width: 100%;
   overflow: hidden;
 }
@@ -1138,21 +1138,22 @@ onBeforeUnmount(stopAutoplay)
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 10px 12px;
-  border: 1px solid rgba(0, 180, 255, 0.16);
-  border-radius: 6px;
-  background: rgba(0, 40, 78, 0.35);
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 180, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(0, 40, 78, 0.4);
 
   &.is-open {
-    border-color: rgba(0, 220, 255, 0.4);
+    border-color: rgba(0, 220, 255, 0.42);
+    box-shadow: inset 0 1px 0 rgba(180, 230, 255, 0.08);
   }
 }
 
 .navi-plan__head {
   width: 100%;
   display: grid;
-  grid-template-columns: 100px minmax(0, 1fr) 52px;
-  gap: 10px;
+  grid-template-columns: 108px minmax(0, 1fr) 56px;
+  gap: 12px;
   align-items: center;
   padding: 0;
   border: none;
@@ -1162,39 +1163,42 @@ onBeforeUnmount(stopAutoplay)
   text-align: left;
 
   span {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 19px;
+    font-weight: 750;
     white-space: nowrap;
   }
 
   i {
     display: block;
-    height: 10px;
+    height: 12px;
     overflow: hidden;
     border-radius: 99px;
-    background: rgba(80, 120, 160, 0.35);
+    background: rgba(0, 24, 52, 0.75);
+    border: 1px solid rgba(102, 217, 255, 0.16);
 
     em {
       display: block;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, #1ed6ff, #43e7af);
+      background: linear-gradient(90deg, #7ef0d0, #55e0ff);
+      box-shadow: 0 0 12px rgba(85, 224, 255, 0.4);
     }
   }
 
   b {
     color: #7ff6ff;
-    font-size: 18px;
-    font-weight: 800;
+    font-size: 19px;
+    font-weight: 850;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    font-family: 'DIN Alternate', sans-serif;
   }
 }
 
 .navi-plan__detail {
   margin: 10px 0 0;
   color: #d8eeff;
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.55;
   white-space: normal;
   word-break: break-word;
@@ -1205,7 +1209,7 @@ onBeforeUnmount(stopAutoplay)
 .navi-plan__peer {
   margin: 6px 0 0;
   color: #7ef0a8;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.02em;
 }

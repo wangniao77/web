@@ -29,6 +29,8 @@ export interface OverviewHubKpiVM {
   scoreTone?: ScoreTone
   /** 模块悬停说明（新手友好） */
   tip?: string
+  /** 悬停展示的计算公式 */
+  formula?: string
 }
 
 export interface OverviewHubVM {

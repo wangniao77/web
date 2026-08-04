@@ -16,9 +16,8 @@ import { gpaDetailService } from '../_shared/gpa-data'
 import type { StudentDashboardVM } from '@/types/student/view'
 import type { GpaDetailVM, CourseCategory, CourseRecordVM } from '../_shared/gpa-data'
 import { CATEGORY_LABEL } from '../_shared/gpa-data'
-import GradeStructureChart from './components/GradeStructureChart.vue'
+import CourseDifficultyBubble from './components/CourseDifficultyBubble.vue'
 import StabilityGauge from './components/StabilityGauge.vue'
-import DifficultyScatter from './components/DifficultyScatter.vue'
 import AbilityRadar from './components/AbilityRadar.vue'
 import MajorPositionChart from './components/MajorPositionChart.vue'
 import SupportTrajectory from './components/SupportTrajectory.vue'
@@ -30,13 +29,11 @@ const activeStudentId = computed(
   () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
 )
 
-const activeQuadrantKey = ref('advantage')
-
 const sectionNav = [
   { id: 'sec-portrait', label: '学业画像' },
   { id: 'sec-structure', label: '成绩结构' },
-  { id: 'sec-difficulty', label: '难度适应' },
   { id: 'sec-compare', label: '同专业对比' },
+  { id: 'sec-stability', label: '学业稳定性' },
   { id: 'sec-advice', label: '指导建议' },
 ]
 
@@ -162,7 +159,7 @@ const aiSummary = computed(() => {
   const rp = gpaDetail.value?.overview.majorRankPercent ?? 0
   const rank = majorRank.value
   const total = majorTotal.value || 1
-  return `该生整体学业表现${portraitStatus.value === '优秀偏稳定' || portraitStatus.value === '卓越领先' ? '良好' : '中等'}，专业排名位于前 ${rp}%（第 ${rank}/${total}）。「${best?.label ?? '专业核心'}」课程掌握能力较强（均分 ${best?.avg ?? '—'}），但「${worst?.label ?? '基础课程'}」成绩相对薄弱（均分 ${worst?.avg ?? '—'}），建议关注高难度专业课程与基础课程的持续提升。`
+  return `该生整体学业表现${portraitStatus.value === '优秀偏稳定' || portraitStatus.value === '卓越领先' ? '良好' : '中等'}，专业排名位于前 ${rp}%（第 ${rank}/${total}）。「${best?.label ?? '专业核心'}」课程掌握能力较强（均分 ${best?.avg ?? '—'}），但「${worst?.label ?? '基础课程'}」成绩相对薄弱（均分 ${worst?.avg ?? '—'}），建议关注薄弱类别课程的持续提升。`
 })
 
 /* ─────────── 2. 成绩能力解析 ─────────── */
@@ -204,70 +201,32 @@ const abilityTrend = computed(() => {
 const stabilityAdvantages = computed<string[]>(() => {
   const list: string[] = []
   if (failCount.value === 0) list.push('无挂科记录')
-  if (abilityTrend.value.dir !== 'down') list.push('GPA 连续提升')
-  if ((gpaDetail.value?.overview.majorRankPercent ?? 0) >= 80) list.push('专业排名稳定')
+  if (abilityTrend.value.dir === 'up') list.push('GPA 连续提升')
+  else if (abilityTrend.value.dir === 'flat') list.push('GPA 走势平稳')
+  if ((gpaDetail.value?.overview.majorRankPercent ?? 0) >= 80) list.push('专业排名靠前且稳定')
   if (!list.length) list.push('总体平稳')
   return list
 })
 const stabilityRisks = computed<string[]>(() => {
   const list: string[] = []
   const vals = (gpaDetail.value?.semesters ?? []).map((s) => s.gpa)
-  if (stdDev(vals) > 0.25) list.push('近两学期部分课程波动')
-  const hard = coursePoints.value.filter((p) => p.difficulty >= 65)
+  if (stdDev(vals) > 0.25) list.push('近两学期 GPA 波动偏大')
+  // 「重课」= 专业核心/专业基础（客观类别），不再使用估算难度
+  const hard = coursePoints.value.filter(
+    (p) => p.category === 'major-core' || p.category === 'major-base',
+  )
   if (hard.length > 1) {
-    const spread = Math.max(...hard.map((p) => p.score)) - Math.min(...hard.map((p) => p.score))
-    if (spread > 15) list.push('高难课程成绩差异较大')
+    const scores = hard.map((p) => p.score)
+    const hi = Math.max(...scores)
+    const lo = Math.min(...scores)
+    const spread = hi - lo
+    if (spread > 15) {
+      list.push(`专业核心/基础课成绩落差大：最高 ${hi}、最低 ${lo}`)
+    }
   }
   if (failCount.value > 0) list.push(`存在 ${failCount.value} 门不及格课程`)
   if (!list.length) list.push('暂未发现明显风险')
   return list
-})
-
-/* ─────────── 4. 课程难度四象限 ─────────── */
-function diffStars(d: number): string {
-  return '★'.repeat(Math.max(1, Math.min(5, Math.round(d / 20))))
-}
-const quadrants = computed(() => {
-  const pts = coursePoints.value
-  const pick = (arr: CoursePoint[], asc = false) =>
-    [...arr]
-      .sort((a, b) => (asc ? a.score - b.score : b.score - a.score))
-      .slice(0, 3)
-      .map((p) => ({ name: p.name, score: p.score, stars: diffStars(p.difficulty) }))
-  return [
-    {
-      key: 'advantage',
-      title: '优势课程',
-      cls: 'good',
-      hint: '高难 · 高分',
-      desc: '难度大且成绩突出，是核心竞争力的体现，建议保持。',
-      items: pick(pts.filter((p) => p.difficulty >= 65 && p.score >= 80)),
-    },
-    {
-      key: 'potential',
-      title: '潜力课程',
-      cls: 'blue',
-      hint: '低难 · 高分',
-      desc: '难度不高但掌握扎实，可作为稳分基本盘。',
-      items: pick(pts.filter((p) => p.difficulty < 65 && p.score >= 80)),
-    },
-    {
-      key: 'weak',
-      title: '基础薄弱',
-      cls: 'warn',
-      hint: '低难 · 低分',
-      desc: '本应易拿分却偏低，多为态度或方法问题，需重点补强。',
-      items: pick(pts.filter((p) => p.difficulty < 65 && p.score < 75), true),
-    },
-    {
-      key: 'risk',
-      title: '风险课程',
-      cls: 'risk',
-      hint: '高难 · 低分',
-      desc: '难度大且成绩不理想，挂科风险最高，需优先干预。',
-      items: pick(pts.filter((p) => p.difficulty >= 65 && p.score < 75), true),
-    },
-  ]
 })
 
 /* ─────────── 7. 毕业达成预测 ─────────── */
@@ -331,6 +290,7 @@ onMounted(load)
 
       <!-- 1. 学业画像总结 -->
       <section id="sec-portrait" class="portrait">
+        <div class="portrait__glow" aria-hidden="true" />
         <div class="portrait__left">
           <div class="portrait__status">{{ portraitStatus }}</div>
           <div class="portrait__score">
@@ -357,109 +317,53 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 2. 成绩结构分析 + 成绩能力解析 | 3. 学业稳定性分析 + 稳定性评价 -->
+      <!-- 2. 课程成绩分布 + 培养完成情况 -->
       <div id="sec-structure" class="detail-grid">
         <section class="composite">
-          <GradeStructureChart :courses="gpaDetail.courses" />
+          <CourseDifficultyBubble :points="coursePoints" />
           <div class="analysis-cards">
             <div class="analysis-card analysis-card--good">
               <span class="analysis-card__badge">优势领域</span>
               <div class="analysis-card__main">{{ bestCat?.label ?? '—' }}</div>
-              <div class="analysis-card__sub">平均成绩 <b>{{ bestCat?.avg ?? '—' }}</b></div>
+              <div class="analysis-card__sub">
+                <span>平均成绩</span>
+                <b>{{ bestCat ? Number(bestCat.avg).toFixed(1) : '—' }}</b>
+              </div>
               <div class="analysis-card__courses">
-                涉及课程：{{ (bestCat?.courses ?? []).slice(0, 3).map((c) => c.name).join('、') || '—' }}
+                <span class="analysis-card__courses-label">涉及课程</span>
+                <p>{{ (bestCat?.courses ?? []).slice(0, 3).map((c) => c.name).join('、') || '—' }}</p>
               </div>
             </div>
             <div class="analysis-card analysis-card--warn">
               <span class="analysis-card__badge">待提升领域</span>
               <div class="analysis-card__main">{{ worstCat?.label ?? '—' }}</div>
-              <div class="analysis-card__sub">平均成绩 <b>{{ worstCat?.avg ?? '—' }}</b></div>
+              <div class="analysis-card__sub">
+                <span>平均成绩</span>
+                <b>{{ worstCat ? Number(worstCat.avg).toFixed(1) : '—' }}</b>
+              </div>
               <div class="analysis-card__courses">
-                主要课程：{{ (worstCat?.courses ?? []).slice(0, 3).map((c) => c.name).join('、') || '—' }}
+                <span class="analysis-card__courses-label">主要课程</span>
+                <p>{{ (worstCat?.courses ?? []).slice(0, 3).map((c) => c.name).join('、') || '—' }}</p>
               </div>
             </div>
             <div class="analysis-card analysis-card--blue">
               <span class="analysis-card__badge">能力趋势</span>
               <div class="analysis-card__main">近 {{ gpaDetail.semesters.length }} 学期</div>
               <div class="analysis-card__sub">
-                GPA <b>{{ abilityTrend.first.toFixed(2) }} → {{ abilityTrend.last.toFixed(2) }}</b>
+                <span>GPA</span>
+                <b>{{ abilityTrend.first.toFixed(2) }} → {{ abilityTrend.last.toFixed(2) }}</b>
               </div>
-              <div class="analysis-card__courses">趋势：{{ abilityTrend.text }}</div>
+              <div class="analysis-card__courses">
+                <span class="analysis-card__courses-label">趋势</span>
+                <p>{{ abilityTrend.text }}</p>
+              </div>
             </div>
-          </div>
-        </section>
-
-        <section class="composite">
-          <StabilityGauge
-            :gpa-values="gpaDetail.semesters.map((s) => s.gpa)"
-            :fail-count="failCount"
-            :retake-count="retakeCount"
-            :low-score-count="lowScoreCount"
-          />
-          <div class="stab-eval">
-            <div class="stab-eval__index">
-              稳定指数 <b>{{ stabilityIndex }}</b>
-            </div>
-            <div class="stab-eval__col">
-              <h4 class="stab-eval__title stab-eval__title--good">优势</h4>
-              <ul class="stab-eval__list">
-                <li v-for="a in stabilityAdvantages" :key="a" class="stab-eval__item stab-eval__item--good">✓ {{ a }}</li>
-              </ul>
-            </div>
-            <div class="stab-eval__col">
-              <h4 class="stab-eval__title stab-eval__title--warn">风险</h4>
-              <ul class="stab-eval__list">
-                <li v-for="r in stabilityRisks" :key="r" class="stab-eval__item stab-eval__item--warn">⚠ {{ r }}</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- 4. 课程难度适应分析 + 四象限 | 7. 培养完成情况 + 毕业达成预测 -->
-      <div id="sec-difficulty" class="detail-grid">
-        <section class="composite">
-          <DifficultyScatter :points="coursePoints" />
-          <div class="quadrant">
-            <div class="quadrant__tabs">
-              <button
-                v-for="q in quadrants"
-                :key="q.key"
-                class="quadrant__tab"
-                :class="{
-                  'quadrant__tab--active': activeQuadrantKey === q.key,
-                  [`quadrant__tab--${q.cls}`]: true,
-                }"
-                @click="activeQuadrantKey = q.key"
-              >
-                <span class="quadrant__tab-title">{{ q.title }}</span>
-                <span class="quadrant__tab-hint">{{ q.hint }}</span>
-                <span v-if="q.items.length" class="quadrant__tab-badge">{{ q.items.length }}</span>
-              </button>
-            </div>
-            <div
-              v-for="q in quadrants"
-              v-show="activeQuadrantKey === q.key"
-              :key="`${q.key}-panel`"
-              class="quadrant__panel"
-              :class="`quadrant__panel--${q.cls}`"
-            >
-              <p class="quadrant__desc">{{ q.desc }}</p>
-              <ul v-if="q.items.length" class="quadrant__list">
-                <li v-for="it in q.items" :key="it.name" class="quadrant__item">
-                  <span class="quadrant__name">{{ it.name }}</span>
-                  <span class="quadrant__score">{{ it.score }}分</span>
-                  <span class="quadrant__stars" :title="`难度 ${it.stars.length}/5`">{{ it.stars }}</span>
-                </li>
-              </ul>
-              <div v-else class="quadrant__empty">暂无此类课程</div>
-            </div>
-            <p class="quadrant__legend">★ 星级表示课程难度，★ 越多难度越高（满分 5 星）</p>
           </div>
         </section>
 
         <section class="composite">
           <div class="warn-section">
+            <div class="warn-section__glow" aria-hidden="true" />
             <h3 class="warn-section__title">培养完成情况</h3>
             <div class="completion-summary">
               <div class="completion-kpi">
@@ -518,7 +422,40 @@ onMounted(load)
         </section>
       </div>
 
-      <!-- 5. 同专业对比分析 · 专业位置分析 | 6. 课程能力雷达图 -->
+      <!-- 7. 学业稳定性分析 | 课程能力雷达图 -->
+      <div id="sec-stability" class="detail-grid">
+        <section class="composite">
+          <StabilityGauge
+            :gpa-values="gpaDetail.semesters.map((s) => s.gpa)"
+            :fail-count="failCount"
+            :retake-count="retakeCount"
+            :low-score-count="lowScoreCount"
+            :index="stabilityIndex"
+          />
+          <div class="stab-eval">
+            <div class="stab-eval__index">
+              稳定指数 <b>{{ stabilityIndex }}</b>
+            </div>
+            <div class="stab-eval__col">
+              <h4 class="stab-eval__title stab-eval__title--good">优势</h4>
+              <ul class="stab-eval__list">
+                <li v-for="a in stabilityAdvantages" :key="a" class="stab-eval__item stab-eval__item--good">✓ {{ a }}</li>
+              </ul>
+            </div>
+            <div class="stab-eval__col">
+              <h4 class="stab-eval__title stab-eval__title--warn">风险</h4>
+              <ul class="stab-eval__list">
+                <li v-for="r in stabilityRisks" :key="r" class="stab-eval__item stab-eval__item--warn">⚠ {{ r }}</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        <section class="composite">
+          <AbilityRadar :points="coursePoints" :stability-index="stabilityIndex" />
+        </section>
+      </div>
+
+      <!-- 5. 同专业对比分析 · 专业位置分析 | 帮扶轨迹 -->
       <div id="sec-compare" class="detail-grid">
         <MajorPositionChart
           :student-gpa="gpa"
@@ -527,11 +464,8 @@ onMounted(load)
           :major-total="majorTotal"
           :major-rank-percent="gpaDetail.overview.majorRankPercent"
         />
-        <AbilityRadar :points="coursePoints" :stability-index="stabilityIndex" />
+        <SupportTrajectory />
       </div>
-
-      <!-- 帮扶轨迹（横向时间轴） -->
-      <SupportTrajectory />
 
       <!-- 8. 教师指导建议 -->
       <section id="sec-advice" class="advice">
@@ -568,7 +502,7 @@ onMounted(load)
 .academic-detail {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 
   :deep([id^='sec-']) {
     scroll-margin-top: 64px;
@@ -577,46 +511,70 @@ onMounted(load)
 
 /* ── 1. 学业画像 ── */
 .portrait {
+  position: relative;
   display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 18px;
-  padding: 16px 20px;
-  border-radius: 8px;
+  grid-template-columns: 360px 1fr;
+  gap: 22px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  overflow: hidden;
   background:
-    linear-gradient(120deg, rgba(0, 113, 206, 0.22), rgba(3, 12, 34, 0.7)),
-    rgba(5, 18, 48, 0.55);
-  border: 1px solid rgba(102, 217, 255, 0.2);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 22px rgba(0, 184, 255, 0.07);
+    radial-gradient(90% 80% at 0% 0%, rgba(0, 184, 255, 0.14), transparent 55%),
+    linear-gradient(140deg, rgba(8, 48, 98, 0.72), rgba(3, 12, 34, 0.9));
+  border: 1px solid rgba(102, 217, 255, 0.28);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  &__glow {
+    position: absolute;
+    inset: auto -12% -40% 40%;
+    height: 70%;
+    background: radial-gradient(circle, rgba(85, 233, 149, 0.12), transparent 70%);
+    pointer-events: none;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 18px;
+    right: 18px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.7), transparent);
+  }
 
   &__left {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
   }
 
   &__status {
     align-self: flex-start;
-    padding: 4px 14px;
+    padding: 5px 16px;
     border-radius: 999px;
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 800;
     color: #04101f;
     background: linear-gradient(90deg, #7ef0d0, #34d399);
-    box-shadow: 0 0 14px rgba(52, 211, 153, 0.35);
+    box-shadow: 0 0 16px rgba(52, 211, 153, 0.4);
   }
 
   &__score {
-    font-size: 20px;
+    font-size: 22px;
     color: #cfe8ff;
-    font-weight: 600;
+    font-weight: 650;
 
     b {
-      font-size: 38px;
+      font-size: 52px;
       font-weight: 900;
       color: #f6fbff;
       font-family: 'DIN Alternate', sans-serif;
-      margin: 0 2px;
-      text-shadow: 0 0 16px rgba(0, 242, 255, 0.4);
+      margin: 0 4px;
+      text-shadow: 0 0 22px rgba(0, 242, 255, 0.45);
     }
   }
 
@@ -629,48 +587,57 @@ onMounted(load)
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    background: rgba(0, 38, 73, 0.4);
-    border: 1px solid rgba(102, 217, 255, 0.12);
+    gap: 6px;
+    padding: 12px 12px;
+    border-radius: 12px;
+    background: rgba(0, 28, 58, 0.5);
+    border: 1px solid rgba(102, 217, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
     &-label {
       font-size: 16px;
       color: #7eb4d8;
+      font-weight: 650;
     }
 
     &-value {
-      font-size: 22px;
-      font-weight: 800;
+      font-size: 26px;
+      font-weight: 900;
       color: #f6fbff;
       font-family: 'DIN Alternate', sans-serif;
+      line-height: 1.15;
     }
   }
 
   &__right {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding-left: 18px;
-    border-left: 1px dashed rgba(102, 217, 255, 0.2);
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background:
+      radial-gradient(80% 70% at 0% 0%, rgba(0, 184, 255, 0.12), transparent 55%),
+      rgba(0, 32, 68, 0.42);
+    border: 1px solid rgba(102, 217, 255, 0.2);
   }
 
   &__ai-tag {
     align-self: flex-start;
-    padding: 2px 10px;
+    padding: 4px 14px;
     border-radius: 999px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #8ef6ff;
-    background: rgba(0, 184, 255, 0.14);
-    border: 1px solid rgba(0, 184, 255, 0.3);
+    font-size: 15px;
+    font-weight: 800;
+    color: #04101f;
+    background: linear-gradient(90deg, #7ef0d0, #55e0ff);
+    box-shadow: 0 0 12px rgba(85, 224, 255, 0.3);
   }
 
   &__ai-text {
     margin: 0;
     font-size: 19px;
-    line-height: 1.8;
+    line-height: 1.75;
     color: #dbeeff;
   }
 }
@@ -686,60 +653,142 @@ onMounted(load)
 .composite {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
+  min-height: 0;
+
+  /* 右侧单卡时撑满与左侧等高，避免下半空白 */
+  > :only-child {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* 左侧气泡图 + 分析卡：分析卡参与撑满 */
+  > .analysis-cards {
+    flex: 1;
+  }
 }
 
 /* ── 2. 成绩能力解析 ── */
 .analysis-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 12px;
+  flex: 1;
+  min-height: 168px;
 }
 
 .analysis-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px;
-  border-radius: 6px;
-  background: rgba(0, 38, 73, 0.36);
-  border: 1px solid rgba(102, 217, 255, 0.12);
+  gap: 10px;
+  min-height: 168px;
+  padding: 16px;
+  border-radius: 14px;
+  background:
+    radial-gradient(100% 80% at 100% 0%, rgba(0, 184, 255, 0.1), transparent 55%),
+    linear-gradient(160deg, rgba(0, 48, 96, 0.5), rgba(3, 14, 38, 0.78));
+  border: 1px solid rgba(102, 217, 255, 0.18);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
 
-  &--good { border-color: rgba(52, 211, 153, 0.3); }
-  &--warn { border-color: rgba(240, 192, 64, 0.3); }
-  &--blue { border-color: rgba(102, 217, 255, 0.3); }
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &--good {
+    border-color: rgba(52, 211, 153, 0.35);
+    &:hover { border-color: rgba(52, 211, 153, 0.55); }
+  }
+  &--warn {
+    border-color: rgba(240, 192, 64, 0.35);
+    &:hover { border-color: rgba(240, 192, 64, 0.55); }
+  }
+  &--blue {
+    border-color: rgba(102, 217, 255, 0.35);
+    &:hover { border-color: rgba(102, 217, 255, 0.55); }
+  }
 
   &__badge {
     align-self: flex-start;
-    font-size: 15px;
-    font-weight: 700;
-    padding: 1px 8px;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 4px 12px;
     border-radius: 999px;
     color: #04101f;
-    background: #34d399;
+    background: linear-gradient(90deg, #7ef0d0, #34d399);
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.3);
 
-    .analysis-card--warn & { background: #f0c040; }
-    .analysis-card--blue & { background: #66d9ff; }
+    .analysis-card--warn & {
+      background: linear-gradient(90deg, #fde68a, #f0c040);
+      box-shadow: 0 0 12px rgba(240, 192, 64, 0.3);
+    }
+    .analysis-card--blue & {
+      background: linear-gradient(90deg, #7ef0ff, #66d9ff);
+      box-shadow: 0 0 12px rgba(102, 217, 255, 0.3);
+    }
   }
 
   &__main {
-    font-size: 19px;
-    font-weight: 800;
+    font-size: 26px;
+    font-weight: 900;
     color: #f6fbff;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
   }
 
   &__sub {
-    font-size: 17px;
-    color: #cfe8ff;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0, 24, 52, 0.45);
+    border: 1px solid rgba(102, 217, 255, 0.12);
 
-    b { color: #7ff6ff; font-family: 'DIN Alternate', sans-serif; }
+    span {
+      font-size: 16px;
+      color: #8fbdd8;
+      font-weight: 650;
+      flex-shrink: 0;
+    }
+
+    b {
+      color: #7ff6ff;
+      font-family: 'DIN Alternate', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 1;
+      text-shadow: 0 0 12px rgba(103, 232, 249, 0.3);
+    }
   }
 
   &__courses {
-    font-size: 16px;
-    line-height: 1.5;
-    color: #9ec7e0;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    &-label {
+      font-size: 14px;
+      color: #7eb4d8;
+      font-weight: 650;
+    }
+
+    p {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.55;
+      color: #cfe8ff;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
   }
 }
 
@@ -750,24 +799,28 @@ onMounted(load)
   grid-template-areas:
     'index index'
     'good warn';
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: rgba(0, 38, 73, 0.36);
-  border: 1px solid rgba(102, 217, 255, 0.12);
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(85, 233, 149, 0.08), transparent 60%),
+    rgba(0, 28, 58, 0.48);
+  border: 1px solid rgba(102, 217, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
   &__index {
     grid-area: index;
-    font-size: 18px;
+    font-size: 20px;
     color: #cfe8ff;
-    font-weight: 600;
+    font-weight: 650;
 
     b {
-      font-size: 30px;
+      font-size: 44px;
       font-weight: 900;
       color: #7ff6c4;
       font-family: 'DIN Alternate', sans-serif;
       margin: 0 4px;
+      text-shadow: 0 0 16px rgba(85, 233, 149, 0.4);
     }
   }
 
@@ -776,9 +829,9 @@ onMounted(load)
   }
 
   &__title {
-    margin: 0 0 4px;
-    font-size: 17px;
-    font-weight: 700;
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 800;
 
     &--good { color: #34d399; }
     &--warn { color: #f0c040; }
@@ -790,11 +843,11 @@ onMounted(load)
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 8px;
   }
 
   &__item {
-    font-size: 12.5px;
+    font-size: 16px;
     line-height: 1.5;
     color: #d0e8f8;
   }
@@ -852,7 +905,7 @@ onMounted(load)
   }
 
   &__tab-title {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -886,7 +939,7 @@ onMounted(load)
 
   &__desc {
     margin: 0 0 6px;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.5;
     color: #b8d6ec;
   }
@@ -932,231 +985,347 @@ onMounted(load)
 
   &__stars {
     color: #9ec7e0;
-    font-size: 15px;
+    font-size: 17px;
     letter-spacing: -1px;
     text-align: left;
     white-space: nowrap;
   }
 
   &__empty {
-    font-size: 16px;
+    font-size: 18px;
     color: #5a7d96;
   }
 }
 
 /* ── 7. 毕业达成预测 ── */
 .grad-predict {
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: rgba(0, 38, 73, 0.32);
-  border: 1px solid rgba(102, 217, 255, 0.12);
+  position: relative;
+  padding: 16px 18px;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 70% at 0% 0%, rgba(85, 233, 149, 0.08), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.55), rgba(3, 12, 34, 0.82));
+  border: 1px solid rgba(102, 217, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
   &__title {
-    margin: 0 0 8px;
-    font-size: 18px;
-    font-weight: 700;
-    color: #b8ecff;
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #f4fbff;
   }
 
   &__bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
   &__bar-label {
-    font-size: 17px;
+    font-size: 16px;
     color: #7eb4d8;
-    width: 64px;
+    width: 72px;
     flex-shrink: 0;
+    font-weight: 650;
   }
 
   &__track {
     flex: 1;
-    height: 8px;
+    height: 10px;
     border-radius: 999px;
-    background: rgba(0, 60, 120, 0.45);
+    background: rgba(0, 24, 52, 0.75);
+    border: 1px solid rgba(102, 217, 255, 0.1);
     overflow: hidden;
   }
 
   &__fill {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #34d399, #52e8bf);
+    background: linear-gradient(90deg, #0d9488, #5eead4);
+    box-shadow: 0 0 12px rgba(94, 234, 212, 0.4);
   }
 
   &__bar-value {
-    font-size: 17px;
+    font-size: 20px;
     color: #7ff6ff;
-    font-weight: 700;
-    width: 40px;
+    font-weight: 800;
+    width: 48px;
     text-align: right;
     flex-shrink: 0;
+    font-family: 'DIN Alternate', sans-serif;
   }
 
   &__row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 3px 0;
+    padding: 6px 0;
     font-size: 17px;
   }
 
   &__label {
     color: #7eb4d8;
+    font-weight: 650;
   }
 
   &__value {
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 26px;
+    font-weight: 900;
     color: #7ff6c4;
     font-family: 'DIN Alternate', sans-serif;
   }
 
   &__risk {
     color: #ffd27a;
-    font-weight: 600;
+    font-weight: 700;
   }
 
   &__tags {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
+    gap: 8px;
+    margin-top: 10px;
   }
 
   &__tag-label {
     font-size: 16px;
     color: #7eb4d8;
+    font-weight: 650;
   }
 
   &__tag {
-    font-size: 16px;
-    padding: 2px 8px;
+    font-size: 15px;
+    padding: 4px 12px;
     border-radius: 999px;
     color: #cfe8ff;
-    background: rgba(0, 184, 255, 0.12);
-    border: 1px solid rgba(0, 184, 255, 0.25);
+    background: rgba(0, 184, 255, 0.14);
+    border: 1px solid rgba(0, 184, 255, 0.28);
   }
 }
 
 /* ── 培养完成 ── */
 .warn-section {
-  padding: 10px 14px;
-  border-radius: 5px;
+  position: relative;
+  padding: 16px 18px;
+  border-radius: 12px;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
-    rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(102, 217, 255, 0.1);
+    radial-gradient(120% 80% at 100% 0%, rgba(0, 180, 255, 0.1), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.7), rgba(3, 12, 34, 0.86));
+  border: 1px solid rgba(102, 217, 255, 0.22);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  &__glow {
+    position: absolute;
+    inset: auto -15% -35% auto;
+    width: 50%;
+    height: 65%;
+    background: radial-gradient(circle, rgba(0, 229, 255, 0.1), transparent 70%);
+    pointer-events: none;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.65), transparent);
+  }
 }
 
 .warn-section__title {
-  margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #b8ecff;
+  position: relative;
+  z-index: 1;
+  margin: 0 0 14px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #f4fbff;
   letter-spacing: 0.04em;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  text-shadow: 0 0 12px rgba(0, 242, 255, 0.18);
 
   &::before {
     content: '';
     width: 3px;
-    height: 13px;
+    height: 18px;
     border-radius: 2px;
-    background: linear-gradient(180deg, #00e5ff, #00b8ff);
-    box-shadow: 0 0 8px rgba(0, 212, 255, 0.45);
+    background: linear-gradient(180deg, #7ff6ff, #00b8ff);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
   }
 }
 
 .completion-summary {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .completion-kpi {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.3);
+  gap: 6px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(0, 28, 58, 0.5);
+  border: 1px solid rgba(102, 217, 255, 0.16);
 
-  &__label { font-size: 17px; color: #7eb4d8; }
-  &__value { font-size: 18px; font-weight: 800; color: #f6fbff; }
+  &__label { font-size: 16px; color: #7eb4d8; font-weight: 650; }
+  &__value {
+    font-size: 28px;
+    font-weight: 900;
+    color: #f6fbff;
+    font-family: 'DIN Alternate', sans-serif;
+    line-height: 1.1;
+  }
 }
 
 .completion-progress {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0;
+  gap: 10px;
+  padding: 10px 0;
 
-  &__label { font-size: 18px; color: #7eb4d8; font-weight: 600; width: 90px; flex-shrink: 0; }
-  &__bar { flex: 1; height: 6px; border-radius: 999px; background: rgba(0, 60, 120, 0.45); overflow: hidden; }
-  &__inner { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #00b8ff, #00e5ff); }
-  &__percent { font-size: 18px; color: #7ff6ff; font-weight: 700; font-family: var(--student-font-number); width: 40px; text-align: right; flex-shrink: 0; }
+  &__label { font-size: 17px; color: #9ecae8; font-weight: 700; width: 110px; flex-shrink: 0; }
+  &__bar {
+    flex: 1;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(0, 24, 52, 0.75);
+    border: 1px solid rgba(102, 217, 255, 0.12);
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+  &__inner {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0369a1, #67e8f9);
+    box-shadow: 0 0 12px rgba(103, 232, 249, 0.45);
+  }
+  &__percent {
+    font-size: 20px;
+    color: #7ff6ff;
+    font-weight: 800;
+    font-family: 'DIN Alternate', sans-serif;
+    width: 48px;
+    text-align: right;
+    flex-shrink: 0;
+  }
 }
 
 .completion-status {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  font-size: 18px;
+  gap: 10px;
+  padding: 8px 0 4px;
+  font-size: 17px;
 
-  &__label { color: #7eb4d8; font-weight: 600; width: 90px; flex-shrink: 0; }
-  &__value { color: #d0e8f8;
+  &__label { color: #7eb4d8; font-weight: 650; width: 110px; flex-shrink: 0; }
+  &__value {
+    color: #d0e8f8;
+    font-weight: 700;
     &.is-safe { color: #55e995; }
     &.is-warn { color: #ff9b7a; }
   }
 }
 
 .credit-bucket-list {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .credit-bucket {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.25);
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 28, 58, 0.42);
+  border: 1px solid rgba(102, 217, 255, 0.12);
   font-size: 17px;
 
-  &__label { color: #7eb4d8; width: 70px; flex-shrink: 0; }
-  &__bar { flex: 1; height: 5px; border-radius: 999px; background: rgba(0, 60, 120, 0.45); overflow: hidden; }
-  &__inner { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #20c997, #52e8bf); }
-  &__value { color: #d0e8f8; font-weight: 700; font-family: var(--student-font-number); width: 50px; text-align: right; flex-shrink: 0; }
+  &__label { color: #9ecae8; width: 80px; flex-shrink: 0; font-weight: 650; }
+  &__bar {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(0, 24, 52, 0.75);
+    border: 1px solid rgba(102, 217, 255, 0.1);
+    overflow: hidden;
+  }
+  &__inner {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0d9488, #5eead4);
+    box-shadow: 0 0 10px rgba(94, 234, 212, 0.4);
+  }
+  &__value {
+    color: #e8f7ff;
+    font-weight: 800;
+    font-family: 'DIN Alternate', sans-serif;
+    font-size: 18px;
+    width: 72px;
+    text-align: right;
+    flex-shrink: 0;
+  }
 }
 
 /* ── 8. 教师指导建议 ── */
 .advice {
-  padding: 14px 16px;
-  border-radius: 8px;
+  position: relative;
+  padding: 18px 20px;
+  border-radius: 14px;
+  overflow: hidden;
   background:
-    linear-gradient(145deg, rgba(0, 113, 206, 0.14), rgba(3, 12, 34, 0.7)),
-    rgba(5, 18, 48, 0.5);
-  border: 1px solid rgba(102, 217, 255, 0.18);
+    radial-gradient(90% 80% at 0% 0%, rgba(0, 184, 255, 0.1), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.65), rgba(3, 12, 34, 0.88));
+  border: 1px solid rgba(102, 217, 255, 0.24);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 18px;
+    right: 18px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.65), transparent);
+  }
 
   &__title {
-    margin: 0 0 12px;
-    font-size: 21px;
-    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    margin: 0 0 14px;
+    font-size: 24px;
+    font-weight: 800;
     color: #f4fbff;
-    text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
+    text-shadow: 0 0 12px rgba(0, 242, 255, 0.18);
   }
 
   &__grid {
+    position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
@@ -1166,12 +1335,18 @@ onMounted(load)
 .advice-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px;
-  border-radius: 8px;
-  background: rgba(0, 38, 73, 0.4);
-  border: 1px solid rgba(102, 217, 255, 0.14);
+  gap: 10px;
+  padding: 16px;
+  border-radius: 12px;
+  background:
+    radial-gradient(80% 60% at 0% 0%, rgba(0, 184, 255, 0.08), transparent 55%),
+    rgba(0, 32, 68, 0.48);
+  border: 1px solid rgba(102, 217, 255, 0.16);
   border-top: 3px solid #34d399;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: transform 0.2s, border-color 0.2s;
+
+  &:hover { transform: translateY(-1px); }
 
   &--green { border-top-color: #34d399; }
   &--yellow { border-top-color: #f0c040; }
@@ -1179,20 +1354,20 @@ onMounted(load)
 
   &__tag {
     align-self: flex-start;
-    padding: 2px 12px;
+    padding: 3px 12px;
     border-radius: 999px;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 800;
     color: #04101f;
-    background: #34d399;
+    background: linear-gradient(90deg, #7ef0d0, #34d399);
 
-    .advice-card--yellow & { background: #f0c040; }
-    .advice-card--blue & { background: #66d9ff; }
+    .advice-card--yellow & { background: linear-gradient(90deg, #fde68a, #f0c040); }
+    .advice-card--blue & { background: linear-gradient(90deg, #7ef0ff, #66d9ff); }
   }
 
   &__head {
     margin: 0;
-    font-size: 19px;
+    font-size: 20px;
     font-weight: 800;
     color: #f6fbff;
   }
@@ -1217,7 +1392,7 @@ onMounted(load)
     border: 1px solid rgba(0, 184, 255, 0.35);
     background: rgba(0, 184, 255, 0.1);
     color: #8ef6ff;
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 700;
     cursor: pointer;
 
@@ -1232,7 +1407,7 @@ onMounted(load)
   padding: 16px;
   text-align: center;
   color: #5a7d96;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .placeholder {
@@ -1241,7 +1416,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error { color: #f87171; flex-direction: column; }
@@ -1253,7 +1428,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 19px;
+    font-size: 21px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }
@@ -1273,32 +1448,42 @@ onMounted(load)
 /* ── 板块外框统一加亮，区分各个板块 ── */
 .portrait,
 .advice {
-  border-color: rgba(0, 206, 255, 0.42);
-  box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.2),
-    inset 0 0 24px rgba(0, 184, 255, 0.12);
+  border-color: rgba(102, 217, 255, 0.28);
 }
 
 .detail-grid > .composite {
-  padding: 12px;
-  border-radius: 8px;
+  position: relative;
+  padding: 14px;
+  border-radius: 14px;
+  overflow: hidden;
   background:
-    linear-gradient(145deg, rgba(0, 113, 206, 0.1), rgba(3, 12, 34, 0.5)),
-    rgba(5, 18, 48, 0.32);
-  border: 1px solid rgba(0, 206, 255, 0.42);
+    radial-gradient(100% 80% at 100% 0%, rgba(0, 184, 255, 0.08), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.45), rgba(3, 12, 34, 0.7));
+  border: 1px solid rgba(102, 217, 255, 0.24);
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.2),
-    inset 0 0 24px rgba(0, 184, 255, 0.1);
+    0 16px 36px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.55), transparent);
+    pointer-events: none;
+  }
 }
 
 :deep(.chart-card),
 :deep(.support-card) {
-  border-color: rgba(0, 206, 255, 0.42);
+  border-color: rgba(102, 217, 255, 0.22);
 }
 
 @media (max-width: 1280px) {
   .portrait { grid-template-columns: 1fr; }
-  .portrait__right { padding-left: 0; border-left: none; border-top: 1px dashed rgba(102, 217, 255, 0.2); padding-top: 12px; }
+  .portrait__right { padding-top: 4px; }
   .detail-grid { grid-template-columns: 1fr; }
   .advice__grid { grid-template-columns: 1fr; }
 }

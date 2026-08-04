@@ -116,7 +116,7 @@ const tagFilters = [
   }
 
   h3 {
-    font-size: 18px;
+    font-size: 20px;
     color: #f3f8ff;
     margin-bottom: 6px;
   }
@@ -126,7 +126,7 @@ const tagFilters = [
   display: inline-block;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 
   &--important {

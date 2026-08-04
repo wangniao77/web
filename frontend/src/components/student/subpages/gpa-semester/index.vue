@@ -7,8 +7,9 @@
  *
  * 与 gpa-detail 共用 _shared/gpa-data 数据层。
  */
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
+import SemesterCourseBands from './components/SemesterCourseBands.vue'
 import SemesterCourseTable from './components/SemesterCourseTable.vue'
 import { gpaDetailService } from '../_shared/gpa-data'
 import type { GpaDetailVM } from '../_shared/gpa-data'
@@ -16,6 +17,8 @@ import type { GpaDetailVM } from '../_shared/gpa-data'
 const data = ref<GpaDetailVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+const semesterNames = computed(() => data.value?.semesterList ?? data.value?.semesters.map((s) => s.semester) ?? [])
 
 async function load() {
   loading.value = true
@@ -35,7 +38,7 @@ onMounted(load)
 <template>
   <StudentDetailLayout
     title="每学期已修课程明细"
-    subtitle="完整课程列表 · 按学期切换 · 支持成绩 / 学分 / 名称排序"
+    subtitle="学期成绩总览 · 完整课程表 · 支持排序"
     back-text="← 返回 GPA 总览"
     :back-to="{ name: 'student-gpa-detail' }"
     mock-badge="模拟数据"
@@ -50,6 +53,10 @@ onMounted(load)
     </div>
 
     <div v-else-if="data" class="gpa-semester">
+      <SemesterCourseBands
+        :courses="data.courses"
+        :semesters="semesterNames"
+      />
       <SemesterCourseTable
         :semesters="data.semesters"
         :courses="data.courses"
@@ -63,7 +70,13 @@ onMounted(load)
   height: 100%;
   display: flex;
   flex-direction: column;
+  gap: 12px;
   min-height: 0;
+
+  :deep(.semester-table) {
+    flex: 1;
+    min-height: 0;
+  }
 }
 
 .placeholder {
@@ -72,7 +85,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.7);
   border: 1px solid rgba(102, 217, 255, 0.12);
   border-radius: 8px;
@@ -87,7 +100,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 17px;
+    font-size: 19px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }

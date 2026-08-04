@@ -210,7 +210,7 @@ onMounted(load)
   border: 1px solid rgba(102, 217, 255, 0.1);
 
   &__label {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     color: #f6fbff;
   }
@@ -221,7 +221,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.12);
     border: 1px solid rgba(0, 212, 255, 0.25);
     color: #8ef6ff;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
   }
 }
@@ -239,7 +239,7 @@ onMounted(load)
 .schedule-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 19px;
+  font-size: 21px;
 
   th,
   td {
@@ -252,7 +252,7 @@ onMounted(load)
     background: rgba(0, 38, 73, 0.55);
     color: #8edcff;
     font-weight: 700;
-    font-size: 20px;
+    font-size: 22px;
     text-align: center;
     white-space: nowrap;
   }
@@ -274,14 +274,14 @@ onMounted(load)
   text-align: center;
 
   .period-label {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
     color: #d0e8f8;
     margin-bottom: 4px;
   }
 
   .period-time {
-    font-size: 17px;
+    font-size: 19px;
     color: #7eb4d8;
   }
 }
@@ -316,7 +316,7 @@ onMounted(load)
   }
 
   &__name {
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 700;
     color: #f6fbff;
     margin-bottom: 6px;
@@ -332,19 +332,19 @@ onMounted(load)
   }
 
   &__teacher {
-    font-size: 17px;
+    font-size: 19px;
     color: #9ecae8;
     word-break: break-all;
   }
 
   &__room {
-    font-size: 17px;
+    font-size: 19px;
     color: #7eb4d8;
     word-break: break-all;
   }
 
   &__weeks {
-    font-size: 17px;
+    font-size: 19px;
     color: #facc15;
     font-weight: 600;
   }
@@ -352,7 +352,7 @@ onMounted(load)
 
 .course-empty {
   color: #5a7d96;
-  font-size: 22px;
+  font-size: 24px;
   text-align: center;
   padding: 20px 0;
 }
@@ -365,7 +365,7 @@ onMounted(load)
     linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
     rgba(6, 17, 52, 0.32);
   border: 1px solid rgba(102, 217, 255, 0.1);
-  font-size: 19px;
+  font-size: 21px;
   color: #b0d4e8;
 
   &__label {
@@ -381,7 +381,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.7);
   border: 1px solid rgba(102, 217, 255, 0.12);
   border-radius: 8px;
@@ -396,7 +396,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 17px;
+    font-size: 19px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }
@@ -418,11 +418,11 @@ onMounted(load)
 /* Responsive */
 @media (max-width: 1280px) {
   .schedule-table {
-    font-size: 17px;
+    font-size: 19px;
   }
 
   .course-card__name {
-    font-size: 17px;
+    font-size: 19px;
   }
 }
 </style>

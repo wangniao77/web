@@ -11,11 +11,13 @@ import { useRoute } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import ChartCard from '../academic-detail/components/ChartCard.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import StuHint from '@/components/student/template/StuHint.vue'
 import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
 import { CHART_FONT } from '@/styles/echarts-theme'
+import { SCORE_FORMULAS } from '@/utils/scoreFormulas'
 
 const route = useRoute()
 const { studentScope } = useScope()
@@ -98,37 +100,120 @@ const starLevel = computed(() => {
 })
 
 function makeGauge(value: number, progressColor: string | { type: 'linear'; x: number; y: number; x2: number; y2: number; colorStops: Array<{ offset: number; color: string }> }, solidColor: string): EChartsOption {
+  const glow = `${solidColor}aa`
+  /** 单层同心半环：不再叠外圈装饰，避免「背影」和主弧对不齐 */
+  const center: [string, string] = ['50%', '60%']
+  const radius = '58%'
+  const startAngle = 210
+  const endAngle = -30
   return {
-    series: [{
-      type: 'gauge',
-      center: ['50%', '46%'],
-      radius: '68%',
-      startAngle: 210,
-      endAngle: -30,
-      min: 0,
-      max: 100,
-      splitNumber: 5,
-      progress: { show: true, width: 14, roundCap: true, itemStyle: { color: progressColor } },
-      pointer: { width: 5, length: '40%', itemStyle: { color: solidColor } },
-      anchor: { show: true, size: 10, itemStyle: { color: solidColor } },
-      axisLine: { lineStyle: { width: 14, color: [[1, 'rgba(0, 60, 120, 0.45)']] } },
-      axisTick: { distance: -14, length: 5, lineStyle: { color: 'rgba(102,217,255,0.3)' } },
-      splitLine: { distance: -14, length: 12, lineStyle: { color: 'rgba(102,217,255,0.45)', width: 2 } },
-      axisLabel: { distance: -26, color: '#6f9bbd', fontSize: 15 },
-      title: { show: false },
-      detail: {
-        valueAnimation: true,
-        offsetCenter: [0, '42%'],
-        fontSize: CHART_FONT.gaugeCompact + 8,
-        fontFamily: 'DIN Alternate, sans-serif',
-        fontWeight: 'bolder',
-        color: solidColor,
-        textShadowColor: 'rgba(0, 0, 0, 0.6)',
-        textShadowBlur: 12,
-        formatter: '{value}',
+    animation: true,
+    animationDuration: 1100,
+    animationEasing: 'cubicOut',
+    series: [
+      {
+        type: 'gauge',
+        center,
+        radius,
+        startAngle,
+        endAngle,
+        min: 0,
+        max: 100,
+        splitNumber: 5,
+        pointer: { show: false },
+        anchor: { show: false },
+        axisTick: {
+          show: true,
+          distance: -11,
+          length: 7,
+          splitNumber: 4,
+          lineStyle: { color: 'rgba(140, 210, 255, 0.4)', width: 1 },
+        },
+        splitLine: {
+          show: true,
+          distance: -11,
+          length: 12,
+          lineStyle: { color: 'rgba(170, 230, 255, 0.6)', width: 2 },
+        },
+        axisLabel: {
+          show: true,
+          distance: -22,
+          color: '#b8dff2',
+          fontSize: 14,
+          fontWeight: 700,
+        },
+        title: { show: false },
+        detail: {
+          valueAnimation: true,
+          offsetCenter: [0, '10%'],
+          formatter: (v: number) => `{num|${Number(v).toFixed(v % 1 === 0 ? 0 : 1)}}`,
+          rich: {
+            num: {
+              fontSize: CHART_FONT.gaugeCompact + 34,
+              fontFamily: 'DIN Alternate, Segoe UI, sans-serif',
+              fontWeight: 900,
+              color: '#ffffff',
+              textShadowColor: solidColor,
+              textShadowBlur: 28,
+              lineHeight: 62,
+            },
+          },
+        },
+        axisLine: {
+          roundCap: true,
+          lineStyle: {
+            width: 18,
+            color: [[1, 'rgba(20, 60, 110, 0.45)']],
+            shadowBlur: 0,
+          },
+        },
+        progress: {
+          show: true,
+          roundCap: true,
+          width: 18,
+          itemStyle: {
+            color: progressColor,
+            shadowBlur: 18,
+            shadowColor: glow,
+          },
+        },
+        data: [{ value }],
+        z: 2,
       },
-      data: [{ value }],
-    }],
+      {
+        type: 'gauge',
+        center,
+        radius,
+        startAngle,
+        endAngle,
+        min: 0,
+        max: 100,
+        pointer: {
+          show: true,
+          icon: 'circle',
+          length: '4%',
+          width: 12,
+          offsetCenter: [0, '-92%'],
+          itemStyle: {
+            color: '#ffffff',
+            borderColor: solidColor,
+            borderWidth: 3,
+            shadowBlur: 14,
+            shadowColor: glow,
+          },
+        },
+        anchor: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        detail: { show: false },
+        title: { show: false },
+        axisLine: { lineStyle: { width: 0, color: [[1, 'transparent']] } },
+        progress: { show: false },
+        data: [{ value }],
+        z: 3,
+      },
+    ],
   }
 }
 
@@ -141,27 +226,28 @@ function gaugeGradient(v: number): { progressColor: GaugeProgressColor; solidCol
   if (v >= 80) {
     return {
       progressColor: { type: 'linear', x: 0, y: 1, x2: 1, y2: 0, colorStops: [
-        { offset: 0, color: '#22d3ee' },
-        { offset: 1, color: '#34d399' },
+        { offset: 0, color: '#5ee7ff' },
+        { offset: 0.45, color: '#34d399' },
+        { offset: 1, color: '#a7f3d0' },
       ] },
-      solidColor: '#34d399',
+      solidColor: '#5eead4',
     }
   }
   if (v >= 65) {
     return {
       progressColor: { type: 'linear', x: 0, y: 1, x2: 1, y2: 0, colorStops: [
-        { offset: 0, color: '#fbbf24' },
+        { offset: 0, color: '#fde68a' },
         { offset: 1, color: '#fb923c' },
       ] },
-      solidColor: '#f0c040',
+      solidColor: '#fbbf24',
     }
   }
   return {
     progressColor: { type: 'linear', x: 0, y: 1, x2: 1, y2: 0, colorStops: [
-      { offset: 0, color: '#fb7185' },
+      { offset: 0, color: '#fda4af' },
       { offset: 1, color: '#ef4444' },
     ] },
-    solidColor: '#f87171',
+    solidColor: '#fb7185',
   }
 }
 
@@ -172,36 +258,102 @@ const gaugeOption = computed<EChartsOption>(() => {
 })
 
 const rankBarOption = computed<EChartsOption>(() => ({
-  tooltip: { trigger: 'axis' },
-  grid: { left: '12%', right: '8%', top: 20, bottom: 30 },
+  animation: true,
+  animationDuration: 900,
+  animationEasing: 'cubicOut',
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  grid: { left: 48, right: 16, top: 36, bottom: 8, containLabel: true },
   xAxis: {
     type: 'category',
     data: [dashboard.value?.profile?.name?.slice(0, 4) || '本人', '学院平均', '专业平均'],
-    axisLabel: { color: '#889ec2', fontSize: 16 },
-    axisLine: { lineStyle: { color: 'rgba(102,217,255,0.2)' } },
+    axisLabel: {
+      color: '#b8dceb',
+      fontSize: 16,
+      fontWeight: 700,
+      margin: 12,
+      interval: 0,
+      hideOverlap: true,
+    },
+    axisTick: { show: false },
+    axisLine: { lineStyle: { color: 'rgba(102,217,255,0.22)' } },
   },
   yAxis: {
     type: 'value',
-    name: '竞争力指数',
     min: 0,
     max: 100,
-    nameTextStyle: { color: '#889ec2', fontSize: 15 },
-    axisLabel: { color: '#889ec2', fontSize: 15 },
-    splitLine: { lineStyle: { color: 'rgba(102,217,255,0.08)' } },
+    splitNumber: 4,
+    axisLabel: { color: '#7ea8c4', fontSize: 14 },
+    axisLine: { show: false },
+    axisTick: { show: false },
+    splitLine: { lineStyle: { color: 'rgba(102,217,255,0.1)', type: 'dashed' } },
   },
   series: [{
     type: 'bar',
-    barWidth: 32,
+    barWidth: 36,
     data: [
-      { value: competitivenessIndex.value, itemStyle: { color: competitivenessIndex.value >= 80 ? '#34d399' : '#00b8ff', borderRadius: [4, 4, 0, 0] } },
-      { value: collegeAvg.value, itemStyle: { color: 'rgba(102,217,255,0.55)', borderRadius: [4, 4, 0, 0] } },
-      { value: majorAvg.value, itemStyle: { color: 'rgba(102,217,255,0.35)', borderRadius: [4, 4, 0, 0] } },
+      {
+        value: competitivenessIndex.value,
+        itemStyle: {
+          borderRadius: [6, 6, 0, 0],
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: competitivenessIndex.value >= 80
+              ? [{ offset: 0, color: '#6effc8' }, { offset: 1, color: '#1aa87a' }]
+              : [{ offset: 0, color: '#5ee7ff' }, { offset: 1, color: '#0088cc' }],
+          },
+          shadowBlur: 14,
+          shadowColor: 'rgba(80, 220, 255, 0.35)',
+        },
+      },
+      {
+        value: collegeAvg.value,
+        itemStyle: {
+          borderRadius: [6, 6, 0, 0],
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(140, 220, 255, 0.75)' },
+              { offset: 1, color: 'rgba(40, 120, 180, 0.55)' },
+            ],
+          },
+        },
+      },
+      {
+        value: majorAvg.value,
+        itemStyle: {
+          borderRadius: [6, 6, 0, 0],
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(160, 140, 255, 0.7)' },
+              { offset: 1, color: 'rgba(70, 60, 160, 0.5)' },
+            ],
+          },
+        },
+      },
     ],
-    label: { show: true, position: 'top', color: '#f6fbff', fontSize: 16, fontWeight: 'bold' },
+    label: {
+      show: true,
+      position: 'top',
+      color: '#f6fbff',
+      fontSize: 18,
+      fontWeight: 800,
+      distance: 6,
+      textShadowColor: 'rgba(0, 40, 80, 0.65)',
+      textShadowBlur: 6,
+    },
   }],
 }))
 
 /* ═══════════ 目标岗位匹配分析 ═══════════ */
+/** 匹配度着色：≥80绿 / ≥60黄 / ≥40橙 / <40红 */
+function matchToneColor(score: number): string {
+  if (score >= 80) return '#34d399'
+  if (score >= 60) return '#facc15'
+  if (score >= 40) return '#fb923c'
+  return '#f87171'
+}
+
 interface JobDirection {
   name: string
   match: number
@@ -213,22 +365,22 @@ interface JobDirection {
 const selectedJobIdx = ref(0)
 
 const jobDirections = computed<JobDirection[]>(() => [
-  { name: '软件开发工程师', match: 92, color: '#34d399',
+  { name: '软件开发工程师', match: 92,
     advantages: ['Java课程成绩优秀', 'Spring Boot项目2项', '数据结构基础良好', 'GitHub项目活跃'],
     gaps: ['企业实习不足', '算法训练不足'] },
-  { name: 'Java后端工程师', match: 90, color: '#66d9ff',
+  { name: 'Java后端工程师', match: 90,
     advantages: ['Java核心技术扎实', '电商订单项目经验', 'MySQL数据库熟练', '具备微服务基础认知'],
     gaps: ['缺少Redis/Kafka实战', '缺乏分布式系统经验'] },
-  { name: '前端开发工程师', match: 85, color: '#a78bfa',
+  { name: '前端开发工程师', match: 85,
     advantages: ['Vue3项目经验丰富', '组件化开发思维好', '有个人作品集网站', 'TypeScript基础扎实'],
     gaps: ['React框架经验空白', '移动端适配经验不足'] },
-  { name: '数据分析师', match: 78, color: '#f0c040',
+  { name: '数据分析师', match: 78,
     advantages: ['Python/Pandas熟练', '统计学基础扎实', '数据可视化项目经历', 'SQL查询能力强'],
     gaps: ['缺少业务分析经验', '机器学习算法薄弱'] },
-  { name: '算法工程师', match: 72, color: '#f87171',
+  { name: '算法工程师', match: 72,
     advantages: ['数学基础扎实', '数据结构与算法课程高分', '参加过蓝桥杯竞赛', 'Python编程熟练'],
     gaps: ['缺乏深度学习项目', '论文阅读与实践不足'] },
-])
+].map((j) => ({ ...j, color: matchToneColor(j.match) })))
 
 const selectedJob = computed(() => jobDirections.value[selectedJobIdx.value])
 
@@ -242,7 +394,7 @@ const radarOption = computed<EChartsOption>(() => {
       center: ['50%', '50%'],
       radius: '58%',
       indicator: indicators,
-      axisName: { color: '#889ec2', fontSize: 14.5, padding: [2, 4] },
+      axisName: { color: '#889ec2', fontSize: 16.5, padding: [2, 4] },
       splitArea: { areaStyle: { color: ['rgba(0,184,255,0.02)', 'rgba(0,184,255,0.04)', 'rgba(0,184,255,0.02)', 'rgba(0,184,255,0.04)', 'rgba(0,184,255,0.02)'] } },
       splitLine: { lineStyle: { color: 'rgba(102,217,255,0.15)' } },
       axisLine: { lineStyle: { color: 'rgba(102,217,255,0.2)' } },
@@ -263,6 +415,68 @@ const radarOption = computed<EChartsOption>(() => {
 })
 
 /* ═══════════ 就业能力差距分析 ═══════════ */
+void radarOption
+
+const jobMatchBarOption = computed<EChartsOption>(() => ({
+  animation: true,
+  animationDuration: 900,
+  animationEasing: 'cubicOut',
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  grid: { left: 12, right: 48, top: 10, bottom: 8, containLabel: true },
+  xAxis: {
+    type: 'value', max: 100, splitNumber: 4,
+    axisLabel: { color: '#769fbd', fontSize: 13 },
+    axisLine: { show: false },
+    axisTick: { show: false },
+    splitLine: { lineStyle: { color: 'rgba(102,217,255,.1)', type: 'dashed' } },
+  },
+  yAxis: {
+    type: 'category',
+    inverse: true,
+    data: jobDirections.value.map((job) => job.name),
+    axisLabel: {
+      color: '#d5edff',
+      fontSize: 15,
+      fontWeight: 700,
+      width: 108,
+      overflow: 'truncate',
+      ellipsis: '…',
+    },
+    axisLine: { show: false },
+    axisTick: { show: false },
+  },
+  series: [{
+    type: 'bar',
+    barWidth: 14,
+    data: jobDirections.value.map((job) => ({
+      value: job.match,
+      itemStyle: {
+        borderRadius: 10,
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+          colorStops: [
+            { offset: 0, color: job.color },
+            { offset: 1, color: `${job.color}cc` },
+          ],
+        },
+        shadowBlur: 10,
+        shadowColor: `${job.color}55`,
+      },
+    })),
+    showBackground: true,
+    backgroundStyle: { color: 'rgba(80, 125, 166, .18)', borderRadius: 10 },
+    label: {
+      show: true,
+      position: 'right',
+      color: '#e8f8ff',
+      fontSize: 15,
+      fontWeight: 800,
+      formatter: '{c}%',
+      distance: 6,
+    },
+  }],
+}))
+
 interface GapItem {
   skill: string
   current: number
@@ -347,37 +561,116 @@ const resumeStatus = computed(() => dashboard.value?.careerDev.resumeStatus || '
 /* ═══════════ 升学考研 ═══════════ */
 const gradIndex = computed(() => 88)
 
-const gradRadarOption = computed<EChartsOption>(() => ({
-  tooltip: {},
-  radar: {
-    center: ['50%', '52%'],
-    radius: '64%',
-    indicator: [
-      { name: 'GPA基础', max: 100 },
-      { name: '专业排名', max: 100 },
-      { name: '英语能力', max: 100 },
-      { name: '数学能力', max: 100 },
-      { name: '科研经历', max: 100 },
-      { name: '项目经历', max: 100 },
-    ],
-    axisName: { color: '#889ec2', fontSize: 15, padding: [2, 4] },
-    splitArea: { areaStyle: { color: ['rgba(167,139,250,0.02)', 'rgba(167,139,250,0.05)', 'rgba(167,139,250,0.02)', 'rgba(167,139,250,0.05)', 'rgba(167,139,250,0.02)'] } },
-    splitLine: { lineStyle: { color: 'rgba(167,139,250,0.15)' } },
-    axisLine: { lineStyle: { color: 'rgba(167,139,250,0.2)' } },
-  },
-  series: [{
-    type: 'radar',
-    data: [{
-      value: [95, 95, 80, 70, 65, 78],
-      name: '考研竞争力',
-      areaStyle: { color: 'rgba(167,139,250,0.16)' },
-      lineStyle: { color: '#a78bfa', width: 2 },
-      itemStyle: { color: '#a78bfa' },
+const gradDimItems = computed(() => [
+  { name: 'GPA基础', value: 95 },
+  { name: '专业排名', value: 95 },
+  { name: '英语能力', value: 80 },
+  { name: '数学能力', value: 70 },
+  { name: '科研经历', value: 65 },
+  { name: '项目经历', value: 78 },
+])
+
+const gradRadarOption = computed<EChartsOption>(() => {
+  const items = gradDimItems.value
+  const scoreMap = Object.fromEntries(items.map((d) => [d.name, d.value]))
+  return {
+    animation: true,
+    animationDuration: 1200,
+    animationEasing: 'cubicOut',
+    tooltip: {
+      confine: true,
+      backgroundColor: 'rgba(6, 17, 52, 0.96)',
+      borderColor: 'rgba(140, 180, 255, 0.4)',
+      textStyle: { color: '#e2edff', fontSize: 15 },
+    },
+    radar: {
+      center: ['50%', '52%'],
+      radius: '58%',
+      axisNameGap: 12,
+      indicator: items.map((d) => ({ name: d.name, max: 100 })),
+      axisName: {
+        color: '#e8f7ff',
+        fontSize: 14,
+        fontWeight: 700,
+        formatter: (name: string) => {
+          const score = scoreMap[name] ?? ''
+          return `{n|${name}}\n{s|${score}}`
+        },
+        rich: {
+          n: {
+            color: '#d7ecff',
+            fontSize: 14,
+            fontWeight: 700,
+            lineHeight: 20,
+          },
+          s: {
+            color: '#b8a6ff',
+            fontSize: 17,
+            fontWeight: 800,
+            fontFamily: 'DIN Alternate, sans-serif',
+            lineHeight: 22,
+            textShadowColor: 'rgba(167, 139, 250, 0.55)',
+            textShadowBlur: 10,
+          },
+        },
+      },
+      splitNumber: 4,
+      splitArea: {
+        show: true,
+        areaStyle: {
+          color: [
+            'rgba(140, 120, 255, 0.02)',
+            'rgba(80, 180, 255, 0.06)',
+            'rgba(140, 120, 255, 0.03)',
+            'rgba(80, 180, 255, 0.09)',
+          ],
+        },
+      },
+      splitLine: {
+        lineStyle: { color: 'rgba(140, 190, 255, 0.28)', width: 1.2 },
+      },
+      axisLine: {
+        lineStyle: { color: 'rgba(160, 150, 255, 0.35)', width: 1.2 },
+      },
+    },
+    series: [{
+      type: 'radar',
       symbol: 'circle',
-      symbolSize: 6,
+      symbolSize: 9,
+      lineStyle: {
+        color: '#a78bfa',
+        width: 3,
+        shadowColor: 'rgba(167, 139, 250, 0.75)',
+        shadowBlur: 14,
+      },
+      itemStyle: {
+        color: '#0a1028',
+        borderColor: '#d4c4ff',
+        borderWidth: 2.5,
+        shadowColor: 'rgba(180, 160, 255, 0.85)',
+        shadowBlur: 10,
+      },
+      areaStyle: {
+        color: {
+          type: 'radial',
+          x: 0.5,
+          y: 0.5,
+          r: 0.7,
+          colorStops: [
+            { offset: 0, color: 'rgba(180, 160, 255, 0.32)' },
+            { offset: 0.5, color: 'rgba(100, 160, 255, 0.22)' },
+            { offset: 1, color: 'rgba(40, 100, 220, 0.06)' },
+          ],
+        },
+      },
+      data: [{
+        value: items.map((d) => d.value),
+        name: '考研竞争力',
+      }],
+      z: 2,
     }],
-  }],
-}))
+  }
+})
 
 const gradStrengths = computed(() => ['GPA 专业前5%', '数据结构基础扎实', '有竞赛经历'])
 const gradWeakness = computed(() => ['科研论文不足', '算法训练不足', '夏令营经历缺失'])
@@ -487,7 +780,7 @@ const civilRadarOption = computed<EChartsOption>(() => ({
       { name: '综合素质', max: 100 },
       { name: '实践经历', max: 100 },
     ],
-    axisName: { color: '#9fe9c9', fontSize: 15, padding: [2, 4] },
+    axisName: { color: '#9fe9c9', fontSize: 17, padding: [2, 4] },
     splitArea: { areaStyle: { color: ['rgba(52,211,153,0.02)', 'rgba(52,211,153,0.05)', 'rgba(52,211,153,0.02)', 'rgba(52,211,153,0.05)', 'rgba(52,211,153,0.02)'] } },
     splitLine: { lineStyle: { color: 'rgba(52,211,153,0.15)' } },
     axisLine: { lineStyle: { color: 'rgba(52,211,153,0.2)' } },
@@ -619,12 +912,17 @@ onMounted(load)
 
         <!-- 左：考研竞争力画像（雷达在上，能力拆解在下） -->
         <section class="panel-card grad-profile">
+          <div class="panel-card__glow" aria-hidden="true" />
           <div class="panel-card__head">
             <span class="panel-card__bar" aria-hidden="true" />
             <h3 class="panel-card__title">考研竞争力画像</h3>
-            <span class="panel-card__sub">六维评估</span>
+            <span class="panel-card__sub">六维评估 · {{ gradIndex }}</span>
           </div>
-          <ChartContainer :option="gradRadarOption" style="height: 280px" />
+          <div class="grad-radar-wrap">
+            <span class="grad-radar-wrap__halo" aria-hidden="true" />
+            <span class="grad-radar-wrap__ring" aria-hidden="true" />
+            <ChartContainer :option="gradRadarOption" class="grad-radar-chart" />
+          </div>
           <div class="grad-profile__split">
             <div class="ability-split">
               <div class="ability-split__col">
@@ -645,6 +943,7 @@ onMounted(load)
 
         <!-- 右：考研准备度进度 -->
         <div class="grad-prep">
+          <div class="grad-prep__glow" aria-hidden="true" />
           <div class="grad-prep__head-title">
             <span class="panel-card__bar" aria-hidden="true" />
             <span class="grad-prep__title">考研准备度进度</span>
@@ -653,7 +952,7 @@ onMounted(load)
             <div v-for="p in prepItems" :key="p.name" class="grad-prep__item">
               <div class="grad-prep__head">
                 <span class="grad-prep__name">{{ p.name }}</span>
-                <span class="grad-prep__val">{{ p.value }}%</span>
+                <span class="grad-prep__val">{{ p.value }}<small>%</small></span>
               </div>
               <div class="grad-prep__bar">
                 <div class="grad-prep__bar-inner" :style="{ width: `${p.value}%`, background: PREP_BAR_BG }" />
@@ -661,10 +960,10 @@ onMounted(load)
             </div>
           </div>
           <div class="grad-prep__overall">
-            <div class="grad-prep__overall-num">{{ prepOverall }}%</div>
+            <div class="grad-prep__overall-num">{{ prepOverall }}<small>%</small></div>
             <div class="grad-prep__overall-meta">
               <span class="grad-prep__overall-label">整体准备度</span>
-              <span class="grad-prep__gap">距离目标院校要求：还差 {{ prepGap }}%</span>
+              <span class="grad-prep__gap">距目标院校还差 {{ prepGap }}%</span>
             </div>
           </div>
         </div>
@@ -808,8 +1107,10 @@ onMounted(load)
           <!-- 就业竞争力画像 -->
           <div class="section-title section-title--full">就业竞争力画像</div>
 
-          <ChartCard title="就业竞争力指数" :sub="starLevel" compact>
-            <ChartContainer :option="gaugeOption" style="height: 190px" />
+          <ChartCard title="就业竞争力指数" :sub="starLevel" compact class="emp-chart-card emp-gauge-card">
+            <div class="emp-gauge-wrap">
+              <ChartContainer :option="gaugeOption" class="emp-chart emp-gauge-chart" />
+            </div>
             <template #footer>
               <div class="competition-meta">
                 <div class="comp-meta-item">
@@ -822,39 +1123,43 @@ onMounted(load)
                 </div>
                 <div class="comp-meta-item">
                   <span class="comp-meta__label">超过学院</span>
-                  <span class="comp-meta__value comp-meta__value--accent">{{ collegePercentile }}% 学生</span>
+                  <span class="comp-meta__value comp-meta__value--accent">{{ collegePercentile }}%</span>
                 </div>
               </div>
             </template>
           </ChartCard>
 
-          <ChartCard title="同专业排名对比" sub="竞争力指数" compact>
-            <ChartContainer :option="rankBarOption" style="height: 190px" />
+          <ChartCard title="同专业排名对比" sub="竞争力指数" compact class="emp-chart-card">
+            <ChartContainer :option="rankBarOption" class="emp-chart" />
             <template #footer>
-              <div class="competition-meta">
+              <div class="competition-meta competition-meta--rank">
                 <div class="comp-meta-item">
                   <span class="comp-meta__label">专业排名</span>
-                  <span class="comp-meta__value">{{ majorRank }} / {{ majorTotal }}</span>
+                  <span class="comp-meta__value">{{ majorRank }}/{{ majorTotal }}</span>
                 </div>
                 <div class="comp-meta-item">
                   <span class="comp-meta__label">超越比例</span>
                   <span class="comp-meta__value comp-meta__value--accent">前 {{ collegePercentile }}%</span>
                 </div>
-                <div class="comp-meta-item">
-                  <span class="comp-meta__label">数据来源</span>
-                  <span class="comp-meta__hint">GPA · 排名 · 项目 · 竞赛 · 证书 · 实习 · 英语</span>
-                </div>
               </div>
+              <p class="comp-meta-source">数据来源：GPA · 排名 · 项目 · 竞赛 · 证书 · 实习</p>
             </template>
           </ChartCard>
 
           <!-- 目标岗位匹配分析 + 就业能力差距分析 -->
           <div class="section-title section-title--full">目标岗位匹配分析</div>
 
-          <section class="panel-card">
+          <section class="panel-card panel-card--glow emp-match-panel">
+            <div class="panel-card__glow" aria-hidden="true" />
             <div class="panel-card__head">
               <span class="panel-card__bar" aria-hidden="true" />
-              <h3 class="panel-card__title">岗位适配雷达图</h3>
+              <h3 class="panel-card__title">
+                <StuHint
+                  tip="悬停柱条对应岗位匹配度；颜色按匹配分档着色"
+                  :formula="SCORE_FORMULAS.matchTone + '\n' + SCORE_FORMULAS.scoreTone"
+                  :delay="280"
+                >岗位契合度分析</StuHint>
+              </h3>
               <div class="job-tabs job-tabs--head">
                 <button
                   v-for="(j, idx) in jobDirections"
@@ -868,7 +1173,7 @@ onMounted(load)
                 </button>
               </div>
             </div>
-            <ChartContainer :option="radarOption" style="height: 236px" />
+            <ChartContainer :option="jobMatchBarOption" class="emp-match-chart" />
             <div class="match-detail">
               <div class="match-col">
                 <h4 class="match-col__title match-col__title--good">匹配优势</h4>
@@ -889,22 +1194,34 @@ onMounted(load)
             </div>
           </section>
 
-          <div class="gap-section">
+          <div class="gap-section panel-card--glow">
+            <div class="panel-card__glow" aria-hidden="true" />
             <div class="gap-header">
               <h4 class="gap-header__title">目标岗位：{{ selectedJob.name }}</h4>
-              <span class="gap-header__badge">岗位能力 Gap 分析</span>
+              <span class="gap-header__badge">能力 Gap</span>
             </div>
             <div class="gap-list">
               <div v-for="g in gapItems" :key="g.skill" class="gap-item">
                 <div class="gap-item__head">
                   <span class="gap-item__skill">{{ g.skill }}</span>
-                  <span class="gap-item__label" :class="`gap-item__label--${g.label === '严重不足' ? 'danger' : (g.label === '需加强' || g.label === '需提升') ? 'warn' : 'ok'}`">{{ g.label }}</span>
-                  <span class="gap-item__pct">{{ g.current }}%</span>
+                  <span
+                    class="gap-item__label"
+                    :class="`gap-item__label--${g.label === '严重不足' ? 'danger' : (g.label === '需加强' || g.label === '需提升') ? 'warn' : 'ok'}`"
+                  >{{ g.label }}</span>
+                  <span class="gap-item__pct">{{ g.current }}<small>%</small></span>
                 </div>
                 <div class="gap-item__bar">
-                  <div class="gap-item__bar-inner" :style="{ width: `${g.current}%`, background: gapBarColor(g.current) }" />
-                  <div class="gap-item__bar-target" :style="{ left: `${g.target}%` }" :title="`目标: ${g.target}%`" />
+                  <div
+                    class="gap-item__bar-inner"
+                    :style="{ width: `${g.current}%`, background: gapBarColor(g.current) }"
+                  />
+                  <div
+                    class="gap-item__bar-target"
+                    :style="{ left: `${g.target}%` }"
+                    :title="`目标 ${g.target}%`"
+                  />
                 </div>
+                <div class="gap-item__target-hint">目标 {{ g.target }}%</div>
               </div>
             </div>
             <div class="gap-conclusion">
@@ -1177,104 +1494,155 @@ onMounted(load)
 .exit-tabs {
   display: flex;
   gap: 8px;
-  padding: 6px;
-  border-radius: 10px;
-  background: rgba(6, 17, 52, 0.4);
-  border: 1px solid rgba(0, 206, 255, 0.2);
+  padding: 7px;
+  border-radius: 12px;
+  background:
+    radial-gradient(80% 120% at 50% 0%, rgba(0, 160, 255, 0.12), transparent 60%),
+    rgba(6, 17, 52, 0.55);
+  border: 1px solid rgba(0, 206, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(180, 230, 255, 0.1),
+    0 0 20px rgba(0, 140, 220, 0.1);
 }
 
 .exit-tab {
   flex: 1;
-  padding: 10px 16px;
-  border-radius: 7px;
+  padding: 11px 16px;
+  border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
   color: #9ec7e0;
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.22s;
 
   &:hover {
-    background: rgba(0, 38, 73, 0.4);
+    background: rgba(0, 50, 95, 0.45);
     color: #d0e8f8;
   }
 
   &--active {
-    background: linear-gradient(180deg, rgba(0, 184, 255, 0.28), rgba(0, 113, 206, 0.18));
-    border-color: rgba(0, 206, 255, 0.55);
+    background: linear-gradient(180deg, rgba(0, 184, 255, 0.32), rgba(0, 100, 190, 0.2));
+    border-color: rgba(0, 220, 255, 0.6);
     color: #f6fbff;
-    box-shadow: 0 0 14px rgba(0, 184, 255, 0.25), inset 0 0 12px rgba(0, 184, 255, 0.1);
+    text-shadow: 0 0 12px rgba(80, 220, 255, 0.45);
+    box-shadow:
+      0 0 18px rgba(0, 184, 255, 0.3),
+      inset 0 0 16px rgba(0, 184, 255, 0.12);
   }
 }
 
 /* ── 通用板块外框 ── */
 .warn-section {
-  padding: 12px 14px;
-  border-radius: 8px;
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 12px;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
-    rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(0, 206, 255, 0.42);
+    radial-gradient(90% 70% at 100% 0%, rgba(0, 180, 255, 0.12), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.72), rgba(3, 12, 34, 0.88));
+  border: 1px solid rgba(102, 217, 255, 0.28);
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.2),
-    inset 0 0 24px rgba(0, 184, 255, 0.12);
+    0 16px 36px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 28px rgba(0, 140, 220, 0.12);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.7), transparent);
+    pointer-events: none;
+  }
 }
 
 /* ── KPI Grid ── */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
 }
 
 .kpi-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: rgba(0, 38, 73, 0.45);
-  border-left: 3px solid rgba(0, 206, 255, 0.6);
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, rgba(0, 90, 160, 0.28), rgba(4, 20, 48, 0.55));
+  border: 1px solid rgba(90, 200, 255, 0.28);
+  border-left: 3px solid rgba(0, 220, 255, 0.75);
+  box-shadow:
+    inset 0 0 18px rgba(0, 140, 220, 0.1),
+    0 0 16px rgba(0, 160, 255, 0.08);
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(140, 230, 255, 0.12), transparent);
+    animation: empKpiSweep 5.5s ease-in-out infinite;
+    pointer-events: none;
+  }
 
   &__label {
-    font-size: 18px;
-    color: #7eb4d8;
-    font-weight: 600;
+    font-size: 16px;
+    color: #8fc4e4;
+    font-weight: 650;
+    letter-spacing: 0.04em;
   }
 
   &__value {
     font-size: 22px;
     font-weight: 900;
     color: #f6fbff;
-    line-height: 1.3;
+    line-height: 1.25;
+    text-shadow: 0 0 12px rgba(80, 200, 255, 0.35);
   }
+}
+
+@keyframes empKpiSweep {
+  0% { left: -40%; opacity: 0; }
+  20% { opacity: 1; }
+  100% { left: 120%; opacity: 0; }
 }
 
 /* ── 两列网格 ── */
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 /* ── 跨列标题 ── */
 .section-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  color: #b8ecff;
+  color: #c8f0ff;
   letter-spacing: 0.06em;
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 4px;
+  text-shadow: 0 0 12px rgba(0, 200, 255, 0.28);
 
   &::after {
     content: '';
     flex: 1;
     height: 1px;
-    background: linear-gradient(90deg, rgba(0, 206, 255, 0.35), transparent);
+    background: linear-gradient(90deg, rgba(0, 220, 255, 0.45), transparent);
+    box-shadow: 0 0 8px rgba(0, 200, 255, 0.25);
   }
 
   &--full {
@@ -1287,84 +1655,243 @@ onMounted(load)
   position: relative;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(0, 206, 255, 0.42);
-  border-radius: 8px;
+  border: 1px solid rgba(102, 217, 255, 0.28);
+  border-radius: 12px;
   background:
-    linear-gradient(145deg, rgba(0, 113, 206, 0.16), rgba(3, 12, 34, 0.78)),
-    rgba(5, 18, 48, 0.54);
+    radial-gradient(90% 70% at 100% 100%, rgba(0, 184, 255, 0.1), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.72), rgba(3, 12, 34, 0.88));
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.18),
-    inset 0 0 22px rgba(0, 184, 255, 0.08);
-  padding: 12px 14px;
+    0 16px 36px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 24px rgba(0, 140, 220, 0.1);
+  padding: 14px 16px;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.7), transparent);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  &__glow {
+    position: absolute;
+    inset: auto -15% -35% auto;
+    width: 50%;
+    height: 65%;
+    background: radial-gradient(circle, rgba(0, 229, 255, 0.1), transparent 70%);
+    pointer-events: none;
+  }
 
   &__head {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   &__bar {
     width: 3px;
-    height: 14px;
+    height: 18px;
     border-radius: 2px;
-    background: linear-gradient(180deg, #00e5ff, #00b8ff);
-    box-shadow: 0 0 6px rgba(0, 212, 255, 0.45);
+    background: linear-gradient(180deg, #7ff6ff, #00b8ff);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.55);
     flex-shrink: 0;
   }
 
   &__title {
     margin: 0;
-    font-size: 21px;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 800;
     color: #f4fbff;
-    text-shadow: 0 0 10px rgba(0, 242, 255, 0.18);
+    text-shadow: 0 0 12px rgba(0, 242, 255, 0.22);
   }
 
   &__sub {
     margin-left: auto;
-    font-size: 16px;
-    color: rgba(184, 236, 255, 0.6);
+    font-size: 15px;
+    color: rgba(184, 236, 255, 0.65);
   }
+}
+
+.emp-match-panel {
+  min-height: 0;
+}
+
+.emp-match-chart {
+  height: 220px;
+  flex-shrink: 0;
+}
+
+:deep(.emp-chart-card.chart-card--compact) {
+  height: 380px;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 28px rgba(0, 160, 255, 0.14);
+}
+
+:deep(.emp-gauge-card.chart-card--compact) {
+  height: 460px;
+}
+
+:deep(.emp-gauge-card .chart-card__head) {
+  margin-bottom: 4px;
+}
+
+:deep(.emp-gauge-card .chart-card__body) {
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 280px;
+}
+
+:deep(.emp-gauge-card .chart-card__foot) {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+:deep(.emp-gauge-card .chart-card__hint) {
+  color: #f5d76e;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 10px rgba(245, 215, 110, 0.45);
+}
+
+.emp-chart {
+  height: 100%;
+  min-height: 0;
+}
+
+.emp-gauge-wrap {
+  position: relative;
+  height: 100%;
+  min-height: 280px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  box-sizing: border-box;
+  padding: 4px 8px 0;
+  background:
+    radial-gradient(ellipse at 50% 52%, rgba(40, 180, 255, 0.16), transparent 58%),
+    linear-gradient(180deg, rgba(6, 28, 58, 0.22), rgba(2, 10, 28, 0.08));
+}
+
+.emp-gauge-chart {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+}
+
+.emp-gauge-card .competition-meta {
+  gap: 6px;
+}
+
+.emp-gauge-card .comp-meta-item {
+  padding: 8px 6px;
+}
+
+@keyframes empGaugeHalo {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.92); }
+  50% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+@keyframes empGaugeRing {
+  0%, 100% { opacity: 0.45; box-shadow: 0 0 18px rgba(60, 200, 255, 0.15), inset 0 0 20px rgba(40, 160, 255, 0.08); }
+  50% { opacity: 0.85; box-shadow: 0 0 32px rgba(60, 200, 255, 0.32), inset 0 0 30px rgba(40, 160, 255, 0.16); }
 }
 
 /* ── 竞争力 meta ── */
 .competition-meta {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+
+  &--rank {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .comp-meta-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 6px 4px;
-  border-radius: 4px;
-  background: rgba(0, 38, 73, 0.3);
-  border: 1px solid rgba(102, 217, 255, 0.08);
+  gap: 5px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  background:
+    linear-gradient(160deg, rgba(20, 70, 120, 0.42), rgba(4, 20, 48, 0.55));
+  border: 1px solid rgba(120, 210, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(180, 230, 255, 0.16),
+    inset 0 0 16px rgba(0, 140, 220, 0.1),
+    0 0 14px rgba(0, 160, 255, 0.1);
+  min-width: 0;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12%;
+    right: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(140, 235, 255, 0.75), transparent);
+    pointer-events: none;
+  }
 }
 
 .comp-meta__label {
-  font-size: 15px;
-  color: #7eb4d8;
+  font-size: 13px;
+  color: #9ecae6;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  font-weight: 650;
 }
 
 .comp-meta__value {
-  font-size: 19px;
-  font-weight: 800;
+  font-size: 24px;
+  font-weight: 900;
   color: #f6fbff;
-  font-family: 'DIN Alternate', sans-serif;
+  font-family: 'DIN Alternate', 'Segoe UI', sans-serif;
+  line-height: 1.05;
+  text-shadow:
+    0 0 12px rgba(100, 220, 255, 0.45),
+    0 0 22px rgba(40, 160, 255, 0.25);
+  white-space: nowrap;
 
-  &--accent { color: #7ff6ff; }
+  &--accent {
+    color: #7ff6ff;
+    text-shadow:
+      0 0 14px rgba(80, 240, 255, 0.55),
+      0 0 26px rgba(40, 180, 255, 0.3);
+  }
 }
 
-.comp-meta__hint {
-  font-size: 14px;
-  color: #6f9bbd;
+.comp-meta-source {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #7ea8c4;
   text-align: center;
-  line-height: 1.4;
+  letter-spacing: 0.02em;
+  background: rgba(0, 40, 80, 0.35);
+  border: 1px solid rgba(102, 217, 255, 0.1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── 岗位标签 ── */
@@ -1380,50 +1907,54 @@ onMounted(load)
     margin-left: auto;
     justify-content: flex-end;
     flex-wrap: nowrap;
+    gap: 4px;
   }
 }
 
 .job-tab {
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(102, 217, 255, 0.18);
-  background: rgba(0, 38, 73, 0.35);
+  border: 1px solid rgba(102, 217, 255, 0.2);
+  background: rgba(0, 38, 73, 0.4);
   color: #9ec7e0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 
   &:hover {
-    border-color: rgba(102, 217, 255, 0.4);
-    background: rgba(0, 38, 73, 0.55);
+    border-color: rgba(102, 217, 255, 0.45);
+    background: rgba(0, 38, 73, 0.6);
   }
 
   &--active {
     border-color: var(--tab-color);
-    background: rgba(0, 38, 73, 0.55);
-    color: var(--tab-color);
-    box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+    background: color-mix(in srgb, var(--tab-color) 18%, rgba(0, 30, 60, 0.7));
+    color: #f4fbff;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--tab-color) 40%, transparent);
   }
 }
 
 /* ── 岗位匹配详情（并排）── */
 .match-detail {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .match-col {
   &__title {
-    margin: 0 0 6px;
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 750;
+    letter-spacing: 0.04em;
 
-    &--good { color: #34d399; }
-    &--gap { color: #f0c040; }
+    &--good { color: #34d399; text-shadow: 0 0 8px rgba(52, 211, 153, 0.35); }
+    &--gap { color: #f0c040; text-shadow: 0 0 8px rgba(240, 192, 64, 0.3); }
   }
 }
 
@@ -1433,141 +1964,215 @@ onMounted(load)
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .match-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
-  padding: 4px 8px;
-  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.35;
+  padding: 6px 10px;
+  border-radius: 6px;
 
-  &__icon { flex-shrink: 0; }
+  &--good {
+    color: #c8e8d8;
+    background: rgba(52, 211, 153, 0.08);
+    border: 1px solid rgba(52, 211, 153, 0.16);
+  }
 
-  &--good { color: #b8d6ec; background: rgba(52, 211, 153, 0.06); }
-  &--gap { color: #d0c888; background: rgba(240, 192, 64, 0.06); }
+  &--gap {
+    color: #e8d9a0;
+    background: rgba(240, 192, 64, 0.08);
+    border: 1px solid rgba(240, 192, 64, 0.16);
+  }
 }
 
 /* ── 能力差距分析 ── */
 .gap-section {
-  padding: 12px 14px;
-  border-radius: 8px;
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 12px;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
-    rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(0, 206, 255, 0.42);
+    radial-gradient(90% 70% at 0% 100%, rgba(0, 184, 255, 0.1), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.72), rgba(3, 12, 34, 0.88));
+  border: 1px solid rgba(102, 217, 255, 0.28);
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.2),
-    inset 0 0 24px rgba(0, 184, 255, 0.12);
+    0 16px 36px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 24px rgba(0, 140, 220, 0.1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.7), transparent);
+    pointer-events: none;
+  }
 }
 
 .gap-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
 
   &__title {
-    font-size: 19px;
-    font-weight: 700;
+    font-size: 18px;
+    font-weight: 750;
     color: #f4fbff;
     margin: 0;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 10px rgba(80, 200, 255, 0.25);
   }
 
   &__badge {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     color: #7ff6ff;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 999px;
-    background: rgba(0, 184, 255, 0.12);
-    border: 1px solid rgba(0, 184, 255, 0.2);
+    background: rgba(0, 184, 255, 0.14);
+    border: 1px solid rgba(0, 184, 255, 0.35);
+    box-shadow: 0 0 10px rgba(0, 184, 255, 0.18);
   }
 }
 
 .gap-list {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .gap-item {
   &__head {
-    display: flex;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
+    column-gap: 10px;
+    margin-bottom: 6px;
   }
 
   &__skill {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #d0e8f8;
-    min-width: 70px;
+    font-size: 15px;
+    font-weight: 750;
+    color: #d8eefc;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
   }
 
   &__label {
-    font-size: 15px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-weight: 600;
+    justify-self: start;
+    font-size: 13px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    white-space: nowrap;
 
-    &--ok { color: #34d399; background: rgba(52, 211, 153, 0.1); }
-    &--warn { color: #f0c040; background: rgba(240, 192, 64, 0.1); }
-    &--danger { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+    &--ok { color: #34d399; background: rgba(52, 211, 153, 0.14); border: 1px solid rgba(52, 211, 153, 0.28); }
+    &--warn { color: #f0c040; background: rgba(240, 192, 64, 0.14); border: 1px solid rgba(240, 192, 64, 0.28); }
+    &--danger { color: #f87171; background: rgba(248, 113, 113, 0.14); border: 1px solid rgba(248, 113, 113, 0.28); }
   }
 
   &__pct {
-    margin-left: auto;
-    font-size: 19px;
+    font-size: 20px;
     font-weight: 800;
     color: #7ff6ff;
-    font-family: 'DIN Alternate', sans-serif;
+    font-family: 'DIN Alternate', 'Segoe UI', sans-serif;
+    text-shadow: 0 0 10px rgba(80, 220, 255, 0.45);
+    white-space: nowrap;
+
+    small {
+      margin-left: 1px;
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.75;
+    }
   }
 
   &__bar {
     position: relative;
-    height: 8px;
+    height: 10px;
     border-radius: 999px;
-    background: rgba(0, 60, 120, 0.45);
+    background: rgba(0, 50, 100, 0.55);
     overflow: visible;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.35);
   }
 
   &__bar-inner {
+    position: relative;
     height: 100%;
     border-radius: 999px;
-    transition: width 0.6s ease;
+    overflow: hidden;
+    transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 0 12px rgba(80, 220, 255, 0.35);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+      animation: empBarShine 2.8s ease-in-out infinite;
+    }
   }
 
   &__bar-target {
     position: absolute;
-    top: -2px;
-    width: 3px;
-    height: 12px;
+    top: -3px;
+    width: 2px;
+    height: 16px;
     border-radius: 2px;
     background: #f6fbff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.55);
     transform: translateX(-50%);
+    z-index: 2;
+  }
+
+  &__target-hint {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6f9bbd;
+    text-align: right;
+    letter-spacing: 0.02em;
   }
 }
 
+@keyframes empBarShine {
+  0% { transform: translateX(-120%); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+
 .gap-conclusion {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: rgba(248, 113, 113, 0.06);
-  border: 1px solid rgba(248, 113, 113, 0.16);
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(248, 113, 113, 0.1), rgba(40, 20, 40, 0.35));
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  box-shadow: inset 0 0 18px rgba(248, 113, 113, 0.06);
 
-  &__icon { flex-shrink: 0; font-size: 20px; }
+  &__icon { flex-shrink: 0; font-size: 20px; filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.5)); }
 
   &__text {
-    font-size: 17px;
-    color: #f6c8c8;
-    line-height: 1.6;
+    font-size: 15px;
+    color: #f0d0d0;
+    line-height: 1.55;
   }
 }
 
@@ -1646,7 +2251,7 @@ onMounted(load)
 
   &__date {
     display: block;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -1654,7 +2259,7 @@ onMounted(load)
 
   &__event {
     display: block;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: #f6fbff;
     margin: 4px 0 2px;
@@ -1662,7 +2267,7 @@ onMounted(load)
 
   &__detail {
     margin: 0;
-    font-size: 15px;
+    font-size: 17px;
     color: #889ec2;
     line-height: 1.5;
   }
@@ -1676,12 +2281,12 @@ onMounted(load)
   }
 
   &__prob-label {
-    font-size: 14px;
+    font-size: 16px;
     color: #6f9bbd;
   }
 
   &__prob-value {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 900;
     font-family: 'DIN Alternate', sans-serif;
   }
@@ -1690,12 +2295,11 @@ onMounted(load)
 /* ── 风险预警 ── */
 .risk-section {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: block;
 }
 
 .risk-matrix {
+  display: none;
   padding: 12px 14px;
   border-radius: 8px;
   background:
@@ -1708,7 +2312,7 @@ onMounted(load)
     display: flex;
     justify-content: space-between;
     margin-bottom: 8px;
-    font-size: 17px;
+    font-size: 19px;
     color: #6f9bbd;
     padding: 0 6px;
   }
@@ -1747,7 +2351,7 @@ onMounted(load)
   }
 
   &__label {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: #030c22;
     text-align: center;
@@ -1774,13 +2378,14 @@ onMounted(load)
 
   .risk-matrix--grad &__label,
   .risk-matrix--civil &__label {
-    font-size: 16px;
+    font-size: 18px;
     white-space: nowrap;
     word-break: normal;
   }
 }
 
 .risk-table {
+  width: 100%;
   padding: 12px 14px;
   border-radius: 8px;
   background:
@@ -1801,7 +2406,7 @@ onMounted(load)
 }
 
 .risk-table__th {
-  font-size: 17px;
+  font-size: 19px;
   color: #6f9bbd;
   font-weight: 600;
   padding: 0 4px;
@@ -1825,7 +2430,7 @@ onMounted(load)
 }
 
 .risk-table__cell {
-  font-size: 19px;
+  font-size: 21px;
 
   &--name {
     color: #d0e8f8;
@@ -1837,7 +2442,7 @@ onMounted(load)
 
   &--lv {
     text-align: center;
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 700;
     padding: 2px 4px;
     border-radius: 3px;
@@ -1871,7 +2476,7 @@ onMounted(load)
   gap: 8px;
 
   &__name {
-    font-size: 17px;
+    font-size: 19px;
     color: #b8d6ec;
     font-weight: 600;
   }
@@ -1890,7 +2495,7 @@ onMounted(load)
   }
 
   &__val {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -1914,14 +2519,14 @@ onMounted(load)
   }
 
   &__name {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: #f6fbff;
   }
 
   &__pct {
     margin-left: auto;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -1943,7 +2548,7 @@ onMounted(load)
 
 .school-tier {
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 4px;
@@ -1955,11 +2560,65 @@ onMounted(load)
 
 /* ── 考研竞争力画像（雷达 + 能力拆解合并）── */
 .grad-profile {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+
   &__split {
-    margin-top: 6px;
-    padding-top: 10px;
-    border-top: 1px dashed rgba(102, 217, 255, 0.14);
+    position: relative;
+    z-index: 1;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(140, 180, 255, 0.16);
   }
+}
+
+.grad-radar-wrap {
+  position: relative;
+  z-index: 1;
+  height: 268px;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(120, 100, 255, 0.16), transparent 58%),
+    radial-gradient(circle at 80% 20%, rgba(0, 180, 255, 0.1), transparent 40%),
+    linear-gradient(180deg, rgba(10, 28, 64, 0.4), rgba(4, 12, 32, 0.2));
+
+  &__halo {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 200px;
+    height: 200px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(160, 140, 255, 0.28), transparent 68%);
+    filter: blur(10px);
+    animation: empGaugeHalo 4.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  &__ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 132px;
+    height: 132px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid rgba(170, 150, 255, 0.22);
+    box-shadow:
+      0 0 22px rgba(140, 120, 255, 0.2),
+      inset 0 0 24px rgba(100, 140, 255, 0.1);
+    pointer-events: none;
+    animation: empGaugeRing 5.2s ease-in-out infinite;
+  }
+}
+
+.grad-radar-chart {
+  position: relative;
+  z-index: 1;
+  height: 100%;
 }
 
 /* ── 能力拆解（升学竞争力画像右侧）── */
@@ -1971,16 +2630,17 @@ onMounted(load)
   &__col {
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
 
   &__title {
     margin: 0 0 8px;
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    font-size: 15px;
+    font-weight: 750;
+    letter-spacing: 0.04em;
 
-    &--good { color: #34d399; }
-    &--gap { color: #f0c040; }
+    &--good { color: #34d399; text-shadow: 0 0 8px rgba(52, 211, 153, 0.35); }
+    &--gap { color: #f0c040; text-shadow: 0 0 8px rgba(240, 192, 64, 0.3); }
   }
 
   &__list {
@@ -1996,14 +2656,22 @@ onMounted(load)
     display: flex;
     align-items: center;
     gap: 7px;
-    font-size: 17px;
+    font-size: 14px;
     color: #d0e8f8;
-    line-height: 1.5;
-    padding: 5px 9px;
-    border-radius: 5px;
+    line-height: 1.4;
+    padding: 7px 10px;
+    border-radius: 8px;
+    min-width: 0;
 
-    &--good { background: rgba(52, 211, 153, 0.06); }
-    &--gap { background: rgba(240, 192, 64, 0.06); }
+    &--good {
+      background: rgba(52, 211, 153, 0.08);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+    }
+
+    &--gap {
+      background: rgba(240, 192, 64, 0.08);
+      border: 1px solid rgba(240, 192, 64, 0.2);
+    }
   }
 
   &__icon {
@@ -2035,7 +2703,7 @@ onMounted(load)
   }
 
   &__title {
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2055,112 +2723,189 @@ onMounted(load)
 
 /* ── 考研准备度进度 ── */
 .grad-prep {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 8px;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(12, 35, 76, 0.5), rgba(5, 17, 45, 0.4)),
-    rgba(6, 17, 52, 0.32);
-  border: 1px solid rgba(0, 206, 255, 0.42);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 0 24px rgba(0, 184, 255, 0.12);
+    radial-gradient(90% 70% at 100% 0%, rgba(0, 180, 255, 0.12), transparent 55%),
+    linear-gradient(160deg, rgba(8, 42, 86, 0.72), rgba(3, 12, 34, 0.88));
+  border: 1px solid rgba(102, 217, 255, 0.28);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 24px rgba(0, 140, 220, 0.1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.7), transparent);
+    pointer-events: none;
+  }
+
+  &__glow {
+    position: absolute;
+    inset: auto -15% -35% auto;
+    width: 50%;
+    height: 65%;
+    background: radial-gradient(circle, rgba(0, 229, 255, 0.1), transparent 70%);
+    pointer-events: none;
+  }
 
   &__head-title {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
   &__title {
-    font-size: 19px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 800;
     color: #f4fbff;
+    text-shadow: 0 0 10px rgba(80, 200, 255, 0.25);
   }
 
   &__bars {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    flex: 1;
   }
 
   &__item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
+    min-width: 0;
   }
 
   &__head {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
   }
 
   &__name {
-    font-size: 13.5px;
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
     font-weight: 700;
-    color: #d0e8f8;
+    color: #d8eefc;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__val {
-    margin-left: auto;
-    font-size: 19px;
+    flex-shrink: 0;
+    font-size: 20px;
     font-weight: 800;
     color: #7ff6ff;
-    font-family: 'DIN Alternate', sans-serif;
+    font-family: 'DIN Alternate', 'Segoe UI', sans-serif;
+    text-shadow: 0 0 10px rgba(80, 220, 255, 0.4);
+
+    small {
+      margin-left: 1px;
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.75;
+    }
   }
 
   &__bar {
-    height: 9px;
+    height: 10px;
     border-radius: 999px;
-    background: rgba(0, 60, 120, 0.45);
+    background: rgba(0, 50, 100, 0.55);
     overflow: hidden;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.35);
   }
 
   &__bar-inner {
+    position: relative;
     height: 100%;
     border-radius: 999px;
-    transition: width 0.6s ease;
+    transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 0 12px rgba(0, 200, 255, 0.35);
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+      animation: empBarShine 2.8s ease-in-out infinite;
+    }
   }
 
   &__overall {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    background: rgba(0, 38, 73, 0.4);
-    border: 1px solid rgba(102, 217, 255, 0.18);
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background:
+      linear-gradient(145deg, rgba(0, 90, 160, 0.28), rgba(4, 20, 48, 0.55));
+    border: 1px solid rgba(90, 200, 255, 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(180, 230, 255, 0.14),
+      0 0 16px rgba(0, 160, 255, 0.1);
   }
 
   &__overall-num {
     font-size: 36px;
     font-weight: 900;
     color: #7ff6ff;
-    font-family: 'DIN Alternate', sans-serif;
-    text-shadow: 0 0 12px rgba(0, 212, 255, 0.35);
+    font-family: 'DIN Alternate', 'Segoe UI', sans-serif;
+    text-shadow:
+      0 0 14px rgba(0, 212, 255, 0.5),
+      0 0 28px rgba(40, 160, 255, 0.3);
     line-height: 1;
+
+    small {
+      margin-left: 2px;
+      font-size: 16px;
+      font-weight: 700;
+      opacity: 0.75;
+    }
   }
 
   &__overall-meta {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 3px;
+    gap: 4px;
     text-align: right;
+    min-width: 0;
   }
 
   &__overall-label {
-    font-size: 16px;
-    color: #7eb4d8;
+    font-size: 14px;
+    color: #8fc4e4;
+    letter-spacing: 0.04em;
   }
 
   &__gap {
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 700;
     color: #f0c040;
+    text-shadow: 0 0 8px rgba(240, 192, 64, 0.3);
   }
 }
 
@@ -2181,7 +2926,7 @@ onMounted(load)
   }
 
   &__title {
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2196,7 +2941,7 @@ onMounted(load)
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 17px;
+    font-size: 19px;
     color: #b8d6ec;
   }
 
@@ -2260,7 +3005,7 @@ onMounted(load)
     flex-shrink: 0;
     width: 34px;
     text-align: right;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #f6fbff;
     font-family: 'DIN Alternate', sans-serif;
@@ -2297,7 +3042,7 @@ onMounted(load)
   &--long .grad-task__head { background: rgba(52, 211, 153, 0.1); }
 
   &__period {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2316,7 +3061,7 @@ onMounted(load)
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
-    font-size: 17px;
+    font-size: 19px;
     color: #d0e8f8;
     line-height: 1.5;
   }
@@ -2328,13 +3073,13 @@ onMounted(load)
   }
 
   &__meta {
-    font-size: 16px;
+    font-size: 18px;
     color: #9fc4e0;
   }
 
   &__state {
     align-self: flex-end;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     padding: 1px 8px;
     border-radius: 999px;
@@ -2353,14 +3098,14 @@ onMounted(load)
   gap: 10px;
 
   &__num {
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 900;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
   }
 
   &__tag {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 700;
     color: #34d399;
     padding: 3px 10px;
@@ -2388,7 +3133,7 @@ onMounted(load)
   }
 
   &__title {
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 700;
     color: #f4fbff;
   }
@@ -2413,7 +3158,7 @@ onMounted(load)
   }
 
   &__th {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: #7eb4d8;
   }
@@ -2425,7 +3170,7 @@ onMounted(load)
   }
 
   &__val {
-    font-size: 17px;
+    font-size: 19px;
     color: #b8d6ec;
   }
 }
@@ -2457,14 +3202,14 @@ onMounted(load)
   }
 
   &__name {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: #f6fbff;
   }
 
   &__pct {
     margin-left: auto;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -2490,7 +3235,7 @@ onMounted(load)
   }
 
   &__tag {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
     padding: 2px 9px;
     border-radius: 999px;
@@ -2525,7 +3270,7 @@ onMounted(load)
 
   &__title {
     margin: 0 0 8px;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: #f4fbff;
 
@@ -2546,7 +3291,7 @@ onMounted(load)
       display: flex;
       align-items: center;
       gap: 7px;
-      font-size: 17px;
+      font-size: 19px;
       color: #d0e8f8;
       line-height: 1.5;
     }
@@ -2569,7 +3314,7 @@ onMounted(load)
     border-radius: 50%;
     background: rgba(0, 184, 255, 0.18);
     color: #66d9ff;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 800;
     display: flex;
     align-items: center;
@@ -2590,7 +3335,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.14);
     border: 1px solid rgba(0, 184, 255, 0.3);
     color: #7ff6ff;
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 700;
   }
 
@@ -2610,14 +3355,14 @@ onMounted(load)
   }
 
   &__name {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 600;
     color: #d0e8f8;
   }
 
   &__pct {
     margin-left: auto;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: #7ff6ff;
     font-family: 'DIN Alternate', sans-serif;
@@ -2661,13 +3406,13 @@ onMounted(load)
   }
 
   &__stage-label {
-    font-size: 17px;
+    font-size: 19px;
     color: #7eb4d8;
     font-weight: 600;
   }
 
   &__stage-value {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
     color: #f0c040;
   }
@@ -2680,7 +3425,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.7);
 
   &.error {
@@ -2694,7 +3439,7 @@ onMounted(load)
       background: rgba(0, 184, 255, 0.1);
       color: #55dfff;
       cursor: pointer;
-      font-size: 17px;
+      font-size: 19px;
 
       &:hover { background: rgba(0, 184, 255, 0.2); }
     }

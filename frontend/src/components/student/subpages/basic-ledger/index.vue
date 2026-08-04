@@ -11,6 +11,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
+import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
 import { useScope } from '@/composables/useScope'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, AttentionItemVM } from '@/types/student/view'
@@ -102,6 +103,7 @@ const warningCards = computed(() => {
   return [
     {
       label: '心理预警',
+      icon: 'mental' as IconKind,
       level: psychological,
       conclusion: dashboard.value.profile.mentalLevel || riskText[psychological],
       tip: `反映心理关注侧风险（绿=正常，黄=需关注，红=高危）。${detailFor(/心理|健康|体测/, items, '当前结论见下方文字')}`,
@@ -109,6 +111,7 @@ const warningCards = computed(() => {
     },
     {
       label: '学业预警',
+      icon: 'academic' as IconKind,
       level: academic,
       conclusion: riskText[academic],
       tip: `反映挂科、GPA 等学业风险（绿=正常，黄=需关注，红=高危）。${detailFor(/学业|课程|挂科|GPA|补考/, items, academic === 'low' ? '无挂科，仅需完成常规期末考核' : '请查看预警台账与补考安排')}`,
@@ -116,6 +119,7 @@ const warningCards = computed(() => {
     },
     {
       label: '就业预警',
+      icon: 'employment' as IconKind,
       level: employment,
       conclusion: riskText[employment],
       tip: `反映实习就业准备不足风险（绿=正常，黄=需关注，红=高危）。${detailFor(/就业|实习|职业/, items, employment === 'low' ? '就业填报待完善，暂无高危信号' : '关注实习与岗位匹配短板')}`,
@@ -146,6 +150,50 @@ const levelColor = (level: RiskLevel) => ({
   medium: '#facc15',
   high: '#ff7474',
 }[level])
+
+type StatusTone = 'safe' | 'warn' | 'risk' | 'info'
+
+const statusItems = computed(() => {
+  const d = dashboard.value
+  if (!d) return [] as Array<{ label: string; value: string; tone: StatusTone; icon: IconKind }>
+  const mentalCode = d.profile.mentalLevelCode
+  const mentalTone: StatusTone =
+    mentalCode === 'high' ? 'risk' : mentalCode === 'medium' ? 'warn' : 'safe'
+  return [
+    {
+      label: '学籍状态',
+      value: d.profile.onCampusStatus || '在校',
+      tone: 'safe' as StatusTone,
+      icon: 'students' as IconKind,
+    },
+    {
+      label: '困难认定',
+      value: d.profile.economicHardship ? '已认定' : '未认定',
+      tone: (d.profile.economicHardship ? 'warn' : 'safe') as StatusTone,
+      icon: 'economic' as IconKind,
+    },
+    {
+      label: '心理分级',
+      value: d.profile.mentalLevel || '正常',
+      tone: mentalTone,
+      icon: 'mental' as IconKind,
+    },
+    {
+      label: '成长趋势',
+      value: ({ positive: '正向上升', negative: '负向波动', stable: '总体平稳' } as const)[
+        d.profile.growthTrend ?? 'stable'
+      ],
+      tone: (d.profile.growthTrend === 'negative' ? 'risk' : 'safe') as StatusTone,
+      icon: 'potential' as IconKind,
+    },
+    {
+      label: '征兵状态',
+      value: d.careerDev.militaryNote || '无',
+      tone: 'info' as StatusTone,
+      icon: 'status' as IconKind,
+    },
+  ]
+})
 
 type HoloLevel = 'red' | 'yellow' | 'green' | 'white' | 'blue'
 
@@ -510,36 +558,17 @@ onMounted(load)
       <section class="ledger-section section--status">
         <h3 class="section-title">管理与帮扶状态<span class="section-mock-tag">部分模拟</span></h3>
         <div class="status-grid">
-          <div class="status-card status-card--safe">
-            <span class="status-card__label">学籍状态</span>
-            <strong class="status-card__value">{{ dashboard.profile.onCampusStatus || '在校' }}</strong>
-          </div>
           <div
+            v-for="item in statusItems"
+            :key="item.label"
             class="status-card"
-            :class="dashboard.profile.economicHardship ? 'status-card--warn' : 'status-card--safe'"
+            :class="`status-card--${item.tone}`"
           >
-            <span class="status-card__label">困难认定</span>
-            <strong class="status-card__value">{{ dashboard.profile.economicHardship ? '已认定' : '未认定' }}</strong>
-          </div>
-          <div
-            class="status-card"
-            :class="dashboard.profile.mentalLevelCode === 'high' ? 'status-card--risk' : dashboard.profile.mentalLevelCode === 'medium' ? 'status-card--warn' : 'status-card--safe'"
-          >
-            <span class="status-card__label">心理分级</span>
-            <strong class="status-card__value">{{ dashboard.profile.mentalLevel || '正常' }}</strong>
-          </div>
-          <div
-            class="status-card"
-            :class="dashboard.profile.growthTrend === 'negative' ? 'status-card--risk' : 'status-card--safe'"
-          >
-            <span class="status-card__label">成长趋势</span>
-            <strong class="status-card__value">{{
-              { positive: '正向上升', negative: '负向波动', stable: '总体平稳' }[dashboard.profile.growthTrend ?? 'stable']
-            }}</strong>
-          </div>
-          <div class="status-card status-card--info">
-            <span class="status-card__label">征兵状态</span>
-            <strong class="status-card__value">{{ dashboard.careerDev.militaryNote || '无' }}</strong>
+            <span class="status-card__label">
+              <DashIcon :kind="item.icon" :size="15" class="status-card__ico" />
+              {{ item.label }}
+            </span>
+            <span class="status-card__tag" :class="`status-card__tag--${item.tone}`">{{ item.value }}</span>
           </div>
         </div>
       </section>
@@ -596,7 +625,16 @@ onMounted(load)
             @click="goWarningDetail(card.label)"
           >
             <div class="warning-card__head">
-              <span class="warning-card__dot" :style="{ background: levelColor(card.level), boxShadow: `0 0 10px ${levelColor(card.level)}` }" />
+              <span
+                class="warning-card__icon"
+                :style="{
+                  borderColor: `${levelColor(card.level)}66`,
+                  background: `${levelColor(card.level)}18`,
+                  boxShadow: `0 0 12px ${levelColor(card.level)}33`,
+                }"
+              >
+                <DashIcon :kind="card.icon" :size="18" :stroke="levelColor(card.level)" />
+              </span>
               <span class="warning-card__label">{{ card.label }}</span>
               <span class="warning-card__level" :style="{ color: levelColor(card.level) }">{{ card.conclusion }}</span>
             </div>
@@ -671,17 +709,10 @@ onMounted(load)
             class="func-card"
             @click="router.push({ name: 'student-gpa-detail', query: { studentId: activeStudentId } })"
           >
-            <span class="func-card__icon">📊</span>
+            <span class="func-card__icon">
+              <DashIcon kind="academic" :size="22" />
+            </span>
             <span class="func-card__label">查看成绩单</span>
-            <span class="func-card__arrow">&rsaquo;</span>
-          </button>
-          <button
-            type="button"
-            class="func-card"
-            @click="router.push({ name: 'student-psy-warning', query: { studentId: activeStudentId } })"
-          >
-            <span class="func-card__icon">💬</span>
-            <span class="func-card__label">谈心谈话记录</span>
             <span class="func-card__arrow">&rsaquo;</span>
           </button>
           <button
@@ -689,7 +720,9 @@ onMounted(load)
             class="func-card"
             @click="router.push({ name: 'student-reward-aid-ledger', query: { studentId: activeStudentId } })"
           >
-            <span class="func-card__icon">🏅</span>
+            <span class="func-card__icon">
+              <DashIcon kind="trophy" :size="22" stroke="#e8c878" />
+            </span>
             <span class="func-card__label">奖惩助贷详情</span>
             <span class="func-card__arrow">&rsaquo;</span>
           </button>
@@ -706,7 +739,7 @@ onMounted(load)
   grid-template-columns: 2fr 1fr;
   gap: 10px;
   align-items: start;
-  font-size: 21px;
+  font-size: 23px;
   line-height: 1.55;
 }
 
@@ -730,7 +763,7 @@ onMounted(load)
     text-align: left;
 
     strong {
-      font-size: 21px;
+      font-size: 23px;
       letter-spacing: 0.06em;
     }
 
@@ -742,14 +775,14 @@ onMounted(load)
       color: #fff;
       font-style: normal;
       font-weight: 800;
-      font-size: 18px;
+      font-size: 20px;
       text-align: center;
     }
 
     span {
       margin-left: auto;
       color: #b8ecff;
-      font-size: 19px;
+      font-size: 21px;
     }
   }
 
@@ -766,7 +799,7 @@ onMounted(load)
       border: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(0, 20, 45, 0.45);
       color: #eaf6ff;
-      font-size: 20px;
+      font-size: 22px;
 
       &.is-high {
         border-color: rgba(255, 116, 116, 0.45);
@@ -788,7 +821,7 @@ onMounted(load)
   border: 1px solid rgba(0, 184, 255, 0.26);
   background: rgba(0, 184, 255, 0.08);
   color: #8ef6ff;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   cursor: pointer;
 
@@ -819,7 +852,7 @@ onMounted(load)
 
 .section-title {
   margin: 0 0 10px;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: #b8ecff;
   letter-spacing: 0.04em;
@@ -839,7 +872,7 @@ onMounted(load)
 
 .subsection-title {
   margin: 12px 0 8px;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: #9edcff;
   letter-spacing: 0.03em;
@@ -945,14 +978,14 @@ onMounted(load)
 }
 
 .timeline-time {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #7eb4d8;
   white-space: nowrap;
 }
 
 .timeline-cat {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   padding: 1px 8px;
   border-radius: 999px;
@@ -963,7 +996,7 @@ onMounted(load)
 
 .timeline-text {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.4;
   color: #d0e8f8;
 }
@@ -1007,7 +1040,7 @@ onMounted(load)
   padding: 0 0 5px;
   border-bottom: 1px solid rgba(102, 217, 255, 0.14);
   color: #8fd4ff;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.5px;
 }
@@ -1068,7 +1101,7 @@ onMounted(load)
 
 .info-lbl {
   color: #6899b8;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1080,7 +1113,7 @@ onMounted(load)
 
 .info-val {
   color: #d8ecff;
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1092,7 +1125,7 @@ onMounted(load)
     border-radius: 3px;
     background: linear-gradient(135deg, rgba(140, 100, 20, 0.32), rgba(80, 55, 10, 0.35));
     color: #f0d78a;
-    font-size: 17px;
+    font-size: 19px;
   }
 }
 
@@ -1110,7 +1143,7 @@ onMounted(load)
 .tag {
   padding: 2px 8px;
   border-radius: 3px;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   white-space: nowrap;
 
@@ -1133,11 +1166,11 @@ onMounted(load)
     display: block;
     margin-top: 6px;
     padding: 5px 8px;
-    font-size: 17px;
+    font-size: 19px;
     line-height: 1.45;
   }
   border: 1px solid rgba(0, 180, 255, 0.06);
-  font-size: 18px;
+  font-size: 20px;
   color: #b0d4e8;
   line-height: 1.5;
 
@@ -1159,21 +1192,76 @@ onMounted(load)
 .status-card {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 6px 8px;
-  border-radius: 3px;
-  background: rgba(0, 38, 73, 0.56);
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(102, 217, 255, 0.14);
+  background:
+    linear-gradient(145deg, rgba(0, 80, 140, 0.18), rgba(3, 12, 34, 0.55)),
+    rgba(0, 38, 73, 0.56);
+
+  &--safe { border-color: rgba(85, 233, 149, 0.22); }
+  &--warn { border-color: rgba(250, 204, 21, 0.28); }
+  &--risk { border-color: rgba(255, 116, 116, 0.3); }
+  &--info { border-color: rgba(101, 223, 255, 0.28); }
 
   &__label {
-    color: #7eb4d8;
-    font-size: 17px;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #9ec7e0;
+    font-size: 18px;
+    font-weight: 650;
   }
 
-  &__value {
-    color: #e8f4ff;
-    font-size: 19px;
-    font-weight: 700;
+  &__ico {
+    flex-shrink: 0;
+    opacity: 0.9;
+  }
+
+  &__tag {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &--safe {
+      color: #55e995;
+      border-color: rgba(85, 233, 149, 0.45);
+      background: rgba(85, 233, 149, 0.12);
+      box-shadow: 0 0 10px rgba(85, 233, 149, 0.12);
+    }
+
+    &--warn {
+      color: #facc15;
+      border-color: rgba(250, 204, 21, 0.45);
+      background: rgba(250, 204, 21, 0.12);
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.12);
+    }
+
+    &--risk {
+      color: #ff8a8a;
+      border-color: rgba(255, 116, 116, 0.5);
+      background: rgba(255, 116, 116, 0.14);
+      box-shadow: 0 0 10px rgba(255, 116, 116, 0.14);
+    }
+
+    &--info {
+      color: #65dfff;
+      border-color: rgba(101, 223, 255, 0.45);
+      background: rgba(101, 223, 255, 0.12);
+      box-shadow: 0 0 10px rgba(101, 223, 255, 0.12);
+    }
   }
 }
 
@@ -1211,7 +1299,7 @@ onMounted(load)
 .dynamic-time {
   padding: 2px 6px;
   border-radius: 2px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1219,7 +1307,7 @@ onMounted(load)
 
 .dynamic-text {
   color: #e8f4ff;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1276,22 +1364,26 @@ onMounted(load)
     margin-bottom: 4px;
   }
 
-  &__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 1px solid;
     flex-shrink: 0;
   }
 
   &__label {
     color: #e8f4ff;
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 700;
     flex: 1;
   }
 
   &__level {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 700;
     white-space: nowrap;
   }
@@ -1299,7 +1391,7 @@ onMounted(load)
   &__tip {
     margin: 0 0 8px;
     color: #8fb7cd;
-    font-size: 17px;
+    font-size: 19px;
     line-height: 1.35;
   }
 
@@ -1323,7 +1415,7 @@ onMounted(load)
     padding: 3px 6px;
     border-radius: 2px;
     background: rgba(0, 0, 0, 0.15);
-    font-size: 16px;
+    font-size: 18px;
     overflow: hidden;
 
     &--low { border-left: none; }
@@ -1358,14 +1450,14 @@ onMounted(load)
 
   &__empty {
     color: #5a7d96;
-    font-size: 16px;
+    font-size: 18px;
     font-style: italic;
   }
 
   &__folded {
     margin: 6px 0 0;
     color: #7eb4d8;
-    font-size: 17px;
+    font-size: 19px;
   }
 }
 
@@ -1387,13 +1479,13 @@ onMounted(load)
 .warning-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.85);
 
   th {
     text-align: left;
     padding: 6px 10px;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: #9ecae8;
     border-bottom: 1px solid rgba(102, 217, 255, 0.12);
@@ -1427,7 +1519,7 @@ onMounted(load)
 }
 
 .cat-badge {
-  font-size: 16px;
+  font-size: 18px;
   padding: 2px 6px;
   border-radius: 999px;
   background: rgba(0, 184, 255, 0.08);
@@ -1437,7 +1529,7 @@ onMounted(load)
 }
 
 .level-badge {
-  font-size: 18px;
+  font-size: 20px;
   padding: 3px 10px;
   border-radius: 999px;
   font-weight: 700;
@@ -1462,7 +1554,7 @@ onMounted(load)
 .section-mock-tag {
   display: inline-block;
   padding: 2px 8px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #f0a040;
   border: 1px solid rgba(240, 160, 64, 0.4);
@@ -1481,7 +1573,7 @@ onMounted(load)
   justify-content: center;
   gap: 12px;
   min-height: 320px;
-  font-size: 19px;
+  font-size: 21px;
   color: rgba(184, 236, 255, 0.7);
   border: 1px solid rgba(102, 217, 255, 0.12);
   border-radius: 8px;
@@ -1496,7 +1588,7 @@ onMounted(load)
     background: rgba(0, 184, 255, 0.1);
     color: #55dfff;
     cursor: pointer;
-    font-size: 17px;
+    font-size: 19px;
 
     &:hover { background: rgba(0, 184, 255, 0.2); }
   }
@@ -1539,19 +1631,27 @@ onMounted(load)
   }
 
   &__icon {
-    font-size: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 212, 255, 0.28);
+    background: rgba(0, 184, 255, 0.1);
+    box-shadow: 0 0 12px rgba(0, 184, 255, 0.16);
     flex-shrink: 0;
   }
 
   &__label {
     flex: 1;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     color: #d8f0ff;
   }
 
   &__arrow {
-    font-size: 26px;
+    font-size: 28px;
     color: #8ef6ff;
     font-weight: 700;
   }

@@ -215,17 +215,17 @@ const totalShown = computed(() => grouped.value.reduce((s, g) => s + g.courses.l
   flex: 1;
   min-height: 0;
   /* 字号体系（统一放大） */
-  --fs-title:    26px;
-  --fs-sub:      17px;
-  --fs-filter:   16px;
-  --fs-chip:     16px;
-  --fs-group:    18px;
-  --fs-progress: 20px;
-  --fs-progress-total: 20px;
-  --fs-th:       16px;
-  --fs-td:       18px;
-  --fs-pill:     15px;
-  --fs-tag:      15px;
+  --fs-title:    28px;
+  --fs-sub:      19px;
+  --fs-filter:   18px;
+  --fs-chip:     18px;
+  --fs-group:    20px;
+  --fs-progress: 22px;
+  --fs-progress-total: 22px;
+  --fs-th:       18px;
+  --fs-td:       20px;
+  --fs-pill:     17px;
+  --fs-tag:      17px;
   --td-py: 14px;
   --td-px: 16px;
 
@@ -372,7 +372,7 @@ const totalShown = computed(() => grouped.value.reduce((s, g) => s + g.courses.l
   display: flex;
   align-items: baseline;
   gap: 2px;
-  font-size: 17px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.7);
 
   .progress-val {
@@ -389,7 +389,7 @@ const totalShown = computed(() => grouped.value.reduce((s, g) => s + g.courses.l
     color: rgba(184, 236, 255, 0.7);
   }
   .progress-unit {
-    font-size: 16px;
+    font-size: 18px;
     color: rgba(184, 236, 255, 0.5);
     margin-left: 3px;
   }
@@ -489,7 +489,7 @@ const totalShown = computed(() => grouped.value.reduce((s, g) => s + g.courses.l
 .td-score {
   font-family: 'DIN Alternate', sans-serif;
   font-weight: 700;
-  font-size: 23px;
+  font-size: 25px;
   color: #f4f8ff;
 
   .muted { color: rgba(184, 236, 255, 0.3); font-weight: 400; }
@@ -500,6 +500,6 @@ const totalShown = computed(() => grouped.value.reduce((s, g) => s + g.courses.l
   text-align: center;
   color: rgba(184, 236, 255, 0.5);
   padding: 40px 0;
-  font-size: 19px;
+  font-size: 21px;
 }
 </style>

@@ -112,7 +112,7 @@ function suggestPotential(c: CourseRecordVM): string {
 
 .list-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: #f4fbff;
   text-shadow: 0 0 10px rgba(240, 192, 64, 0.18);
@@ -120,7 +120,7 @@ function suggestPotential(c: CourseRecordVM): string {
 
 .list-meta {
   margin-left: auto;
-  font-size: 16px;
+  font-size: 18px;
   color: rgba(184, 236, 255, 0.6);
 }
 
@@ -174,7 +174,7 @@ function suggestPotential(c: CourseRecordVM): string {
 }
 
 .name {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #f0f6ff;
   white-space: nowrap;
@@ -183,7 +183,7 @@ function suggestPotential(c: CourseRecordVM): string {
 }
 
 .category {
-  font-size: 15px;
+  font-size: 17px;
   padding: 1px 6px;
   border-radius: 3px;
   background: rgba(0, 184, 255, 0.12);
@@ -194,7 +194,7 @@ function suggestPotential(c: CourseRecordVM): string {
 
 .tip {
   margin: 0;
-  font-size: 15px;
+  font-size: 17px;
   color: rgba(184, 236, 255, 0.7);
   line-height: 1.4;
   display: flex;
@@ -226,7 +226,7 @@ function suggestPotential(c: CourseRecordVM): string {
 
 .score-num {
   font-family: 'DIN Alternate', sans-serif;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 800;
   color: #f0c040;
   line-height: 1.1;
@@ -234,7 +234,7 @@ function suggestPotential(c: CourseRecordVM): string {
 }
 
 .score-gpa {
-  font-size: 15px;
+  font-size: 17px;
   color: rgba(184, 236, 255, 0.6);
 }
 
@@ -242,7 +242,7 @@ function suggestPotential(c: CourseRecordVM): string {
   flex: 1;
   display: grid;
   place-items: center;
-  font-size: 17px;
+  font-size: 19px;
   color: rgba(184, 236, 255, 0.5);
 }
 </style>

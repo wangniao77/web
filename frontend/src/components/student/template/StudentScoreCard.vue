@@ -18,6 +18,7 @@ import type {
 } from '@/types/student/view'
 import type { OverviewHubVM } from '@/types/college/view'
 import { scoreToneFromValue, levelToneFromText } from '@/utils/scoreTone'
+import { SCORE_FORMULAS } from '@/utils/scoreFormulas'
 
 const props = defineProps<{
   growthOverview: GrowthOverviewVM
@@ -222,6 +223,7 @@ const hub = computed<OverviewHubVM>(() => {
         position: 'tl',
         scoreTone: scoreToneFromValue(academicScore),
         tip: `推免参考：学分进度与专业排名。变化 ${academicDeltaText.value}`,
+        formula: SCORE_FORMULAS.academicScore,
         details: [
           {
             label: '已修学分',
@@ -244,6 +246,7 @@ const hub = computed<OverviewHubVM>(() => {
         position: 'tr',
         scoreTone: scoreToneFromValue(qualityScore),
         tip: '由综测、奖学金、竞赛综合测算（科研低权重计入，暂不展示）。',
+        formula: SCORE_FORMULAS.qualityScore,
         details: [
           {
             label: '奖学金',
@@ -265,6 +268,7 @@ const hub = computed<OverviewHubVM>(() => {
         position: 'bl',
         scoreTone: levelToneFromText(mentalLevel.value),
         tip: '体测与心理测评；及格率等学业指标已挪到学业模块。',
+        formula: SCORE_FORMULAS.mentalScore,
         details: [
           {
             label: '体测',
@@ -285,6 +289,7 @@ const hub = computed<OverviewHubVM>(() => {
         position: 'br',
         scoreTone: scoreToneFromValue(careerScore),
         tip: '实习与证书准备度；实习可由学生自填。',
+        formula: SCORE_FORMULAS.employmentScore,
         details: [
           {
             label: '实习经历',
@@ -306,6 +311,7 @@ const hub = computed<OverviewHubVM>(() => {
 
 const centerTip =
   '综合发展指数综合反映学业、素养与生涯表现。悬停中心可查看同专业排名前三/后三（示意）。'
+const centerFormula = SCORE_FORMULAS.growthIndex
 </script>
 
 <template>
@@ -315,6 +321,7 @@ const centerTip =
         :data="hub"
         center-label="综合发展指数"
         :center-tip="centerTip"
+        :center-formula="centerFormula"
       />
 
       <div class="stu-rank-band">

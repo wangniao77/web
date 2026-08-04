@@ -73,7 +73,8 @@ onUnmounted(() => {
 watch(
   () => props.option,
   () => {
-    chartInstance.value?.setOption(props.option, { notMerge: true })
+    // 更新时合并 option，保留进度环/折线等过渡动画
+    chartInstance.value?.setOption(props.option, { notMerge: false, lazyUpdate: false })
   },
   { deep: true },
 )

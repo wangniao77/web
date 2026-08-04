@@ -61,7 +61,7 @@ const option = computed<EChartsOption>(() => ({
     confine: true,
     backgroundColor: 'rgba(6, 17, 52, 0.96)',
     borderColor: 'rgba(0, 212, 255, 0.3)',
-    textStyle: { color: '#e2edff', fontSize: 17 },
+    textStyle: { color: '#e2edff', fontSize: 19 },
     formatter: (p: unknown) => {
       const it = p as { data: { name: string; p: CoursePoint } }
       const c = it.data.p
@@ -74,8 +74,8 @@ const option = computed<EChartsOption>(() => ({
     },
   },
   legend: {
-    top: 2, left: 0, itemWidth: 10, itemHeight: 10, itemGap: 10, icon: 'circle',
-    textStyle: { color: '#9eefff', fontSize: CHART_FONT.legend - 3 },
+    top: 2, right: 0, left: 'auto', itemWidth: 12, itemHeight: 12, itemGap: 12, icon: 'circle',
+    textStyle: { color: '#9eefff', fontSize: Math.max(14, CHART_FONT.legend) },
     data: series.value.map((s) => s.name),
   },
   xAxis: {
@@ -83,17 +83,20 @@ const option = computed<EChartsOption>(() => ({
     name: '课程难度 →',
     nameLocation: 'middle',
     nameGap: 24,
-    nameTextStyle: { color: '#7fb4d4', fontSize: 16 },
+    nameTextStyle: { color: '#7fb4d4', fontSize: 18 },
     min: 30, max: 95,
-    axisLabel: { ...AXIS_LABEL, fontSize: 16, color: '#9ec7e0', formatter: diffLabel },
+    axisLabel: { ...AXIS_LABEL, fontSize: 18, color: '#9ec7e0', formatter: diffLabel },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
   },
   yAxis: {
     type: 'value',
     name: '成绩',
+    nameLocation: 'middle',
+    nameGap: 42,
+    nameRotate: 90,
     min: 50, max: 100,
-    nameTextStyle: { color: '#7fb4d4', fontSize: 16 },
-    axisLabel: { ...AXIS_LABEL, fontSize: 16, color: '#9ec7e0' },
+    nameTextStyle: { color: '#7fb4d4', fontSize: 18 },
+    axisLabel: { ...AXIS_LABEL, fontSize: 18, color: '#9ec7e0' },
     splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
   },
   series: [
@@ -104,7 +107,7 @@ const option = computed<EChartsOption>(() => ({
       markArea: {
         silent: true,
         itemStyle: { color: 'rgba(52, 211, 153, 0.08)' },
-        label: { show: true, position: 'insideTopLeft', color: 'rgba(52,211,153,0.7)', fontSize: 15, formatter: '优势区（高难·高分）' },
+        label: { show: true, position: 'insideTopLeft', color: 'rgba(52,211,153,0.7)', fontSize: 17, formatter: '优势区（高难·高分）' },
         data: [[{ xAxis: 65, yAxis: 80 }, { xAxis: 95, yAxis: 100 }]],
       },
     },
@@ -126,7 +129,7 @@ const insight = computed(() => {
 </script>
 
 <template>
-  <ChartCard title="课程难度适应分析" sub="成绩 vs 课程难度">
+  <ChartCard title="成绩-难度分布" sub="成绩 vs 课程难度">
     <ChartContainer :option="option" />
     <template #footer>
       <p class="insight"><span class="insight__tag">分析</span>{{ insight }}</p>
@@ -137,7 +140,7 @@ const insight = computed(() => {
 <style scoped lang="scss">
 .insight {
   margin: 0;
-  font-size: 17px;
+  font-size: 19px;
   line-height: 1.55;
   color: #bfe2f5;
 
@@ -146,7 +149,7 @@ const insight = computed(() => {
     margin-right: 6px;
     padding: 1px 7px;
     border-radius: 999px;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     color: #04101f;
     background: linear-gradient(90deg, #7ef0d0, #34d399);
