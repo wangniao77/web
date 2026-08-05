@@ -12,7 +12,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ROUTES } from '@/constants/routes'
 import { exportActivePage, hasPageExport } from '@/composables/usePageExport'
 import { studentService } from '@/api/student/services'
-import { dashboardToExcelSheets } from '@/utils/studentDashboardExport'
+import { dashboardToExcelSheets, dashboardToBriefSheets } from '@/utils/studentDashboardExport'
 import { downloadExcel, stampFilename } from '@/utils/exportExcel'
 
 const props = withDefaults(
@@ -31,6 +31,11 @@ const props = withDefaults(
     full?: boolean
     /** 模拟数据标记，显示在页面标题右侧，不传则不显示 */
     mockBadge?: string
+    /**
+     * 是否显示「导出简易谈心简报」菜单项。
+     * 仅基础信息台账页需要，默认不显示。
+     */
+    showBriefExport?: boolean
   }>(),
   {
     subtitle: '',
@@ -43,6 +48,7 @@ const props = withDefaults(
 const router = useRouter()
 const route = useRoute()
 const exporting = ref(false)
+const showExportMenu = ref(false)
 
 function goBack() {
   if (props.backTo) {
@@ -56,7 +62,12 @@ function goBack() {
   }
 }
 
-async function exportPageExcel() {
+function closeExportMenu() {
+  showExportMenu.value = false
+}
+
+async function exportStudentLedger() {
+  showExportMenu.value = false
   if (exporting.value) return
   exporting.value = true
   try {
@@ -67,7 +78,23 @@ async function exportPageExcel() {
     const sid = String(route.query.studentId || import.meta.env.VITE_MOCK_STUDENT_ID || '')
     if (!sid) throw new Error('缺少学号，无法导出')
     const dashboard = await studentService.fetchDashboard(sid)
-    downloadExcel(stampFilename(props.title || '学生页面', sid), dashboardToExcelSheets(dashboard))
+    downloadExcel(stampFilename(`${props.title || '学生页面'}台账`, sid), dashboardToExcelSheets(dashboard))
+  } catch (e) {
+    window.alert(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
+
+async function exportBrief() {
+  showExportMenu.value = false
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const sid = String(route.query.studentId || import.meta.env.VITE_MOCK_STUDENT_ID || '')
+    if (!sid) throw new Error('缺少学号，无法导出')
+    const dashboard = await studentService.fetchDashboard(sid)
+    downloadExcel(stampFilename('简易谈心简报', sid), dashboardToBriefSheets(dashboard))
   } catch (e) {
     window.alert(e instanceof Error ? e.message : '导出失败')
   } finally {
@@ -87,15 +114,27 @@ async function exportPageExcel() {
         <h1>{{ title }}<span v-if="mockBadge" class="student-detail__mock-badge">{{ mockBadge }}</span></h1>
         <span v-if="subtitle">{{ subtitle }}</span>
       </div>
-      <button
-        type="button"
-        class="student-detail__export"
-        :disabled="exporting"
-        title="导出当前页数据为 Excel"
-        @click="exportPageExcel"
-      >
-        {{ exporting ? '导出中…' : '导出Excel' }}
-      </button>
+      <div class="student-detail__export-wrap">
+        <button
+          type="button"
+          class="student-detail__export"
+          :disabled="exporting"
+          title="导出当前页数据"
+          @click="showExportMenu = !showExportMenu"
+          @blur="closeExportMenu"
+        >
+          {{ exporting ? '导出中…' : '导出' }}
+          <span class="student-detail__export-caret" :class="{ 'is-open': showExportMenu }">▾</span>
+        </button>
+        <ul v-if="showExportMenu" class="student-detail__export-menu">
+          <li>
+            <button type="button" @mousedown.prevent="exportStudentLedger">导出本页数据</button>
+          </li>
+          <li v-if="props.showBriefExport">
+            <button type="button" @mousedown.prevent="exportBrief">导出简易谈心简报</button>
+          </li>
+        </ul>
+      </div>
       <div class="student-detail__header-glow" aria-hidden="true" />
     </header>
     <main class="student-detail__body" :class="{ 'student-detail__body--full': full }">
@@ -116,7 +155,7 @@ async function exportPageExcel() {
   min-height: 0;
   min-width: 0;
   padding: 8px 12px 12px;
-  overflow: hidden;
+  overflow: visible;
   color: #eaf3ff;
   box-sizing: border-box;
 
@@ -148,14 +187,14 @@ async function exportPageExcel() {
 
 .student-detail__header {
   position: relative;
-  z-index: 1;
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 16px;
   min-height: 70px;
   margin: 0 0 12px;
   padding: 10px 14px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgba(102, 217, 255, 0.18);
   border-radius: 8px;
   background:
@@ -229,11 +268,20 @@ async function exportPageExcel() {
   }
 }
 
+.student-detail__export-wrap {
+  position: relative;
+  z-index: 9999;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .student-detail__export {
   position: relative;
   z-index: 1;
   flex-shrink: 0;
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border-radius: 6px;
   border: 1px solid rgba(90, 190, 255, 0.45);
@@ -255,6 +303,61 @@ async function exportPageExcel() {
   &:disabled {
     opacity: 0.65;
     cursor: wait;
+  }
+}
+
+.student-detail__export-caret {
+  font-size: 14px;
+  line-height: 1;
+  color: #8ef6ff;
+  transition: transform 0.15s ease;
+
+  &.is-open {
+    transform: rotate(180deg);
+  }
+}
+
+.student-detail__export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10000;
+  min-width: 220px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 8px;
+  border: 1px solid rgba(102, 217, 255, 0.35);
+  background:
+    linear-gradient(180deg, rgba(6, 22, 56, 0.98), rgba(3, 10, 30, 0.98));
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(0, 184, 255, 0.18),
+    inset 0 0 18px rgba(0, 184, 255, 0.08);
+
+  li {
+    margin: 0;
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #d6f4ff;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: left;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      background: linear-gradient(180deg, rgba(0, 184, 255, 0.22), rgba(4, 18, 48, 0.6));
+      color: #ffffff;
+    }
   }
 }
 

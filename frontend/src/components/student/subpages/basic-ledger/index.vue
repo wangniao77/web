@@ -12,7 +12,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import DashIcon, { type IconKind } from '@/components/college/DashIcon.vue'
+import StuHint from '@/components/student/template/StuHint.vue'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { dashboardToBasicSheets } from '@/utils/studentDashboardExport'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, AttentionItemVM } from '@/types/student/view'
 
@@ -23,45 +26,104 @@ const activeStudentId = computed(
   () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
 )
 
+/** 家长信息拆分：父亲、母亲、其他联系人 */
+interface GuardianItem { name: string; phone: string }
+const fatherInfo = computed<GuardianItem>(() => {
+  const d = dashboard.value
+  // 优先使用守约人（保守假设为父亲）；familySituation 或 familyMembers 里若明确标注再调整
+  const isSingle = /单亲|离异|丧父|亡父/.test(d?.profile.familySituation ?? '')
+  return { name: isSingle ? '—' : (d?.profile.guardianName || '—'), phone: isSingle ? '—' : (d?.profile.guardianPhone || '—') }
+})
+const motherInfo = computed<GuardianItem>(() => {
+  const d = dashboard.value
+  const isSingle = /单亲|离异|丧母|亡母/.test(d?.profile.familySituation ?? '')
+  if (isSingle) return { name: '—', phone: '—' }
+  // 母亲信息暂从家庭成员中提取，否则留空
+  const momMember = (d?.profile.familyMembers ?? []).find((m) => /母|妈妈/.test(m))
+  return { name: momMember || '—', phone: '—' }
+})
+const otherGuardianInfo = computed<GuardianItem>(() => {
+  const d = dashboard.value
+  // 其他联系人用于补充监护人信息，留空让用户按需填写
+  return { name: '', phone: '' }
+})
+const isOrphanOrSingleParent = computed(() => {
+  const s = dashboard.value?.profile.familySituation ?? ''
+  return /孤儿|单亲|离异|丧父|丧母|亡父|亡母/.test(s)
+})
+
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
+useStudentDashboardExport('基础信息台账', dashboard, dashboardToBasicSheets)
 const error = ref<string | null>(null)
 const showTodayTodo = ref(true)
-const expandSafeDynamics = ref(false)
-const expandSafeWarnings = ref(false)
+const expandSafeWarnings = ref(true)
 
 const todayTodos = computed(() => {
   const d = dashboard.value
-  if (!d) return [] as Array<{ text: string; tone: 'high' | 'medium' }>
-  const list: Array<{ text: string; tone: 'high' | 'medium' }> = []
+  if (!d) return [] as TodoItem[]
+  const list: TodoItem[] = []
   const high = d.attention.filter((a) => a.level === 'high').slice(0, 2)
-  high.forEach((a) => list.push({ text: `跟进预警：${a.label}`, tone: 'high' }))
+  high.forEach((a) => list.push({
+    text: `跟进预警：${a.label}`,
+    tone: 'high',
+    actionLabel: '查看详情',
+    to: warningRouteOf(a),
+  }))
   if (d.failedCritical.length) {
-    list.push({ text: `核对挂科补考：${d.failedCritical[0]?.name || '不及格科目'}`, tone: 'high' })
+    list.push({
+      text: `核对挂科补考：${d.failedCritical[0]?.name || '不及格科目'}`,
+      tone: 'high',
+      actionLabel: '去学业预警',
+      to: { name: 'student-academic-warning', query: { studentId: activeStudentId.value } },
+    })
   }
   if (list.length < 2) {
-    list.push({ text: '约谈一次并回填帮扶记录', tone: 'medium' })
+    list.push({
+      text: '约谈一次并回填帮扶记录',
+      tone: 'medium',
+      actionLabel: '去帮扶台账',
+      to: { name: 'student-academic-detail', query: { studentId: activeStudentId.value } },
+    })
   }
   if (list.length < 3) {
-    list.push({ text: '核对本周课表与出勤异常', tone: 'medium' })
+    list.push({
+      text: '核对本周课表与出勤异常',
+      tone: 'medium',
+      actionLabel: '去出勤跟进',
+      to: { name: 'student-academic-detail', query: { studentId: activeStudentId.value } },
+    })
   }
   return list.slice(0, 3)
 })
 
-function isRiskyDynamic(kind?: string) {
-  return kind === 'warn' || kind === 'risk' || kind === 'alert'
+interface TodoItem {
+  text: string
+  tone: 'high' | 'medium'
+  actionLabel: string
+  to: { name: string; query: { studentId: string | undefined } }
 }
 
-const visibleDynamics = computed(() => {
-  const all = dashboard.value?.profile.recentDynamics ?? []
-  if (expandSafeDynamics.value) return all
-  const risky = all.filter((d) => isRiskyDynamic(d.kind))
-  return risky.length ? risky : all.slice(0, 1)
+function warningRouteOf(a: AttentionItemVM): TodoItem['to'] {
+  const label = `${a.category}${a.label}`
+  if (/心理|健康|体测/.test(label)) return { name: 'student-psy-warning', query: { studentId: activeStudentId.value } }
+  if (/就业|实习|职业/.test(label)) return { name: 'student-employment-warning', query: { studentId: activeStudentId.value } }
+  return { name: 'student-academic-warning', query: { studentId: activeStudentId.value } }
+}
+
+function handleTodo(t: TodoItem) {
+  router.push(t.to as never)
+}
+
+const allDynamics = computed(() => {
+  return dashboard.value?.profile.recentDynamics ?? []
 })
 
-const hiddenSafeDynamicCount = computed(() => {
-  const all = dashboard.value?.profile.recentDynamics ?? []
-  return all.filter((d) => !isRiskyDynamic(d.kind)).length
+const growthTrendTip = computed(() => {
+  const t = dashboard.value?.profile.growthTrend
+  if (t === 'stable') return 'GPA稳步提升、无挂科'
+  if (t === 'positive') return '成绩稳步上升，表现良好'
+  return '成绩出现波动，请关注最近成绩变化'
 })
 
 async function load() {
@@ -145,6 +207,72 @@ function goWarningDetail(label: string) {
   }
 }
 
+/** 明细表格中每条预警，按语义命中「最贴近」的问题台账并跳转 */
+function goAttentionDetail(item: AttentionItemVM) {
+  const text = `${item.category}${item.label}`
+  let name = 'student-academic-warning'
+  if (/心理|健康|体测|心理分级/.test(text)) name = 'student-psy-warning'
+  else if (/挂科|不及格|补考|重修/.test(text)) name = 'student-fail-detail'
+  else if (/学分/.test(text)) name = 'student-credit-progress'
+  else if (/就业|实习|职业|实践/.test(text)) name = 'student-employment-warning'
+  else if (/学业|GPA|成绩|课程/.test(text)) name = 'student-academic-warning'
+  router.push({ name, query: { studentId: activeStudentId.value } })
+}
+
+/**
+ * 根据标签云文字命中「最贴近」的二级页面。
+ * 匹配顺序按语义优先级由强到弱，确保荣誉/竞赛/心理/就业/学业等各自落到对应专题页，
+ * 而非全部收口到综合台账。
+ */
+type TagTarget = { name: string; query?: Record<string, string> }
+function holoTagTarget(text: string): TagTarget | null {
+  const t = text || ''
+  const sid = { studentId: activeStudentId.value }
+
+  // 1. 处分 / 违纪 / 纪律 / 诚信 → 综合素养台账（纪律标签页）
+  if (/处分|违纪|纪律|通报|诚信|警示/.test(t)) {
+    return { name: 'student-comprehensive-ledger', query: { ...sid, focus: 'discipline' } }
+  }
+  // 2. 竞赛 → 综合素养台账（荣誉标签页）
+  if (/竞赛/.test(t)) {
+    return { name: 'student-comprehensive-ledger', query: { ...sid, focus: 'reward' } }
+  }
+  // 3. 获奖 / 成果 / 荣誉 / 论文 / 专利 / 科研 / 奖学金 → 奖励荣誉画像（最贴近）
+  if (/获奖|成果|荣誉|论文|专利|科研|奖学金|奖学金情况|奖励/.test(t)) {
+    return { name: 'student-reward-aid-ledger', query: sid }
+  }
+  // 4. 心理 / 健康 / 体测 / 情绪 / 压力 / 焦虑 / 抑郁 → 心理预警
+  if (/心理|健康|体测|情绪|压力|焦虑|抑郁/.test(t)) {
+    return { name: 'student-psy-warning', query: sid }
+  }
+  // 4. 学业 / 课程 / 挂科 / 补考 / 不及格 / 成绩 → 学业预警（通用学业风险）
+  if (/挂科|补考|不及格|课程|学业预警|成绩波动|学业风险/.test(t)) {
+    return { name: 'student-academic-warning', query: sid }
+  }
+  // 5. 学分进度 → 学分进度页
+  if (/学分/.test(t)) {
+    return { name: 'student-credit-progress', query: sid }
+  }
+  // 6. GPA / 绩点 / 专业排名 → 学情成绩详情（最贴近成绩数据）
+  if (/GPA|绩点|专业排名|成绩|均分|加权/.test(t)) {
+    return { name: 'student-gpa-detail', query: sid }
+  }
+  // 7. 就业去向 / 职业方向 / 目标城市 / 公司 / 院校 / 考研 / 留学 / 简历 / 实习 → 生涯发展（最贴近发展规划）
+  if (/就业|去向|职业|方向|目标城市|公司|院校|考研|留学|简历|实习|企业实践|职业材料|岗位|深造/.test(t)) {
+    return { name: 'student-career-development', query: sid }
+  }
+  // 8. 高潜 / 软技能 / 能力维度 / 成长 → 成长路径
+  if (/高潜|潜能|潜力|软技能|沟通|领导力|组织|协作|执行力|创新|成长|素养|能力|强$/.test(t)) {
+    return { name: 'student-growth-path', query: sid }
+  }
+  return null
+}
+
+function onHoloTagClick(text: string) {
+  const target = holoTagTarget(text)
+  if (target) router.push(target as never)
+}
+
 const levelColor = (level: RiskLevel) => ({
   low: '#55e995',
   medium: '#facc15',
@@ -177,14 +305,6 @@ const statusItems = computed(() => {
       value: d.profile.mentalLevel || '正常',
       tone: mentalTone,
       icon: 'mental' as IconKind,
-    },
-    {
-      label: '成长趋势',
-      value: ({ positive: '正向上升', negative: '负向波动', stable: '总体平稳' } as const)[
-        d.profile.growthTrend ?? 'stable'
-      ],
-      tone: (d.profile.growthTrend === 'negative' ? 'risk' : 'safe') as StatusTone,
-      icon: 'potential' as IconKind,
     },
     {
       label: '征兵状态',
@@ -228,7 +348,11 @@ const holoGroups = computed<HoloGroup[]>(() => {
 
   /* 能力标签 */
   dims.forEach((t) => ability.push(t.name))
-  ;(p.highPotentialTags ?? []).forEach((t) => ability.push(t))
+  const coreHasAcademic = core.some((t) => /专业排名|GPA|绩点|学业/.test(t))
+  ;(p.highPotentialTags ?? []).forEach((t) => {
+    if (coreHasAcademic && t === '学业高潜') return
+    ability.push(t)
+  })
   ;(d.quality?.softSkills ?? []).forEach((s: any) => ability.push(s.name))
 
   /* 发展标签 */
@@ -456,9 +580,9 @@ onMounted(load)
   <StudentDetailLayout
     title="学生基础信息台账"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId} · ${dashboard.profile.className}` : ''"
-    back-text="← 返回学生档案"
-    :back-to="{ name: 'student', query: { studentId: activeStudentId } }"
+    back-text="← 返回"
     mock-badge="模拟数据"
+    :show-brief-export="true"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载学生档案...
@@ -477,7 +601,10 @@ onMounted(load)
           <span>{{ showTodayTodo ? '收起' : '展开' }}</span>
         </button>
         <ul v-if="showTodayTodo" class="today-todo__list">
-          <li v-for="(t, i) in todayTodos" :key="i" :class="`is-${t.tone}`">{{ t.text }}</li>
+          <li v-for="(t, i) in todayTodos" :key="i" :class="`is-${t.tone}`">
+            <span class="today-todo__text">{{ t.text }}</span>
+            <button type="button" class="today-todo__action" @click="handleTodo(t)">{{ t.actionLabel }}</button>
+          </li>
         </ul>
       </div>
 
@@ -489,8 +616,9 @@ onMounted(load)
             v-for="(t, idx) in holoTags"
             :key="t.text"
             class="holo-tag"
-            :class="`holo--${t.level}`"
+            :class="[`holo--${t.level}`, { 'holo-tag--clickable': holoTagTarget(t.text) }]"
             :style="holoStyle(idx)"
+            @click="onHoloTagClick(t.text)"
           >{{ t.text }}</span>
         </div>
       </section>
@@ -510,6 +638,7 @@ onMounted(load)
               <li class="info-field"><span class="info-lbl">班级</span><span class="info-val">{{ dashboard.profile.className }}</span></li>
               <li class="info-field"><span class="info-lbl">专业</span><span class="info-val">{{ dashboard.profile.major }}</span></li>
               <li class="info-field"><span class="info-lbl">学院</span><span class="info-val">{{ dashboard.profile.college }}</span></li>
+              <li class="info-field"><span class="info-lbl">政治面貌</span><span class="info-val">{{ dashboard.profile.politicalStatus || '—' }}</span></li>
             </ul>
           </div>
 
@@ -520,7 +649,6 @@ onMounted(load)
               <li class="info-field"><span class="info-lbl">辅导员</span><span class="info-val">{{ dashboard.profile.counselor || '—' }}</span></li>
               <li class="info-field"><span class="info-lbl">班主任</span><span class="info-val">{{ dashboard.profile.mentor || '—' }}</span></li>
               <li class="info-field"><span class="info-lbl">联系电话</span><span class="info-val">{{ dashboard.profile.phone || '—' }}</span></li>
-              <li class="info-field"><span class="info-lbl">政治面貌</span><span class="info-val">{{ dashboard.profile.politicalStatus || '—' }}</span></li>
               <li class="info-field"><span class="info-lbl">宿舍</span><span class="info-val">{{ dashboard.profile.dormitory || '—' }}</span></li>
               <li class="info-field" v-if="dashboard.profile.classCadreRole || dashboard.profile.highPotentialTags?.length">
                 <span class="info-lbl">高潜标签</span>
@@ -533,12 +661,13 @@ onMounted(load)
           </div>
 
           <!-- 第三列：家庭信息 -->
-          <div class="info-col">
-            <h4 class="info-col__title">家庭信息</h4>
+          <div class="info-col" :class="{ 'info-col--orphan': isOrphanOrSingleParent }">
+            <h4 class="info-col__title">家庭信息<span v-if="isOrphanOrSingleParent" class="info-badge info-badge--risk">⚠ 特殊关注</span></h4>
             <ul class="info-col__list">
+              <li class="info-field"><span class="info-lbl">父亲</span><span class="info-val">{{ fatherInfo.name || '—' }}</span><span class="info-val-sub">{{ fatherInfo.phone || '—' }}</span></li>
+              <li class="info-field"><span class="info-lbl">母亲</span><span class="info-val">{{ motherInfo.name || '—' }}</span><span class="info-val-sub">{{ motherInfo.phone || '—' }}</span></li>
+              <li class="info-field"><span class="info-lbl">其他（{{ otherGuardianInfo.name || '待补充' }}）</span><span class="info-val">{{ otherGuardianInfo.phone || '—' }}</span></li>
               <li class="info-field"><span class="info-lbl">家庭住址</span><span class="info-val">{{ dashboard.profile.address || '—' }}</span></li>
-              <li class="info-field"><span class="info-lbl">家长姓名</span><span class="info-val">{{ dashboard.profile.guardianName || '—' }}</span></li>
-              <li class="info-field"><span class="info-lbl">家长联系方式</span><span class="info-val">{{ dashboard.profile.guardianPhone || '—' }}</span></li>
               <li class="info-field"><span class="info-lbl">家庭经济情况</span><span class="info-val">{{ dashboard.profile.economicHardship ? '困难认定' : '一般' }}</span></li>
               <li class="info-field"><span class="info-lbl">家庭成员</span><span class="info-val">{{ dashboard.profile.familyMembers?.join('、') || '暂无记录' }}</span></li>
             </ul>
@@ -570,6 +699,26 @@ onMounted(load)
             </span>
             <span class="status-card__tag" :class="`status-card__tag--${item.tone}`">{{ item.value }}</span>
           </div>
+          <StuHint
+            v-if="dashboard"
+            :tip="growthTrendTip"
+            placement="top"
+            block
+          >
+            <div
+              class="status-card status-card--growth"
+              :class="`status-card--${dashboard.profile.growthTrend === 'negative' ? 'risk' : 'safe'}`"
+            >
+              <span class="status-card__label">
+                <DashIcon kind="potential" :size="15" class="status-card__ico" />
+                成长趋势
+              </span>
+              <span
+                class="status-card__tag"
+                :class="`status-card__tag--${dashboard.profile.growthTrend === 'negative' ? 'risk' : 'safe'}`"
+              >{{ ({ positive: '正向上升', negative: '负向波动', stable: '总体平稳' } as const)[dashboard.profile.growthTrend ?? 'stable'] }}</span>
+            </div>
+          </StuHint>
         </div>
       </section>
 
@@ -578,18 +727,10 @@ onMounted(load)
         <h3 class="section-title">
           行为轨迹时间轴
           <span class="section-mock-tag">多源整合</span>
-          <button
-            v-if="hiddenSafeDynamicCount"
-            type="button"
-            class="section-fold-btn"
-            @click="expandSafeDynamics = !expandSafeDynamics"
-          >
-            {{ expandSafeDynamics ? '折叠正常项' : `展开正常项（${hiddenSafeDynamicCount}）` }}
-          </button>
         </h3>
         <div class="timeline">
           <div
-            v-for="(item, idx) in [...visibleDynamics].reverse()"
+            v-for="(item, idx) in [...allDynamics].reverse()"
             :key="idx"
             class="timeline-item"
             :class="`tl--${item.kind === 'award' ? 'green' : item.kind === 'warn' ? 'yellow' : 'white'}`"
@@ -656,7 +797,7 @@ onMounted(load)
                 暂无此类预警项
               </div>
             </template>
-            <p v-else class="warning-card__folded">正常项已折叠 · 点击卡片进详情</p>
+            <p v-else class="warning-card__folded">展开状态</p>
           </div>
         </div>
         <button type="button" class="section-fold-btn section-fold-btn--block" @click.stop="expandSafeWarnings = !expandSafeWarnings">
@@ -674,6 +815,7 @@ onMounted(load)
                   <th>预警项</th>
                   <th>风险等级</th>
                   <th>状态</th>
+                  <th class="col-action">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -692,6 +834,13 @@ onMounted(load)
                   <td>
                     <span class="risk-dot" :style="{ background: levelColor(item.level) }" />
                     {{ riskText[item.level] }}
+                  </td>
+                  <td class="col-action">
+                    <button
+                      type="button"
+                      class="row-detail-btn"
+                      @click.stop="goAttentionDetail(item)"
+                    >查看详情 &rsaquo;</button>
                   </td>
                 </tr>
               </tbody>
@@ -794,6 +943,9 @@ onMounted(load)
     gap: 6px;
 
     li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       padding: 9px 12px;
       border-radius: 6px;
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -809,6 +961,31 @@ onMounted(load)
       &.is-medium {
         border-color: rgba(250, 204, 21, 0.4);
         color: #ffe7a8;
+      }
+    }
+
+    &__text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    &__action {
+      flex-shrink: 0;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 184, 255, 0.5);
+      background: linear-gradient(180deg, rgba(0, 184, 255, 0.18), rgba(4, 18, 48, 0.55));
+      color: #8ef6ff;
+      cursor: pointer;
+      font-size: 19px;
+      font-weight: 800;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+      &:hover {
+        border-color: rgba(0, 242, 255, 0.85);
+        color: #ffffff;
+        background: linear-gradient(180deg, rgba(0, 184, 255, 0.32), rgba(4, 18, 48, 0.7));
       }
     }
   }
@@ -912,6 +1089,15 @@ onMounted(load)
   &.holo--green { color: #5dffa6; }
   &.holo--white { color: #e8f4ff; }
   &.holo--blue { color: #6fd0ff; }
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      filter: brightness(1.25) drop-shadow(0 0 6px currentColor);
+      z-index: 30 !important;
+    }
+  }
 }
 
 /* ═══ 行为轨迹时间轴（横向） ═══ */
@@ -1033,6 +1219,16 @@ onMounted(load)
   border: 1px solid rgba(102, 217, 255, 0.1);
   border-radius: 4px;
   background: rgba(0, 45, 84, 0.16);
+
+  &--orphan {
+    border-color: rgba(255, 116, 116, 0.36);
+    background: rgba(140, 25, 30, 0.1);
+    box-shadow: 0 0 14px rgba(255, 116, 116, 0.08);
+
+    .info-col__title {
+      color: #ffb0a0;
+    }
+  }
 }
 
 .info-col__title {
@@ -1182,6 +1378,36 @@ onMounted(load)
   }
 }
 
+/* 孤儿/单亲家庭高亮 */
+.info-col--orphan {
+  border-color: rgba(255, 116, 116, 0.45) !important;
+  box-shadow: 0 0 14px rgba(255, 116, 116, 0.14);
+}
+
+.info-badge--risk {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 116, 116, 0.5);
+  background: rgba(255, 116, 116, 0.12);
+  color: #ff8a8a;
+  font-size: 17px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.info-val-sub {
+  color: #6e94ac;
+  font-size: 18px;
+  font-weight: 500;
+  margin-left: 6px;
+
+  &::before {
+    content: '· ';
+  }
+}
+
 /* ═══ Status Grid ═══ */
 .status-grid {
   display: grid;
@@ -1263,6 +1489,11 @@ onMounted(load)
       box-shadow: 0 0 10px rgba(101, 223, 255, 0.12);
     }
   }
+}
+
+/* 成长趋势卡片（与状态卡片同网格，带悬浮解读） */
+.status-card--growth {
+  cursor: help;
 }
 
 /* ═══ Dynamic List ═══ */
@@ -1492,6 +1723,12 @@ onMounted(load)
     white-space: nowrap;
   }
 
+  .col-action {
+    text-align: right;
+    width: 1%;
+    white-space: nowrap;
+  }
+
   td {
     padding: 7px 10px;
     border-bottom: 1px solid rgba(102, 217, 255, 0.05);
@@ -1546,6 +1783,24 @@ onMounted(load)
   border-radius: 50%;
   margin-right: 6px;
   vertical-align: middle;
+}
+
+.row-detail-btn {
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  background: rgba(0, 184, 255, 0.1);
+  color: #7ff6ff;
+  font-size: 18px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: rgba(0, 184, 255, 0.22);
+    border-color: rgba(0, 212, 255, 0.6);
+  }
 }
 
 
@@ -1661,12 +1916,12 @@ onMounted(load)
 @media (max-width: 1280px) {
   .info-row { grid-template-columns: 1fr 1fr; }
   .info-cols { grid-template-columns: 1fr; }
-  .status-grid { grid-template-columns: repeat(3, 1fr); }
+  .status-grid { grid-template-columns: repeat(2, 1fr); }
   .warning-summary { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
   .info-row { grid-template-columns: 1fr; }
-  .status-grid { grid-template-columns: repeat(2, 1fr); }
+  .status-grid { grid-template-columns: 1fr; }
 }
 </style>
