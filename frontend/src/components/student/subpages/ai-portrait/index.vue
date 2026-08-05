@@ -6,6 +6,8 @@ import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import StudentSectionNav from '../_shared/StudentSectionNav.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { dashboardToAiPortraitSheets } from '@/utils/studentDashboardExport'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
@@ -32,6 +34,7 @@ const sectionNav = [
 
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
+useStudentDashboardExport('智能育航·深度分析', dashboard, dashboardToAiPortraitSheets)
 const error = ref<string | null>(null)
 
 async function load() {
@@ -1007,8 +1010,7 @@ onMounted(load)
   <StudentDetailLayout
     title="智能育航 · 深度分析"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId}` : ''"
-    back-text="← 返回学生发展概览"
-    :back-to="{ name: 'student', query: { studentId: activeStudentId } }"
+    back-text="← 返回"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载...

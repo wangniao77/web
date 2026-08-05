@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { dashboardToGraduationSheets } from '@/utils/studentDashboardExport'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM } from '@/types/student/view'
 
@@ -15,6 +17,7 @@ const activeStudentId = computed(
 
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
+useStudentDashboardExport('毕业审核与毕设进度', dashboard, dashboardToGraduationSheets)
 const error = ref<string | null>(null)
 
 async function load() {
@@ -165,8 +168,7 @@ onMounted(load)
   <StudentDetailLayout
     title="毕业审核与毕设进度"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId}` : ''"
-    back-text="← 返回学生发展概览"
-    :back-to="{ name: 'student', query: { studentId: activeStudentId } }"
+    back-text="← 返回"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载...

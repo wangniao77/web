@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import { useScope } from '@/composables/useScope'
 import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { dashboardToComprehensiveSheets } from '@/utils/studentDashboardExport'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM } from '@/types/student/view'
 
@@ -18,7 +19,7 @@ const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-useStudentDashboardExport('综合素养台账', dashboard)
+useStudentDashboardExport('综合素养台账', dashboard, dashboardToComprehensiveSheets)
 
 async function load() {
   loading.value = true
@@ -38,6 +39,17 @@ function goBack() {
 
 const activeTab = ref<'honor' | 'discipline'>('honor')
 const activeDisciplineSub = ref(0)
+
+/* 列对齐基准：列数不超过该值时表格占满容器、按百分比均分列宽对齐；
+   列数超过该值则按最小列宽展开，由外层 .table-wrap 提供横向滚动。 */
+const MAX_TABLE_COLS = 8
+
+/* 根据路由 query.focus 初始化默认标签页（reward→荣誉成果，discipline→纪律） */
+onMounted(() => {
+  const focus = route.query.focus as string | undefined
+  if (focus === 'discipline') activeTab.value = 'discipline'
+  else if (focus === 'reward') activeTab.value = 'honor'
+})
 
 /* ─────────── 荣誉成果分类标签联动 ─────────── */
 // null = 全部（默认展示所有成果）；否则只展示该分类
@@ -676,15 +688,19 @@ const qualityAiSummary = computed(() => {
   return `${h.strengths}${discText}建议：${h.future}`
 })
 
-onMounted(load)
+onMounted(() => {
+  const focus = route.query.focus as string | undefined
+  if (focus === 'discipline') activeTab.value = 'discipline'
+  else if (focus === 'reward') activeTab.value = 'honor'
+  load()
+})
 </script>
 
 <template>
   <StudentDetailLayout
     title="综合素养台账详情"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId}` : ''"
-    back-text="← 返回学生发展概览"
-    :back-to="{ name: 'student', query: { studentId: activeStudentId } }"
+    back-text="← 返回"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载...
@@ -782,12 +798,41 @@ onMounted(load)
           </button>
         </div>
 
+        <!-- 荣誉成果 · AI 对策与建议（置于分类标签下方、表格上方） -->
+        <section class="ledger-ai-advice">
+          <header class="ledger-ai-advice__head">
+            <span class="ledger-ai-advice__badge">AI 研判</span>
+            <h4 class="ledger-ai-advice__title">荣誉成果 · 对策与建议</h4>
+          </header>
+          <div class="ledger-ai-advice__grid">
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--good">
+              <h5>优势亮点</h5>
+              <p>{{ honorAiAdvice.strengths }}</p>
+            </article>
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--warn">
+              <h5>存在短板</h5>
+              <p>{{ honorAiAdvice.weaknesses }}</p>
+            </article>
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--future">
+              <h5>未来发展</h5>
+              <p>{{ honorAiAdvice.future }}</p>
+            </article>
+          </div>
+        </section>
+
         <!-- 成果表格 -->
         <div class="honor-grid">
           <div v-for="(p, i) in honorPanels" :key="i" class="sub-panel">
             <h4 class="sub-panel__title">{{ p.title }}</h4>
             <div class="table-wrap">
-              <table class="detail-table">
+              <table
+                class="detail-table"
+                :class="{ 'detail-table--scroll': p.columns.length > MAX_TABLE_COLS }"
+              >
+                <colgroup>
+                  <col style="width: 260px" />
+                  <col v-for="i in Math.max(0, p.columns.length - 1)" :key="i" style="width: 170px" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th v-for="c in p.columns" :key="c.key">{{ c.label }}</th>
@@ -809,28 +854,6 @@ onMounted(load)
             该分类暂无成果记录
           </div>
         </div>
-
-        <!-- 荣誉成果 · AI 对策与建议 -->
-        <section class="ledger-ai-advice">
-          <header class="ledger-ai-advice__head">
-            <span class="ledger-ai-advice__badge">AI 研判</span>
-            <h4 class="ledger-ai-advice__title">荣誉成果 · 对策与建议</h4>
-          </header>
-          <div class="ledger-ai-advice__grid">
-            <article class="ledger-ai-advice__block ledger-ai-advice__block--good">
-              <h5>优势亮点</h5>
-              <p>{{ honorAiAdvice.strengths }}</p>
-            </article>
-            <article class="ledger-ai-advice__block ledger-ai-advice__block--warn">
-              <h5>存在短板</h5>
-              <p>{{ honorAiAdvice.weaknesses }}</p>
-            </article>
-            <article class="ledger-ai-advice__block ledger-ai-advice__block--future">
-              <h5>未来发展</h5>
-              <p>{{ honorAiAdvice.future }}</p>
-            </article>
-          </div>
-        </section>
       </div>
 
       <!-- 纪律处分 -->
@@ -847,11 +870,40 @@ onMounted(load)
           </button>
         </div>
 
+        <!-- 纪律处分 · AI 对策与建议（置于子标签下方、表格上方） -->
+        <section class="ledger-ai-advice">
+          <header class="ledger-ai-advice__head">
+            <span class="ledger-ai-advice__badge">AI 研判</span>
+            <h4 class="ledger-ai-advice__title">纪律处分 · 对策与建议</h4>
+          </header>
+          <div class="ledger-ai-advice__grid">
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--good">
+              <h5>优势亮点</h5>
+              <p>{{ disciplineAiAdvice.strengths }}</p>
+            </article>
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--warn">
+              <h5>存在短板</h5>
+              <p>{{ disciplineAiAdvice.weaknesses }}</p>
+            </article>
+            <article class="ledger-ai-advice__block ledger-ai-advice__block--future">
+              <h5>未来发展</h5>
+              <p>{{ disciplineAiAdvice.future }}</p>
+            </article>
+          </div>
+        </section>
+
         <!-- 校纪处分 -->
         <div v-if="activeDisciplineSub === 0" class="sub-panel">
           <h4 class="sub-panel__title">校纪处分记录</h4>
           <div class="table-wrap">
-            <table class="detail-table">
+            <table
+              class="detail-table"
+              :class="{ 'detail-table--scroll': 9 > MAX_TABLE_COLS }"
+            >
+              <colgroup>
+                <col style="width: 260px" />
+                <col v-for="i in 8" :key="i" style="width: 170px" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>处分类型</th>
@@ -886,7 +938,14 @@ onMounted(load)
         <div v-if="activeDisciplineSub === 1" class="sub-panel">
           <h4 class="sub-panel__title">通报批评记录</h4>
           <div class="table-wrap">
-            <table class="detail-table">
+            <table
+              class="detail-table"
+              :class="{ 'detail-table--scroll': 6 > MAX_TABLE_COLS }"
+            >
+              <colgroup>
+                <col style="width: 260px" />
+                <col v-for="i in 5" :key="i" style="width: 170px" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>通报事由</th>
@@ -915,7 +974,14 @@ onMounted(load)
         <div v-if="activeDisciplineSub === 2" class="sub-panel">
           <h4 class="sub-panel__title">学业警示与日常违纪</h4>
           <div class="table-wrap">
-            <table class="detail-table">
+            <table
+              class="detail-table"
+              :class="{ 'detail-table--scroll': 7 > MAX_TABLE_COLS }"
+            >
+              <colgroup>
+                <col style="width: 260px" />
+                <col v-for="i in 6" :key="i" style="width: 170px" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>异常类型</th>
@@ -946,7 +1012,14 @@ onMounted(load)
         <div v-if="activeDisciplineSub === 3" class="sub-panel">
           <h4 class="sub-panel__title">诚信档案记录</h4>
           <div class="table-wrap">
-            <table class="detail-table">
+            <table
+              class="detail-table"
+              :class="{ 'detail-table--scroll': 7 > MAX_TABLE_COLS }"
+            >
+              <colgroup>
+                <col style="width: 260px" />
+                <col v-for="i in 6" :key="i" style="width: 170px" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>违约/失信类型</th>
@@ -972,28 +1045,6 @@ onMounted(load)
             </table>
           </div>
         </div>
-
-        <!-- 纪律处分 · AI 对策与建议 -->
-        <section class="ledger-ai-advice">
-          <header class="ledger-ai-advice__head">
-            <span class="ledger-ai-advice__badge">AI 研判</span>
-            <h4 class="ledger-ai-advice__title">纪律处分 · 对策与建议</h4>
-          </header>
-          <div class="ledger-ai-advice__grid">
-            <article class="ledger-ai-advice__block ledger-ai-advice__block--good">
-              <h5>优势亮点</h5>
-              <p>{{ disciplineAiAdvice.strengths }}</p>
-            </article>
-            <article class="ledger-ai-advice__block ledger-ai-advice__block--warn">
-              <h5>存在短板</h5>
-              <p>{{ disciplineAiAdvice.weaknesses }}</p>
-            </article>
-            <article class="ledger-ai-advice__block ledger-ai-advice__block--future">
-              <h5>未来发展</h5>
-              <p>{{ disciplineAiAdvice.future }}</p>
-            </article>
-          </div>
-        </section>
       </div>
     </div>
   </StudentDetailLayout>
@@ -1244,7 +1295,7 @@ onMounted(load)
   }
 }
 
-/* 表格（横向滑动 + 列宽固定对齐） */
+/* 表格（列对齐 + 超列数横向滚动） */
 .table-wrap {
   border-radius: 4px;
   border: 1px solid rgba(0, 184, 255, 0.12);
@@ -1252,12 +1303,14 @@ onMounted(load)
 }
 
 .detail-table {
-  width: 100%;
-  min-width: 720px;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 18px;
   line-height: 1.4;
+
+  /* 列宽由 <colgroup> 精确控制，保证不同表格之间列边界对齐 */
+  width: max-content;
+  min-width: max-content;
 
   th,
   td {
@@ -1266,8 +1319,9 @@ onMounted(load)
     text-align: left;
     vertical-align: middle;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
   }
 
   th {
@@ -1280,7 +1334,7 @@ onMounted(load)
     color: #d0e8f8;
   }
 
-  /* 名称类长文本允许换行，其余列保持单行对齐 */
+  /* 名称列允许换行，便于展示长名称 */
   th:first-child,
   td:first-child {
     white-space: normal;

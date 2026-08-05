@@ -21,10 +21,13 @@ import WarningCourseList from './components/WarningCourseList.vue'
 import { gpaDetailService } from '../_shared/gpa-data'
 import type { GpaDetailVM } from '../_shared/gpa-data'
 import { ROUTES } from '@/constants/routes'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { gpaDetailToSheets } from '@/utils/studentDashboardExport'
 
 const data = ref<GpaDetailVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+useStudentDashboardExport('GPA详情', data, gpaDetailToSheets)
 
 const router = useRouter()
 
@@ -51,8 +54,7 @@ onMounted(load)
   <StudentDetailLayout
     title="学生 GPA 详情"
     subtitle="学业总览 · 课程分布 · 擅长 / 潜力分析"
-    back-text="← 返回学生档案"
-    :back-to="{ name: 'student' }"
+    back-text="← 返回"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">

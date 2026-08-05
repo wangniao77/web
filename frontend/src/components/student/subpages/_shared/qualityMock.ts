@@ -384,6 +384,7 @@ export const disciplinaryRecords = [
     date: '2024-03-15',
     period: '6个月',
     status: '已解除',
+    removalDate: '2024-09-15',
     requirement: '认真反省，诚信考试',
     evidence: '处分决定书.pdf',
   },
@@ -401,6 +402,8 @@ export interface AidTypeItem {
 export interface AidHistoryItem {
   date: string
   text: string
+  amount?: string
+  period?: string
 }
 
 export interface AidProfile {
@@ -429,8 +432,8 @@ export const aidProfile: AidProfile = {
     { name: '勤工助学', on: true },
   ],
   history: [
-    { date: '2025-09', text: '获得国家助学金（一等）' },
-    { date: '2024-09', text: '完成家庭经济困难认定' },
-    { date: '2024-03', text: '申请临时困难补助' },
+    { date: '2025-09', text: '获得国家助学金（一等）', amount: '4,000元/学年', period: '2025-09 ~ 2026-06' },
+    { date: '2024-09', text: '完成家庭经济困难认定', amount: '—', period: '2024-09' },
+    { date: '2024-03', text: '申请临时困难补助', amount: '2,000元', period: '2024-03' },
   ],
 }

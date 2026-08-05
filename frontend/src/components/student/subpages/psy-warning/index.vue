@@ -20,6 +20,8 @@ import StudentSectionNav from '../_shared/StudentSectionNav.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import AiAnalysisCard from '@/components/student/template/AiAnalysisCard.vue'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { dashboardToPsyWarningSheets } from '@/utils/studentDashboardExport'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, AttentionItemVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
@@ -35,6 +37,7 @@ const activeStudentId = computed(
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+useStudentDashboardExport('心理预警详情', dashboard, dashboardToPsyWarningSheets)
 
 async function load() {
   loading.value = true
@@ -49,7 +52,7 @@ async function load() {
 }
 
 function goLedger() {
-  router.push({ name: 'student-basic-ledger', query: { studentId: activeStudentId.value } })
+  router.back()
 }
 
 const LEVEL_COLOR: Record<string, string> = { low: '#55e995', medium: '#facc15', high: '#ff7474' }
@@ -60,303 +63,77 @@ const riskText = (level: string) =>
 /** 页面分区导航（点击跳转到对应模块） */
 const sectionNav = [
   { id: 'sec-overview', label: '心理状态总览' },
-  { id: 'sec-indicators', label: '测评与趋势' },
-  { id: 'sec-radar', label: '风险维度' },
-  { id: 'sec-factors', label: '风险因素' },
+  { id: 'sec-ai', label: 'AI心理分析' },
+  { id: 'sec-radar', label: '状态风险分析' },
+  { id: 'sec-trend', label: '状态变化趋势' },
+  { id: 'sec-factors', label: '影响因素分析' },
   { id: 'sec-intervention', label: '干预跟踪' },
-  { id: 'sec-ledger', label: '心理预警台账' },
-  { id: 'sec-advice', label: '干预建议' },
+  { id: 'sec-ledger', label: '预警台账' },
 ]
 
 const mentalLevel = computed(() => dashboard.value?.profile.mentalLevelCode ?? 'low')
 
-/* ---------- 心理预警台账（保留） ---------- */
-const psyItems = computed(() => {
-  if (!dashboard.value) return []
-  const items = dashboard.value.attention.filter((i) => /心理|健康|体测/.test(`${i.category}${i.label}`))
-  if (items.length >= 4) return items
-  const fallback = [
-    { id: 'psy-1', category: '心理健康', label: 'SCL-90 测评总均分', level: 'low', levelLabel: '正常' },
-    { id: 'psy-2', category: '心理健康', label: '焦虑因子（SCL-90）', level: 'low', levelLabel: '正常' },
-    { id: 'psy-3', category: '心理健康', label: '抑郁因子（SCL-90）', level: 'low', levelLabel: '正常' },
-    { id: 'psy-4', category: '身体健康', label: '体测成绩达标', level: 'low', levelLabel: '良好' },
-    { id: 'psy-5', category: '睡眠健康', label: '睡眠质量自评', level: 'low', levelLabel: '正常' },
-    { id: 'psy-6', category: '心理健康', label: '人际关系敏感度', level: 'low', levelLabel: '正常' },
-    { id: 'psy-7', category: '身体健康', label: '视力筛查（近视度数）', level: 'low', levelLabel: '正常' },
-    { id: 'psy-8', category: '心理健康', label: '压力应对能力评估', level: 'low', levelLabel: '正常' },
-    { id: 'psy-9', category: '睡眠健康', label: '作息规律性评估', level: 'low', levelLabel: '正常' },
-    { id: 'psy-10', category: '身体健康', label: 'BMI 体重指数', level: 'low', levelLabel: '正常' },
-    { id: 'psy-11', category: '心理健康', label: '学业自我效能感', level: 'low', levelLabel: '良好' },
-    { id: 'psy-12', category: '身体健康', label: '耐力跑测试成绩', level: 'low', levelLabel: '良好' },
-  ] as AttentionItemVM[]
-  return [...items, ...fallback].slice(0, 6)
-})
-
-/* ---------- 1. 心理状态总览 ---------- */
-const mentalRecords = computed(() => {
-  const recs = dashboard.value?.mentalGrowth.records ?? []
-  if (recs.length) return recs
-  // 模拟数据兜底
-  return [
-    { date: '2024-09-15', content: '新生入学心理测评完成，SCL-90 各因子均在正常范围，未触发预警' },
-    { date: '2024-12-20', content: '学期末心理状态复评，整体平稳，睡眠质量略有下降，已建议规律作息' },
-    { date: '2025-03-10', content: '春季学期心理普查，焦虑因子轻度波动，辅导员已进行一对一谈话' },
-    { date: '2025-06-25', content: '夏季学期心理测评，各项指标回归正常区间，无需额外干预' },
-  ]
-})
-
-const lastAssessTime = computed(() => {
-  const recs = mentalRecords.value
-  return recs.length ? recs[recs.length - 1].date : '—'
-})
-
-const mentalStatusText = computed(() => {
-  const lv = mentalLevel.value
-  if (lv === 'high') return '心理状态多项异常，已触发高危预警，须立即介入心理干预。'
-  if (lv === 'medium') return '存在心理波动与风险因素，需持续关注并安排心理疏导。'
-  if (hasBehaviorLift.value) {
-    return '量表总体正常，但闸机晚归提示睡眠与生活适应风险升高，需专项关注作息。'
-  }
-  return '整体心理状态平稳，保持常规关注即可。'
-})
-
-/* 状态总览下方的 AI 学业分析结论（从学业侧面关联心理状态） */
-const aiAnalysis = computed(() => {
-  const d = dashboard.value
-  if (!d) return ''
-  const gpa = d.academic.gpa
-  return `该生心理状态等级为「${riskText(mentalLevel.value)}」，${mentalStatusText.value} 从学业侧面看，当前 GPA ${gpa.toFixed(2)}，整体学业表现${gpa >= 3 ? '平稳' : '有待提升'}。建议将学业压力疏导与心理疏导结合，关注睡眠与人际适应，避免学业波动加剧心理风险。`
-})
-
-/* ---------- 2. 心理风险维度分析（雷达图） ---------- */
-/** 客观行为信号：量表正常时仍可抬高对应维度突起 */
-const objectiveBehavior = computed(() => ({
-  lateReturnDays: 7,
-  note: '闸机数据：近 7 天连续晚归 ≥23:30',
-}))
-
-const hasBehaviorLift = computed(
-  () => mentalLevel.value === 'low' && objectiveBehavior.value.lateReturnDays >= 5,
+/* 真实行为数据派生 */
+const gpa = computed(() => dashboard.value?.academic.gpa ?? 0)
+const failedCount = computed(() => dashboard.value?.failedCritical?.length ?? 0)
+const attentionItems = computed<AttentionItemVM[]>(() => dashboard.value?.attention ?? [])
+const mentalRecs = computed(() => dashboard.value?.mentalGrowth.records ?? [])
+const supportStatus = computed(
+  () => dashboard.value?.mentalGrowth.supportStatus || riskText(mentalLevel.value),
 )
+const resumeStatus = computed(() => dashboard.value?.careerDev.resumeStatus || '未完善')
+const employmentDest = computed(() => dashboard.value?.careerDev.employmentDestination || '')
 
-const DIM_NAMES = ['情绪状态', '学业压力', '人际关系', '睡眠状态', '生活适应'] as const
-const riskLevelOf = (v: number) => (v >= 70 ? 'high' : v >= 40 ? 'medium' : 'low')
+const levelFromIndex = (v: number) => (v >= 70 ? 'high' : v >= 40 ? 'medium' : 'low')
+const levelBase = (lv: string, lowV: number, medV: number, highV: number) =>
+  lv === 'high' ? highV : lv === 'medium' ? medV : lowV
 
-/* ---------- 心理测评指标（与维度风险对齐） ---------- */
-const indicators = computed(() => {
-  const code = mentalLevel.value
-  if (code === 'high') {
-    return [
-      { name: 'SCL-90 总均分', value: 2.8, max: 5, level: 'high', desc: '显著高于常模，多项因子异常' },
-      { name: 'UCLA 孤独量表', value: 56, max: 80, level: 'high', desc: '孤独感偏高，社交回避明显' },
-      { name: '睡眠质量指数', value: 42, max: 100, level: 'medium', desc: '入睡困难，日均睡眠约 5.5 小时' },
-    ]
-  }
-  if (code === 'medium') {
-    return [
-      { name: 'SCL-90 总均分', value: 1.9, max: 5, level: 'medium', desc: '略高于常模，焦虑与躯体化因子轻度升高' },
-      { name: 'UCLA 孤独量表', value: 38, max: 80, level: 'low', desc: '处于正常偏高区间' },
-      { name: '睡眠质量指数', value: 58, max: 100, level: 'medium', desc: '自评下降，睡眠时长不足' },
-    ]
-  }
-  // 量表正常但晚归抬高睡眠风险 → 睡眠指标同步下调，避免与维度卡矛盾
-  if (hasBehaviorLift.value) {
-    return [
-      { name: 'SCL-90 总均分', value: 1.2, max: 5, level: 'low', desc: '各因子均在正常范围' },
-      { name: 'UCLA 孤独量表', value: 24, max: 80, level: 'low', desc: '人际状态良好' },
-      { name: '睡眠质量指数', value: 46, max: 100, level: 'medium', desc: '自评尚可，闸机晚归提示睡眠风险升高' },
-    ]
-  }
-  return [
-    { name: 'SCL-90 总均分', value: 1.2, max: 5, level: 'low', desc: '各因子均在正常范围' },
-    { name: 'UCLA 孤独量表', value: 24, max: 80, level: 'low', desc: '人际状态良好' },
-    { name: '睡眠质量指数', value: 78, max: 100, level: 'low', desc: '睡眠状况良好' },
-  ]
+/* ---------- 1. 心理状态总览（简化） ---------- */
+/** 心理风险指数（行为数据派生，越高风险越大） */
+const riskIndex = computed(() => {
+  const base = levelBase(mentalLevel.value, 28, 56, 82)
+  let v = base
+  if (failedCount.value > 0) v += 5
+  if (gpa.value > 0 && gpa.value < 2.5) v += 5
+  if (attentionItems.value.some((i) => /请假|晚归|宿舍异常/.test(`${i.category}${i.label}`))) v += 4
+  return Math.min(100, v)
 })
+const riskIndexLevel = computed(() => levelFromIndex(riskIndex.value))
 
-const psyScaleValues = computed<number[]>(() => {
-  const code = mentalLevel.value
-  if (code === 'high') return [82, 75, 70, 58, 65]
-  if (code === 'medium') return [52, 55, 40, 42, 45]
-  return [30, 38, 25, 22, 30]
-})
-
-const psyRadarValues = computed<number[]>(() => {
-  const base = [...psyScaleValues.value]
-  // 量表正常但客观行为异常 → 睡眠 / 生活适应突起
-  if (hasBehaviorLift.value) {
-    base[3] = Math.max(base[3], 72) // 睡眠状态
-    base[4] = Math.max(base[4], 68) // 生活适应
-  }
-  return base
-})
-
-const dimensionCards = computed(() =>
-  psyRadarValues.value.map((value, i) => {
-    const level = riskLevelOf(value)
-    const scale = psyScaleValues.value[i]
-    const lifted = value > scale
-    return {
-      name: DIM_NAMES[i],
-      value,
-      scale,
-      level,
-      lifted,
-      hint: lifted ? `量表 ${scale} · 行为叠加后 ${value}` : `风险指数 ${value}/100`,
-    }
-  }),
-)
-
-const psyRadarOption = computed<EChartsOption>(() => ({
-  animation: true,
-  animationDuration: 850,
-  animationEasing: 'cubicOut',
-  tooltip: { trigger: 'item' },
-  legend: {
-    bottom: 0,
-    textStyle: { color: '#9ec7e0', fontSize: 18 },
-    data: ['量表评估', '客观行为叠加'],
-  },
-  radar: {
-    center: ['50%', '50%'],
-    radius: '58%',
-    indicator: [
-      { name: '情绪状态', max: 100 },
-      { name: '学业压力', max: 100 },
-      { name: '人际关系', max: 100 },
-      { name: '睡眠状态', max: 100 },
-      { name: '生活适应', max: 100 },
-    ],
-    axisName: { color: '#b8ecff', fontSize: 19 },
-    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
-    splitArea: { areaStyle: { color: ['rgba(0, 184, 255, 0.04)', 'rgba(0, 184, 255, 0.08)'] } },
-    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
-  },
-  series: [{
-    type: 'radar',
-    data: [
-      {
-        value: psyScaleValues.value,
-        name: '量表评估',
-        symbolSize: 4,
-        areaStyle: { color: 'rgba(85, 233, 149, 0.12)' },
-        lineStyle: { color: '#55e995', width: 1.5, type: 'dashed' },
-        itemStyle: { color: '#55e995' },
-      },
-      {
-        value: psyRadarValues.value,
-        name: '客观行为叠加',
-        symbolSize: 5,
-        areaStyle: { color: 'rgba(248, 113, 113, 0.26)' },
-        lineStyle: { color: '#ff7474', width: 2 },
-        itemStyle: { color: '#ff7474' },
-      },
-    ],
-  }],
-}))
-void psyRadarOption
-
-/* ---------- 3. 心理状态趋势分析（折线图） ---------- */
-const trend = computed(() => {
-  const code = mentalLevel.value
-  if (code === 'high') return [58, 62, 68, 72]
-  if (code === 'medium') return [48, 52, 50, 54]
-  return [35, 32, 30, 28]
-})
-
-/** 心理健康指数（0-100，越高越健康）：由最新风险指数反推 */
-const mentalIndex = computed(() => {
-  const arr = trend.value
-  if (!arr.length) return 70
-  return Math.max(0, Math.min(100, 100 - arr[arr.length - 1]))
-})
-
-/**
- * JS 驱动动效（不受系统「减少动画」影响）：
- * - reveal: 0→1 控制所有进度条宽度
- * - gaugeAnim / displayMentalIndex: 环与数字滚动
- * - trendAnim: 折线从 0 生长到真实值
- */
-const reveal = ref(0)
+/* 仪表盘（心理风险指数）：带数字滚动动效 */
 const gaugeAnim = ref(0)
-const displayMentalIndex = ref(0)
-const trendAnim = ref<number[]>([0, 0, 0, 0])
-let revealRaf = 0
 let gaugeRaf = 0
-let trendRaf = 0
-
-function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3)
-}
-
-function playPageMotion() {
-  cancelAnimationFrame(revealRaf)
+function playGauge() {
   cancelAnimationFrame(gaugeRaf)
-  cancelAnimationFrame(trendRaf)
-
-  reveal.value = 0
   gaugeAnim.value = 0
-  displayMentalIndex.value = 0
-  trendAnim.value = trend.value.map(() => 0)
-
-  const targetGauge = mentalIndex.value
-  const targetTrend = [...trend.value]
-
-  const startReveal = performance.now()
-  const tickReveal = (now: number) => {
-    const t = Math.min(1, (now - startReveal) / 1300)
-    reveal.value = easeOutCubic(t)
-    if (t < 1) revealRaf = requestAnimationFrame(tickReveal)
-  }
-  revealRaf = requestAnimationFrame(tickReveal)
-
-  const startGauge = performance.now()
-  let lastGaugePaint = 0
-  const tickGauge = (now: number) => {
-    const t = Math.min(1, (now - startGauge) / 1400)
-    const v = targetGauge * easeOutCubic(t)
-    if (now - lastGaugePaint > 32 || t >= 1) {
-      gaugeAnim.value = Math.round(v * 10) / 10
-      displayMentalIndex.value = Math.round(v)
-      lastGaugePaint = now
+  const target = riskIndex.value
+  const start = performance.now()
+  let lastPaint = 0
+  const tick = (now: number) => {
+    const t = Math.min(1, (now - start) / 1400)
+    const v = target * easeOutCubic(t)
+    if (now - lastPaint > 32 || t >= 1) {
+      gaugeAnim.value = Math.round(v)
+      lastPaint = now
     }
-    if (t < 1) gaugeRaf = requestAnimationFrame(tickGauge)
+    if (t < 1) gaugeRaf = requestAnimationFrame(tick)
   }
-  gaugeRaf = requestAnimationFrame(tickGauge)
-
-  const startTrend = performance.now()
-  let lastTrendPaint = 0
-  const tickTrend = (now: number) => {
-    const t = Math.min(1, (now - startTrend) / 1500)
-    const e = easeOutCubic(t)
-    if (now - lastTrendPaint > 32 || t >= 1) {
-      trendAnim.value = targetTrend.map((v) => Math.round(v * e * 10) / 10)
-      lastTrendPaint = now
-    }
-    if (t < 1) trendRaf = requestAnimationFrame(tickTrend)
-  }
-  trendRaf = requestAnimationFrame(tickTrend)
+  gaugeRaf = requestAnimationFrame(tick)
 }
-
 watch(
   () => [loading.value, !!dashboard.value] as const,
   async ([isLoading, hasDash]) => {
     if (!isLoading && hasDash) {
       await nextTick()
-      requestAnimationFrame(() => playPageMotion())
+      requestAnimationFrame(() => playGauge())
     }
   },
 )
+onUnmounted(() => cancelAnimationFrame(gaugeRaf))
 
-onUnmounted(() => {
-  cancelAnimationFrame(revealRaf)
-  cancelAnimationFrame(gaugeRaf)
-  cancelAnimationFrame(trendRaf)
-})
-
-const mentalGaugeOption = computed<EChartsOption>(() => {
+const gaugeOption = computed<EChartsOption>(() => {
   const score = gaugeAnim.value
-  const tone = mentalIndex.value <= 40 ? 'high' : mentalIndex.value <= 70 ? 'medium' : 'low'
+  const tone = riskIndexLevel.value
   const color = levelColor(tone)
   const glow =
     tone === 'low'
@@ -384,10 +161,7 @@ const mentalGaugeOption = computed<EChartsOption>(() => {
         detail: { show: false },
         axisLine: {
           roundCap: true,
-          lineStyle: {
-            width: 18,
-            color: [[1, 'rgba(20, 55, 100, 0.55)']],
-          },
+          lineStyle: { width: 18, color: [[1, 'rgba(20, 55, 100, 0.55)']] },
         },
         progress: {
           show: true,
@@ -396,10 +170,7 @@ const mentalGaugeOption = computed<EChartsOption>(() => {
           itemStyle: {
             color: {
               type: 'linear',
-              x: 0,
-              y: 0,
-              x2: 1,
-              y2: 1,
+              x: 0, y: 0, x2: 1, y2: 1,
               colorStops: [
                 { offset: 0, color },
                 { offset: 1, color: '#9ef0ff' },
@@ -414,46 +185,213 @@ const mentalGaugeOption = computed<EChartsOption>(() => {
     ],
   }
 })
+void gaugeOption
 
+const lastAssessTime = computed(() => {
+  const recs = mentalRecs.value
+  if (recs.length) return recs[recs.length - 1].date
+  return '2026-06-25'
+})
+
+const concernStatus = computed(() => {
+  if (mentalLevel.value === 'high') return '重点跟踪'
+  if (mentalLevel.value === 'medium') return '持续关注'
+  return '常规关注'
+})
+
+const mentalStatusText = computed(() => {
+  const lv = mentalLevel.value
+  if (lv === 'high') return '多维行为数据异常，已触发高危关注，须立即介入干预。'
+  if (lv === 'medium') return '存在学业或生活波动信号，需持续关注并安排谈心谈话。'
+  return '综合行为数据分析显示，学生近期状态稳定，保持常规关注即可。'
+})
+
+/* AI 心理分析（基于行为数据生成结论） */
+const aiAnalysis = computed(() => {
+  const lv = mentalLevel.value
+  const dims = fourDims.value
+  const top = [...dims].sort((a, b) => b.value - a.value)[0]
+  const gpaLow = gpa.value > 0 && gpa.value < 2.5
+  const hasFailed = failedCount.value > 0
+  const hasLifeRisk = attentionItems.value.some((i) =>
+    /请假|晚归|宿舍异常/.test(`${i.category}${i.label}`),
+  )
+
+  const head =
+    lv === 'high'
+      ? `该生综合行为风险指数达 ${riskIndex.value}，心理风险等级为「高危」。`
+      : lv === 'medium'
+        ? `该生综合行为风险指数为 ${riskIndex.value}，心理风险等级为「需关注」。`
+        : `该生综合行为风险指数为 ${riskIndex.value}，心理风险等级为「正常」。`
+
+  const parts: string[] = []
+  parts.push(head)
+
+  if (top) {
+    parts.push(`当前最突出的风险维度为「${top.name}」（评分 ${top.value}/100），主要来源：${top.source}。`)
+  }
+  if (gpaLow || hasFailed) {
+    parts.push(`学业层面${hasFailed ? `存在 ${failedCount.value} 门挂科` : ''}${gpaLow ? `，GPA 仅 ${gpa.value.toFixed(2)}` : ''}，是状态波动的重要诱因，建议学业帮扶与心理疏导同步推进。`)
+  }
+  if (hasLifeRisk) {
+    parts.push('生活规律出现明显异常（请假/晚归/宿舍异常），需关注作息与人际适应。')
+  }
+
+  const tail =
+    lv === 'high'
+      ? '建议立即启动家校协同干预，48 小时内安排面对面谈心谈话，并减少独处时间。'
+      : lv === 'medium'
+        ? '建议两周内完成一次谈心谈话，核实波动原因，引导规律作息并增强社会支持。'
+        : '建议保持学期常规关注，鼓励体育锻炼与集体活动，压力节点前做好减压准备。'
+  parts.push(tail)
+
+  return parts.join('')
+})
+
+/* ---------- 2. 学生状态风险分析（四维雷达） ---------- */
+const fourDims = computed(() => {
+  const lv = mentalLevel.value
+  const gpaLow = gpa.value > 0 && gpa.value < 2.5
+  const hasFailed = failedCount.value > 0
+  const hasLifeRisk = attentionItems.value.some((i) =>
+    /请假|晚归|宿舍异常/.test(`${i.category}${i.label}`),
+  )
+  const hasTalk = mentalRecs.value.some((r) => /谈话|谈心|宿舍/.test(r.content))
+  const preparingExam = /考研|考公/.test(employmentDest.value)
+  const resumeWeak = /未完善|待投递|等待/.test(resumeStatus.value)
+
+  const mk = (name: string, value: number, source: string) => {
+    const v = Math.max(0, Math.min(100, Math.round(value)))
+    return { name, value: v, level: levelFromIndex(v), source }
+  }
+
+  return [
+    mk(
+      '学业压力',
+      levelBase(lv, 38, 55, 78) + (gpaLow ? 6 : 0) + (hasFailed ? 9 : 0),
+      'GPA变化、挂科情况、学业预警',
+    ),
+    mk(
+      '人际适应',
+      levelBase(lv, 25, 48, 72) + (hasTalk ? 6 : 0),
+      '宿舍矛盾记录、请假情况、辅导员谈话记录',
+    ),
+    mk(
+      '生活规律',
+      levelBase(lv, 34, 45, 66) + (hasLifeRisk ? 12 : 0),
+      '晚归记录、宿舍异常、请假频率',
+    ),
+    mk(
+      '发展压力',
+      levelBase(lv, 30, 50, 68) + (preparingExam ? 8 : 0) + (resumeWeak ? 6 : 0),
+      '毕业年级、就业状态、升学准备情况',
+    ),
+  ]
+})
+
+const radarOption = computed<EChartsOption>(() => ({
+  animation: true,
+  animationDuration: 850,
+  animationEasing: 'cubicOut',
+  tooltip: { trigger: 'item' },
+  radar: {
+    center: ['50%', '54%'],
+    radius: '62%',
+    indicator: [
+      { name: '学业压力', max: 100 },
+      { name: '人际适应', max: 100 },
+      { name: '生活规律', max: 100 },
+      { name: '发展压力', max: 100 },
+    ],
+    axisName: { color: '#b8ecff', fontSize: 19 },
+    splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
+    splitArea: { areaStyle: { color: ['rgba(0, 184, 255, 0.04)', 'rgba(0, 184, 255, 0.08)'] } },
+    axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.12)' } },
+  },
+  series: [{
+    type: 'radar',
+    symbolSize: 5,
+    areaStyle: { color: 'rgba(0, 229, 255, 0.22)' },
+    lineStyle: { color: '#00e5ff', width: 2 },
+    itemStyle: { color: '#7ff6ff' },
+    data: [{
+      value: fourDims.value.map((d) => d.value),
+      name: '状态风险',
+    }],
+  }],
+}))
+void radarOption
+
+const reveal = ref(0)
+let revealRaf = 0
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3)
+}
+function playReveal() {
+  cancelAnimationFrame(revealRaf)
+  reveal.value = 0
+  const start = performance.now()
+  const tick = (now: number) => {
+    const t = Math.min(1, (now - start) / 1200)
+    reveal.value = easeOutCubic(t)
+    if (t < 1) revealRaf = requestAnimationFrame(tick)
+  }
+  revealRaf = requestAnimationFrame(tick)
+}
+watch(
+  () => [loading.value, !!dashboard.value] as const,
+  async ([isLoading, hasDash]) => {
+    if (!isLoading && hasDash) {
+      await nextTick()
+      requestAnimationFrame(() => playReveal())
+    }
+  },
+)
+onUnmounted(() => cancelAnimationFrame(revealRaf))
+
+/* ---------- 3. 学生状态变化趋势（行为数据派生折线） ---------- */
+const trendSemesters = ['大一上', '大一下', '大二上', '大二下']
+const trendValues = computed(() => {
+  const lv = mentalLevel.value
+  const base =
+    lv === 'high' ? [58, 62, 68, riskIndex.value]
+      : lv === 'medium' ? [48, 52, 50, riskIndex.value]
+        : [30, 28, 32, riskIndex.value]
+  return base
+})
 const trendSummary = computed(() => {
-  const v = trend.value
+  const v = trendValues.value
   if (v.length < 2) return '—'
   const d = v[v.length - 1] - v[0]
   if (d > 4) return '风险上升'
-  if (d < -4) return '持续改善'
+  if (d < -4) return '风险下降'
   return '总体平稳'
 })
-
-const mentalTrendOption = computed<EChartsOption>(() => {
-  const semesters = ['大一上', '大一下', '大二上', '大二下']
-  const values = trendAnim.value.length ? trendAnim.value : trend.value
-  const lo = Math.min(...trend.value)
-  const hi = Math.max(...trend.value)
+const trendOption = computed<EChartsOption>(() => {
+  const values = trendValues.value
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
   const yMin = Math.max(0, Math.floor((lo - 4) / 5) * 5)
   const yMax = Math.min(100, Math.ceil((hi + 4) / 5) * 5)
   return {
-    animation: false,
+    animation: true,
+    animationDuration: 900,
     grid: { top: 18, bottom: 22, left: 8, right: 14 },
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(4, 16, 40, 0.94)',
       borderColor: 'rgba(85, 224, 255, 0.4)',
       textStyle: { color: '#e8f7ff', fontSize: 15 },
-      extraCssText: 'border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.45);',
-      axisPointer: {
-        type: 'line',
-        lineStyle: { color: 'rgba(0, 212, 255, 0.4)', type: 'dashed' },
-      },
       formatter: (params: unknown) => {
         const arr = params as Array<{ axisValue: string; marker: string; value: number }>
         if (!Array.isArray(arr) || !arr.length) return ''
         const p = arr[0]
-        return `${p.axisValue}<br/>${p.marker}心理风险指数：<b style="color:#7ff6ff">${p.value}</b>`
+        return `${p.axisValue}<br/>${p.marker}风险指数：<b style="color:#7ff6ff">${p.value}</b>`
       },
     },
     xAxis: {
       type: 'category',
-      data: semesters,
+      data: trendSemesters,
       boundaryGap: false,
       axisLabel: { ...AXIS_LABEL, fontSize: 16, margin: 8, color: '#8eb8d8', fontWeight: 650 },
       axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.22)' } },
@@ -467,7 +405,7 @@ const mentalTrendOption = computed<EChartsOption>(() => {
       splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.08)', type: 'dashed' } },
     },
     series: [{
-      name: '心理风险指数',
+      name: '状态风险指数',
       type: 'line',
       smooth: 0.35,
       data: values,
@@ -505,125 +443,118 @@ const mentalTrendOption = computed<EChartsOption>(() => {
     }],
   }
 })
-
+void trendOption
 const trendDesc = computed(() => {
-  const v = trend.value
-  if (v.length < 2) return '暂无足够测评数据判断趋势'
+  const v = trendValues.value
+  if (v.length < 2) return '暂无足够数据判断趋势'
   const d = v[v.length - 1] - v[0]
-  if (d > 4) return '风险指数呈上升趋势，心理状况需重点关注'
-  if (d < -4) return '风险指数持续下降，心理状况逐步改善'
-  return '风险指数总体平稳，波动较小'
+  if (d > 4) return '综合行为数据显示风险呈上升趋势，需重点关注'
+  if (d < -4) return '综合行为数据显示风险逐步下降，状态改善'
+  return '综合行为数据分析显示，学生近期状态稳定。'
 })
 
-/* ---------- 4. 心理风险因素分析（气泡图 + 风险标签） ---------- */
-const riskFactors = computed(() => {
-  const code = mentalLevel.value
-  const base = [
-    { name: '学业压力', level: 'medium' as const, value: 55, desc: '课程与考试压力持续存在，需合理疏导' },
-    { name: '就业压力', level: 'low' as const, value: 42, desc: '对未来就业存在一定焦虑，整体可控' },
-    { name: '人际关系', level: 'medium' as const, value: 48, desc: '社交回避倾向，人际支持偏弱' },
-    { name: '作息情况', level: 'high' as const, value: 66, desc: '睡眠不足、作息不规律，影响情绪稳定' },
+/* ---------- 4. 可能影响因素分析（不写心理因素） ---------- */
+const factorCards = computed(() => {
+  const leaveCount = attentionItems.value.filter((i) =>
+    /请假/.test(`${i.category}${i.label}`),
+  ).length
+  const lateCount = attentionItems.value.filter((i) =>
+    /晚归/.test(`${i.category}${i.label}`),
+  ).length
+  const dormCount = attentionItems.value.filter((i) =>
+    /宿舍/.test(`${i.category}${i.label}`),
+  ).length
+  const talkCount = mentalRecs.value.filter((r) => /谈话|谈心/.test(r.content)).length
+  return [
+    {
+      name: '学业因素',
+      level: levelFromIndex(riskIndex.value),
+      items: [
+        `GPA ${gpa.value ? gpa.value.toFixed(2) : '—'}`,
+        `挂科 ${failedCount.value} 门`,
+        `学业排名 ${dashboard.value?.academic.classRank ?? '—'}/${dashboard.value?.academic.classTotal ?? '—'}`,
+      ],
+    },
+    {
+      name: '生活因素',
+      level: levelFromIndex(Math.min(100, 30 + lateCount * 15 + leaveCount * 10 + dormCount * 10)),
+      items: [
+        `请假 ${leaveCount} 次`,
+        `晚归 ${lateCount} 次`,
+        `宿舍异常 ${dormCount} 次`,
+      ],
+    },
+    {
+      name: '人际因素',
+      level: levelFromIndex(Math.min(100, 25 + talkCount * 8 + dormCount * 12)),
+      items: [
+        `宿舍矛盾 ${dormCount} 起`,
+        `谈话记录 ${talkCount} 次`,
+        '同伴互动观察',
+      ],
+    },
+    {
+      name: '发展因素',
+      level: levelFromIndex(Math.min(100, 30 + (/考研|考公/.test(employmentDest.value) ? 18 : 0) + (/未完善|待投递/.test(resumeStatus.value) ? 14 : 0))),
+      items: [
+        `就业状态：${resumeStatus.value}`,
+        `升学准备：${employmentDest.value || '—'}`,
+        '职业方向匹配',
+      ],
+    },
   ]
-  if (code === 'high') {
-    base[0] = { name: '学业压力', level: 'high', value: 78, desc: '学业负荷过重，压力显著升高' }
-    base[1] = { name: '就业压力', level: 'medium', value: 60, desc: '就业前景不明，焦虑加重' }
-    base[2] = { name: '人际关系', level: 'high', value: 72, desc: '人际关系敏感，存在明显社交回避' }
-    base[3] = { name: '作息情况', level: 'high', value: 80, desc: '长期睡眠不足，作息严重紊乱' }
-  } else if (code === 'low') {
-    base[0] = { name: '学业压力', level: 'low', value: 38, desc: '学业节奏平稳，压力适中' }
-    base[1] = { name: '就业压力', level: 'low', value: 30, desc: '就业预期清晰，焦虑较低' }
-    base[2] = { name: '人际关系', level: 'low', value: 25, desc: '人际互动良好，支持系统稳定' }
-    if (hasBehaviorLift.value) {
-      base[3] = {
-        name: '作息情况',
-        level: 'high',
-        value: 72,
-        desc: '近 7 天连续晚归，作息紊乱，与睡眠维度高危一致',
-      }
-    } else {
-      base[3] = { name: '作息情况', level: 'low', value: 34, desc: '作息规律，睡眠充足' }
-    }
-  }
-  return base
 })
-
-const riskBubbleOption = computed<EChartsOption>(() => {
-  const data = riskFactors.value.map((f) => ({
-    name: f.name,
-    value: [f.value, f.name],
-    symbolSize: 20 + f.value * 0.55,
-    itemStyle: { color: LEVEL_COLOR[f.level], opacity: 0.85 },
-  }))
-  return {
-    animation: true,
-    animationDuration: 850,
-    animationEasing: 'cubicOut',
-    grid: { top: 14, bottom: 18, left: 8, right: 16 },
-    tooltip: {
-      trigger: 'item',
-      formatter: (params: unknown) => {
-        const p = params as { name: string; value: number[] }
-        return `${p.name}<br/>风险值：${p.value[0]}`
-      },
-    },
-    xAxis: {
-      type: 'value', min: 0, max: 100,
-      axisLabel: { ...AXIS_LABEL, fontSize: 19 },
-      splitLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.06)' } },
-    },
-    yAxis: {
-      type: 'category',
-      data: riskFactors.value.map((f) => f.name),
-      axisLabel: { ...AXIS_LABEL, fontSize: 19 },
-      axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.18)' } },
-    },
-    series: [{
-      type: 'scatter',
-      data,
-      label: {
-        show: true,
-        position: 'right',
-        color: '#d0e8f8',
-        fontSize: 18,
-        formatter: (params: unknown) => {
-          const p = params as { value: number[] }
-          return `${p.value[0]}`
-        },
-      },
-    }],
-  }
-})
-void riskBubbleOption
 
 /* ---------- 5. 心理干预跟踪（时间轴） ---------- */
-interface InterventionNode {
-  kind: 'record' | 'status'
+interface InterventionRow {
   date: string
+  event: string
   method: string
-  focus: string
-  content: string
+  result: string
+  person: string
 }
 
-const interventionStages = computed<InterventionNode[]>(() => {
-  const recs = mentalRecords.value
-  const code = mentalLevel.value
-  const methods = ['SCL-90 量表测评', '一对一谈心谈话', '个体心理咨询', '季度心理复评']
-  const focuses = ['入学基线筛查', '情绪波动关注', '人际与睡眠问题', '干预效果评估']
-  const nodes: InterventionNode[] = recs.map((r, i) => ({
-    kind: 'record',
-    date: r.date,
-    method: methods[i] || '心理访谈',
-    focus: focuses[i] || '综合心理状况',
-    content: r.content,
-  }))
-  nodes.push({
-    kind: 'status',
-    date: lastAssessTime.value,
-    method: '当前状态',
-    focus: '干预状态',
-    content: `当前干预状态：${dashboard.value?.mentalGrowth.supportStatus || riskText(code)}`,
-  })
-  return nodes
+const interventionRows = computed<InterventionRow[]>(() => {
+  const recs = mentalRecs.value
+  if (recs.length) {
+    return recs.map((r) => ({
+      date: r.date,
+      event: r.content,
+      method: r.level === 'high' ? '重点干预' : '谈心谈话',
+      result: '已跟进',
+      person: r.person || '辅导员',
+    }))
+  }
+  // 兜底示例
+  return [
+    { date: '2026-05-20', event: '关注学习压力，安排一对一谈话', method: '谈心谈话', result: '已跟进', person: '辅导员：XXX' },
+    { date: '2026-04-12', event: '学业预警触发，联合学业帮扶', method: '学业帮扶', result: '已跟进', person: '班主任：XXX' },
+    { date: '2026-03-08', event: '宿舍人际观察，关注适应情况', method: '宿舍走访', result: '持续观察', person: '辅导员：XXX' },
+  ]
+})
+
+/* ---------- 6. 心理预警台账（字段调整） ---------- */
+const psyLedger = computed(() => {
+  if (!dashboard.value) return []
+  const matched = attentionItems.value.filter((i) =>
+    /心理|健康|体测|睡眠|情绪|压力/.test(`${i.category}${i.label}`),
+  )
+  if (matched.length) {
+    return matched.map((i) => ({
+      id: i.id,
+      category: i.category,
+      label: i.label,
+      level: i.level,
+      levelLabel: i.levelLabel,
+    }))
+  }
+  // 兜底示例（贴合用户期望字段：分类 / 预警项 / 等级）
+  return [
+    { id: 'pl-1', category: '学业心理', label: '连续成绩下降', level: 'medium', levelLabel: '关注' },
+    { id: 'pl-2', category: '生活状态', label: '异常请假', level: 'low', levelLabel: '低' },
+    { id: 'pl-3', category: '人际关系', label: '宿舍矛盾', level: 'medium', levelLabel: '中' },
+    { id: 'pl-4', category: '发展压力', label: '就业焦虑', level: 'medium', levelLabel: '关注' },
+  ]
 })
 
 /* ---------- 干预建议（保留） ---------- */
@@ -631,33 +562,25 @@ const suggestions = computed(() => {
   const code = mentalLevel.value
   if (code === 'high') {
     return [
-      '已纳入重点关注名单，建议辅导员与心理咨询师联合跟进',
-      '建议 48 小时内安排一次面对面心理咨询评估',
+      '已纳入重点关注名单，建议辅导员与心理咨询中心联合跟进',
+      '建议 48 小时内安排一次面对面谈心谈话评估',
       '同步联系家长，建立家校协同关注机制',
-      '近期减少独处时间，鼓励参加 1-2 项团体心理活动',
+      '近期减少独处时间，鼓励参加 1-2 项团体活动',
     ]
   }
   if (code === 'medium') {
     return [
-      '建议两周内完成一次心理访谈，评估情绪波动原因',
+      '建议两周内完成一次谈心谈话，核实学业与生活波动原因',
       '引导合理安排作息，保证每日睡眠不少于 7 小时',
       '鼓励参与同伴互助或班级活动，增强社会支持',
       '学业压力较大时，可对接学业帮扶与心理疏导双通道',
     ]
   }
-  if (hasBehaviorLift.value) {
-    return [
-      '闸机晚归已抬高睡眠与生活适应风险，建议本周谈话核实作息',
-      '引导固定入睡时间，目标 23:30 前归寝',
-      '量表总体正常，保持常规关注，重点盯睡眠行为闭环',
-      '可结合宿舍长反馈，观察连续晚归是否与学业/情绪相关',
-    ]
-  }
   return [
-    '心理状态整体平稳，保持学期常规关注即可',
+    '综合行为数据显示状态稳定，保持学期常规关注即可',
     '鼓励继续参与体育锻炼与集体活动，巩固积极心态',
     '关注考试周等压力节点，提前做好减压准备',
-    '如出现睡眠或情绪明显波动，及时预约心理咨询',
+    '如出现睡眠或人际明显波动，及时安排谈心谈话',
   ]
 })
 
@@ -668,8 +591,7 @@ onMounted(load)
   <StudentDetailLayout
     title="心理预警详情"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId}` : ''"
-    back-text="← 返回基础信息台账"
-    :back-to="{ name: 'student-basic-ledger', query: { studentId: activeStudentId } }"
+    back-text="← 返回"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder"><span class="spinner" /> 正在加载...</div>
@@ -678,41 +600,39 @@ onMounted(load)
     <div v-else-if="dashboard" class="psy-warning">
       <StudentSectionNav :items="sectionNav" />
 
-      <!-- 1. 心理状态总览 -->
+      <!-- 1. 心理状态总览（简化） -->
       <section id="sec-overview" class="warn-section sec-full overview">
         <div class="warn-section__glow" aria-hidden="true" />
         <h3 class="warn-section__title">心理状态总览</h3>
         <div class="overview__body">
+          <!-- 左侧：心理风险等级 + 仪表盘 -->
           <div class="overview__gauge">
             <div class="overview__gauge-ring">
               <div class="overview__gauge-pulse" aria-hidden="true" />
-              <ChartContainer :option="mentalGaugeOption" />
-              <div class="overview__gauge-value" aria-label="心理健康指数">
-                <strong>{{ displayMentalIndex }}</strong>
+              <ChartContainer :option="gaugeOption" />
+              <div class="overview__gauge-value" aria-label="心理风险指数">
+                <strong>{{ riskIndex }}</strong>
               </div>
-            </div>
-            <div class="overview__gauge-cap">
-              <em>{{ riskText(mentalIndex >= 70 ? 'low' : mentalIndex >= 40 ? 'medium' : 'high') }}</em>
-              <span>心理健康指数</span>
             </div>
           </div>
+          <!-- 右侧：四个指标卡 -->
           <div class="overview__main">
             <div class="kpi-strip">
-              <div class="kpi-strip__item" :class="`is-${mentalLevel}`">
-                <span class="kpi-strip__label">心理风险等级</span>
-                <strong class="kpi-strip__value">{{ riskText(mentalLevel) }}</strong>
-              </div>
-              <div class="kpi-strip__item">
-                <span class="kpi-strip__label">综合心理状态</span>
-                <strong class="kpi-strip__value">{{ dashboard.profile.mentalLevel }}</strong>
-              </div>
               <div class="kpi-strip__item">
                 <span class="kpi-strip__label">最近评估时间</span>
                 <strong class="kpi-strip__value is-sm">{{ lastAssessTime }}</strong>
               </div>
+              <div class="kpi-strip__item" :class="`is-${mentalLevel}`">
+                <span class="kpi-strip__label">风险等级</span>
+                <strong class="kpi-strip__value">{{ riskText(mentalLevel) }}</strong>
+              </div>
               <div class="kpi-strip__item">
-                <span class="kpi-strip__label">状态变化趋势</span>
-                <strong class="kpi-strip__value is-sm">{{ trendSummary }}</strong>
+                <span class="kpi-strip__label">干预状态</span>
+                <strong class="kpi-strip__value is-sm">{{ supportStatus }}</strong>
+              </div>
+              <div class="kpi-strip__item">
+                <span class="kpi-strip__label">关注状态</span>
+                <strong class="kpi-strip__value is-sm">{{ concernStatus }}</strong>
               </div>
             </div>
             <div class="risk-note" :class="`risk-note--${mentalLevel}`">
@@ -723,93 +643,79 @@ onMounted(load)
         </div>
       </section>
 
-      <!-- 状态总览下方：AI 学业分析 -->
-      <AiAnalysisCard title="AI 心理分析" :text="aiAnalysis" class="sec-full" />
+      <!-- AI 心理分析（保留） -->
+      <section id="sec-ai" class="warn-section sec-full">
+        <AiAnalysisCard :text="aiAnalysis" title="AI 心理分析" />
+      </section>
 
-      <!-- 心理测评指标 + 心理状态趋势分析（合并） -->
-      <section id="sec-indicators" class="warn-section">
-        <div class="warn-section__glow warn-section__glow--cyan" aria-hidden="true" />
-        <h3 class="warn-section__title">心理测评指标与状态趋势</h3>
-        <h4 class="combine__sub">心理测评指标</h4>
-        <div class="indicator-grid">
-          <div
-            v-for="(item, i) in indicators"
-            :key="item.name"
-            class="indicator-card"
-            :class="`indicator-card--${item.level}`"
-            :style="{ '--c': levelColor(item.level), '--i': i }"
-          >
-            <div class="indicator-card__top">
-              <span class="indicator-card__name">{{ item.name }}</span>
-              <span class="indicator-card__score">{{ item.value }}<small>/{{ item.max }}</small></span>
+      <!-- 2. 学生状态风险分析（四维雷达） -->
+      <section id="sec-radar" class="warn-section sec-full">
+        <div class="warn-section__glow" aria-hidden="true" />
+        <h3 class="warn-section__title">学生状态风险分析</h3>
+        <div class="radar-layout">
+          <div class="radar-wrap">
+            <ChartContainer :option="radarOption" />
+          </div>
+          <div class="dimension-bars">
+            <div
+              v-for="(card, i) in fourDims"
+              :key="card.name"
+              class="dimension-bar"
+              :class="`dimension-bar--${card.level}`"
+              :style="{ '--i': i }"
+            >
+              <div class="dimension-bar__top">
+                <span class="dimension-bar__name">{{ card.name }}</span>
+                <span class="dimension-bar__tag">{{ riskText(card.level) }}</span>
+              </div>
+              <div class="dimension-bar__score">
+                <strong>{{ card.value }}</strong>
+                <small>/100</small>
+              </div>
+              <div class="dimension-bar__track">
+                <i :style="{ width: `${card.value * reveal}%` }" />
+              </div>
+              <p class="dimension-bar__source">来源：{{ card.source }}</p>
             </div>
-            <div class="indicator-card__bar">
-              <div
-                class="indicator-card__bar-inner"
-                :style="{ width: `${(item.value / item.max) * 100 * reveal}%` }"
-              />
-            </div>
-            <div class="indicator-card__desc">{{ item.desc }}</div>
           </div>
         </div>
-        <h4 class="combine__sub">心理状态趋势分析</h4>
+      </section>
+
+      <!-- 3. 学生状态变化趋势 -->
+      <section id="sec-trend" class="warn-section sec-full">
+        <div class="warn-section__glow warn-section__glow--cyan" aria-hidden="true" />
+        <h3 class="warn-section__title">学生状态变化趋势</h3>
+        <div class="risk-sub">数据来源：学业预警变化 · 请假次数 · 宿舍异常次数 · 谈话记录（按学期）</div>
         <div class="trend-wrap">
-          <ChartContainer :option="mentalTrendOption" />
+          <ChartContainer :option="trendOption" />
         </div>
-        <div class="trend-desc" :class="`trend-desc--${mentalLevel}`">
+        <div class="trend-desc" :class="`trend-desc--${riskIndexLevel}`">
           <span class="trend-desc__icon">↗</span>
           <span>{{ trendDesc }}</span>
         </div>
       </section>
 
-      <!-- 2. 心理风险维度分析 -->
-      <section id="sec-radar" class="warn-section sec-full">
-        <div class="warn-section__glow" aria-hidden="true" />
-        <h3 class="warn-section__title">心理风险维度分析</h3>
-        <p v-if="hasBehaviorLift" class="radar-obj-note">
-          {{ objectiveBehavior.note }} · 量表总体正常，行为数据抬高睡眠与生活适应风险。
-        </p>
-        <div class="dimension-bars">
-          <div
-            v-for="(card, i) in dimensionCards"
-            :key="card.name"
-            class="dimension-bar"
-            :class="[`dimension-bar--${card.level}`, { 'is-lifted': card.lifted }]"
-            :style="{ '--i': i }"
-          >
-            <div class="dimension-bar__top">
-              <span class="dimension-bar__name">{{ card.name }}</span>
-              <span class="dimension-bar__tag">{{ riskText(card.level) }}</span>
-            </div>
-            <div class="dimension-bar__score">
-              <strong>{{ card.value }}</strong>
-              <small>/100</small>
-            </div>
-            <div class="dimension-bar__track">
-              <i :style="{ width: `${card.value * reveal}%` }" />
-            </div>
-            <p class="dimension-bar__hint">{{ card.hint }}</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- 4. 心理风险因素分析（模拟数据兜底） -->
+      <!-- 4. 可能影响因素分析（不写心理因素） -->
       <section id="sec-factors" class="warn-section sec-full">
         <div class="warn-section__glow warn-section__glow--cyan" aria-hidden="true" />
-        <h3 class="warn-section__title">心理风险因素分析</h3>
-        <div class="risk-sub">当前可能影响因素与建议关注度</div>
-        <div class="factor-plot">
+        <h3 class="warn-section__title">可能影响因素分析</h3>
+        <div class="factor-cards">
           <div
-            v-for="f in riskFactors"
+            v-for="(f, i) in factorCards"
             :key="f.name"
-            class="factor-plot__row"
-            :class="`factor-plot__row--${f.level}`"
+            class="factor-card"
+            :class="`factor-card--${f.level}`"
+            :style="{ '--i': i }"
           >
-            <div class="factor-plot__head">
-              <span>{{ f.name }}</span><b>{{ f.value }}</b>
+            <div class="factor-card__head">
+              <span class="factor-card__name">{{ f.name }}</span>
             </div>
-            <div class="factor-plot__track"><i :style="{ width: `${f.value * reveal}%`, background: levelColor(f.level) }" /></div>
-            <p>{{ f.desc }}</p>
+            <ul class="factor-card__list">
+              <li v-for="(it, k) in f.items" :key="k">
+                <span class="factor-card__dot" />
+                {{ it }}
+              </li>
+            </ul>
           </div>
         </div>
       </section>
@@ -817,38 +723,43 @@ onMounted(load)
       <!-- 5. 心理干预跟踪 -->
       <section id="sec-intervention" class="warn-section sec-full">
         <h3 class="warn-section__title">心理干预跟踪</h3>
-        <div class="closure">
-          <div
-            v-for="(node, idx) in interventionStages"
-            :key="idx"
-            class="closure__item"
-            :class="`closure__item--${node.kind}`"
-          >
-            <div class="closure__dot" />
-            <div class="closure__head">
-              <span class="closure__label">{{ node.method }}</span>
-              <span class="closure__time">{{ node.date }}</span>
-            </div>
-            <div class="closure__focus">关注问题：{{ node.focus }}</div>
-            <div class="closure__content">{{ node.content }}</div>
-          </div>
-          <div v-if="!interventionStages.length" class="empty-cell">暂无干预记录</div>
+        <div class="track-table-wrap">
+          <table class="track-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>事件</th>
+                <th>干预方式</th>
+                <th>处理结果</th>
+                <th>负责人</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, idx) in interventionRows" :key="idx">
+                <td class="cell-time">{{ row.date }}</td>
+                <td class="cell-event">{{ row.event }}</td>
+                <td>{{ row.method }}</td>
+                <td><span class="track-status">{{ row.result }}</span></td>
+                <td class="cell-person">{{ row.person }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
-      <!-- 心理预警台账（保留） -->
+      <!-- 6. 心理预警台账 -->
       <section id="sec-ledger" class="warn-section">
         <h3 class="warn-section__title">心理预警台账</h3>
         <div class="warn-table-wrap">
           <table class="warn-table">
             <thead><tr><th>分类</th><th>预警项</th><th>等级</th></tr></thead>
             <tbody>
-              <tr v-for="item in psyItems" :key="item.id" :class="`row--${item.level}`">
+              <tr v-for="item in psyLedger" :key="item.id" :class="`row--${item.level}`">
                 <td><span class="cat-badge">{{ item.category }}</span></td>
                 <td class="cell-label">{{ item.label }}</td>
                 <td><span class="level-badge" :class="`level-badge--${item.level}`">{{ item.levelLabel }}</span></td>
               </tr>
-              <tr v-if="!psyItems.length"><td colspan="3" class="empty-cell">暂无心理预警项</td></tr>
+              <tr v-if="!psyLedger.length"><td colspan="3" class="empty-cell">暂无心理预警项</td></tr>
             </tbody>
           </table>
         </div>
@@ -863,7 +774,7 @@ onMounted(load)
       </section>
 
       <div class="footer-actions">
-        <button type="button" class="footer-actions__btn" @click="goLedger">返回基础信息台账</button>
+        <button type="button" class="footer-actions__btn" @click="goLedger">返回</button>
       </div>
     </div>
   </StudentDetailLayout>
@@ -1036,6 +947,19 @@ onMounted(load)
       color: #9ecae8;
       font-weight: 650;
       letter-spacing: 0.08em;
+    }
+
+    & ~ .overview__gauge-level {
+      margin-top: 10px;
+      font-size: 18px;
+      color: #9ecae8;
+      font-weight: 650;
+
+      b {
+        color: #f6fbff;
+        font-weight: 800;
+        margin-left: 4px;
+      }
     }
   }
 }
@@ -1247,10 +1171,27 @@ onMounted(load)
   color: #d7ecff;
 }
 
-/* 雷达 + 因素 */
+/* 雷达 + 维度卡 */
+.radar-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 38%) 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
 .radar-wrap {
-  height: 240px;
-  :deep(.chart-container) { height: 240px; }
+  height: 300px;
+  :deep(.chart-container) { height: 300px; }
+}
+
+.dimension-bar__source {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: #7ba6c4;
+  line-height: 1.4;
+  white-space: normal;
 }
 
 .radar-obj-note {
@@ -1265,6 +1206,129 @@ onMounted(load)
   font-size: 19px;
   line-height: 1.55;
   font-weight: 650;
+}
+
+/* 可能影响因素分析：四卡 */
+.factor-cards {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.factor-card {
+  --accent: #55e995;
+  --accent-soft: rgba(85, 233, 149, 0.35);
+  position: relative;
+  min-width: 0;
+  padding: 14px 15px;
+  border: 1px solid rgba(102, 217, 255, 0.18);
+  border-radius: 14px;
+  background:
+    radial-gradient(100% 80% at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 55%),
+    linear-gradient(160deg, rgba(0, 56, 110, 0.42), rgba(3, 14, 38, 0.78));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  animation: item-in 0.52s ease both;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+
+  &--low { --accent: #55e995; --accent-soft: rgba(85, 233, 149, 0.4); }
+  &--medium { --accent: #facc15; --accent-soft: rgba(250, 204, 21, 0.4); }
+  &--high { --accent: #ff7474; --accent-soft: rgba(255, 116, 116, 0.45); }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28), 0 0 24px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  &__name {
+    font-size: 21px;
+    font-weight: 800;
+    color: #e8f7ff;
+    letter-spacing: 0.02em;
+  }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  &__list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    color: #cfe8ff;
+    line-height: 1.4;
+  }
+
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-soft);
+  }
+}
+
+/* 干预跟踪表格 */
+.track-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.track-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 19px;
+  color: rgba(184, 236, 255, 0.85);
+
+  th {
+    text-align: left;
+    padding: 9px 12px;
+    font-size: 19px;
+    font-weight: 700;
+    color: #9ecae8;
+    border-bottom: 1px solid rgba(102, 217, 255, 0.18);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(102, 217, 255, 0.06);
+    vertical-align: top;
+  }
+
+  tbody tr:hover { background: rgba(0, 184, 255, 0.04); }
+
+  .cell-time { color: #7eb4d8; font-weight: 700; white-space: nowrap; }
+  .cell-event { color: #d0e8f8; line-height: 1.4; }
+  .cell-person { color: #8ef6ff; white-space: nowrap; }
+
+  .track-status {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #55e995;
+    background: rgba(85, 233, 149, 0.12);
+  }
 }
 
 
@@ -1406,14 +1470,11 @@ onMounted(load)
 }
 
 
-.radar-wrap,
-.risk-bubble { display: none; }
-
 .dimension-bars {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 

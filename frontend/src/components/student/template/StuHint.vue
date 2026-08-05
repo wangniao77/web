@@ -13,11 +13,14 @@ const props = withDefaults(
     placement?: 'top' | 'bottom' | 'auto'
     /** 悬停多久后显示（毫秒） */
     delay?: number
+    /** 定位锚点选择器：命中则浮层相对该子元素定位（而非整个包裹元素）；用于让浮层贴近特定标签 */
+    anchorSelector?: string
   }>(),
   {
     block: false,
     placement: 'auto',
     delay: 450,
+    anchorSelector: undefined,
   },
 )
 

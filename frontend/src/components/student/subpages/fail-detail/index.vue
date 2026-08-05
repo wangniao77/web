@@ -15,10 +15,13 @@ import { computed, onMounted, ref } from 'vue'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import { failDetailService } from '../_shared/fail-data'
 import type { FailDetailVM } from '../_shared/fail-data'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { failDetailToSheets } from '@/utils/studentDashboardExport'
 
 const data = ref<FailDetailVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+useStudentDashboardExport('挂科明细', data, failDetailToSheets)
 
 async function load() {
   loading.value = true
@@ -92,8 +95,7 @@ onMounted(load)
   <StudentDetailLayout
     title="挂科课程详情"
     subtitle="挂科明细 · 班均对比 · 归因分析"
-    back-text="← 返回学生档案"
-    :back-to="{ name: 'student' }"
+    back-text="← 返回"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">

@@ -13,6 +13,8 @@ import ChartCard from '../academic-detail/components/ChartCard.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
 import StuHint from '@/components/student/template/StuHint.vue'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { dashboardToCareerSheets } from '@/utils/studentDashboardExport'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
@@ -25,17 +27,12 @@ const activeStudentId = computed(
   () => (route.query.studentId as string | undefined) || studentScope.value.studentId,
 )
 
-/* ────── 返回目标：智能育航详情（二级页）────── */
-const studentIdQuery = computed(() => route.query.studentId as string | undefined)
-const backText = computed(() => '← 返回智能育航')
-const backTo = computed(() =>
-  studentIdQuery.value
-    ? { name: 'student-ai-portrait', query: { studentId: studentIdQuery.value } }
-    : { name: 'student-ai-portrait' },
-)
+/* ────── 返回：返回上一级页面 ────── */
+const backText = '← 返回'
 
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
+useStudentDashboardExport('职业发展', dashboard, dashboardToCareerSheets)
 const error = ref<string | null>(null)
 
 /* ────── 顶部标签 ────── */
@@ -882,7 +879,6 @@ onMounted(load)
     title="出口发展详情"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId}` : ''"
     :back-text="backText"
-    :back-to="backTo"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载...

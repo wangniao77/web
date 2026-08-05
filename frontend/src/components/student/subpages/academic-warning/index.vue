@@ -18,6 +18,8 @@ import ChartContainer from '@/components/charts/ChartContainer.vue'
 import AiAnalysisCard from '@/components/student/template/AiAnalysisCard.vue'
 import StuHint from '@/components/student/template/StuHint.vue'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { dashboardToAcademicWarningSheets } from '@/utils/studentDashboardExport'
 import { studentService } from '@/api/student/services'
 import type { StudentDashboardVM, AttentionItemVM } from '@/types/student/view'
 import type { EChartsOption } from 'echarts'
@@ -33,6 +35,7 @@ const activeStudentId = computed(
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+useStudentDashboardExport('学业预警详情', dashboard, dashboardToAcademicWarningSheets)
 
 async function load() {
   loading.value = true
@@ -47,7 +50,7 @@ async function load() {
 }
 
 function goLedger() {
-  router.push({ name: 'student-basic-ledger', query: { studentId: activeStudentId.value } })
+  router.back()
 }
 function goGpa() {
   router.push({ name: 'student-gpa-detail', query: { studentId: activeStudentId.value } })
@@ -746,8 +749,7 @@ onMounted(load)
   <StudentDetailLayout
     title="学业预警详情"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId}` : ''"
-    back-text="← 返回基础信息台账"
-    :back-to="{ name: 'student-basic-ledger', query: { studentId: activeStudentId } }"
+    back-text="← 返回"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder"><span class="spinner" /> 正在加载...</div>
@@ -1027,7 +1029,7 @@ GPA偏离 = max(0, (3.6−GPA)/3.6×40)
       </section>
 
       <div class="footer-actions">
-        <button type="button" class="footer-actions__btn" @click="goLedger">返回基础信息台账</button>
+        <button type="button" class="footer-actions__btn" @click="goLedger">返回</button>
       </div>
     </div>
   </StudentDetailLayout>

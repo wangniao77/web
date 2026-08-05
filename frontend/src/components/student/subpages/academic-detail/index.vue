@@ -11,8 +11,10 @@ import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import StudentSectionNav from '../_shared/StudentSectionNav.vue'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
 import { studentService } from '@/api/student/services'
 import { gpaDetailService } from '../_shared/gpa-data'
+import { dashboardToAcademicDetailSheets, gpaDetailToSheets } from '@/utils/studentDashboardExport'
 import type { StudentDashboardVM } from '@/types/student/view'
 import type { GpaDetailVM, CourseCategory, CourseRecordVM } from '../_shared/gpa-data'
 import { CATEGORY_LABEL } from '../_shared/gpa-data'
@@ -41,6 +43,15 @@ const dashboard = ref<StudentDashboardVM | null>(null)
 const gpaDetail = ref<GpaDetailVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+// 导出：学情轨迹护航 = 学业指标（dashboard）+ GPA 课程明细（gpaDetail）合并
+const academicExportData = computed(() => ({ dashboard: dashboard.value, gpa: gpaDetail.value }))
+useStudentDashboardExport('学情轨迹护航详情', academicExportData, (m) => {
+  const sheets: import('@/utils/exportExcel').ExcelSheet[] = []
+  if (m.dashboard) sheets.push(...dashboardToAcademicDetailSheets(m.dashboard))
+  if (m.gpa) sheets.push(...gpaDetailToSheets(m.gpa))
+  return sheets
+})
 
 async function load() {
   loading.value = true
@@ -275,8 +286,7 @@ onMounted(load)
   <StudentDetailLayout
     title="学情轨迹护航详情"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId}` : ''"
-    back-text="← 返回学生发展概览"
-    :back-to="{ name: 'student', query: { studentId: activeStudentId } }"
+    back-text="← 返回"
   >
     <div v-if="loading" class="placeholder">
       <span class="spinner" /> 正在加载...

@@ -13,10 +13,13 @@ import SemesterCourseBands from './components/SemesterCourseBands.vue'
 import SemesterCourseTable from './components/SemesterCourseTable.vue'
 import { gpaDetailService } from '../_shared/gpa-data'
 import type { GpaDetailVM } from '../_shared/gpa-data'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
+import { gpaDetailToSheets } from '@/utils/studentDashboardExport'
 
 const data = ref<GpaDetailVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+useStudentDashboardExport('GPA学期明细', data, gpaDetailToSheets)
 
 const semesterNames = computed(() => data.value?.semesterList ?? data.value?.semesters.map((s) => s.semester) ?? [])
 
@@ -39,8 +42,7 @@ onMounted(load)
   <StudentDetailLayout
     title="每学期已修课程明细"
     subtitle="学期成绩总览 · 完整课程表 · 支持排序"
-    back-text="← 返回 GPA 总览"
-    :back-to="{ name: 'student-gpa-detail' }"
+    back-text="← 返回"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">

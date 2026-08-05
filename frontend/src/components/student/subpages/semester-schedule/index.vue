@@ -11,7 +11,9 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StudentDetailLayout from '../_shared/StudentDetailLayout.vue'
 import { useScope } from '@/composables/useScope'
+import { useStudentDashboardExport } from '@/composables/useStudentDashboardExport'
 import { studentService } from '@/api/student/services'
+import { semesterScheduleToSheets } from '@/utils/studentDashboardExport'
 import type { StudentDashboardVM } from '@/types/student/view'
 
 const route = useRoute()
@@ -24,6 +26,16 @@ const activeStudentId = computed(
 const dashboard = ref<StudentDashboardVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+// 导出：本学期课表（基于页面内 mockSchedule 常量）
+const scheduleExportData = ref({
+  schedule: mockSchedule,
+  weekDays,
+  periods,
+})
+useStudentDashboardExport('本学期课表', scheduleExportData, (m) =>
+  semesterScheduleToSheets(m.schedule, m.weekDays, m.periods),
+)
 
 async function load() {
   loading.value = true
@@ -121,8 +133,7 @@ onMounted(load)
   <StudentDetailLayout
     title="本学期课表"
     :subtitle="dashboard ? `${dashboard.profile.name} · ${dashboard.profile.studentId} · ${dashboard.profile.className}` : ''"
-    back-text="← 返回基础信息台账"
-    :back-to="{ name: 'student-basic-ledger', query: { studentId: activeStudentId } }"
+    back-text="← 返回"
     mock-badge="模拟数据"
   >
     <div v-if="loading" class="placeholder">
