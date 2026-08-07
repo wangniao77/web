@@ -7,6 +7,7 @@ from Utils.DB.Models.college_ext_models import (
     ResearchPlatform,
     StudentTag,
     Teacher,
+    TeacherHonor,
 )
 from Utils.DB.Models.college_models import College
 from Utils.DB.Models.college_student_models import (
@@ -60,6 +61,7 @@ __all__ = [
     "ResearchIp",
     "ThesisAdvisor",
     "Teacher",
+    "TeacherHonor",
     "ResearchPlatform",
     "AchievementItem",
     "MajorRankSnapshot",

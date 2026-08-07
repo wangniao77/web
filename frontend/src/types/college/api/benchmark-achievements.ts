@@ -27,6 +27,10 @@ export interface BenchmarkAchievementItemDTO {
   level: string
   date: string
   leader?: string
+  /** 系部 */
+  department?: string
+  /** 专业 */
+  majorName?: string
 }
 
 export interface BenchmarkMilestoneDTO {
@@ -105,6 +109,13 @@ export interface BenchmarkAchievementsDTO {
 
 export interface BenchmarkAchievementsDetailDTO extends BenchmarkAchievementsDTO {
   byLevel: Array<{ level: string; count: number }>
+  byDepartment?: Array<{ department: string; count: number }>
+  filters?: {
+    departments?: string[]
+    majors?: string[]
+    selectedDepartment?: string | null
+    selectedMajor?: string | null
+  }
   achievements: BenchmarkAchievementItemDTO[]
   /** 成果总览底部的分项透视面板（按钮切换） */
   categoryPanels: BenchmarkDetailPanel[]

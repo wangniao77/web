@@ -67,6 +67,12 @@ export function adaptTeacherAnalyticsDetail(
       trend: i.trend ? { ...i.trend } : undefined,
     })),
     majorComparison: dto.majorComparison.map((i) => ({ ...i })),
+    filters: dto.filters
+      ? {
+          departments: [...(dto.filters.departments || [])],
+          selectedDepartment: dto.filters.selectedDepartment,
+        }
+      : undefined,
     excellentSamples: dto.excellentSamples.map((i) => ({ ...i })),
     teachingInvestment: {
       ...dto.teachingInvestment,
@@ -84,13 +90,16 @@ export function adaptTeacherAnalyticsDetail(
     },
     capacityBuilding: {
       ...dto.capacityBuilding,
-      newPhds: dto.capacityBuilding.newPhds.map((i) => ({ ...i })),
-      newProfessors: dto.capacityBuilding.newProfessors.map((i) => ({ ...i })),
-      newTalents: dto.capacityBuilding.newTalents.map((i) => ({ ...i })),
-      trainingByType: dto.capacityBuilding.trainingByType.map((i) => ({ ...i })),
-      visitingScholars: dto.capacityBuilding.visitingScholars.map((i) => ({ ...i })),
-      mentorshipDetail: dto.capacityBuilding.mentorshipDetail.map((i) => ({ ...i })),
-      yearlyTrend: dto.capacityBuilding.yearlyTrend.map((i) => ({ ...i })),
+      newPhds: (dto.capacityBuilding?.newPhds ?? []).map((i) => ({ ...i })),
+      newPhdPeople: (dto.capacityBuilding?.newPhdPeople ?? []).map((i) => ({ ...i })),
+      newProfessors: (dto.capacityBuilding?.newProfessors ?? []).map((i) => ({ ...i })),
+      newProfessorPeople: (dto.capacityBuilding?.newProfessorPeople ?? []).map((i) => ({ ...i })),
+      newTalents: (dto.capacityBuilding?.newTalents ?? []).map((i) => ({ ...i })),
+      trainingByType: (dto.capacityBuilding?.trainingByType ?? []).map((i) => ({ ...i })),
+      visitingScholars: (dto.capacityBuilding?.visitingScholars ?? []).map((i) => ({ ...i })),
+      mentorshipDetail: (dto.capacityBuilding?.mentorshipDetail ?? []).map((i) => ({ ...i })),
+      yearlyTrend: (dto.capacityBuilding?.yearlyTrend ?? []).map((i) => ({ ...i })),
+      plans: { ...(dto.capacityBuilding?.plans ?? {}) },
     },
     performanceAnalysis: {
       summary: { ...dto.performanceAnalysis.summary },

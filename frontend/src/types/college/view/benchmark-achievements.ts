@@ -47,6 +47,8 @@ export interface BenchmarkAchievementsDetailVM {
   highlights: BenchmarkAchievementItemVM[]
   byCategory: BenchmarkAchievementsDTO['byCategory']
   byLevel: BenchmarkAchievementsDetailDTO['byLevel']
+  byDepartment?: BenchmarkAchievementsDetailDTO['byDepartment']
+  filters?: BenchmarkAchievementsDetailDTO['filters']
   achievements: BenchmarkAchievementItemVM[]
   categoryPanels: BenchmarkDetailPanelVM[]
 }

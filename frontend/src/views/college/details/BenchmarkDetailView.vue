@@ -28,6 +28,8 @@ const tabBarRef = ref<HTMLElement | null>(null)
 const activeSection = ref('')
 const filter = ref<FilterKey>('all')
 const selectedId = ref('')
+const departmentFilter = ref('')
+const majorFilter = ref('')
 
 // 分项成果透视：九大板块专题（精品成果集萃二级页）
 const featured = ref<BenchmarkFeaturedVM | null>(null)
@@ -135,8 +137,37 @@ function setFilter(next: FilterKey) {
 
 const filteredAchievements = computed(() => {
   if (!data.value) return []
-  if (filter.value === 'all') return data.value.achievements
-  return data.value.achievements.filter((item) => item.category === filter.value)
+  let list = data.value.achievements
+  if (filter.value !== 'all') {
+    list = list.filter((item) => item.category === filter.value)
+  }
+  if (departmentFilter.value) {
+    list = list.filter((item) => item.department === departmentFilter.value)
+  }
+  if (majorFilter.value) {
+    list = list.filter((item) => item.majorName === majorFilter.value)
+  }
+  return list
+})
+
+const departmentOptions = computed(() => {
+  const fromApi = data.value?.filters?.departments
+  if (fromApi?.length) return fromApi
+  const set = new Set<string>()
+  for (const a of data.value?.achievements || []) {
+    if (a.department) set.add(a.department)
+  }
+  return [...set].sort()
+})
+
+const majorOptions = computed(() => {
+  const fromApi = data.value?.filters?.majors
+  if (fromApi?.length) return fromApi
+  const set = new Set<string>()
+  for (const a of data.value?.achievements || []) {
+    if (a.majorName) set.add(a.majorName)
+  }
+  return [...set].sort()
 })
 
 const selectedItem = computed(() =>
@@ -553,6 +584,22 @@ watch(() => route.query, () => applyRouteQuery())
             >
               {{ item.label }}
             </button>
+          </div>
+          <div class="scope-filters" style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 8px;">
+            <label class="term-switch">
+              <span>系部</span>
+              <select v-model="departmentFilter" aria-label="系部筛选">
+                <option value="">全部系部</option>
+                <option v-for="d in departmentOptions" :key="d" :value="d">{{ d }}</option>
+              </select>
+            </label>
+            <label class="term-switch">
+              <span>专业</span>
+              <select v-model="majorFilter" aria-label="专业筛选">
+                <option value="">全部专业</option>
+                <option v-for="m in majorOptions" :key="m" :value="m">{{ m }}</option>
+              </select>
+            </label>
           </div>
 
           <div class="ach-list">

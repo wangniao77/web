@@ -59,6 +59,7 @@ class CompetitionAward(Model):
     student_id = fields.CharField(max_length=32, index=True)
     name = fields.CharField(max_length=64, null=True)
     major_name = fields.CharField(max_length=128, null=True)
+    department = fields.CharField(max_length=128, null=True, description="专业系别/系部")
     class_name = fields.CharField(max_length=128, null=True)
     contest_name = fields.CharField(max_length=512)
     organizer = fields.CharField(max_length=255, null=True)
@@ -93,7 +94,7 @@ class CompetitionAward(Model):
     class Meta:
         table = "competition_awards"
         unique_together = (("college_id", "dedupe_key"),)
-        indexes = (("college_id", "award_level"), ("student_id",))
+        indexes = (("college_id", "award_level"), ("student_id",), ("college_id", "department"))
 
 
 class StudentProject(Model):

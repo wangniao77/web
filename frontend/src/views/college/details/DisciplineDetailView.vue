@@ -652,9 +652,13 @@ watch(activeMajor, (name) => {
           <div class="profile-hero">
             <div>
               <h2>{{ profile.name }} <em>{{ isMissingMark(profile.grade) ? '**' : `${profile.grade}级` }}</em></h2>
-              <p>{{ profile.orientation }}</p>
+              <p>
+                <template v-if="profile.department">系部：{{ profile.department }} · </template>
+                {{ profile.orientation }}
+              </p>
             </div>
             <div class="profile-hero__meta">
+              <span v-if="profile.department">{{ profile.department }}</span>
               <span>全国第 {{ profile.officialRank }}</span>
               <span>软科第 {{ profile.softRank }}</span>
               <span>在校 {{ fmtNum(profile.studentCount) }} 人</span>
@@ -673,6 +677,7 @@ watch(activeMajor, (name) => {
           <section v-if="profileSection === 'basic'" class="resource-section">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">🏫</span>基础概况</h2>
             <ul class="kv-grid">
+              <li><span>所属系部</span><strong>{{ profile.department || '**' }}</strong></li>
               <li><span>办学年限</span><strong>{{ profile.foundedYears }} 年</strong></li>
               <li><span>认证 / 评级</span><strong>{{ profile.accreditation }}</strong></li>
               <li><span>建设类型</span><strong>{{ profile.constructionType }}</strong></li>
@@ -867,12 +872,21 @@ watch(activeMajor, (name) => {
               </thead>
               <tbody>
                 <tr v-for="row in dimensionRowsForMajor" :key="row.key">
-                  <td class="analysis-dim"><span class="analysis-dim__icon">{{ row.icon }}</span>{{ row.key }}</td>
-                  <td class="analysis-value">{{ row.format }}</td>
+                  <td class="analysis-dim">
+                    <span class="analysis-line">
+                      <span class="analysis-dim__icon" aria-hidden="true">{{ row.icon }}</span>
+                      {{ row.key }}
+                    </span>
+                  </td>
+                  <td class="analysis-value">
+                    <span class="analysis-line">{{ row.format }}</span>
+                  </td>
                   <td class="analysis-status">
                     <span class="analysis-tag" :class="`analysis-tag--${row.status}`">{{ STATUS_LABEL[row.status] }}</span>
                   </td>
-                  <td class="analysis-why">{{ row.why }}</td>
+                  <td class="analysis-why">
+                    <p class="analysis-why__text">{{ row.why }}</p>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -1443,35 +1457,64 @@ watch(activeMajor, (name) => {
 }
 
 .analysis-table {
-  th:nth-child(3) { width: 120px; text-align: center; }
+  th,
+  td {
+    vertical-align: top;
+  }
+
+  th:nth-child(1) { width: 140px; }
+  th:nth-child(2) { width: 38%; }
+  th:nth-child(3) { width: 110px; text-align: center; }
   th:nth-child(4) { min-width: 340px; }
 
-  .analysis-dim {
-    display: flex;
+  .analysis-line {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
+    min-height: 28px;
+    line-height: 1.35;
+  }
+
+  .analysis-dim {
     color: #b8ecff;
     font-weight: 700;
     white-space: nowrap;
 
-    &__icon { font-size: 20px; }
+    &__icon {
+      flex-shrink: 0;
+      font-size: 18px;
+      line-height: 1;
+    }
   }
 
   .analysis-value {
     color: #eaf7ff;
     font-weight: 600;
     white-space: nowrap;
+
+    .analysis-line {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
-  .analysis-status { text-align: center; }
+  .analysis-status {
+    text-align: center;
+  }
 
   .analysis-tag {
-    display: inline-block;
-    padding: 3px 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
     border-radius: 999px;
     font-weight: 800;
-    font-size: 15px;
+    font-size: 14px;
+    line-height: 1;
     white-space: nowrap;
+    box-sizing: border-box;
 
     &--best { color: #6effc2; background: rgba(20, 80, 60, 0.4); border: 1px solid rgba(110, 255, 194, 0.45); }
     &--mid { color: #ffd56a; background: rgba(90, 70, 10, 0.35); border: 1px solid rgba(255, 213, 106, 0.45); }
@@ -1479,9 +1522,14 @@ watch(activeMajor, (name) => {
   }
 
   .analysis-why {
-    line-height: 1.65;
     color: #cfe6ff;
     min-width: 340px;
+
+    &__text {
+      margin: 0;
+      min-height: 28px;
+      line-height: 1.55;
+    }
   }
 }
 

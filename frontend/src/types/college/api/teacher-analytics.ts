@@ -149,6 +149,8 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
   }>
   majorComparison: Array<{
     major: string
+    /** 系部（与 major 同口径时可并存） */
+    department?: string
     /** 专任教师人数 */
     headcount: number
     phdRatio: number
@@ -171,7 +173,11 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
     /** 专业支撑详细建议（怎么做） */
     suggestions: string[]
   }>
-  excellentSamples: Array<{ name: string; title: string; major: string }>
+  filters?: {
+    departments?: string[]
+    selectedDepartment?: string | null
+  }
+  excellentSamples: Array<{ name: string; title: string; major: string; department?: string }>
   /** 教学投入（单学期口径） */
   teachingInvestment: {
     term: string
@@ -179,9 +185,9 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
     overloadHours: number
     avgHours: FacultyNum
     /** 最高课时 */
-    maxTeacher: { name: string; title: string; major: string; hours: number }
+    maxTeacher: { name: string; title: string; major: string; department?: string; hours: number }
     /** 最低课时 */
-    minTeacher: { name: string; title: string; major: string; hours: number }
+    minTeacher: { name: string; title: string; major: string; department?: string; hours: number }
     /** 每位教师的课程及课时 */
     teacherCourses: Array<{
       name: string

@@ -420,6 +420,11 @@ async def import_employment(data_root: Path, college: College) -> dict[str, int]
 
 
 async def import_research(data_root: Path, college: College) -> dict[str, int]:
+    from Utils.DB.dept_major import (
+        build_teacher_department_map,
+        resolve_achievement_affiliation,
+    )
+
     stats = {
         "projects": 0,
         "papers": 0,
@@ -442,18 +447,57 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
     await ResearchPlatform.filter(college_id=college.id).delete()
     await AchievementItem.filter(college_id=college.id).delete()
 
+    teacher_dept_map = await build_teacher_department_map(college.id)
+
+    async def _ach(
+        *,
+        section: str,
+        name: str,
+        leader: str | None = None,
+        category: str | None = None,
+        level: str | None = None,
+        org: str | None = None,
+        occurred_on: str | None = None,
+        note: str | None = None,
+        row: dict[str, Any] | None = None,
+    ) -> None:
+        explicit_dept = _pick(row or {}, "系部", "系所", "部门") or None
+        explicit_major = _pick(row or {}, "专业", "专业名称") or None
+        dept, major = resolve_achievement_affiliation(
+            leader=leader,
+            explicit_department=explicit_dept,
+            explicit_major=explicit_major,
+            teacher_dept_map=teacher_dept_map,
+        )
+        await AchievementItem.create(
+            college=college,
+            section=section,
+            name=name,
+            category=category,
+            level=level,
+            org=org,
+            leader=leader,
+            department=dept,
+            major_name=major,
+            occurred_on=occurred_on,
+            note=note,
+            source_file=path.name,
+        )
+        stats["achievements"] += 1
+
     vertical = _find_sheet(path, "纵向项目", "科研项目")
     if vertical:
         for row in read_tabular(path, sheet_name=vertical):
             title = _pick(row, "项目名称")
             if not title:
                 continue
+            leader = _pick(row, "负责人") or None
             await ResearchProject.create(
                 college=college,
                 kind="vertical",
                 project_no=_pick(row, "项目编号") or None,
                 title=title,
-                leader=_pick(row, "负责人") or None,
+                leader=leader,
                 level=_pick(row, "项目级别") or None,
                 category=_pick(row, "项目类别") or None,
                 main_type=_pick(row, "项目主分类", "类型") or None,
@@ -462,18 +506,16 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
                 source_file=path.name,
             )
             stats["projects"] += 1
-            await AchievementItem.create(
-                college=college,
+            await _ach(
                 section="topic",
                 name=title,
                 category=_pick(row, "项目类别") or None,
                 level=_pick(row, "项目级别") or None,
-                leader=_pick(row, "负责人") or None,
+                leader=leader,
                 occurred_on=_pick(row, "立项日期") or None,
                 note=_pick(row, "项目编号") or None,
-                source_file=path.name,
+                row=row,
             )
-            stats["achievements"] += 1
 
     horizontal = _find_sheet(path, "横向项目", "社会服务")
     if horizontal:
@@ -481,12 +523,13 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
             title = _pick(row, "项目名称")
             if not title:
                 continue
+            leader = _pick(row, "负责人") or None
             await ResearchProject.create(
                 college=college,
                 kind="horizontal",
                 project_no=_pick(row, "项目编号") or None,
                 title=title,
-                leader=_pick(row, "负责人") or None,
+                leader=leader,
                 category=_pick(row, "项目类别") or None,
                 start_date=_pick(row, "立项日期") or None,
                 funding=_pick(row, "项目经费") or None,
@@ -494,17 +537,15 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
                 source_file=path.name,
             )
             stats["projects"] += 1
-            await AchievementItem.create(
-                college=college,
+            await _ach(
                 section="service",
                 name=title,
                 category=_pick(row, "项目类别") or None,
-                leader=_pick(row, "负责人") or None,
+                leader=leader,
                 org=_pick(row, "项目来源单位") or None,
                 occurred_on=_pick(row, "立项日期") or None,
-                source_file=path.name,
+                row=row,
             )
-            stats["achievements"] += 1
 
     papers = _find_sheet(path, "科研论文", "科研成果")
     if papers:
@@ -512,29 +553,28 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
             title = _pick(row, "论文名称")
             if not title:
                 continue
+            leader = _pick(row, "作者") or None
             await ResearchPaper.create(
                 college=college,
                 category=_pick(row, "类别") or None,
                 title=title,
-                authors=_pick(row, "作者") or None,
+                authors=leader,
                 level=_pick(row, "论文级别") or None,
                 published_at=_pick(row, "发表/出版时间") or None,
                 venue=_pick(row, "刊物名称") or None,
                 source_file=path.name,
             )
             stats["papers"] += 1
-            await AchievementItem.create(
-                college=college,
+            await _ach(
                 section="paper",
                 name=title,
                 category=_pick(row, "类别") or None,
                 level=_pick(row, "论文级别") or None,
-                leader=_pick(row, "作者") or None,
+                leader=leader,
                 org=_pick(row, "刊物名称") or None,
                 occurred_on=_pick(row, "发表/出版时间") or None,
-                source_file=path.name,
+                row=row,
             )
-            stats["achievements"] += 1
 
     ips = _find_sheet(path, "知识产权")
     if ips:
@@ -542,28 +582,27 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
             title = _pick(row, "专利名称")
             if not title:
                 continue
+            leader = _pick(row, "第一发明人") or None
             await ResearchIp.create(
                 college=college,
                 patent_type=_pick(row, "专利类型") or None,
                 title=title,
-                inventor=_pick(row, "第一发明人") or None,
+                inventor=leader,
                 patent_no=_pick(row, "专利号") or None,
                 grant_date=_pick(row, "授权公告日") or None,
                 status=_pick(row, "专利状态") or None,
                 source_file=path.name,
             )
             stats["ips"] += 1
-            await AchievementItem.create(
-                college=college,
+            await _ach(
                 section="output",
                 name=title,
                 category=_pick(row, "专利类型") or None,
-                leader=_pick(row, "第一发明人") or None,
+                leader=leader,
                 occurred_on=_pick(row, "授权公告日") or None,
                 note=_pick(row, "专利号") or None,
-                source_file=path.name,
+                row=row,
             )
-            stats["achievements"] += 1
 
     platforms = _find_sheet(path, "教学成果", "科研平台", "科研团队")
     if platforms:
@@ -571,13 +610,11 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
         for row in read_tabular(path, sheet_name=platforms):
             typ = _pick(row, "类型")
             name = _pick(row, "平台名称")
-            # 分组标题行：类型有值、平台名为空
             if typ and not name:
                 current_team_label = typ
                 continue
             if not name:
                 continue
-            # 跳过把表头当数据的脏行（如 name=平台名称 / org=批准部门）
             header_noise = {
                 "平台名称",
                 "批准部门",
@@ -589,11 +626,12 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
             if name in header_noise or typ in header_noise:
                 continue
             category = typ or current_team_label or None
+            leader = _pick(row, "负责人") or None
             await ResearchPlatform.create(
                 college=college,
                 name=name,
                 category=category,
-                leader=_pick(row, "负责人") or None,
+                leader=leader,
                 founded_at=_pick(row, "批准时间") or None,
                 approved_by=_pick(row, "批准部门") or None,
                 eval_passed_at=_pick(row, "动态评估通过时间") or None,
@@ -605,18 +643,16 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
                 section = "award"
             elif category and "团队" in category:
                 section = "collective"
-            await AchievementItem.create(
-                college=college,
+            await _ach(
                 section=section,
                 name=name,
                 category=category,
-                leader=_pick(row, "负责人") or None,
+                leader=leader,
                 org=_pick(row, "批准部门") or None,
                 occurred_on=_pick(row, "批准时间") or None,
                 note=_pick(row, "动态评估通过时间") or None,
-                source_file=path.name,
+                row=row,
             )
-            stats["achievements"] += 1
 
     reports = _find_sheet(path, "学术报告")
     if reports:
@@ -624,17 +660,15 @@ async def import_research(data_root: Path, college: College) -> dict[str, int]:
             name = _pick(row, "会议名称")
             if not name:
                 continue
-            await AchievementItem.create(
-                college=college,
+            await _ach(
                 section="service",
                 name=name,
                 category=_pick(row, "会议类型") or "学术报告",
                 leader=_pick(row, "主讲人") or None,
                 org=_pick(row, "主讲人单位及职称") or None,
                 occurred_on=_pick(row, "举办时间") or None,
-                source_file=path.name,
+                row=row,
             )
-            stats["achievements"] += 1
 
     return stats
 

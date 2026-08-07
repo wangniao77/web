@@ -28,6 +28,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 /** 教学投入页本地学期选择（覆盖全局 scope） */
 const selectedTerm = ref<string>('')
+const departmentFilter = ref('')
 
 const standardHours = computed(
   () => data.value?.teachingInvestment.standardHours ?? data.value?.standardHours ?? 120,
@@ -37,6 +38,17 @@ const overloadHours = computed(
 )
 const warnHours = computed(() => standardHours.value)
 
+const departmentOptions = computed(() => {
+  const fromApi = data.value?.filters?.departments
+  if (fromApi?.length) return fromApi
+  const set = new Set<string>()
+  for (const m of data.value?.majorComparison || []) {
+    const d = m.department || m.major
+    if (d && d !== '**') set.add(d)
+  }
+  return [...set].sort()
+})
+
 async function loadDetail(term?: string) {
   loading.value = true
   error.value = null
@@ -44,6 +56,7 @@ async function loadDetail(term?: string) {
     const params = {
       ...collegeScope.value,
       ...(term ? { term } : {}),
+      ...(departmentFilter.value ? { department: departmentFilter.value } : {}),
     }
     data.value = await teacherService.fetchTeacherDetail(params)
     if (!selectedTerm.value && data.value.term && data.value.term !== '**') {
@@ -59,6 +72,11 @@ async function loadDetail(term?: string) {
 async function onTermChange(term: string) {
   selectedTerm.value = term
   await loadDetail(term)
+}
+
+async function onDepartmentChange(dept: string) {
+  departmentFilter.value = dept
+  await loadDetail(selectedTerm.value || undefined)
 }
 
 // Tab 切换
@@ -561,6 +579,36 @@ watch(phdFilter, () => { phdExpandedYear.value = null })
 watch(professorFilter, () => { professorExpandedYear.value = null })
 watch(talentFilter, () => { talentExpandedYear.value = null })
 
+const trainingParticipantTotal = computed(() =>
+  (data.value?.capacityBuilding.trainingByType ?? []).reduce((s, i) => s + i.participants, 0),
+)
+
+const visitingDomesticCount = computed(() => {
+  const list = data.value?.capacityBuilding.visitingScholars ?? []
+  return list.filter((v) => v.destination.includes('清华') || v.destination.includes('香港')).length
+})
+
+const visitingOverseasCount = computed(() => {
+  const list = data.value?.capacityBuilding.visitingScholars ?? []
+  return list.length - visitingDomesticCount.value
+})
+
+const newProfessorEstimate = computed(() => {
+  const total = facultyNumOrZero(data.value?.capacityBuilding.newProfessorTotal)
+  return {
+    professor: Math.round(total * 0.45),
+    associate: Math.round(total * 0.55),
+  }
+})
+
+/** 有年度明细时估算期初博士人数；否则不展示易误导的推算文案 */
+const phdBaselineEstimate = computed(() => {
+  const cb = data.value?.capacityBuilding
+  const current = data.value?.structure.education[0]?.count
+  if (!cb?.newPhds?.length || current == null || isMissingMark(current)) return null
+  return facultyNumOrZero(current) - facultyNumOrZero(cb.newPhdTotal) + (cb.newPhds[0]?.count ?? 0)
+})
+
 
 // ============ Part 5 绩效分析 ============
 
@@ -830,6 +878,19 @@ const supportRadarOption = computed(() => {
     <div v-if="loading" class="detail-placeholder">加载中...</div>
     <div v-else-if="error" class="detail-placeholder detail-error">{{ error }}</div>
     <template v-else-if="data">
+      <div class="scope-filters" style="display:flex;gap:12px;flex-wrap:wrap;margin:0 0 16px;">
+        <label class="term-switch">
+          <span>系部</span>
+          <select
+            :value="departmentFilter"
+            aria-label="系部筛选"
+            @change="onDepartmentChange(($event.target as HTMLSelectElement).value)"
+          >
+            <option value="">全部系部</option>
+            <option v-for="d in departmentOptions" :key="d" :value="d">{{ d }}</option>
+          </select>
+        </label>
+      </div>
       <!-- ===================== Part 1: 资源基础 ===================== -->
       <template v-if="currentTab === 'resource-base'">
         <div class="resource-summary">
@@ -1298,40 +1359,40 @@ const supportRadarOption = computed(() => {
             <span class="resource-summary__icon">🎓</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">近5年新增博士</span>
-              <strong class="resource-summary__value">{{ data.capacityBuilding.newPhdTotal }}<small>人</small></strong>
-              <span class="resource-summary__plan">规划 {{ data.capacityBuilding.plans.newPhd }}<small>人</small></span>
+              <strong class="resource-summary__value">{{ fmtFacultyNum(data.capacityBuilding.newPhdTotal) }}<small>人</small></strong>
+              <span class="resource-summary__plan">规划 {{ fmtFacultyNum(data.capacityBuilding.plans.newPhd) }}<small>人</small></span>
             </div>
           </div>
           <div class="resource-summary__card">
             <span class="resource-summary__icon">📊</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">近5年新增教授</span>
-              <strong class="resource-summary__value">{{ data.capacityBuilding.newProfessorTotal }}<small>人</small></strong>
-              <span class="resource-summary__plan">规划 {{ data.capacityBuilding.plans.newProfessor }}<small>人</small></span>
+              <strong class="resource-summary__value">{{ fmtFacultyNum(data.capacityBuilding.newProfessorTotal) }}<small>人</small></strong>
+              <span class="resource-summary__plan">规划 {{ fmtFacultyNum(data.capacityBuilding.plans.newProfessor) }}<small>人</small></span>
             </div>
           </div>
           <div class="resource-summary__card">
             <span class="resource-summary__icon">🏆</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">近年新增人才</span>
-              <strong class="resource-summary__value" style="color:#ffd56a;">{{ data.capacityBuilding.newTalentTotal }}<small>人</small></strong>
-              <span class="resource-summary__plan">规划 {{ data.capacityBuilding.plans.newTalent }}<small>人</small></span>
+              <strong class="resource-summary__value" style="color:#ffd56a;">{{ fmtFacultyNum(data.capacityBuilding.newTalentTotal) }}<small>人</small></strong>
+              <span class="resource-summary__plan">规划 {{ fmtFacultyNum(data.capacityBuilding.plans.newTalent) }}<small>人</small></span>
             </div>
           </div>
           <div class="resource-summary__card">
             <span class="resource-summary__icon">📋</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">年度培训</span>
-              <strong class="resource-summary__value">{{ data.capacityBuilding.trainingCount }}<small>次</small></strong>
-              <span class="resource-summary__plan">规划 {{ data.capacityBuilding.plans.training }}<small>次</small></span>
+              <strong class="resource-summary__value">{{ fmtFacultyNum(data.capacityBuilding.trainingCount) }}<small>次</small></strong>
+              <span class="resource-summary__plan">规划 {{ fmtFacultyNum(data.capacityBuilding.plans.training) }}<small>次</small></span>
             </div>
           </div>
           <div class="resource-summary__card">
             <span class="resource-summary__icon">🌍</span>
             <div class="resource-summary__info">
               <span class="resource-summary__label">访学人数</span>
-              <strong class="resource-summary__value">{{ data.capacityBuilding.visitingTotal }}<small>人</small></strong>
-              <span class="resource-summary__plan">规划 {{ data.capacityBuilding.plans.visiting }}<small>人</small></span>
+              <strong class="resource-summary__value">{{ fmtFacultyNum(data.capacityBuilding.visitingTotal) }}<small>人</small></strong>
+              <span class="resource-summary__plan">规划 {{ fmtFacultyNum(data.capacityBuilding.plans.visiting) }}<small>人</small></span>
             </div>
           </div>
         </div>
@@ -1347,7 +1408,7 @@ const supportRadarOption = computed(() => {
         <div class="resource-section__grid resource-section__grid--2" style="margin-bottom:20px;">
           <section class="resource-section" style="margin-bottom:0;">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">🤝</span>青年教师导师制</h2>
-            <p class="resource-section__desc">为青年教师（35岁以下或入职不满3年）配备资深导师，实行"一对一"培养指导。当前覆盖率 <strong style="color:#6effc2;">{{ data.capacityBuilding.mentorshipCoverage }}%</strong>。</p>
+            <p class="resource-section__desc">为青年教师（35岁以下或入职不满3年）配备资深导师，实行"一对一"培养指导。当前覆盖率 <strong style="color:#6effc2;">{{ fmtFacultyNum(data.capacityBuilding.mentorshipCoverage) }}%</strong>。</p>
             <div style="margin-bottom:14px;">
               <div v-for="item in data.capacityBuilding.mentorshipDetail" :key="item.label" class="resource-list__item" style="margin-bottom:8px;">
                 <span class="resource-list__label">{{ item.label }}</span>
@@ -1366,7 +1427,7 @@ const supportRadarOption = computed(() => {
           </section>
           <section class="resource-section" style="margin-bottom:0;">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">📋</span>培训统计</h2>
-            <p class="resource-section__desc">年度共组织各类培训 <strong style="color:#a78bfa;">{{ data.capacityBuilding.trainingCount }} 次</strong>，覆盖教师 {{ data.capacityBuilding.trainingByType.reduce((s, i) => s + i.participants, 0) }} 人次。</p>
+            <p class="resource-section__desc">年度共组织各类培训 <strong style="color:#a78bfa;">{{ fmtFacultyNum(data.capacityBuilding.trainingCount) }} 次</strong>，覆盖教师 {{ trainingParticipantTotal }} 人次。</p>
             <div class="resource-table-wrap">
               <table class="resource-table">
                 <thead><tr><th>培训类型</th><th>次数</th><th>参与人次</th></tr></thead>
@@ -1386,7 +1447,7 @@ const supportRadarOption = computed(() => {
         <div class="resource-section__grid resource-section__grid--2" style="margin-bottom:20px;">
           <section class="resource-section" style="margin-bottom:0;">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">🌍</span>访学进修</h2>
-            <p class="resource-section__desc">近年共选派 <strong style="color:#ffa94d;">{{ data.capacityBuilding.visitingTotal }} 人</strong>赴国内外知名高校访学进修，其中国外访学 {{ data.capacityBuilding.visitingScholars.filter((v) => !v.destination.includes('清华') && !v.destination.includes('香港')).length }} 人、国内访学 {{ data.capacityBuilding.visitingScholars.filter((v) => v.destination.includes('清华') || v.destination.includes('香港')).length }} 人。</p>
+            <p class="resource-section__desc">近年共选派 <strong style="color:#ffa94d;">{{ fmtFacultyNum(data.capacityBuilding.visitingTotal) }} 人</strong>赴国内外知名高校访学进修<span v-if="data.capacityBuilding.visitingScholars.length">，其中国外访学 {{ visitingOverseasCount }} 人、国内访学 {{ visitingDomesticCount }} 人</span>。</p>
             <div class="resource-table-wrap">
               <table class="resource-table">
                 <thead><tr><th>姓名</th><th>职称</th><th>访学单位</th><th>时长</th><th>年份</th></tr></thead>
@@ -1404,7 +1465,7 @@ const supportRadarOption = computed(() => {
           </section>
           <section class="resource-section" style="margin-bottom:0;">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">📊</span>新增教授/副教授</h2>
-            <p class="resource-section__desc">近5年共晋升或引进高级职称 <strong style="color:#ffd56a;">{{ data.capacityBuilding.newProfessorTotal }} 人</strong>（教授 {{ Math.round(data.capacityBuilding.newProfessorTotal * 0.45) }} 人、副教授 {{ Math.round(data.capacityBuilding.newProfessorTotal * 0.55) }} 人），高级职称教师持续充实。</p>
+            <p class="resource-section__desc">近5年共晋升或引进高级职称 <strong style="color:#ffd56a;">{{ fmtFacultyNum(data.capacityBuilding.newProfessorTotal) }} 人</strong><span v-if="!isMissingMark(data.capacityBuilding.newProfessorTotal)">（教授约 {{ newProfessorEstimate.professor }} 人、副教授约 {{ newProfessorEstimate.associate }} 人）</span>，高级职称教师持续充实。</p>
             <div class="filter-bar">
               <button type="button" :class="['filter-btn', { 'is-active': professorFilter === 'all' }]" @click="professorFilter = 'all'">全部 {{ data.capacityBuilding.newProfessorTotal }} 人</button>
               <button type="button" :class="['filter-btn', { 'is-active': professorFilter === 'introduced' }]" @click="professorFilter = 'introduced'">引进 {{ data.capacityBuilding.newProfessorIntroduced }} 人</button>
@@ -1503,7 +1564,12 @@ const supportRadarOption = computed(() => {
           </section>
           <section class="resource-section" style="margin-bottom:0;">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">🎓</span>新增博士</h2>
-            <p class="resource-section__desc">近5年共引进或培养博士 <strong style="color:#5cecff;">{{ data.capacityBuilding.newPhdTotal }} 人</strong>，博士学位教师从2022年的 {{ data.structure.education[0]?.count ? data.structure.education[0].count - data.capacityBuilding.newPhdTotal + data.capacityBuilding.newPhds[0].count : 0 }} 人增至目前的 {{ data.structure.education[0]?.count ?? 0 }} 人，博士占比达 {{ data.summary.phdRatio }}%。</p>
+            <p class="resource-section__desc">
+              近5年共引进或培养博士 <strong style="color:#5cecff;">{{ fmtFacultyNum(data.capacityBuilding.newPhdTotal) }} 人</strong>
+              <span v-if="phdBaselineEstimate != null">，博士学位教师从 {{ phdBaselineEstimate }} 人增至目前的 {{ data.structure.education[0]?.count ?? 0 }} 人，博士占比达 {{ fmtFacultyNum(data.summary.phdRatio) }}%</span>
+              <span v-else-if="!isMissingMark(data.summary.phdRatio)">，当前博士占比 {{ fmtFacultyNum(data.summary.phdRatio) }}%</span>
+              <span v-else>；年度明细待人事引进/培养台账接入后展示</span>。
+            </p>
             <div class="filter-bar">
               <button type="button" :class="['filter-btn', { 'is-active': phdFilter === 'all' }]" @click="phdFilter = 'all'">全部 {{ data.capacityBuilding.newPhdTotal }} 人</button>
               <button type="button" :class="['filter-btn', { 'is-active': phdFilter === 'introduced' }]" @click="phdFilter = 'introduced'">引进 {{ data.capacityBuilding.newPhdIntroduced }} 人</button>

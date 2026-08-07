@@ -16,8 +16,10 @@ export interface CollegeScope extends FilterParams {
   collegeId?: string
   /** 就业分析：签约届次年份 */
   year?: string
-  /** 就业分析：专业名（全部专业可不传） */
+  /** 就业分析 / 成果 / 专业：专业名（全部专业可不传） */
   major?: string
+  /** 系部（成果清单 / 师资等细颗粒度筛选） */
+  department?: string
   /** 就业分析：学历（全部学历/本科/研究生） */
   educationLevel?: string
 }

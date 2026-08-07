@@ -808,6 +808,12 @@ async def import_awards(data_root: Path, college: College) -> dict[str, Any]:
                     )
                     advisor = _pick(row, "指导老师") or None
                     note = _pick(row, "备注") or None
+                    from Utils.DB.dept_major import resolve_competition_department
+
+                    explicit_dept = _pick(row, "系部", "系所", "专业系别") or None
+                    department = resolve_competition_department(
+                        major_name=major_name, explicit_department=explicit_dept
+                    )
 
                     profile = await _upsert_contact(
                         student_id=sid,
@@ -828,6 +834,7 @@ async def import_awards(data_root: Path, college: College) -> dict[str, Any]:
                             student_id=sid,
                             name=name or None,
                             major_name=major_name,
+                            department=department,
                             class_name=class_name,
                             contest_name=contest,
                             organizer=organizer,
@@ -881,6 +888,8 @@ async def import_awards(data_root: Path, college: College) -> dict[str, Any]:
                             profile=mate_profile,
                             student_id=mate_sid,
                             name=mate_name,
+                            major_name=major_name,
+                            department=department,
                             contest_name=contest,
                             organizer=organizer,
                             contest_category=contest_category,

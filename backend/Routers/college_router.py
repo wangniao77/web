@@ -186,8 +186,18 @@ async def benchmark_achievements(collegeId: str | None = None) -> ApiResponse:
 
 
 @router.get("/benchmark/achievements/detail", response_model=ApiResponse)
-async def benchmark_achievements_detail(collegeId: str | None = None) -> ApiResponse:
-    return ok(await college_service.get_benchmark_achievements_detail(college_id=collegeId))
+async def benchmark_achievements_detail(
+    collegeId: str | None = None,
+    department: str | None = None,
+    major: str | None = None,
+) -> ApiResponse:
+    return ok(
+        await college_service.get_benchmark_achievements_detail(
+            college_id=collegeId,
+            department=department,
+            major=major,
+        )
+    )
 
 
 @router.get("/benchmark/achievements/featured", response_model=ApiResponse)
@@ -228,6 +238,7 @@ async def faculty_analytics_detail(
     term: str | None = None,
     academicYear: str | None = None,
     semester: str | None = None,
+    department: str | None = None,
 ) -> ApiResponse:
     return ok(
         await college_service.get_faculty_analytics_detail(
@@ -235,5 +246,6 @@ async def faculty_analytics_detail(
             term=term,
             academic_year=academicYear,
             semester=semester,
+            department=department,
         )
     )

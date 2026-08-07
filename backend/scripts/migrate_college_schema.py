@@ -96,6 +96,13 @@ ALTER_STATEMENTS = [
     "COMMENT ON COLUMN major_rank_snapshots.yoy_change IS '全国名次变化，正=上升'",
     "COMMENT ON COLUMN major_rank_snapshots.peer_schools IS '综合/省内对标校 JSON'",
     "COMMENT ON COLUMN major_rank_snapshots.finance_peer_schools IS '财经对标校 JSON'",
+    # 成果 / 竞赛：系部、专业细部
+    "ALTER TABLE achievement_items ADD COLUMN IF NOT EXISTS department VARCHAR(128) NULL",
+    "ALTER TABLE achievement_items ADD COLUMN IF NOT EXISTS major_name VARCHAR(128) NULL",
+    "COMMENT ON COLUMN achievement_items.department IS '系部'",
+    "COMMENT ON COLUMN achievement_items.major_name IS '专业'",
+    "ALTER TABLE competition_awards ADD COLUMN IF NOT EXISTS department VARCHAR(128) NULL",
+    "COMMENT ON COLUMN competition_awards.department IS '专业系别/系部'",
 ]
 
 INDEX_STATEMENTS = [
@@ -111,6 +118,9 @@ INDEX_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_competition_awards_member_role ON competition_awards (college_id, member_role)",
     "CREATE INDEX IF NOT EXISTS idx_student_volunteer_hours_college_grade ON student_volunteer_hours (college_id, grade)",
     "CREATE INDEX IF NOT EXISTS idx_student_volunteer_hours_student_pk ON student_volunteer_hours (student_pk)",
+    "CREATE INDEX IF NOT EXISTS idx_achievement_items_college_dept ON achievement_items (college_id, department)",
+    "CREATE INDEX IF NOT EXISTS idx_achievement_items_college_major ON achievement_items (college_id, major_name)",
+    "CREATE INDEX IF NOT EXISTS idx_competition_awards_college_dept ON competition_awards (college_id, department)",
     """
     DO $$ BEGIN
       CREATE UNIQUE INDEX uq_competition_awards_dedupe

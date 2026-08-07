@@ -1,15 +1,15 @@
 {
   "year": 2026,
-  "source": "rank-summary-docx",
+  "source": "finance-rank-table",
   "selfSchool": "广东财经大学",
   "majors": [
     {
       "name": "人工智能",
       "grade": "B",
-      "nationalRank": 208,
+      "nationalRank": 201,
       "yoyChange": -14,
       "provincialRank": 3,
-      "financePeerRank": 2,
+      "financePeerRank": 10,
       "softDimensions": [],
       "peerSchools": [
         {
@@ -22,7 +22,7 @@
         },
         {
           "school": "广东财经大学",
-          "rank": 208,
+          "rank": 201,
           "isSelf": true
         },
         {
@@ -32,27 +32,67 @@
       ],
       "financePeerSchools": [
         {
-          "school": "南京审计大学",
-          "rank": 147
+          "school": "西南财经大学",
+          "rank": 119
+        },
+        {
+          "school": "上海财经大学",
+          "rank": 120
+        },
+        {
+          "school": "对外经济贸易大学",
+          "rank": 122
+        },
+        {
+          "school": "中南财经政法大学",
+          "rank": 126
+        },
+        {
+          "school": "东北财经大学",
+          "rank": 140
+        },
+        {
+          "school": "首都经济贸易大学",
+          "rank": 146
+        },
+        {
+          "school": "北京工商大学",
+          "rank": 148
+        },
+        {
+          "school": "山东财经大学",
+          "rank": 160
+        },
+        {
+          "school": "浙江财经大学",
+          "rank": 189
         },
         {
           "school": "广东财经大学",
-          "rank": 208,
+          "rank": 201,
           "isSelf": true
         },
         {
-          "school": "重庆工商大学",
-          "rank": 217
+          "school": "兰州财经大学",
+          "rank": 274
+        },
+        {
+          "school": "新疆财经大学",
+          "rank": 279
+        },
+        {
+          "school": "广东金融学院",
+          "rank": 289
         }
       ]
     },
     {
       "name": "计算机科学与技术",
       "grade": "B",
-      "nationalRank": 368,
+      "nationalRank": 360,
       "yoyChange": -7,
       "provincialRank": 3,
-      "financePeerRank": 5,
+      "financePeerRank": 15,
       "softDimensions": [],
       "peerSchools": [
         {
@@ -65,7 +105,7 @@
         },
         {
           "school": "广东财经大学",
-          "rank": 368,
+          "rank": 360,
           "isSelf": true
         },
         {
@@ -75,39 +115,95 @@
       ],
       "financePeerSchools": [
         {
-          "school": "南京审计大学",
-          "rank": 199
+          "school": "江西财经大学",
+          "rank": 102
         },
         {
-          "school": "山西财经大学",
-          "rank": 264
+          "school": "西南财经大学",
+          "rank": 150
+        },
+        {
+          "school": "中南财经政法大学",
+          "rank": 161
+        },
+        {
+          "school": "上海财经大学",
+          "rank": 169
+        },
+        {
+          "school": "中央财经大学",
+          "rank": 171
+        },
+        {
+          "school": "北京工商大学",
+          "rank": 186
+        },
+        {
+          "school": "山东财经大学",
+          "rank": 202
+        },
+        {
+          "school": "南京财经大学",
+          "rank": 249
         },
         {
           "school": "天津财经大学",
-          "rank": 286
+          "rank": 262
         },
         {
-          "school": "重庆工商大学",
-          "rank": 294
+          "school": "安徽财经大学",
+          "rank": 265
+        },
+        {
+          "school": "云南财经大学",
+          "rank": 277
+        },
+        {
+          "school": "贵州财经大学",
+          "rank": 289
+        },
+        {
+          "school": "河南财经政法大学",
+          "rank": 290
+        },
+        {
+          "school": "山西财经大学",
+          "rank": 292
         },
         {
           "school": "广东财经大学",
-          "rank": 368,
+          "rank": 360,
           "isSelf": true
         },
         {
-          "school": "吉林财经大学",
-          "rank": 428
+          "school": "湖北经济学院",
+          "rank": 361
+        },
+        {
+          "school": "宁波财经学院",
+          "rank": 377
+        },
+        {
+          "school": "重庆工商大学",
+          "rank": 386
+        },
+        {
+          "school": "长春财经学院",
+          "rank": 388
+        },
+        {
+          "school": "上海立信会计金融学院",
+          "rank": 406
         }
       ]
     },
     {
       "name": "软件工程",
       "grade": "B",
-      "nationalRank": 227,
+      "nationalRank": 223,
       "yoyChange": -2,
       "provincialRank": 3,
-      "financePeerRank": 2,
+      "financePeerRank": 4,
       "softDimensions": [],
       "peerSchools": [
         {
@@ -120,7 +216,7 @@
         },
         {
           "school": "广东财经大学",
-          "rank": 227,
+          "rank": 223,
           "isSelf": true
         },
         {
@@ -130,21 +226,33 @@
       ],
       "financePeerSchools": [
         {
-          "school": "南京审计大学",
-          "rank": 153
+          "school": "南京财经大学",
+          "rank": 144
         },
         {
-          "school": "广东财经大学",
-          "rank": 227,
-          "isSelf": true
+          "school": "浙江财经大学",
+          "rank": 191
         },
         {
           "school": "天津财经大学",
-          "rank": 227
+          "rank": 220
         },
         {
-          "school": "山西财经大学",
-          "rank": 264
+          "school": "广东财经大学",
+          "rank": 223,
+          "isSelf": true
+        },
+        {
+          "school": "河北经贸大学",
+          "rank": 231
+        },
+        {
+          "school": "西安财经大学",
+          "rank": 249
+        },
+        {
+          "school": "天津商业大学",
+          "rank": 280
         }
       ]
     }
@@ -157,12 +265,36 @@
       "广州大学"
     ],
     "financePool": [
-      "南京审计大学",
-      "吉林财经大学",
+      "上海立信会计金融学院",
+      "上海财经大学",
+      "东北财经大学",
+      "中南财经政法大学",
+      "中央财经大学",
+      "云南财经大学",
+      "兰州财经大学",
+      "北京工商大学",
+      "南京财经大学",
+      "天津商业大学",
       "天津财经大学",
+      "宁波财经学院",
+      "安徽财经大学",
+      "对外经济贸易大学",
+      "山东财经大学",
       "山西财经大学",
       "广东财经大学",
-      "重庆工商大学"
+      "广东金融学院",
+      "新疆财经大学",
+      "江西财经大学",
+      "河北经贸大学",
+      "河南财经政法大学",
+      "浙江财经大学",
+      "湖北经济学院",
+      "西南财经大学",
+      "西安财经大学",
+      "贵州财经大学",
+      "重庆工商大学",
+      "长春财经学院",
+      "首都经济贸易大学"
     ],
     "docxSchools": [
       "广东财经大学",
@@ -174,6 +306,8 @@
       "广东外语外贸大学",
       "广州大学",
       "广东技术师范大学"
-    ]
+    ],
+    "financeCsv": "table-1785824318646.csv",
+    "financeUpdatedFrom": "finance-rank-table-replace"
   }
 }

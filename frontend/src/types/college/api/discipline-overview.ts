@@ -15,6 +15,8 @@ export interface SoftDimensionDTO {
 
 export interface DisciplineMajorRankDTO {
   name: string
+  /** 所属系部 */
+  department?: string | null
   grade: string
   nationalRank: DisciplineNum
   yoyChange: DisciplineNum
@@ -86,6 +88,8 @@ export interface DisciplineDimensionScoreDTO {
 
 export interface DisciplineMajorProfileDTO {
   name: string
+  /** 所属系部 */
+  department?: string | null
   grade: string
   foundedYears: DisciplineNum
   accreditation: string
@@ -125,6 +129,7 @@ export interface DisciplineMajorProfileDTO {
     textbooks: DisciplineNum
     platforms: DisciplineNum
     practiceBases: DisciplineNum
+    achievementItems?: DisciplineNum
   }
   enrollment: {
     avgScore: DisciplineNum

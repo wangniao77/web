@@ -80,6 +80,8 @@ class AchievementItem(Model):
     level = fields.CharField(max_length=64, null=True)
     org = fields.CharField(max_length=255, null=True)
     leader = fields.CharField(max_length=128, null=True)
+    department = fields.CharField(max_length=128, null=True, description="系部")
+    major_name = fields.CharField(max_length=128, null=True, description="专业")
     occurred_on = fields.CharField(max_length=64, null=True)
     note = fields.TextField(null=True)
     source_file = fields.CharField(max_length=255, null=True)
@@ -87,7 +89,50 @@ class AchievementItem(Model):
 
     class Meta:
         table = "achievement_items"
-        indexes = (("college_id", "section"),)
+        indexes = (
+            ("college_id", "section"),
+            ("college_id", "department"),
+            ("college_id", "major_name"),
+        )
+
+
+class TeacherHonor(Model):
+    """教师荣誉称号（教学名师、学者头衔、党员表彰等）。
+
+    口径示例：教学质量优秀奖、最佳授课教师、十佳青年教师、授课优秀青年教师、
+    青年教学名师、教学名师、市级以上教学竞赛获奖、省厅级以上荣誉表彰、
+    三八红旗手、五四劳动奖章、珠江学者特聘教授、南岭学者、优秀共产党员等。
+    """
+
+    id = fields.IntField(pk=True)
+    college = fields.ForeignKeyField(
+        "models.College",
+        related_name="teacher_honors",
+        null=True,
+    )
+    teacher_name = fields.CharField(max_length=64, index=True, description="教师姓名")
+    honor_title = fields.CharField(max_length=255, description="荣誉称号全称")
+    honor_kind = fields.CharField(
+        max_length=64,
+        null=True,
+        description="教学名师/学者头衔/竞赛获奖/先进表彰/党员表彰/其他",
+    )
+    level = fields.CharField(
+        max_length=32,
+        null=True,
+        description="国家级/省部级/市级/校级/其他",
+    )
+    year = fields.CharField(max_length=16, null=True, description="获评年份（可空）")
+    org = fields.CharField(max_length=255, null=True, description="授予单位")
+    note = fields.TextField(null=True)
+    source = fields.CharField(max_length=128, null=True, description="数据来源标记")
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    class Meta:
+        table = "teacher_honors"
+        unique_together = (("college_id", "teacher_name", "honor_title", "year"),)
+        indexes = (("college_id", "teacher_name"), ("college_id", "honor_kind"),)
 
 
 class MajorRankSnapshot(Model):

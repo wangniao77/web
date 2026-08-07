@@ -110,11 +110,34 @@ class CollegeService:
         else:
             development_index = round(min(avg_gpa / 4 * 100, 100), 1) if avg_gpa else 72.0
 
+        # 系部拆解（不改指数公式）
+        from collections import Counter
+
+        from Utils.DB.Models.college_ext_models import AchievementItem
+
+        teacher_list = list(await Teacher.filter(status="active", college_id=college.id)) if college else []
+        ach_list = list(await AchievementItem.filter(college_id=college.id)) if college else []
+        t_by_dept = Counter(
+            (t.department or "").strip() for t in teacher_list if (t.department or "").strip()
+        )
+        a_by_dept = Counter(
+            (a.department or "").strip() for a in ach_list if (a.department or "").strip()
+        )
+        by_department = [
+            {
+                "department": d,
+                "teachers": t_by_dept.get(d, 0),
+                "achievements": a_by_dept.get(d, 0),
+            }
+            for d in sorted(set(t_by_dept) | set(a_by_dept))
+        ]
+
         # 无历史同比时给展示用趋势（方向与截图一致：生师比下降为改善）
         return {
             "developmentIndex": development_index,
             "maxScore": 100,
             "starLevel": 5 if development_index >= 85 else 4 if development_index >= 70 else 3,
+            "byDepartment": by_department,
             "kpis": [
                 {
                     "key": "teachers",
@@ -1145,11 +1168,19 @@ class CollegeService:
         return await benchmark_service.get_achievements(college_id=college_id)
 
     async def get_benchmark_achievements_detail(
-        self, *, college_id: str | None = None
+        self,
+        *,
+        college_id: str | None = None,
+        department: str | None = None,
+        major: str | None = None,
     ) -> dict[str, Any]:
         from Services.benchmark_service import benchmark_service
 
-        return await benchmark_service.get_achievements_detail(college_id=college_id)
+        return await benchmark_service.get_achievements_detail(
+            college_id=college_id,
+            department=department,
+            major=major,
+        )
 
     async def get_benchmark_featured(
         self, *, college_id: str | None = None
@@ -1182,15 +1213,36 @@ class CollegeService:
         term: str | None = None,
         academic_year: str | None = None,
         semester: str | None = None,
+        department: str | None = None,
     ) -> dict[str, Any]:
         from Services.faculty_service import faculty_service
 
-        return await faculty_service.get_analytics_detail(
+        data = await faculty_service.get_analytics_detail(
             college_id=college_id,
             term=term,
             academic_year=academic_year,
             semester=semester,
         )
+        dept = (department or "").strip()
+        if not dept:
+            return data
+        # 二级页系部过滤：对比表与课时明细
+        data["majorComparison"] = [
+            m for m in (data.get("majorComparison") or []) if (m.get("department") or m.get("major")) == dept
+        ]
+        data["teachingHoursDetail"] = [
+            r for r in (data.get("teachingHoursDetail") or []) if (r.get("department") or r.get("major")) == dept
+        ]
+        ti = data.get("teachingInvestment") or {}
+        if ti.get("overloadedTeachers"):
+            ti["overloadedTeachers"] = [
+                r for r in ti["overloadedTeachers"] if (r.get("department") or r.get("major")) == dept
+            ]
+        data["filters"] = {
+            **(data.get("filters") or {}),
+            "selectedDepartment": dept,
+        }
+        return data
 
     async def get_discipline_overview(
         self, *, college_id: str | None = None

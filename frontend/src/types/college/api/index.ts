@@ -14,6 +14,12 @@ export interface OverviewHubDTO {
   developmentIndex: number
   maxScore: number
   starLevel: number
+  /** 系部拆解（教师数 / 成果数），不改指数公式 */
+  byDepartment?: Array<{
+    department: string
+    teachers: number
+    achievements: number
+  }>
   kpis: Array<{
     key: KpiKey
     label: string

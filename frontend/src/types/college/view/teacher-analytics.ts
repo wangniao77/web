@@ -47,6 +47,7 @@ export interface TeacherAnalyticsDetailVM {
   publicServiceAnalysis: TeacherAnalyticsDetailDTO['publicServiceAnalysis']
   assessmentIndicators: TeacherAnalyticsDetailDTO['assessmentIndicators']
   majorComparison: TeacherAnalyticsDetailDTO['majorComparison']
+  filters?: TeacherAnalyticsDetailDTO['filters']
   excellentSamples: TeacherAnalyticsDetailDTO['excellentSamples']
   teachingInvestment: TeacherAnalyticsDetailDTO['teachingInvestment']
   capacityBuilding: TeacherAnalyticsDetailDTO['capacityBuilding']

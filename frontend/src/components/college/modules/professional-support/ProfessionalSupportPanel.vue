@@ -103,6 +103,11 @@ watch(activeIndex, () => {
 const majors = computed(() => props.discipline?.majors ?? [])
 const active = computed(() => majors.value[activeIndex.value] ?? null)
 
+/** 财经类排名（对标财经院校中的位次） */
+const relativeRank = computed((): DisciplineNum | null => {
+  return active.value?.financePeerRank ?? null
+})
+
 onMounted(startMajorRotation)
 onBeforeUnmount(stopMajorRotation)
 
@@ -311,14 +316,33 @@ const trendOption = computed<EChartsOption>(() => {
 const activePeers = computed(() => {
   const major = active.value
   if (!major) return []
-  const list =
+  const raw =
     peerMode.value === 'finance'
       ? major.financePeerSchools?.length
         ? major.financePeerSchools
         : major.peerSchools
       : major.peerSchools ?? []
-  return list.filter((p) => typeof p.rank === 'number' && Number.isFinite(p.rank))
+  const list = (raw ?? []).filter((p) => typeof p.rank === 'number' && Number.isFinite(p.rank))
+  // 财经院校：只展示广财相对排名前后各 3 所（含本校最多 7 所）
+  if (peerMode.value === 'finance') {
+    return windowPeersAroundSelf(list, 3, 3)
+  }
+  return list
 })
+
+/** 按全国名次排序后，截取本校前后窗口 */
+function windowPeersAroundSelf<T extends { rank: number | string; isSelf?: boolean }>(
+  peers: T[],
+  before: number,
+  after: number,
+): T[] {
+  const sorted = [...peers].sort((a, b) => Number(a.rank) - Number(b.rank))
+  const selfIdx = sorted.findIndex((p) => p.isSelf)
+  if (selfIdx < 0) return sorted.slice(0, before + 1 + after)
+  const start = Math.max(0, selfIdx - before)
+  const end = Math.min(sorted.length, selfIdx + after + 1)
+  return sorted.slice(start, end)
+}
 
 const peerOption = computed<EChartsOption>(() => {
   const peers = [...activePeers.value]
@@ -471,8 +495,8 @@ const peerOption = computed<EChartsOption>(() => {
 
           <div class="pro-panorama__hero">
             <div class="pro-panorama__hero-num">
-              <span>全国排名</span>
-              <strong><small>第</small>{{ fmtNum(active.nationalRank) }}</strong>
+              <span>财经类排名</span>
+              <strong><small>第</small>{{ fmtNum(relativeRank) }}</strong>
             </div>
             <div class="pro-panorama__stats">
               <div class="pro-panorama__stat">

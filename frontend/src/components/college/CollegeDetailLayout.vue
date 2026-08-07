@@ -89,7 +89,7 @@ function goBack() {
   min-height: 72px;
   margin: 0 0 10px;
   padding: 10px 16px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgba(102, 217, 255, 0.18);
   border-radius: 8px;
   background:

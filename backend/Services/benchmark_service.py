@@ -392,18 +392,52 @@ class BenchmarkService:
         ctx = await self._load_context(college_id)
         return self._build_overview(ctx)
 
-    async def get_achievements_detail(self, *, college_id: str | None = None) -> dict[str, Any]:
+    async def get_achievements_detail(
+        self,
+        *,
+        college_id: str | None = None,
+        department: str | None = None,
+        major: str | None = None,
+    ) -> dict[str, Any]:
         ctx = await self._load_context(college_id)
         base = self._build_overview(ctx)
         achievements = self._roster(ctx)
+        achievements = self._filter_items(achievements, department=department, major=major)
+        by_dept = Counter(_s(i.get("department")) for i in achievements if _s(i.get("department")))
         return {
             **base,
-            # 与清单同源，避免「图有数、点进去 0 项」
             "byCategory": self._by_category_from_items(achievements),
             "byLevel": self._level_distribution(achievements),
+            "byDepartment": [
+                {"department": k, "count": v}
+                for k, v in sorted(by_dept.items(), key=lambda x: (-x[1], x[0]))
+            ],
+            "filters": {
+                "departments": sorted({_s(i.get("department")) for i in self._roster(ctx) if _s(i.get("department"))}),
+                "majors": sorted({_s(i.get("majorName")) for i in self._roster(ctx) if _s(i.get("majorName"))}),
+                "selectedDepartment": department,
+                "selectedMajor": major,
+            },
             "achievements": achievements,
             "categoryPanels": self._build_category_panels(ctx),
         }
+
+    def _filter_items(
+        self,
+        items: list[dict[str, Any]],
+        *,
+        department: str | None,
+        major: str | None,
+    ) -> list[dict[str, Any]]:
+        out = items
+        dept = _s(department)
+        maj = _s(major)
+        if dept:
+            out = [i for i in out if _s(i.get("department")) == dept]
+        if maj:
+            out = [i for i in out if _s(i.get("majorName")) == maj]
+        return out
+
 
     async def get_featured(self, *, college_id: str | None = None) -> dict[str, Any]:
         ctx = await self._load_context(college_id)
@@ -509,6 +543,8 @@ class BenchmarkService:
                     "leader": _s(a.advisor) or _s(a.name) or None,
                     "occurred_on": _s(a.awarded_on) or None,
                     "note": _s(a.award_rank) or None,
+                    "department": _s(getattr(a, "department", None)) or None,
+                    "major_name": _s(a.major_name) or None,
                 }
             )
         return items
@@ -530,6 +566,8 @@ class BenchmarkService:
                     "leader": _s(a.leader) or None,
                     "occurred_on": _s(a.occurred_on) or None,
                     "note": _s(a.note) or None,
+                    "department": _s(getattr(a, "department", None)) or None,
+                    "major_name": _s(getattr(a, "major_name", None)) or None,
                 }
             )
         if section == "competition" and not rows:
@@ -770,6 +808,8 @@ class BenchmarkService:
             "level": _s(row.get("level")) or _normalize_level(row.get("level")),
             "date": (_year_label(row.get("occurred_on")) or "")[:10],
             "leader": _s(row.get("leader")) or None,
+            "department": _s(row.get("department")) or None,
+            "majorName": _s(row.get("major_name") or row.get("majorName")) or None,
         }
 
     def _build_gallery(

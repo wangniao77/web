@@ -71,7 +71,7 @@ const facultyStatsLine = computed(() => {
   if ((f.esiHighCited ?? 0) > 0) parts.push(`高被引 ${f.esiHighCited}`)
   if (parts.length) return parts.join(' · ')
   if (f.roster?.length) return `名录 ${f.roster.length} 人`
-  return '高层次人才建设中'
+  return '建设中'
 })
 
 const projectLine = computed(
@@ -81,7 +81,7 @@ const fundingLine = computed(
   () => `${props.data.keyProjects.fundingWan.toLocaleString('zh-CN')} 万元`,
 )
 
-const MILESTONES_PER_PAGE = 3
+const MILESTONES_PER_PAGE = 2
 const MILESTONE_ROTATE_MS = 8000
 const activeMilestoneIndex = ref(0)
 const milestonePaused = ref(false)
@@ -225,7 +225,7 @@ onBeforeUnmount(() => {
           <span>名师·头雁</span>
           <strong>{{ data.facultyLeaders.total }}<small>人</small></strong>
         </div>
-        <p class="benchmark-slide__line">{{ facultyStatsLine }}</p>
+        <p class="benchmark-slide__line" :title="facultyStatsLine">{{ facultyStatsLine }}</p>
         <div ref="rosterRef" class="benchmark-slide__roster" aria-live="polite">
           <template v-if="data.facultyLeaders.roster.length">
             <span v-for="(r, idx) in data.facultyLeaders.roster" :key="`${r.name}-${idx}`">
@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
           <span>顶刊·智识</span>
           <strong>{{ data.topPapers.count }}</strong>
         </div>
-        <p class="benchmark-slide__line">
+        <p class="benchmark-slide__line" :title="`中科院一区 ${data.topPapers.firstTierCount} 篇`">
           中科院一区 {{ data.topPapers.firstTierCount }} 篇
         </p>
         <MarqueeText class="benchmark-slide__foot-marquee" :text="journalLine" :duration="8" />
@@ -261,8 +261,8 @@ onBeforeUnmount(() => {
           <span>攻坚·课题</span>
           <strong>{{ data.keyProjects.national + data.keyProjects.provincial }}</strong>
         </div>
-        <p class="benchmark-slide__line">{{ projectLine }}</p>
-        <p class="benchmark-slide__foot">{{ fundingLine }}</p>
+        <p class="benchmark-slide__line" :title="projectLine">{{ projectLine }}</p>
+        <p class="benchmark-slide__foot" :title="fundingLine">{{ fundingLine }}</p>
       </button>
 
       <button
@@ -382,26 +382,24 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  min-height: 108px;
+  gap: 8px;
 
   .benchmark-slide__card {
     min-width: 0;
-    min-height: 108px;
   }
 }
 
 .benchmark-slide__hero {
   flex: 1 1 0;
-  min-height: 120px;
+  min-height: 0;
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   max-width: 100%;
   width: 100%;
-  padding: 10px 14px 12px;
+  padding: 10px 12px;
   border: 1px solid rgba(255, 213, 106, 0.3);
   border-radius: 8px;
   background: rgba(0, 31, 66, 0.58);
@@ -427,16 +425,16 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   color: #ffe29a;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   line-height: 1.25;
 
   small {
     color: rgba(195, 222, 240, 0.78);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0;
     white-space: nowrap;
@@ -482,46 +480,43 @@ onBeforeUnmount(() => {
 .benchmark-slide__milestone {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 0 0 auto;
-  min-height: 34px;
+  gap: 5px;
+  flex: 1 1 0;
+  min-height: 0;
   min-width: 0;
   max-width: 100%;
-  padding: 6px 0;
-  border-top: 1px solid rgba(255, 213, 106, 0.14);
-
-  &:first-child {
-    border-top: none;
-  }
+  padding: 2px 0 0;
+  border-top: none;
 }
 
 .benchmark-slide__milestone-meta {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
   min-width: 0;
 
   em {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 84px;
-    padding: 3px 9px;
+    min-width: 72px;
+    padding: 2px 8px;
     border-radius: 4px;
     border: 1px solid rgba(255, 213, 106, 0.38);
     background: rgba(255, 200, 80, 0.1);
     color: #ffe29a;
     font-style: normal;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    line-height: 1.35;
+    line-height: 1.3;
     white-space: nowrap;
   }
 
   span {
     color: rgba(171, 207, 231, 0.78);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1.2;
   }
@@ -529,12 +524,16 @@ onBeforeUnmount(() => {
 
 .benchmark-slide__milestone-list {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
-  gap: 4px;
+  justify-content: space-evenly;
+  gap: 2px;
+  min-height: 0;
   min-width: 0;
   margin: 0;
   padding: 0;
   list-style: none;
+  overflow: hidden;
 }
 
 .benchmark-slide__milestone-row {
@@ -543,7 +542,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  min-height: 26px;
+  min-height: 22px;
+  flex: 0 0 auto;
 
   i {
     width: 5px;
@@ -555,7 +555,7 @@ onBeforeUnmount(() => {
 
   time {
     color: rgba(151, 198, 228, 0.78);
-    font-size: 13px;
+    font-size: 12px;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -565,7 +565,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   overflow: hidden;
   color: #eef8ff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -600,12 +600,12 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   max-width: 100%;
   width: 100%;
-  min-height: 108px;
-  padding: 12px 14px;
+  min-height: 92px;
+  padding: 8px 10px;
   border: 1px solid rgba(0, 200, 255, 0.18);
   border-radius: 8px;
   background: rgba(0, 50, 100, 0.24);
@@ -645,30 +645,38 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
+  min-width: 0;
 
   span {
+    min-width: 0;
+    overflow: hidden;
     color: #9ecae8;
-    font-size: 17px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   strong {
+    flex-shrink: 0;
+    max-width: 48%;
+    overflow: hidden;
     color: #eaf7ff;
-    font-size: clamp(26px, 1.6vw, 32px);
+    font-size: 22px;
     font-weight: 800;
     line-height: 1;
     font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
     white-space: nowrap;
     animation: bm-num-glow 2.6s ease-in-out infinite;
 
     small {
-      margin-left: 3px;
+      margin-left: 1px;
       color: #9ecae8;
-      font-size: 0.42em;
+      font-size: 0.4em;
       font-weight: 600;
     }
   }
@@ -678,7 +686,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   margin: 0;
   color: #8ec8e8;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
@@ -694,7 +702,7 @@ onBeforeUnmount(() => {
 
   :deep(.bm-marquee__item) {
     color: #8ec8e8;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1.2;
   }
@@ -704,7 +712,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   margin: 0;
   color: #b8e8ff;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
@@ -724,7 +732,7 @@ onBeforeUnmount(() => {
 
   :deep(.bm-marquee__item) {
     color: #b8e8ff;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1.2;
   }
@@ -755,11 +763,11 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex: 0 0 auto;
   min-width: 0;
-  min-height: 40px;
-  padding: 8px 14px;
+  min-height: 36px;
+  padding: 6px 12px;
   border-radius: 6px;
   border: 1px solid rgba(0, 200, 255, 0.18);
   background: rgba(0, 60, 120, 0.24);
@@ -775,15 +783,15 @@ onBeforeUnmount(() => {
 
 .benchmark-slide__ticker-label {
   flex-shrink: 0;
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 4px;
   border: 1px solid rgba(255, 213, 106, 0.4);
   background: rgba(255, 200, 80, 0.12);
   color: #ffe29a;
   font-style: normal;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   animation: bm-badge-pulse 3s ease-in-out infinite;
 }
@@ -791,7 +799,8 @@ onBeforeUnmount(() => {
 .benchmark-slide__ticker-viewport {
   min-width: 0;
   overflow: hidden;
-  mask-image: linear-gradient(90deg, #000 0%, #000 88%, transparent);
+  /* 左右都留一点可读区，避免首尾字被硬切 */
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
 
 .benchmark-slide__ticker-track {
@@ -806,20 +815,21 @@ onBeforeUnmount(() => {
 .benchmark-slide__ticker-item {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: #e8f6ff;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 600;
+  line-height: 1.35;
 
   i {
     flex-shrink: 0;
-    padding: 2px 8px;
+    padding: 1px 6px;
     border-radius: 3px;
     border: 1px solid rgba(0, 200, 255, 0.28);
     background: rgba(0, 100, 180, 0.22);
     color: #9fe8ff;
     font-style: normal;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
   }
 

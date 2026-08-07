@@ -36,6 +36,15 @@ export function adaptBenchmarkAchievementsDetail(
   return {
     ...adaptBenchmarkAchievements(dto),
     byLevel: dto.byLevel.map((l) => ({ ...l })),
+    byDepartment: (dto.byDepartment || []).map((d) => ({ ...d })),
+    filters: dto.filters
+      ? {
+          departments: [...(dto.filters.departments || [])],
+          majors: [...(dto.filters.majors || [])],
+          selectedDepartment: dto.filters.selectedDepartment,
+          selectedMajor: dto.filters.selectedMajor,
+        }
+      : undefined,
     achievements: dto.achievements.map((a) => ({ ...a })),
     categoryPanels: dto.categoryPanels.map((p) => ({ ...p })),
   }

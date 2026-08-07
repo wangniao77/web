@@ -21,7 +21,7 @@ const { termLabel } = useScope()
       <div class="school-name">
         <span class="school-name__title">广东财经大学</span>
         <span class="school-name__school">大数据与人工智能学院</span>
-        <span class="school-name__motto">韧性 成长 志臻 卓越</span>
+        <span class="school-name__motto">韧性成长，志臻卓越</span>
       </div>
     </div>
 

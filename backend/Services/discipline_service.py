@@ -6,9 +6,11 @@ from collections import Counter, defaultdict
 from statistics import median
 from typing import Any
 
-from Utils.DB.Models.college_ext_models import MajorRankSnapshot
+from Utils.DB.Models.college_ext_models import AchievementItem, MajorRankSnapshot, Teacher
 from Utils.DB.Models.external_data_models import EmploymentRecord
 from Utils.DB.Models.major_models import Major
+from Utils.DB.Models.student_extra_models import CompetitionAward
+from Utils.DB.dept_major import resolve_department_from_major
 from Utils.DB.read.college_db import (
     fetch_college_records,
     latest_records_by_student,
@@ -296,6 +298,41 @@ class DisciplineService:
             college_id=college_pk, major_by_name=major_by_name
         )
 
+        award_qs = CompetitionAward.filter(member_role="primary")
+        teacher_qs = Teacher.filter(status="active")
+        ach_qs = AchievementItem.all()
+        if college_pk:
+            award_qs = award_qs.filter(college_id=college_pk)
+            teacher_qs = teacher_qs.filter(college_id=college_pk)
+            ach_qs = ach_qs.filter(college_id=college_pk)
+        awards = list(await award_qs)
+        teachers = list(await teacher_qs)
+        achievements = list(await ach_qs)
+
+        awards_by_major: dict[str, int] = Counter()
+        awards_by_dept: dict[str, int] = Counter()
+        for a in awards:
+            maj = _match_canonical(_s(a.major_name), match_names) or _s(a.major_name)
+            if maj:
+                awards_by_major[maj] += 1
+            dept = _s(getattr(a, "department", None)) or resolve_department_from_major(
+                a.major_name
+            )
+            if dept:
+                awards_by_dept[dept] += 1
+
+        teachers_by_dept: dict[str, list[Teacher]] = defaultdict(list)
+        for t in teachers:
+            dept = _s(getattr(t, "department", None))
+            if dept:
+                teachers_by_dept[dept].append(t)
+
+        ach_by_dept: dict[str, int] = Counter(
+            _s(getattr(a, "department", None))
+            for a in achievements
+            if _s(getattr(a, "department", None))
+        )
+
         # 只展示本科主专业卡片（有在校本科生；排除名单外专业）
         display_names = [
             n
@@ -363,6 +400,14 @@ class DisciplineService:
                 emp_rows=emp_by_major.get(name, []),
                 card=next(m for m in majors_payload if m["name"] == name),
                 history=all_snaps.get(name, []),
+                competition_n=awards_by_major.get(name)
+                or awards_by_dept.get(resolve_department_from_major(name) or "", 0),
+                teachers_in_dept=teachers_by_dept.get(
+                    resolve_department_from_major(name) or "", []
+                ),
+                achievement_n=ach_by_dept.get(
+                    resolve_department_from_major(name) or "", 0
+                ),
             )
             for name in display_names
         ]
@@ -726,6 +771,7 @@ class DisciplineService:
 
         return {
             "name": name,
+            "department": resolve_department_from_major(name),
             "grade": grade,
             "nationalRank": national,
             "yoyChange": yoy,
@@ -766,7 +812,11 @@ class DisciplineService:
         emp_rows: list[EmploymentRecord],
         card: dict[str, Any],
         history: list[MajorRankSnapshot],
+        competition_n: int = 0,
+        teachers_in_dept: list | None = None,
+        achievement_n: int = 0,
     ) -> dict[str, Any]:
+        teachers_in_dept = teachers_in_dept or []
         grade_c: Counter[str] = Counter()
         gpas: list[float] = []
         scores: list[float] = []
@@ -810,6 +860,14 @@ class DisciplineService:
         top_industries = [k for k, _ in industry_c.most_common(5)]
         top_regions = [k for k, _ in region_c.most_common(5)]
 
+        dept = resolve_department_from_major(name)
+        t_total = len(teachers_in_dept)
+        phd_n = sum(1 for t in teachers_in_dept if getattr(t, "is_phd", None) is True)
+        # 职称粗分
+        prof_n = sum(1 for t in teachers_in_dept if "教授" in _s(t.title) and "副" not in _s(t.title))
+        asso_n = sum(1 for t in teachers_in_dept if "副教授" in _s(t.title))
+        lect_n = sum(1 for t in teachers_in_dept if "讲师" in _s(t.title))
+
         strengths: list[str] = []
         weaknesses: list[str] = []
         priorities: list[str] = []
@@ -836,7 +894,12 @@ class DisciplineService:
             weaknesses.append("缺软科五维明细（公开接口对本校未返回五维分数）")
         if not card.get("peerSchools"):
             weaknesses.append("缺综合对标院校名单")
-        weaknesses.append("师资专业归属/认证/建设类型等仍待补源")
+        if t_total:
+            strengths.append(f"挂靠系部师资 {t_total} 人")
+        else:
+            weaknesses.append("师资专业归属/认证/建设类型等仍待补源")
+        if competition_n:
+            strengths.append(f"学生竞赛获奖 {competition_n} 项")
         priorities.append("持续更新排名快照与对标切片")
 
         if len(history) >= 2 and history[-2].national_rank and history[-1].national_rank:
@@ -855,6 +918,7 @@ class DisciplineService:
         soft_rank = card["nationalRank"]
         return {
             "name": name,
+            "department": dept,
             "grade": card["grade"],
             "foundedYears": MISSING,
             "accreditation": MISSING,
@@ -868,12 +932,12 @@ class DisciplineService:
             "orientation": MISSING,
             "directions": [],
             "faculty": {
-                "total": MISSING,
-                "professor": MISSING,
-                "associate": MISSING,
-                "lecturer": MISSING,
-                "phdCount": MISSING,
-                "phdRatio": MISSING,
+                "total": t_total if t_total else MISSING,
+                "professor": prof_n if t_total else MISSING,
+                "associate": asso_n if t_total else MISSING,
+                "lecturer": lect_n if t_total else MISSING,
+                "phdCount": phd_n if t_total else MISSING,
+                "phdRatio": _pct(phd_n, t_total) if t_total else MISSING,
                 "talentCount": MISSING,
                 "teachingMasters": MISSING,
                 "courseLeaders": MISSING,
@@ -894,6 +958,7 @@ class DisciplineService:
                 "textbooks": MISSING,
                 "platforms": MISSING,
                 "practiceBases": MISSING,
+                "achievementItems": achievement_n if achievement_n else MISSING,
             },
             "enrollment": {
                 "avgScore": avg_score,
@@ -908,7 +973,7 @@ class DisciplineService:
                 "graduationRate": MISSING,
                 "degreeRate": MISSING,
                 "avgGpa": avg_gpa,
-                "competitionAwards": MISSING,
+                "competitionAwards": competition_n if competition_n else MISSING,
                 "innovationProjects": MISSING,
                 "employmentRate": card["employmentRate"],
                 "furtherStudyRate": card["furtherStudyRate"],

@@ -9,7 +9,7 @@ from collections import Counter, defaultdict
 from decimal import Decimal
 from typing import Any
 
-from Utils.DB.Models.college_ext_models import AchievementItem, Teacher
+from Utils.DB.Models.college_ext_models import AchievementItem, Teacher, TeacherHonor
 from Utils.DB.Models.college_student_models import StudentProfile
 from Utils.DB.Models.external_data_models import ResearchPaper, ResearchProject
 from Utils.DB.Models.student_extra_models import TeachingCourseHour
@@ -270,6 +270,13 @@ class FacultyService:
             talent_qs = talent_qs.filter(college_id=college.id)
         talent_n = await talent_qs.count()
 
+        honor_qs = TeacherHonor.all()
+        if college:
+            honor_qs = honor_qs.filter(college_id=college.id)
+        honor_people_n = len({h.teacher_name for h in await honor_qs})
+        # 高层次人才人数优先按荣誉称号去重人数；无荣誉表数据时回退成果 talent 条目数
+        talent_people_n = honor_people_n or talent_n
+
         project_qs = ResearchProject.all()
         paper_qs = ResearchPaper.all()
         if college:
@@ -339,7 +346,7 @@ class FacultyService:
             avg_hours=avg_hours,
             overload_n=overload_n,
             stu_ratio=stu_ratio,
-            talent_n=talent_n,
+            talent_n=talent_people_n,
             title_counter=title_counter,
             term=term_label,
         )
@@ -367,7 +374,7 @@ class FacultyService:
                 "modelTeacherCount": MISSING,
                 "warningCount": MISSING,
                 "publicService": {"count": MISSING, "hours": MISSING},
-                "highLevelTalentCount": talent_n if talent_n else MISSING,
+                "highLevelTalentCount": talent_people_n if talent_people_n else MISSING,
                 "studentTeacherRatio": f"1:{stu_ratio}" if stu_ratio is not None else MISSING,
                 "excellentCount": MISSING,
             },
@@ -382,7 +389,7 @@ class FacultyService:
                 "warning": {"count": MISSING, "ratio": MISSING, "momChange": MISSING},
             },
             "highlights": self._highlights(
-                talent_n=talent_n,
+                talent_n=talent_people_n,
                 project_n=len(projects),
                 paper_n=len(papers),
                 overload_n=overload_n,
@@ -405,7 +412,7 @@ class FacultyService:
             papers=papers,
             student_n=student_n,
             stu_ratio=stu_ratio,
-            talent_n=talent_n,
+            talent_n=talent_people_n,
             term=term_label,
         )
         return {"analytics": analytics, "detail": detail}
@@ -574,7 +581,7 @@ class FacultyService:
         if stu_ratio is not None:
             tips.append(f"生师比 1:{stu_ratio}（参考合格线 1:{TARGET_STU_TEACHER:g}）")
         if talent_n:
-            tips.append(f"成果库登记高层次/人才类条目 {talent_n} 项")
+            tips.append(f"荣誉称号去重登记高层次/荣誉教师 {talent_n} 人")
         else:
             tips.append(f"高层次人才认定清单：{MISSING}")
         tips.append(f"年龄/学缘/培训访学/考核预警等：{MISSING}（待补源）")
@@ -592,7 +599,7 @@ class FacultyService:
         return [
             {
                 "label": "高层次人才",
-                "value": f"{talent_n}项" if talent_n else MISSING,
+                "value": f"{talent_n}人" if talent_n else MISSING,
             },
             {
                 "label": "科研项目",
@@ -658,11 +665,13 @@ class FacultyService:
         teaching_hours_detail = []
         for name, hrs in sorted(hours_by_name.items(), key=lambda x: -x[1])[:30]:
             t = teacher_by_name.get(name)
+            dept = _s(getattr(t, "department", None)) if t else MISSING
             teaching_hours_detail.append(
                 {
                     "name": name,
                     "title": _s(t.title) if t else MISSING,
-                    "major": _s(getattr(t, "department", None)) if t else MISSING,
+                    "department": dept,
+                    "major": dept,
                     "hours": _round1(hrs),
                 }
             )
@@ -674,12 +683,20 @@ class FacultyService:
 
         def _teacher_card(name: str | None, hrs: float | None) -> dict[str, Any]:
             if not name:
-                return {"name": MISSING, "title": MISSING, "major": MISSING, "hours": 0}
+                return {
+                    "name": MISSING,
+                    "title": MISSING,
+                    "department": MISSING,
+                    "major": MISSING,
+                    "hours": 0,
+                }
             t = teacher_by_name.get(name)
+            dept = _s(getattr(t, "department", None)) if t else MISSING
             return {
                 "name": name,
                 "title": _s(t.title) if t else MISSING,
-                "major": _s(getattr(t, "department", None)) if t else MISSING,
+                "department": dept,
+                "major": dept,
                 "hours": _round1(hrs or 0),
             }
 
@@ -703,6 +720,7 @@ class FacultyService:
                 {
                     "name": name,
                     "title": _s(t.title) if t else MISSING,
+                    "department": _s(getattr(t, "department", None)) if t else MISSING,
                     "major": _s(getattr(t, "department", None)) if t else MISSING,
                     "totalHours": _round1(hrs),
                     "overloadAmount": _round1(hrs - OVERLOAD_HOURS),
@@ -803,6 +821,7 @@ class FacultyService:
             major_comparison.append(
                 {
                     "major": dept,
+                    "department": dept,
                     "headcount": n,
                     "phdRatio": phd_r,
                     "seniorRatio": senior_r,
@@ -827,6 +846,10 @@ class FacultyService:
                     ],
                 }
             )
+
+        departments = sorted(
+            d for d in by_dept.keys() if d and d != MISSING
+        )
 
         return {
             "structure": {
@@ -871,12 +894,15 @@ class FacultyService:
                 },
                 {
                     "key": "talent",
-                    "label": "高层次人才条目",
+                    "label": "高层次人才",
                     "score": talent_n if talent_n else MISSING,
-                    "unit": "项" if talent_n else "",
+                    "unit": "人" if talent_n else "",
                 },
             ],
             "majorComparison": major_comparison,
+            "filters": {
+                "departments": departments,
+            },
             "excellentSamples": [],
             "teachingInvestment": {
                 "term": term,
