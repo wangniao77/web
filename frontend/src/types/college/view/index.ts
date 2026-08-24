@@ -1,12 +1,12 @@
 import type { TrendInfo } from '@/types/common'
-import type { KpiKey } from '@/types/college/api'
+import type { HubBreakdownDTO, HubHighlightKey, HubStatus, KpiKey } from '@/types/college/api'
 
 export interface OverviewHubVM {
   developmentIndex: number
   maxScore: number
   starLevel: number
   diagnosis?: {
-    status: 'healthy' | 'watch' | 'alert' | 'neutral'
+    status: HubStatus
     summary: string
     details?: string[]
     indexBand?: string
@@ -22,7 +22,15 @@ export interface OverviewHubVM {
     label: string
     value: string
     trend?: TrendInfo
-    status?: 'healthy' | 'watch' | 'alert' | 'neutral'
+    status?: HubStatus
+    hint?: string
+    breakdowns?: HubBreakdownDTO[]
+  }>
+  highlights?: Array<{
+    key: HubHighlightKey
+    label: string
+    value: string
+    status?: HubStatus
     hint?: string
   }>
 }

@@ -941,81 +941,18 @@ async def normalize_students_from_wide(college: College) -> dict[str, Any]:
 
 
 async def rebuild_kpi_snapshot(college: College) -> dict[str, Any]:
-    """与 CollegeService.get_hub 同源：指导办学口径指数写入快照。"""
-    from Utils.Analytics.college_hub import (
-        compute_development_index,
-        is_granted_patent,
-        is_provincial_plus,
-        is_quality_course,
-        is_team_record,
-        is_top_paper,
-        is_within_years,
-    )
-    from Utils.DB.Models import Course
+    """与 CollegeService.get_hub 同源：五维办学指数写入快照。"""
+    from Services.college_service import CollegeService
 
-    students = await StudentAcademicRecord.filter(college_id=college.id, status="active").count()
-    teachers = await Teacher.filter(college_id=college.id, status="active").count()
-    course_rows = await Course.filter(college_id=college.id).values_list("level", flat=True)
-    courses = sum(1 for lv in course_rows if is_quality_course(lv))
-    if courses == 0 and course_rows:
-        courses = len(course_rows)
-
-    paper_rows = await ResearchPaper.filter(college_id=college.id).values_list(
-        "level", "venue", "published_at"
-    )
-    papers = sum(
-        1
-        for level, venue, published_at in paper_rows
-        if is_top_paper(level, venue) and is_within_years(published_at, years=5)
-    )
-    if papers == 0 and paper_rows:
-        has_signal = any((level or venue) for level, venue, _ in paper_rows)
-        if not has_signal:
-            papers = sum(
-                1 for _, _, published_at in paper_rows if is_within_years(published_at, years=5)
-            )
-
-    projects = await ResearchProject.filter(college_id=college.id).count()
-    patent_rows = await ResearchIp.filter(college_id=college.id).values_list("status", flat=True)
-    patents = sum(1 for status in patent_rows if is_granted_patent(status))
-    platform_rows = await ResearchPlatform.filter(college_id=college.id).values_list(
-        "name", "category", "level"
-    )
-    platforms = sum(1 for _n, _c, level in platform_rows if is_provincial_plus(level))
-    if platforms == 0 and platform_rows:
-        platforms = sum(
-            1
-            for name, cat, level in platform_rows
-            if not is_team_record(cat, name) and (not level or is_provincial_plus(level))
-        )
-    teams = sum(1 for name, cat, _lv in platform_rows if is_team_record(cat, name))
-    ratio = round(students / teachers, 2) if teachers else None
-    scored = compute_development_index(
-        teachers=teachers,
-        students=students,
-        ratio=ratio,
-        courses=courses,
-        top_papers=papers,
-        projects=projects,
-        patents=patents,
-        platforms=platforms,
-        teams=teams,
-    )
-    development_index = scored["developmentIndex"]
+    hub = await CollegeService().get_hub(college_id=str(college.id))
+    development_index = hub.get("developmentIndex")
     payload = {
-        "teachers": teachers,
-        "studentRatio": ratio,
-        "courses": courses,
-        "topPapers": papers,
-        "projects": projects,
-        "patents": patents,
-        "platforms": platforms,
-        "teams": teams,
-        "students": students,
+        "kpis": hub.get("kpis") or [],
+        "highlights": hub.get("highlights") or [],
+        "pillars": hub.get("pillars") or [],
+        "diagnosis": hub.get("diagnosis"),
         "employment": await EmploymentRecord.filter(college_id=college.id).count(),
         "achievements": await AchievementItem.filter(college_id=college.id).count(),
-        "pillars": scored["pillars"],
-        "diagnosis": scored["diagnosis"],
     }
 
     existing = await CollegeKpiSnapshot.get_or_none(

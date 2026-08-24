@@ -1,7 +1,8 @@
 ﻿<script setup lang="ts">
 import { computed } from 'vue'
 import CockpitCoreMetric from '@/components/college/CockpitCoreMetric.vue'
-import { kpiLayout } from '@/constants/college/college-kpi'
+import DashIcon from '@/components/college/DashIcon.vue'
+import { highlightLayout, kpiLayout } from '@/constants/college/college-kpi'
 import type { OverviewHubVM } from '@/types/college/view'
 
 const props = defineProps<{ data: OverviewHubVM }>()
@@ -14,9 +15,10 @@ const gaugeDeg = computed(() => {
 
 const diagnosis = computed(() => props.data.diagnosis)
 const diagnosisStatus = computed(() => diagnosis.value?.status ?? 'neutral')
+const highlights = computed(() => props.data.highlights ?? [])
 
-const leftOrder = ['tl', 'uml', 'lml', 'bl'] as const
-const rightOrder = ['tr', 'umr', 'lmr', 'br'] as const
+const leftOrder = ['tl', 'ml', 'bl'] as const
+const rightOrder = ['tr', 'mr', 'br'] as const
 
 const leftKpis = computed(() =>
   [...props.data.kpis]
@@ -37,6 +39,7 @@ const rightKpis = computed(() =>
         rightOrder.indexOf((kpiLayout[b.key]?.position ?? 'tr') as (typeof rightOrder)[number]),
     ),
 )
+
 </script>
 
 <template>
@@ -54,6 +57,7 @@ const rightKpis = computed(() =>
         :hint="kpi.hint"
         :icon="kpiLayout[kpi.key]?.icon ?? 'status'"
         :position="kpiLayout[kpi.key]?.position ?? 'tl'"
+        :breakdowns="kpi.breakdowns"
       />
     </div>
 
@@ -81,15 +85,6 @@ const rightKpis = computed(() =>
         </div>
       </div>
 
-      <p
-        v-if="diagnosis?.summary"
-        class="core-hero-diagnosis"
-        :class="`core-hero-diagnosis--${diagnosisStatus}`"
-        :title="diagnosis.details?.join('；') || diagnosis.summary"
-      >
-        {{ diagnosis.summary }}
-      </p>
-
       <div class="core-hero-platform" aria-hidden="true">
         <div class="core-hero-platform__beam core-hero-platform__beam--1" />
         <div class="core-hero-platform__beam core-hero-platform__beam--2" />
@@ -114,7 +109,29 @@ const rightKpis = computed(() =>
         :hint="kpi.hint"
         :icon="kpiLayout[kpi.key]?.icon ?? 'status'"
         :position="kpiLayout[kpi.key]?.position ?? 'tr'"
+        :breakdowns="kpi.breakdowns"
       />
+    </div>
+
+    <div v-if="highlights.length" class="core-hero-highlights">
+      <p class="core-hero-highlights__caption">标志成果</p>
+      <div class="core-hero-highlights__row">
+        <article
+          v-for="item in highlights"
+          :key="item.key"
+          class="core-hero-highlight"
+          :class="item.status ? `core-hero-highlight--${item.status}` : null"
+          :title="item.hint || undefined"
+        >
+          <div class="core-hero-highlight__icon">
+            <DashIcon :kind="highlightLayout[item.key]?.icon ?? 'award'" :size="18" />
+          </div>
+          <div class="core-hero-highlight__body">
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+        </article>
+      </div>
     </div>
   </section>
 </template>

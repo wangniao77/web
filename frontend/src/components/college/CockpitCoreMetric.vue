@@ -2,21 +2,21 @@
 import { computed } from 'vue'
 import DashIcon, { type IconKind, resolveIconKind } from '@/components/college/DashIcon.vue'
 import type { OrbitPosition } from '@/constants/college/college-kpi'
+import type { HubBreakdownDTO, HubStatus } from '@/types/college/api'
 import type { TrendInfo } from '@/types/common'
-
-type KpiStatus = 'healthy' | 'watch' | 'alert' | 'neutral'
 
 const props = defineProps<{
   label: string
   value: string
   trend?: TrendInfo
-  status?: KpiStatus
+  status?: HubStatus
   hint?: string
   icon: IconKind | string
   position: OrbitPosition
+  breakdowns?: HubBreakdownDTO[]
 }>()
 
-const side = (position: string) => (['tl', 'uml', 'lml', 'bl'].includes(position) ? 'left' : 'right')
+const side = (position: string) => (['tl', 'ml', 'bl'].includes(position) ? 'left' : 'right')
 const resolvedIcon = computed(() => resolveIconKind(props.icon))
 
 const statusLabel = computed(() => {
@@ -60,6 +60,16 @@ const statusLabel = computed(() => {
         </span>
       </div>
       <strong class="core-orbit-metric__value">{{ value }}</strong>
+      <div v-if="breakdowns?.length" class="core-orbit-metric__breaks">
+        <span
+          v-for="item in breakdowns"
+          :key="item.label"
+          class="core-orbit-metric__chip"
+          :class="item.tone ? `core-orbit-metric__chip--${item.tone}` : null"
+        >
+          {{ item.label }} {{ item.value }}
+        </span>
+      </div>
     </div>
   </div>
 </template>

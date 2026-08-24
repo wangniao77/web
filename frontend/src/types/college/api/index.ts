@@ -1,14 +1,16 @@
 import type { TrendInfo } from '@/types/common'
 
-export type KpiKey =
-  | 'teachers'
-  | 'studentRatio'
-  | 'courses'
-  | 'topPapers'
-  | 'projects'
-  | 'patents'
-  | 'platforms'
-  | 'teams'
+export type KpiKey = 'faculty' | 'students' | 'courses' | 'majors' | 'platforms' | 'teams'
+
+export type HubHighlightKey = 'masterDegrees' | 'scienceAwards' | 'conferences'
+
+export type HubStatus = 'healthy' | 'watch' | 'alert' | 'neutral'
+
+export interface HubBreakdownDTO {
+  label: string
+  value: string
+  tone?: HubStatus
+}
 
 export interface OverviewHubDTO {
   developmentIndex: number
@@ -22,11 +24,12 @@ export interface OverviewHubDTO {
   }>
   /** 指导办学诊断：短板与红线提示 */
   diagnosis?: {
-    status: 'healthy' | 'watch' | 'alert' | 'neutral'
+    status: HubStatus
     summary: string
     details?: string[]
     indexBand?: string
   }
+  /** 五维办学支柱：人才培养 / 师资建设 / 科研 / 国际交流 / 社会服务 */
   pillars?: Array<{
     key: string
     label: string
@@ -38,9 +41,18 @@ export interface OverviewHubDTO {
     label: string
     value: number | string
     unit?: string
-    /** 有真实同比时才返回；否则用 status/hint 指导办学 */
     trend?: TrendInfo
-    status?: 'healthy' | 'watch' | 'alert' | 'neutral'
+    status?: HubStatus
+    hint?: string
+    breakdowns?: HubBreakdownDTO[]
+  }>
+  /** 标志成果栏：硕士授予 / 省部级科技奖 / 会议 */
+  highlights?: Array<{
+    key: HubHighlightKey
+    label: string
+    value: number | string
+    unit?: string
+    status?: HubStatus
     hint?: string
   }>
 }

@@ -1,9 +1,11 @@
-"""学院驾驶舱中心 Hub：综合发展指数与环绕 KPI（指导办学口径）。
+"""学院驾驶舱中心 Hub：综合发展指数与办学结构（指导办学口径）。
 
 设计原则：
-1. 指标名实相符（过滤顶刊/近五年/省级以上等），无数据时诚实展示而非假趋势。
-2. 指数与环绕 KPI 同源计算，生师比等办学红线会真实拖累得分。
-3. 每项 KPI 附 status + hint，便于院领导看「是否达标 / 下一步做什么」。
+1. 指数按办学职能五维计分（人才培养 / 师资建设 / 科研 / 国际交流 / 社会服务），
+   红线指标（生师比）与标志成果可真实拖累总分。
+2. 环绕卡展示「办学底座」结构，不再堆孤立科研计数。
+3. 底部成果栏突出硕士授予、省部级科技奖、会议等显示度指标。
+4. 缺源诚实展示（None → 前端 --），不编假趋势。
 """
 
 from __future__ import annotations
@@ -14,20 +16,28 @@ from typing import Any, Literal
 
 KpiStatus = Literal["healthy", "watch", "alert", "neutral"]
 
-# —— 办学参考线（本科教学工作合格/审核评估常用口径，作驾驶舱预警用）——
+# —— 办学参考线（本科教学工作合格/审核评估常用口径）——
 RATIO_HEALTHY = 18.0
 RATIO_WATCH = 22.0
 RATIO_ALERT = 30.0
 
+# 师资结构参考线
+PHD_TARGET = 70.0
+SENIOR_TARGET = 40.0
+
 # 归一化目标（用于指数，非强制 KPI 达标线）
 TARGETS = {
     "teachers": 80,
-    "courses": 20,
+    "courses": 80,
+    "courseHours": 8000,
+    "masterDegrees": 80,
     "topPapers": 50,
     "projects": 80,
+    "scienceAwards": 8,
+    "conferences": 12,
+    "intlConferences": 4,
     "patents": 30,
-    "platforms": 8,
-    "teams": 10,
+    "serviceItems": 10,
 }
 
 _TOP_PAPER_KEYS = (
@@ -43,6 +53,10 @@ _TOP_PAPER_KEYS = (
     "SCI一区",
     "SCI 一区",
 )
+
+_SCIENCE_AWARD_KEYS = ("科技奖", "科学技术奖", "科技进步", "技术发明", "自然科学奖")
+_CONFERENCE_KEYS = ("会议", "学术报告", "论坛", "研讨会", "symposium", "conference", "Conference")
+_INTL_KEYS = ("国际", "海外", "境外", "International", "IEEE", "ACM")
 
 
 def _s(value: Any) -> str:
@@ -95,7 +109,27 @@ def normalize_level(raw: str | None) -> str:
         return "省部级"
     if "校" in text:
         return "校级"
+    if any(k in text for k in ("院", "系")):
+        return "院级"
     return "其他"
+
+
+def level_bucket(*parts: str | None) -> Literal["province", "school", "college"]:
+    """平台/团队层级：省（含国家）/ 校 / 院；level 缺失时回看名称与批准部门。"""
+    for part in parts:
+        lv = normalize_level(part)
+        if lv in ("国家级", "省部级"):
+            return "province"
+        if lv == "校级":
+            return "school"
+        if lv == "院级":
+            return "college"
+    blob = " ".join(_s(p) for p in parts)
+    if any(k in blob for k in ("国家", "省", "部", "厅")) and "学院" not in blob:
+        return "province"
+    if "校" in blob and "学院" not in blob:
+        return "school"
+    return "college"
 
 
 def is_provincial_plus(level: str | None) -> bool:
@@ -122,6 +156,81 @@ def is_granted_patent(status: str | None) -> bool:
     return any(k in text for k in ("授权", "有效", "维持", "granted", "Granted"))
 
 
+def is_science_award(name: str | None, category: str | None = None) -> bool:
+    """成果表 award 分区中的科技类奖项。"""
+    blob = f"{_s(name)} {_s(category)}"
+    if any(k in blob for k in _SCIENCE_AWARD_KEYS):
+        return True
+    return "科技" in blob
+
+
+def is_conference(name: str | None, category: str | None = None) -> bool:
+    blob = f"{_s(name)} {_s(category)}"
+    return any(k in blob for k in _CONFERENCE_KEYS)
+
+
+def is_international(*parts: str | None) -> bool:
+    blob = " ".join(_s(p) for p in parts)
+    return any(k in blob for k in _INTL_KEYS)
+
+
+def is_graduate_edu(raw: str | None) -> bool:
+    return any(k in _s(raw) for k in ("研究生", "硕士", "博士"))
+
+
+def is_doctoral_edu(raw: str | None) -> bool:
+    return "博士" in _s(raw)
+
+
+def is_master_edu(raw: str | None) -> bool:
+    text = _s(raw)
+    if is_doctoral_edu(text):
+        return False
+    return any(k in text for k in ("硕士", "研究生"))
+
+
+def is_master_conferred(education_level: str | None, education_status: str | None = None) -> bool:
+    """就业表中的硕士研究生，视为硕士授予人数。"""
+    blob = f"{_s(education_level)} {_s(education_status)}"
+    if is_doctoral_edu(blob) and "硕士" not in blob:
+        return False
+    return is_master_edu(blob) or ("硕士" in blob and "毕业" in blob)
+
+
+def is_phd_teacher(*, is_phd: bool | None, degree: str | None, education: str | None) -> bool:
+    if is_phd is True:
+        return True
+    if is_phd is False:
+        return False
+    return "博士" in f"{_s(degree)}{_s(education)}"
+
+
+def is_professor(title: str | None, title_level: str | None = None) -> bool:
+    if _s(title_level) == "正高级":
+        return True
+    t = _s(title)
+    return "教授" in t and "副教授" not in t
+
+
+def is_associate(title: str | None, title_level: str | None = None) -> bool:
+    if _s(title_level) == "副高级":
+        return True
+    t = _s(title)
+    return "副教授" in t or "副研究员" in t
+
+
+def is_doctoral_supervisor(*parts: str | None) -> bool:
+    blob = " ".join(_s(p) for p in parts)
+    return any(k in blob for k in ("博导", "博士生导师", "博士导师"))
+
+
+def is_master_supervisor(*parts: str | None) -> bool:
+    blob = " ".join(_s(p) for p in parts)
+    if is_doctoral_supervisor(blob):
+        return True
+    return any(k in blob for k in ("硕导", "硕士生导师", "研究生导师", "硕士导师"))
+
+
 def score_ratio(ratio: float | None) -> float:
     """生师比得分 0–100：越接近本科参考线越高。"""
     if ratio is None or ratio <= 0:
@@ -129,12 +238,9 @@ def score_ratio(ratio: float | None) -> float:
     if ratio <= RATIO_HEALTHY:
         return 100.0
     if ratio <= RATIO_WATCH:
-        # 18→22：100→70
         return 100.0 - (ratio - RATIO_HEALTHY) / (RATIO_WATCH - RATIO_HEALTHY) * 30.0
     if ratio <= RATIO_ALERT:
-        # 22→30：70→30
         return 70.0 - (ratio - RATIO_WATCH) / (RATIO_ALERT - RATIO_WATCH) * 40.0
-    # >30：快速掉到接近 0
     return max(0.0, 30.0 - (ratio - RATIO_ALERT) * 1.5)
 
 
@@ -142,41 +248,76 @@ def _clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
 
 
+def _pct_score(value: float | None, target: float, *, missing: float = 45.0) -> float:
+    """比例类得分：缺源给中性分，避免把指数打穿。"""
+    if value is None:
+        return missing
+    return _clamp01(value / target) * 100.0
+
+
 def compute_development_index(
     *,
     teachers: int,
     students: int,
     ratio: float | None,
-    courses: int,
+    phd_ratio: float | None,
+    senior_ratio: float | None,
+    course_count: int,
+    course_hours: float,
+    master_degrees: int | None,
     top_papers: int,
     projects: int,
+    science_awards: int,
+    conferences: int,
+    intl_conferences: int,
     patents: int,
-    platforms: int,
-    teams: int,
+    service_items: int,
 ) -> dict[str, Any]:
-    """多维办学指数：与环绕 KPI 同源，红线指标可拖累总分。"""
+    """五维办学指数：人才培养 / 师资建设 / 科研 / 国际交流 / 社会服务。"""
     ratio_score = score_ratio(ratio)
+    degree_score = (
+        50.0
+        if master_degrees is None
+        else _clamp01(master_degrees / TARGETS["masterDegrees"]) * 100.0
+    )
+    course_score = (
+        _clamp01(course_count / TARGETS["courses"]) * 60.0
+        + _clamp01(course_hours / TARGETS["courseHours"]) * 40.0
+    )
+    talent_score = ratio_score * 0.50 + degree_score * 0.25 + course_score * 0.25
+
     faculty_score = (
-        _clamp01(teachers / TARGETS["teachers"]) * 55.0
-        + ratio_score * 0.45
+        _clamp01(teachers / TARGETS["teachers"]) * 35.0
+        + _pct_score(phd_ratio, PHD_TARGET) * 0.35
+        + _pct_score(senior_ratio, SENIOR_TARGET) * 0.30
     )
-    teaching_score = _clamp01(courses / TARGETS["courses"]) * 100.0
+
     research_score = (
-        _clamp01(top_papers / TARGETS["topPapers"]) * 55.0
-        + _clamp01(projects / TARGETS["projects"]) * 45.0
+        _clamp01(top_papers / TARGETS["topPapers"]) * 40.0
+        + _clamp01(projects / TARGETS["projects"]) * 30.0
+        + _clamp01(science_awards / TARGETS["scienceAwards"]) * 30.0
     )
-    transfer_score = _clamp01(patents / TARGETS["patents"]) * 100.0
-    platform_score = (
-        _clamp01(platforms / TARGETS["platforms"]) * 60.0
-        + _clamp01(teams / TARGETS["teams"]) * 40.0
+
+    if conferences <= 0 and intl_conferences <= 0:
+        # 国际交流源偏薄时给中性分，不因缺会把整维打到 0
+        intl_score = 48.0
+    else:
+        intl_score = (
+            _clamp01(conferences / TARGETS["conferences"]) * 55.0
+            + _clamp01(intl_conferences / TARGETS["intlConferences"]) * 45.0
+        )
+
+    service_score = (
+        _clamp01(patents / TARGETS["patents"]) * 55.0
+        + _clamp01(service_items / TARGETS["serviceItems"]) * 45.0
     )
 
     pillars = [
-        {"key": "faculty", "label": "师资保障", "score": round(faculty_score, 1), "weight": 0.28},
-        {"key": "teaching", "label": "课程建设", "score": round(teaching_score, 1), "weight": 0.18},
-        {"key": "research", "label": "科研产出", "score": round(research_score, 1), "weight": 0.28},
-        {"key": "transfer", "label": "成果转化", "score": round(transfer_score, 1), "weight": 0.12},
-        {"key": "platform", "label": "平台团队", "score": round(platform_score, 1), "weight": 0.14},
+        {"key": "talent", "label": "人才培养", "score": round(talent_score, 1), "weight": 0.26},
+        {"key": "faculty", "label": "师资建设", "score": round(faculty_score, 1), "weight": 0.24},
+        {"key": "research", "label": "科研", "score": round(research_score, 1), "weight": 0.24},
+        {"key": "international", "label": "国际交流", "score": round(intl_score, 1), "weight": 0.12},
+        {"key": "service", "label": "社会服务", "score": round(service_score, 1), "weight": 0.14},
     ]
     index = sum(p["score"] * p["weight"] for p in pillars)
     index = round(min(100.0, max(0.0, index)), 1)
@@ -187,7 +328,9 @@ def compute_development_index(
         ratio=ratio,
         students=students,
         teachers=teachers,
-        courses=courses,
+        master_degrees=master_degrees,
+        conferences=conferences,
+        science_awards=science_awards,
         weak=weak,
     )
     star = 5 if index >= 85 else 4 if index >= 70 else 3 if index >= 55 else 2
@@ -205,7 +348,9 @@ def _build_index_diagnosis(
     ratio: float | None,
     students: int,
     teachers: int,
-    courses: int,
+    master_degrees: int | None,
+    conferences: int,
+    science_awards: int,
     weak: list[dict[str, Any]],
 ) -> dict[str, Any]:
     status: KpiStatus = "healthy"
@@ -225,11 +370,12 @@ def _build_index_diagnosis(
         summary = f"生师比 {ratio:.1f}:1，宜控招引才"
         details.append("生师比高于参考区间，建议控制扩招并加快引进")
 
-    if courses <= 0:
-        if status == "healthy":
-            status = "watch"
-            summary = "课程建设薄弱，宜加快培育"
-        details.append("精品课程建设数据不足")
+    if master_degrees is None:
+        details.append("硕士授予人数待核对就业/学位数据")
+    if conferences <= 0:
+        details.append("学术会议记录偏少，国际交流显示度不足")
+    if science_awards <= 0:
+        details.append("近阶段省部级科技奖待突破")
 
     if status == "healthy" and weak:
         lowest = weak[0]
@@ -260,7 +406,7 @@ def classify_ratio(ratio: float | None) -> tuple[KpiStatus, str]:
     if ratio <= RATIO_HEALTHY:
         return "healthy", f"处于本科参考线（≤{RATIO_HEALTHY:.0f}:1）"
     if ratio <= RATIO_WATCH:
-        return "watch", f"略高于参考线，建议控规模、补师资"
+        return "watch", "略高于参考线，建议控规模、补师资"
     if ratio <= RATIO_ALERT:
         return "alert", f"明显偏高（>{RATIO_WATCH:.0f}:1），影响培养质量"
     return "alert", f"严重超标（>{RATIO_ALERT:.0f}:1），须纳入办学红线治理"
@@ -285,20 +431,36 @@ def classify_count(
     return "alert", alert_hint
 
 
+def _missing_value() -> str:
+    return "**"
+
+
 def build_hub_kpis(
     *,
     teachers: int,
+    professors: int,
+    associates: int,
+    phd_ratio: float | None,
+    master_supervisors: int,
+    doctoral_supervisors: int,
+    students: int,
+    masters: int,
     ratio_value: float | str,
     ratio_numeric: float | None,
-    courses: int,
-    top_papers: int,
-    projects: int,
-    patents: int,
-    platforms: int,
-    teams: int,
+    course_count: int,
+    course_hours: int,
+    quality_courses: int,
+    undergrad_majors: int,
+    master_majors: int | None,
+    doctoral_majors: int | None,
+    platforms_total: int,
+    platforms_by_level: dict[str, int],
+    teams_total: int,
+    teams_by_level: dict[str, int],
 ) -> list[dict[str, Any]]:
-    """环绕 8 卡：真实口径 + 办学状态提示（不再用假同比趋势）。"""
+    """环绕 6 卡：办学底座结构 + 分层拆解。"""
     ratio_status, ratio_hint = classify_ratio(ratio_numeric)
+    senior_n = professors + associates
 
     teacher_status, teacher_hint = classify_count(
         teachers,
@@ -309,7 +471,6 @@ def build_hub_kpis(
         watch_hint="师资偏紧，关注引进与稳定",
         alert_hint="专任教师明显不足",
     )
-    # 生师比红线优先：规模「够数」但配比失衡时，仍提示关注/预警
     if ratio_numeric is not None and ratio_numeric > RATIO_ALERT and teachers > 0:
         teacher_status = "alert"
         teacher_hint = "相对在籍规模不足，需加快补充专任教师"
@@ -317,53 +478,44 @@ def build_hub_kpis(
         if teacher_status == "healthy":
             teacher_status = "watch"
         teacher_hint = "相对在籍规模偏紧，建议同步控招与引才"
+
+    student_status = ratio_status if students > 0 else "neutral"
+    student_hint = ratio_hint if students > 0 else "学籍规模待核"
+
     course_status, course_hint = classify_count(
-        courses,
-        healthy_at=8,
-        watch_at=1,
-        empty_hint="待补齐课程建设库",
-        healthy_hint="省部级以上课程建设有积累",
-        watch_hint="精品课程偏少，宜加快一流课程培育",
-        alert_hint="课程建设薄弱",
-    )
-    paper_status, paper_hint = classify_count(
-        top_papers,
-        healthy_at=30,
-        watch_at=10,
-        empty_hint="近五年顶刊成果待突破",
-        healthy_hint="近五年顶刊显示度较好",
-        watch_hint="顶刊产出一般，建议凝练方向",
-        alert_hint="高水平论文偏少",
-    )
-    project_status, project_hint = classify_count(
-        projects,
+        course_count,
         healthy_at=40,
-        watch_at=15,
-        empty_hint="在库科研项目不足",
-        healthy_hint="项目体量可支撑科研运行",
-        watch_hint="项目储备一般，宜加强申报组织",
-        alert_hint="科研项目偏少",
+        watch_at=10,
+        empty_hint="开课/课时台账待补齐",
+        healthy_hint="课程运行体量可支撑培养方案",
+        watch_hint="开课门数偏少，核对学期课表",
+        alert_hint="课程运行数据薄弱",
     )
-    patent_status, patent_hint = classify_count(
-        patents,
-        healthy_at=15,
-        watch_at=5,
-        empty_hint="专利转化储备不足",
-        healthy_hint="知识产权积累较好",
-        watch_hint="专利数量一般，关注转化应用",
-        alert_hint="专利产出偏少",
+    if course_count <= 0 and course_hours > 0:
+        course_status = "watch"
+        course_hint = "有课时无门数，建议核对开课台账"
+
+    major_status, major_hint = classify_count(
+        undergrad_majors,
+        healthy_at=6,
+        watch_at=3,
+        empty_hint="本科专业目录待核",
+        healthy_hint="本研专业布局相对完整",
+        watch_hint="专业点偏少，关注学位点建设",
+        alert_hint="专业布局偏窄",
     )
+
     platform_status, platform_hint = classify_count(
-        platforms,
+        platforms_total,
         healthy_at=5,
         watch_at=2,
-        empty_hint="尚无省级以上科研平台",
-        healthy_hint="省级以上平台布局较好",
+        empty_hint="科研平台台账为空",
+        healthy_hint="平台分层布局可支撑有组织科研",
         watch_hint="平台数量有限，宜冲刺更高层级",
         alert_hint="高层次平台偏少",
     )
     team_status, team_hint = classify_count(
-        teams,
+        teams_total,
         healthy_at=6,
         watch_at=2,
         empty_hint="稳定科研团队偏少",
@@ -372,68 +524,159 @@ def build_hub_kpis(
         alert_hint="科研团队力量不足",
     )
 
+    phd_label = f"{phd_ratio:.1f}%" if phd_ratio is not None else _missing_value()
+    master_major_label = _missing_value() if master_majors is None else f"{master_majors}个"
+    doctoral_major_label = _missing_value() if doctoral_majors is None else f"{doctoral_majors}个"
+
     return [
         {
-            "key": "teachers",
-            "label": "专任教师",
+            "key": "faculty",
+            "label": "师资结构",
             "value": teachers,
             "unit": "人",
             "status": teacher_status,
             "hint": teacher_hint,
+            "breakdowns": [
+                {"label": "教授+副教授", "value": f"{senior_n}人"},
+                {"label": "博士比例", "value": phd_label},
+                {"label": "硕/博导", "value": f"{master_supervisors}/{doctoral_supervisors}"},
+            ],
         },
         {
-            "key": "studentRatio",
-            "label": "生师比",
-            "value": ratio_value,
-            "status": ratio_status,
-            "hint": ratio_hint,
+            "key": "students",
+            "label": "学生规模",
+            "value": students,
+            "unit": "人",
+            "status": student_status,
+            "hint": student_hint,
+            "breakdowns": [
+                {"label": "硕士", "value": f"{masters}人"},
+                {
+                    "label": "生师比",
+                    "value": str(ratio_value),
+                    "tone": ratio_status if ratio_status != "neutral" else None,
+                },
+            ],
         },
         {
             "key": "courses",
-            "label": "精品课程",
-            "value": courses,
+            "label": "课程运行",
+            "value": course_count,
             "unit": "门",
             "status": course_status,
             "hint": course_hint,
+            "breakdowns": [
+                {"label": "课时", "value": f"{course_hours}学时"},
+                {"label": "精品课", "value": f"{quality_courses}门"},
+            ],
         },
         {
-            "key": "topPapers",
-            "label": "顶刊论文",
-            "value": top_papers,
-            "unit": "篇",
-            "status": paper_status,
-            "hint": paper_hint,
-        },
-        {
-            "key": "projects",
-            "label": "科研项目",
-            "value": projects,
-            "unit": "项",
-            "status": project_status,
-            "hint": project_hint,
-        },
-        {
-            "key": "patents",
-            "label": "授权专利",
-            "value": patents,
-            "unit": "项",
-            "status": patent_status,
-            "hint": patent_hint,
+            "key": "majors",
+            "label": "专业布局",
+            "value": undergrad_majors,
+            "unit": "个",
+            "status": major_status,
+            "hint": major_hint,
+            "breakdowns": [
+                {"label": "硕士点", "value": master_major_label},
+                {"label": "博士点", "value": doctoral_major_label},
+            ],
         },
         {
             "key": "platforms",
-            "label": "省级平台",
-            "value": platforms,
+            "label": "科研平台",
+            "value": platforms_total,
             "unit": "个",
             "status": platform_status,
             "hint": platform_hint,
+            "breakdowns": [
+                {"label": "省", "value": str(platforms_by_level.get("province", 0))},
+                {"label": "校", "value": str(platforms_by_level.get("school", 0))},
+                {"label": "院", "value": str(platforms_by_level.get("college", 0))},
+            ],
         },
         {
             "key": "teams",
             "label": "科研团队",
-            "value": teams,
+            "value": teams_total,
             "unit": "个",
             "status": team_status,
             "hint": team_hint,
+            "breakdowns": [
+                {"label": "省", "value": str(teams_by_level.get("province", 0))},
+                {"label": "校", "value": str(teams_by_level.get("school", 0))},
+                {"label": "院", "value": str(teams_by_level.get("college", 0))},
+            ],
+        },
+    ]
+
+
+def build_hub_highlights(
+    *,
+    master_degrees: int | None,
+    science_awards: int,
+    conferences: int,
+) -> list[dict[str, Any]]:
+    """底部成果栏：学位授予 / 科技奖 / 会议，突出办学显示度。"""
+    if master_degrees is None:
+        degree_status, degree_hint = "neutral", "就业/学位库暂无硕士授予口径"
+        degree_value: int | str = _missing_value()
+        degree_unit = ""
+    else:
+        degree_status, degree_hint = classify_count(
+            master_degrees,
+            healthy_at=60,
+            watch_at=20,
+            empty_hint="近阶段硕士授予人数为 0",
+            healthy_hint="硕士培养出口规模正常",
+            watch_hint="硕士授予偏少，关注招生与培养周期",
+            alert_hint="硕士授予出口偏弱",
+        )
+        degree_value = master_degrees
+        degree_unit = "人"
+
+    award_status, award_hint = classify_count(
+        science_awards,
+        healthy_at=5,
+        watch_at=1,
+        empty_hint="尚无省部级以上科技奖",
+        healthy_hint="省部级科技奖有显示度",
+        watch_hint="科技奖储备一般，宜组织重点申报",
+        alert_hint="标志性科技奖偏少",
+    )
+    conf_status, conf_hint = classify_count(
+        conferences,
+        healthy_at=8,
+        watch_at=2,
+        empty_hint="学术会议/报告台账为空",
+        healthy_hint="会议与学术交流活跃",
+        watch_hint="会议场次一般，宜加强主办/承办",
+        alert_hint="学术交流显示度不足",
+    )
+
+    return [
+        {
+            "key": "masterDegrees",
+            "label": "硕士授予",
+            "value": degree_value,
+            "unit": degree_unit,
+            "status": degree_status,
+            "hint": degree_hint,
+        },
+        {
+            "key": "scienceAwards",
+            "label": "省部级科技奖",
+            "value": science_awards,
+            "unit": "项",
+            "status": award_status,
+            "hint": award_hint,
+        },
+        {
+            "key": "conferences",
+            "label": "会议",
+            "value": conferences,
+            "unit": "场",
+            "status": conf_status,
+            "hint": conf_hint,
         },
     ]

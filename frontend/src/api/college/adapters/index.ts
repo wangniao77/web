@@ -49,6 +49,14 @@ export function adaptOverviewHub(dto: OverviewHubDTO): OverviewHubVM {
       trend: kpi.trend,
       status: kpi.status,
       hint: kpi.hint,
+      breakdowns: kpi.breakdowns,
+    })),
+    highlights: (dto.highlights ?? []).map((item) => ({
+      key: item.key,
+      label: item.label,
+      value: formatValue(item.value, item.unit),
+      status: item.status,
+      hint: item.hint,
     })),
   }
 }

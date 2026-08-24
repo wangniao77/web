@@ -12,7 +12,6 @@ from Utils.DB.Models.course_models import Course
 from Utils.DB.Models.key_task_models import KeyTask
 from Utils.DB.read.college_db import (
     fetch_college_records,
-    fetch_college_student_stats,
     latest_records_by_student,
     record_to_roster,
     resolve_college,
@@ -53,65 +52,181 @@ class CollegeService:
         return college, students
 
     async def get_hub(self, *, college_id: str | None = None) -> dict[str, Any]:
-        """中间仪表盘：综合发展指数 + 左右各 4 个核心字段（指导办学口径）。"""
+        """中间仪表盘：五维综合发展指数 + 办学结构卡 + 标志成果栏（指导办学口径）。"""
         from Utils.Analytics.college_hub import (
+            build_hub_highlights,
             build_hub_kpis,
             compute_development_index,
+            is_associate,
+            is_conference,
+            is_doctoral_edu,
+            is_doctoral_supervisor,
             is_granted_patent,
+            is_graduate_edu,
+            is_international,
+            is_master_conferred,
+            is_master_edu,
+            is_master_supervisor,
+            is_phd_teacher,
+            is_professor,
             is_quality_course,
+            is_science_award,
             is_team_record,
             is_top_paper,
-            is_provincial_plus,
             is_within_years,
+            level_bucket,
         )
         from Utils.DB.Models.college_ext_models import AchievementItem, ResearchPlatform, Teacher
-        from Utils.DB.Models.external_data_models import ResearchIp, ResearchPaper, ResearchProject
+        from Utils.DB.Models.college_student_models import StudentProfile
+        from Utils.DB.Models.external_data_models import (
+            EmploymentRecord,
+            ResearchIp,
+            ResearchPaper,
+            ResearchProject,
+        )
+        from Utils.DB.Models.major_models import Major
+        from Utils.DB.Models.student_extra_models import TeachingCourseHour
 
         college = await resolve_college(college_id)
 
         teacher_qs = Teacher.filter(status="active")
+        student_qs = StudentProfile.filter(status="active")
         course_qs = Course.all()
+        hour_qs = TeachingCourseHour.all()
         paper_qs = ResearchPaper.all()
         project_qs = ResearchProject.all()
         patent_qs = ResearchIp.all()
         platform_qs = ResearchPlatform.all()
+        award_qs = AchievementItem.filter(section="award")
+        service_qs = AchievementItem.filter(section="service")
+        emp_qs = EmploymentRecord.all()
+        major_qs = Major.all()
+        ach_qs = AchievementItem.all()
         if college:
             teacher_qs = teacher_qs.filter(college_id=college.id)
+            student_qs = student_qs.filter(college_id=college.id)
             course_qs = course_qs.filter(college_id=college.id)
+            hour_qs = hour_qs.filter(college_id=college.id)
             paper_qs = paper_qs.filter(college_id=college.id)
             project_qs = project_qs.filter(college_id=college.id)
             patent_qs = patent_qs.filter(college_id=college.id)
             platform_qs = platform_qs.filter(college_id=college.id)
+            award_qs = award_qs.filter(college_id=college.id)
+            service_qs = service_qs.filter(college_id=college.id)
+            emp_qs = emp_qs.filter(college_id=college.id)
+            major_qs = major_qs.filter(college_id=college.id)
+            ach_qs = ach_qs.filter(college_id=college.id)
 
         (
-            (total_students, _avg_gpa),
-            teachers,
+            teacher_rows,
+            student_rows,
             course_rows,
+            hour_terms,
             paper_rows,
             projects,
             patent_rows,
             platform_rows,
+            award_rows,
+            service_rows,
+            emp_rows,
+            undergrad_majors,
+            ach_dept_rows,
         ) = await asyncio.gather(
-            fetch_college_student_stats(college),
-            teacher_qs.count(),
-            course_qs.values_list("level", flat=True),
+            teacher_qs.values_list("name", "title", "title_level", "degree", "education", "is_phd", "source", "department"),
+            student_qs.values_list("education_level", "major_name", "advisor_name"),
+            course_qs.values_list("level", "hours", "name"),
+            hour_qs.distinct().values_list("term", flat=True),
             paper_qs.values_list("level", "venue", "published_at"),
             project_qs.count(),
             patent_qs.values_list("status", flat=True),
-            platform_qs.values_list("name", "category", "level"),
+            platform_qs.values_list("name", "category", "level", "approved_by"),
+            award_qs.values_list("name", "category", "level"),
+            service_qs.values_list("name", "category", "level"),
+            emp_qs.values_list("education_level", "education_status"),
+            major_qs.count(),
+            ach_qs.values_list("department", flat=True),
         )
 
-        # 课程表是「课程建设」事实，计省部级以上/一流精品，而非「本学期开课」
-        courses = sum(1 for lv in course_rows if is_quality_course(lv))
-        if courses == 0 and course_rows:
-            courses = len(course_rows)
+        # —— 师资结构 ——
+        teachers = len(teacher_rows)
+        professors = sum(1 for _n, title, lv, *_rest in teacher_rows if is_professor(title, lv))
+        associates = sum(1 for _n, title, lv, *_rest in teacher_rows if is_associate(title, lv))
+        phd_n = sum(
+            1
+            for _n, _t, _lv, degree, education, is_phd, *_rest in teacher_rows
+            if is_phd_teacher(is_phd=is_phd, degree=degree, education=education)
+        )
+        phd_ratio = round(phd_n / teachers * 100, 1) if teachers else None
+        senior_ratio = round((professors + associates) / teachers * 100, 1) if teachers else None
 
+        doctoral_names = {
+            (name or "").strip()
+            for name, title, _lv, degree, _edu, _phd, source, _dept in teacher_rows
+            if (name or "").strip() and is_doctoral_supervisor(title, degree, source)
+        }
+        master_names = {
+            (name or "").strip()
+            for name, title, _lv, degree, _edu, _phd, source, _dept in teacher_rows
+            if (name or "").strip() and is_master_supervisor(title, degree, source)
+        }
+
+        # —— 学生规模 / 专业点 / 导师覆盖 ——
+        total_students = len(student_rows)
+        masters = sum(1 for edu, _m, _a in student_rows if is_master_edu(edu) or is_graduate_edu(edu))
+        doctoral_students = sum(1 for edu, _m, _a in student_rows if is_doctoral_edu(edu))
+        # 研究生里剔除博士，避免硕士人数含博
+        masters = max(masters - doctoral_students, 0)
+
+        advisor_names = {
+            (advisor or "").strip()
+            for edu, _m, advisor in student_rows
+            if (advisor or "").strip() and is_graduate_edu(edu)
+        }
+        master_names |= advisor_names
+        doctoral_supervisors = len(doctoral_names)
+        master_supervisors = len(master_names | doctoral_names)
+
+        master_major_set = {
+            (major or "").strip()
+            for edu, major, _a in student_rows
+            if (major or "").strip() and is_master_edu(edu)
+        }
+        doctoral_major_set = {
+            (major or "").strip()
+            for edu, major, _a in student_rows
+            if (major or "").strip() and is_doctoral_edu(edu)
+        }
+        master_majors = len(master_major_set) if master_major_set else None
+        doctoral_majors = len(doctoral_major_set) if doctoral_major_set else (None if not doctoral_students else 0)
+
+        # —— 课程运行：优先学期课表门数/课时，精品课仍看建设库 ——
+        quality_courses = sum(1 for lv, _h, _n in course_rows if is_quality_course(lv))
+        latest_term = ""
+        if hour_terms:
+            latest_term = sorted(
+                (str(t).strip() for t in hour_terms if t),
+                reverse=True,
+            )[0]
+        hour_stat_qs = TeachingCourseHour.all()
+        if college:
+            hour_stat_qs = hour_stat_qs.filter(college_id=college.id)
+        if latest_term:
+            hour_stat_qs = hour_stat_qs.filter(term=latest_term)
+        hour_pairs = list(await hour_stat_qs.values_list("course_name", "total_hours"))
+        course_names = {(name or "").strip() for name, _h in hour_pairs if (name or "").strip()}
+        course_count = len(course_names)
+        if course_count <= 0:
+            course_count = len({(name or "").strip() for _lv, _h, name in course_rows if (name or "").strip()})
+        course_hours = int(round(sum(float(h or 0) for _n, h in hour_pairs)))
+        if course_hours <= 0:
+            course_hours = int(round(sum(float(h or 0) for _lv, h, _n in course_rows)))
+
+        # —— 科研与成果 ——
         top_papers = sum(
             1
             for level, venue, published_at in paper_rows
             if is_top_paper(level, venue) and is_within_years(published_at, years=5)
         )
-        # 无顶刊字段可识别时，退化为「近五年论文」以免整卡空白；有字段但筛不出则如实为 0
         if top_papers == 0 and paper_rows:
             has_signal = any((level or venue) for level, venue, _ in paper_rows)
             if not has_signal:
@@ -120,15 +235,33 @@ class CollegeService:
                 )
 
         patents = sum(1 for status in patent_rows if is_granted_patent(status))
-        platforms = sum(1 for _name, _cat, level in platform_rows if is_provincial_plus(level))
-        if platforms == 0 and platform_rows:
-            # level 缺失时不把团队类计入「省级平台」
-            platforms = sum(
-                1
-                for name, cat, level in platform_rows
-                if not is_team_record(cat, name) and (not level or is_provincial_plus(level))
-            )
-        teams = sum(1 for name, cat, _lv in platform_rows if is_team_record(cat, name))
+
+        platforms_by_level = {"province": 0, "school": 0, "college": 0}
+        teams_by_level = {"province": 0, "school": 0, "college": 0}
+        for name, cat, level, approved_by in platform_rows:
+            bucket = level_bucket(level, approved_by, cat, name)
+            if is_team_record(cat, name):
+                teams_by_level[bucket] += 1
+            else:
+                platforms_by_level[bucket] += 1
+        platforms_total = sum(platforms_by_level.values())
+        teams_total = sum(teams_by_level.values())
+
+        science_awards = sum(
+            1
+            for name, cat, level in award_rows
+            if is_science_award(name, cat)
+        )
+        conferences = sum(1 for name, cat, _lv in service_rows if is_conference(name, cat))
+        intl_conferences = sum(
+            1
+            for name, cat, _lv in service_rows
+            if is_conference(name, cat) and is_international(name, cat)
+        )
+        service_items = sum(1 for name, cat, _lv in service_rows if not is_conference(name, cat))
+
+        master_degree_n = sum(1 for lv, status in emp_rows if is_master_conferred(lv, status))
+        master_degrees = master_degree_n if master_degree_n > 0 else None
 
         ratio_numeric: float | None = None
         ratio_value: float | str
@@ -145,22 +278,26 @@ class CollegeService:
             teachers=teachers,
             students=total_students,
             ratio=ratio_numeric,
-            courses=courses,
+            phd_ratio=phd_ratio,
+            senior_ratio=senior_ratio,
+            course_count=course_count,
+            course_hours=float(course_hours),
+            master_degrees=master_degrees,
             top_papers=top_papers,
             projects=projects,
+            science_awards=science_awards,
+            conferences=conferences,
+            intl_conferences=intl_conferences,
             patents=patents,
-            platforms=platforms,
-            teams=teams,
+            service_items=service_items,
         )
 
-        teacher_list = list(await Teacher.filter(status="active", college_id=college.id)) if college else []
-        ach_list = list(await AchievementItem.filter(college_id=college.id)) if college else []
         t_by_dept = Counter(
-            (t.department or "").strip() for t in teacher_list if (t.department or "").strip()
+            (dept or "").strip()
+            for _n, _t, _lv, _d, _e, _p, _s, dept in teacher_rows
+            if (dept or "").strip()
         )
-        a_by_dept = Counter(
-            (a.department or "").strip() for a in ach_list if (a.department or "").strip()
-        )
+        a_by_dept = Counter((dept or "").strip() for dept in ach_dept_rows if (dept or "").strip())
         by_department = [
             {
                 "department": d,
@@ -179,14 +316,30 @@ class CollegeService:
             "byDepartment": by_department,
             "kpis": build_hub_kpis(
                 teachers=teachers,
+                professors=professors,
+                associates=associates,
+                phd_ratio=phd_ratio,
+                master_supervisors=master_supervisors,
+                doctoral_supervisors=doctoral_supervisors,
+                students=total_students,
+                masters=masters,
                 ratio_value=ratio_value,
                 ratio_numeric=ratio_numeric,
-                courses=courses,
-                top_papers=top_papers,
-                projects=projects,
-                patents=patents,
-                platforms=platforms,
-                teams=teams,
+                course_count=course_count,
+                course_hours=course_hours,
+                quality_courses=quality_courses,
+                undergrad_majors=undergrad_majors,
+                master_majors=master_majors,
+                doctoral_majors=doctoral_majors,
+                platforms_total=platforms_total,
+                platforms_by_level=platforms_by_level,
+                teams_total=teams_total,
+                teams_by_level=teams_by_level,
+            ),
+            "highlights": build_hub_highlights(
+                master_degrees=master_degrees,
+                science_awards=science_awards,
+                conferences=conferences,
             ),
         }
 
