@@ -40,11 +40,15 @@ export function adaptOverviewHub(dto: OverviewHubDTO): OverviewHubVM {
     developmentIndex: dto.developmentIndex,
     maxScore: dto.maxScore,
     starLevel: dto.starLevel,
+    diagnosis: dto.diagnosis,
+    pillars: dto.pillars,
     kpis: dto.kpis.map((kpi) => ({
       key: kpi.key,
       label: kpi.label,
       value: formatValue(kpi.value, kpi.unit),
       trend: kpi.trend,
+      status: kpi.status,
+      hint: kpi.hint,
     })),
   }
 }

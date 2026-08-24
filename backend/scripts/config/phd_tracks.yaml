@@ -1,0 +1,14 @@
+# 申博方向师资目标（学院级监测）
+targetStuTeacher: 18
+tracks:
+  - key: safety
+    name: 安全科学与工程
+    professorTarget: 8
+    doctoralSupervisorTarget: 6
+    # 系部/专业关键字（命中即归属该方向）
+    matchKeywords: [安全, 网络空间安全, 网安]
+  - key: intelligence
+    name: 智能科学技术
+    professorTarget: 10
+    doctoralSupervisorTarget: 8
+    matchKeywords: [智能, 人工智能, 大数据, 计算机]

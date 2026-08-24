@@ -3348,6 +3348,41 @@ $cp-metric-xl: 58px;
   height: 100%;
 }
 
+.core-hero-diagnosis {
+  z-index: 5;
+  max-width: min(340px, 94%);
+  margin: 10px 0 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  background: rgba(2, 20, 48, 0.78);
+  color: #e8f8ff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--healthy {
+    border-color: rgba(45, 255, 154, 0.4);
+    color: #b8ffe0;
+  }
+
+  &--watch {
+    border-color: rgba(255, 194, 45, 0.5);
+    color: #ffe6a3;
+  }
+
+  &--alert {
+    border-color: rgba(255, 92, 110, 0.55);
+    color: #ffc0c8;
+  }
+}
+
 .core-gauge-square {
   position: relative;
   width: min(280px, 72%);
@@ -3361,14 +3396,14 @@ $cp-metric-xl: 58px;
   z-index: 4;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
   max-width: 100%;
   height: 100%;
   min-height: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid rgba(0, 229, 255, 0.55);
-  border-radius: 8px;
+  border-radius: 10px;
   background:
     linear-gradient(145deg, rgba(0, 90, 170, 0.38), rgba(2, 18, 48, 0.94));
   box-shadow:
@@ -3379,6 +3414,7 @@ $cp-metric-xl: 58px;
     orbitBorderGlow 4s ease-in-out 0.85s infinite;
   overflow: hidden;
   will-change: box-shadow;
+  cursor: default;
 
   &::after {
     position: absolute;
@@ -3418,8 +3454,8 @@ $cp-metric-xl: 58px;
   &__icon {
     display: grid;
     flex-shrink: 0;
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     place-items: center;
     border-radius: 50%;
     border: 1px solid rgba(0, 242, 255, 0.45);
@@ -3429,8 +3465,8 @@ $cp-metric-xl: 58px;
     color: #9fefff;
 
     :deep(svg) {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       color: #9fefff;
     }
   }
@@ -3439,27 +3475,33 @@ $cp-metric-xl: 58px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 2px;
+    gap: 4px;
     min-width: 0;
     flex: 1;
   }
 
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+  }
+
   &__label {
-    color: #d7f4ff;
-    font-size: 13px;
+    color: #e8f8ff;
+    font-size: 15px;
     font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: 0.02em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
     overflow: hidden;
-    word-break: break-all;
+    text-overflow: ellipsis;
   }
 
   &__value {
     color: #fff;
-    font-size: clamp(20px, 1.45vw, 28px);
+    font-size: clamp(26px, 1.9vw, 34px);
     line-height: 1.05;
     font-weight: 900;
     letter-spacing: 0.01em;
@@ -3478,15 +3520,62 @@ $cp-metric-xl: 58px;
     }
   }
 
-  &__trend {
+  &__badge {
+    flex-shrink: 0;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(45, 255, 154, 0.45);
+    background: rgba(45, 255, 154, 0.12);
     color: #2dff9a;
     font-size: 13px;
-    font-style: normal;
     font-weight: 800;
+    letter-spacing: 0.06em;
     line-height: 1.2;
-    letter-spacing: 0.02em;
-    text-shadow: 0 0 8px rgba(45, 255, 154, 0.35);
-    animation: orbitTrendPulse 3s ease-in-out infinite;
+
+    &--healthy {
+      border-color: rgba(45, 255, 154, 0.45);
+      background: rgba(45, 255, 154, 0.12);
+      color: #2dff9a;
+    }
+
+    &--watch {
+      border-color: rgba(255, 194, 45, 0.55);
+      background: rgba(255, 194, 45, 0.14);
+      color: #ffc22d;
+    }
+
+    &--alert {
+      border-color: rgba(255, 92, 110, 0.55);
+      background: rgba(255, 92, 110, 0.16);
+      color: #ff7b8a;
+    }
+
+    &--neutral {
+      border-color: rgba(160, 200, 230, 0.45);
+      background: rgba(160, 200, 230, 0.12);
+      color: #b8d7ea;
+    }
+  }
+
+  &--watch {
+    border-color: rgba(255, 194, 45, 0.55);
+    box-shadow:
+      0 0 18px rgba(255, 180, 40, 0.22),
+      inset 0 0 14px rgba(255, 170, 30, 0.08);
+  }
+
+  &--alert {
+    border-color: rgba(255, 92, 110, 0.6);
+    box-shadow:
+      0 0 18px rgba(255, 80, 100, 0.28),
+      inset 0 0 14px rgba(255, 60, 90, 0.1);
+  }
+
+  /* 兼容旧类名 */
+  &__trend,
+  &__meta,
+  &__hint {
+    display: none;
   }
 }
 
@@ -3733,23 +3822,33 @@ $cp-metric-xl: 58px;
   span {
     color: #f2fbff;
     width: 100%;
-    font-size: $cp-label;
+    font-size: 15px;
     font-weight: 800;
     line-height: 1.15;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.08em;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
   }
 
   strong {
     color: #ffffff;
-    font-size: 68px;
+    font-size: clamp(52px, 5.2vw, 72px);
     line-height: 1;
     font-weight: 900;
+    font-variant-numeric: tabular-nums;
     text-shadow:
       0 0 20px rgba(0, 242, 255, 0.9),
       0 0 40px rgba(0, 180, 255, 0.55),
       0 2px 4px rgba(0, 10, 30, 0.9);
     animation: indexPulse 2.5s ease-in-out infinite;
+  }
+
+  small {
+    margin-top: 6px;
+    color: #9fefff;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
   }
 }
 

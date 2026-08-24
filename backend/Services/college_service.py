@@ -53,8 +53,18 @@ class CollegeService:
         return college, students
 
     async def get_hub(self, *, college_id: str | None = None) -> dict[str, Any]:
-        """中间仪表盘：综合发展指数 + 左右各 4 个核心字段（与前端 kpiLayout 对齐）。"""
-        from Utils.DB.Models.college_ext_models import CollegeKpiSnapshot, ResearchPlatform, Teacher
+        """中间仪表盘：综合发展指数 + 左右各 4 个核心字段（指导办学口径）。"""
+        from Utils.Analytics.college_hub import (
+            build_hub_kpis,
+            compute_development_index,
+            is_granted_patent,
+            is_quality_course,
+            is_team_record,
+            is_top_paper,
+            is_provincial_plus,
+            is_within_years,
+        )
+        from Utils.DB.Models.college_ext_models import AchievementItem, ResearchPlatform, Teacher
         from Utils.DB.Models.external_data_models import ResearchIp, ResearchPaper, ResearchProject
 
         college = await resolve_college(college_id)
@@ -65,7 +75,6 @@ class CollegeService:
         project_qs = ResearchProject.all()
         patent_qs = ResearchIp.all()
         platform_qs = ResearchPlatform.all()
-        snapshot_qs = CollegeKpiSnapshot.all().order_by("-updated_at")
         if college:
             teacher_qs = teacher_qs.filter(college_id=college.id)
             course_qs = course_qs.filter(college_id=college.id)
@@ -73,47 +82,76 @@ class CollegeService:
             project_qs = project_qs.filter(college_id=college.id)
             patent_qs = patent_qs.filter(college_id=college.id)
             platform_qs = platform_qs.filter(college_id=college.id)
-            snapshot_qs = snapshot_qs.filter(college_id=college.id)
 
         (
-            (total_students, avg_gpa),
+            (total_students, _avg_gpa),
             teachers,
-            courses,
-            top_papers,
+            course_rows,
+            paper_rows,
             projects,
-            patents,
-            platforms,
-            teams,
-            snapshot,
+            patent_rows,
+            platform_rows,
         ) = await asyncio.gather(
             fetch_college_student_stats(college),
             teacher_qs.count(),
-            course_qs.count(),
-            paper_qs.count(),
+            course_qs.values_list("level", flat=True),
+            paper_qs.values_list("level", "venue", "published_at"),
             project_qs.count(),
-            patent_qs.count(),
-            platform_qs.count(),
-            platform_qs.filter(category__contains="团队").count(),
-            snapshot_qs.first(),
+            patent_qs.values_list("status", flat=True),
+            platform_qs.values_list("name", "category", "level"),
         )
-        if teams <= 0:
-            teams = max(platforms // 2, 0)
 
+        # 课程表是「课程建设」事实，计省部级以上/一流精品，而非「本学期开课」
+        courses = sum(1 for lv in course_rows if is_quality_course(lv))
+        if courses == 0 and course_rows:
+            courses = len(course_rows)
+
+        top_papers = sum(
+            1
+            for level, venue, published_at in paper_rows
+            if is_top_paper(level, venue) and is_within_years(published_at, years=5)
+        )
+        # 无顶刊字段可识别时，退化为「近五年论文」以免整卡空白；有字段但筛不出则如实为 0
+        if top_papers == 0 and paper_rows:
+            has_signal = any((level or venue) for level, venue, _ in paper_rows)
+            if not has_signal:
+                top_papers = sum(
+                    1 for _, _, published_at in paper_rows if is_within_years(published_at, years=5)
+                )
+
+        patents = sum(1 for status in patent_rows if is_granted_patent(status))
+        platforms = sum(1 for _name, _cat, level in platform_rows if is_provincial_plus(level))
+        if platforms == 0 and platform_rows:
+            # level 缺失时不把团队类计入「省级平台」
+            platforms = sum(
+                1
+                for name, cat, level in platform_rows
+                if not is_team_record(cat, name) and (not level or is_provincial_plus(level))
+            )
+        teams = sum(1 for name, cat, _lv in platform_rows if is_team_record(cat, name))
+
+        ratio_numeric: float | None = None
         ratio_value: float | str
-        if teachers > 0:
-            ratio_value = f"{round(total_students / teachers, 1)}:1"
+        if teachers > 0 and total_students > 0:
+            ratio_numeric = round(total_students / teachers, 1)
+            ratio_value = f"{ratio_numeric}:1"
+        elif teachers > 0:
+            ratio_value = "0:1"
+            ratio_numeric = 0.0
         else:
             ratio_value = "**"
 
-        if snapshot and snapshot.development_index is not None:
-            development_index = round(float(snapshot.development_index), 1)
-        else:
-            development_index = round(min(avg_gpa / 4 * 100, 100), 1) if avg_gpa else 72.0
-
-        # 系部拆解（不改指数公式）
-        from collections import Counter
-
-        from Utils.DB.Models.college_ext_models import AchievementItem
+        scored = compute_development_index(
+            teachers=teachers,
+            students=total_students,
+            ratio=ratio_numeric,
+            courses=courses,
+            top_papers=top_papers,
+            projects=projects,
+            patents=patents,
+            platforms=platforms,
+            teams=teams,
+        )
 
         teacher_list = list(await Teacher.filter(status="active", college_id=college.id)) if college else []
         ach_list = list(await AchievementItem.filter(college_id=college.id)) if college else []
@@ -132,69 +170,24 @@ class CollegeService:
             for d in sorted(set(t_by_dept) | set(a_by_dept))
         ]
 
-        # 无历史同比时给展示用趋势（方向与截图一致：生师比下降为改善）
         return {
-            "developmentIndex": development_index,
+            "developmentIndex": scored["developmentIndex"],
             "maxScore": 100,
-            "starLevel": 5 if development_index >= 85 else 4 if development_index >= 70 else 3,
+            "starLevel": scored["starLevel"],
+            "diagnosis": scored["diagnosis"],
+            "pillars": scored["pillars"],
             "byDepartment": by_department,
-            "kpis": [
-                {
-                    "key": "teachers",
-                    "label": "教师人数",
-                    "value": teachers,
-                    "unit": "人",
-                    "trend": {"direction": "up", "value": 3.2, "unit": "%"},
-                },
-                {
-                    "key": "studentRatio",
-                    "label": "生师比",
-                    "value": ratio_value,
-                    "trend": {"direction": "down", "value": 0.6},
-                },
-                {
-                    "key": "courses",
-                    "label": "本学期课程门数",
-                    "value": courses,
-                    "unit": "门",
-                    "trend": {"direction": "up", "value": 8},
-                },
-                {
-                    "key": "topPapers",
-                    "label": "近五年顶刊论文",
-                    "value": top_papers,
-                    "unit": "篇",
-                    "trend": {"direction": "up", "value": 12},
-                },
-                {
-                    "key": "projects",
-                    "label": "项目",
-                    "value": projects,
-                    "unit": "项",
-                    "trend": {"direction": "up", "value": 9.4, "unit": "%"},
-                },
-                {
-                    "key": "patents",
-                    "label": "专利",
-                    "value": patents,
-                    "unit": "项",
-                    "trend": {"direction": "up", "value": 7},
-                },
-                {
-                    "key": "platforms",
-                    "label": "省级平台",
-                    "value": platforms,
-                    "unit": "个",
-                    "trend": {"direction": "up", "value": 2},
-                },
-                {
-                    "key": "teams",
-                    "label": "团队",
-                    "value": teams,
-                    "unit": "个",
-                    "trend": {"direction": "up", "value": 3},
-                },
-            ],
+            "kpis": build_hub_kpis(
+                teachers=teachers,
+                ratio_value=ratio_value,
+                ratio_numeric=ratio_numeric,
+                courses=courses,
+                top_papers=top_papers,
+                projects=projects,
+                patents=patents,
+                platforms=platforms,
+                teams=teams,
+            ),
         }
 
     async def get_key_tasks(self, *, college_id: str | None = None) -> list[dict[str, Any]]:

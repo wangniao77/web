@@ -941,20 +941,67 @@ async def normalize_students_from_wide(college: College) -> dict[str, Any]:
 
 
 async def rebuild_kpi_snapshot(college: College) -> dict[str, Any]:
+    """与 CollegeService.get_hub 同源：指导办学口径指数写入快照。"""
+    from Utils.Analytics.college_hub import (
+        compute_development_index,
+        is_granted_patent,
+        is_provincial_plus,
+        is_quality_course,
+        is_team_record,
+        is_top_paper,
+        is_within_years,
+    )
+    from Utils.DB.Models import Course
+
     students = await StudentAcademicRecord.filter(college_id=college.id, status="active").count()
     teachers = await Teacher.filter(college_id=college.id, status="active").count()
-    courses = 0  # 课程建设明细未导入
-    try:
-        from Utils.DB.Models import Course
+    course_rows = await Course.filter(college_id=college.id).values_list("level", flat=True)
+    courses = sum(1 for lv in course_rows if is_quality_course(lv))
+    if courses == 0 and course_rows:
+        courses = len(course_rows)
 
-        courses = await Course.filter(college_id=college.id).count()
-    except Exception:
-        courses = 0
-    papers = await ResearchPaper.filter(college_id=college.id).count()
+    paper_rows = await ResearchPaper.filter(college_id=college.id).values_list(
+        "level", "venue", "published_at"
+    )
+    papers = sum(
+        1
+        for level, venue, published_at in paper_rows
+        if is_top_paper(level, venue) and is_within_years(published_at, years=5)
+    )
+    if papers == 0 and paper_rows:
+        has_signal = any((level or venue) for level, venue, _ in paper_rows)
+        if not has_signal:
+            papers = sum(
+                1 for _, _, published_at in paper_rows if is_within_years(published_at, years=5)
+            )
+
     projects = await ResearchProject.filter(college_id=college.id).count()
-    patents = await ResearchIp.filter(college_id=college.id).count()
-    platforms = await ResearchPlatform.filter(college_id=college.id).count()
+    patent_rows = await ResearchIp.filter(college_id=college.id).values_list("status", flat=True)
+    patents = sum(1 for status in patent_rows if is_granted_patent(status))
+    platform_rows = await ResearchPlatform.filter(college_id=college.id).values_list(
+        "name", "category", "level"
+    )
+    platforms = sum(1 for _n, _c, level in platform_rows if is_provincial_plus(level))
+    if platforms == 0 and platform_rows:
+        platforms = sum(
+            1
+            for name, cat, level in platform_rows
+            if not is_team_record(cat, name) and (not level or is_provincial_plus(level))
+        )
+    teams = sum(1 for name, cat, _lv in platform_rows if is_team_record(cat, name))
     ratio = round(students / teachers, 2) if teachers else None
+    scored = compute_development_index(
+        teachers=teachers,
+        students=students,
+        ratio=ratio,
+        courses=courses,
+        top_papers=papers,
+        projects=projects,
+        patents=patents,
+        platforms=platforms,
+        teams=teams,
+    )
+    development_index = scored["developmentIndex"]
     payload = {
         "teachers": teachers,
         "studentRatio": ratio,
@@ -963,20 +1010,13 @@ async def rebuild_kpi_snapshot(college: College) -> dict[str, Any]:
         "projects": projects,
         "patents": patents,
         "platforms": platforms,
-        "teams": await ResearchPlatform.filter(college_id=college.id, category__contains="团队").count(),
+        "teams": teams,
         "students": students,
         "employment": await EmploymentRecord.filter(college_id=college.id).count(),
         "achievements": await AchievementItem.filter(college_id=college.id).count(),
+        "pillars": scored["pillars"],
+        "diagnosis": scored["diagnosis"],
     }
-    # 简易发展指数：有数项归一化累加（占位，非官方口径）
-    score = 0.0
-    score += min(teachers / 80, 1) * 15
-    score += min((papers or 0) / 100, 1) * 20
-    score += min((projects or 0) / 80, 1) * 20
-    score += min((platforms or 0) / 10, 1) * 15
-    score += min((students or 0) / 3000, 1) * 15
-    score += min((patents or 0) / 10, 1) * 15
-    development_index = round(score, 2)
 
     existing = await CollegeKpiSnapshot.get_or_none(
         college_id=college.id, academic_year="2024-2025", semester=None

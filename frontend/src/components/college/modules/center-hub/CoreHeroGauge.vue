@@ -12,6 +12,9 @@ const gaugeDeg = computed(() => {
   return `${percent * 3.6}deg`
 })
 
+const diagnosis = computed(() => props.data.diagnosis)
+const diagnosisStatus = computed(() => diagnosis.value?.status ?? 'neutral')
+
 const leftOrder = ['tl', 'uml', 'lml', 'bl'] as const
 const rightOrder = ['tr', 'umr', 'lmr', 'br'] as const
 
@@ -47,6 +50,8 @@ const rightKpis = computed(() =>
         :label="kpi.label"
         :value="kpi.value"
         :trend="kpi.trend"
+        :status="kpi.status"
+        :hint="kpi.hint"
         :icon="kpiLayout[kpi.key]?.icon ?? 'status'"
         :position="kpiLayout[kpi.key]?.position ?? 'tl'"
       />
@@ -54,7 +59,10 @@ const rightKpis = computed(() =>
 
     <div class="core-hero-core">
       <div class="core-gauge-square">
-        <div class="core-gauge core-gauge--hero">
+        <div
+          class="core-gauge core-gauge--hero"
+          :class="diagnosis ? `core-gauge--${diagnosisStatus}` : null"
+        >
           <div class="core-gauge__scan-ring" aria-hidden="true" />
           <div class="core-gauge__orbit-ring core-gauge__orbit-ring--1" aria-hidden="true" />
           <div class="core-gauge__orbit-ring core-gauge__orbit-ring--2" aria-hidden="true" />
@@ -66,11 +74,21 @@ const rightKpis = computed(() =>
           <div class="core-gauge__ring core-gauge__ring--outer" />
           <div class="core-gauge__ring core-gauge__ring--inner" />
           <div class="core-gauge__content">
-            <span>学院综合发展指数</span>
+            <span>综合发展指数</span>
             <strong>{{ data.developmentIndex }}</strong>
+            <small v-if="diagnosis?.indexBand">{{ diagnosis.indexBand }}</small>
           </div>
         </div>
       </div>
+
+      <p
+        v-if="diagnosis?.summary"
+        class="core-hero-diagnosis"
+        :class="`core-hero-diagnosis--${diagnosisStatus}`"
+        :title="diagnosis.details?.join('；') || diagnosis.summary"
+      >
+        {{ diagnosis.summary }}
+      </p>
 
       <div class="core-hero-platform" aria-hidden="true">
         <div class="core-hero-platform__beam core-hero-platform__beam--1" />
@@ -92,6 +110,8 @@ const rightKpis = computed(() =>
         :label="kpi.label"
         :value="kpi.value"
         :trend="kpi.trend"
+        :status="kpi.status"
+        :hint="kpi.hint"
         :icon="kpiLayout[kpi.key]?.icon ?? 'status'"
         :position="kpiLayout[kpi.key]?.position ?? 'tr'"
       />

@@ -5,11 +5,25 @@ export interface OverviewHubVM {
   developmentIndex: number
   maxScore: number
   starLevel: number
+  diagnosis?: {
+    status: 'healthy' | 'watch' | 'alert' | 'neutral'
+    summary: string
+    details?: string[]
+    indexBand?: string
+  }
+  pillars?: Array<{
+    key: string
+    label: string
+    score: number
+    weight: number
+  }>
   kpis: Array<{
     key: KpiKey
     label: string
     value: string
     trend?: TrendInfo
+    status?: 'healthy' | 'watch' | 'alert' | 'neutral'
+    hint?: string
   }>
 }
 

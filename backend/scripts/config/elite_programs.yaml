@@ -1,0 +1,15 @@
+# 一流专业建设点（软科对标用）
+# level: national | provincial | none
+programs:
+  - name: 计算机科学与技术
+    level: provincial
+  - name: 软件工程
+    level: provincial
+  - name: 电子商务
+    level: provincial
+  - name: 人工智能
+    level: none
+  - name: 大数据管理与应用
+    level: none
+  - name: 网络空间安全
+    level: none

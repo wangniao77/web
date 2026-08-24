@@ -1,0 +1,10 @@
+# 学工规则配置位（对接学工系统后可替换阈值）
+warnings:
+  gpaHigh: 2.0
+  gpaMedium: 2.5
+  failedHigh: 10
+  absentMedium: 2
+  makeupMedium: 2
+
+highPotential:
+  note: 高潜定义待学工正式规则替换；career 维度将关联就业去向

@@ -20,12 +20,28 @@ export interface OverviewHubDTO {
     teachers: number
     achievements: number
   }>
+  /** 指导办学诊断：短板与红线提示 */
+  diagnosis?: {
+    status: 'healthy' | 'watch' | 'alert' | 'neutral'
+    summary: string
+    details?: string[]
+    indexBand?: string
+  }
+  pillars?: Array<{
+    key: string
+    label: string
+    score: number
+    weight: number
+  }>
   kpis: Array<{
     key: KpiKey
     label: string
     value: number | string
     unit?: string
+    /** 有真实同比时才返回；否则用 status/hint 指导办学 */
     trend?: TrendInfo
+    status?: 'healthy' | 'watch' | 'alert' | 'neutral'
+    hint?: string
   }>
 }
 

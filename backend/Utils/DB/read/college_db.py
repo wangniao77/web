@@ -198,9 +198,12 @@ def record_to_roster(
     """转为前端花名册结构（不含敏感字段）。"""
 
     warn = warnings[0] if warnings else None
-    level_map = {"high": "红色预警", "medium": "黄色预警", "low": "蓝色预警"}
+    level_map = {"high": "1级预警", "medium": "2级预警", "low": "3级预警"}
     if highlight is None:
         highlight = hp[0]["highlight"] if hp else ""
+    grade = None
+    if isinstance(warn, dict):
+        grade = warn.get("grade") or {"high": 1, "medium": 2, "low": 3}.get(warn.get("level"), 3)
     return {
         "id": str(record.id),
         "name": record.name or "",
@@ -218,5 +221,8 @@ def record_to_roster(
         "warnings": [w["type"] for w in warnings],
         "highlight": highlight or "",
         "warnReason": warn["reason"] if warn else None,
-        "warnLevel": level_map.get(warn["level"], "蓝色预警") if warn else None,
+        "warnLevel": level_map.get(warn["level"], "3级预警") if warn else None,
+        "warnGrade": grade,
+        "warnGradeLabel": (warn.get("gradeLabel") if isinstance(warn, dict) else None)
+        or (level_map.get(warn["level"]) if warn else None),
     }
