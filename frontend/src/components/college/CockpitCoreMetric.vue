@@ -46,7 +46,7 @@ const statusLabel = computed(() => {
     :title="hint || undefined"
   >
     <div class="core-orbit-metric__icon">
-      <DashIcon :kind="resolvedIcon" :size="22" />
+      <DashIcon :kind="resolvedIcon" :size="18" />
     </div>
     <div class="core-orbit-metric__body">
       <div class="core-orbit-metric__head">
@@ -65,6 +65,7 @@ const statusLabel = computed(() => {
           v-for="item in breakdowns"
           :key="item.label"
           class="core-orbit-metric__chip"
+          :title="`${item.label} ${item.value}`"
           :class="item.tone ? `core-orbit-metric__chip--${item.tone}` : null"
         >
           {{ item.label }} {{ item.value }}

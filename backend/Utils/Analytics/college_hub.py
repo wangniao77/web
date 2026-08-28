@@ -537,7 +537,7 @@ def build_hub_kpis(
             "status": teacher_status,
             "hint": teacher_hint,
             "breakdowns": [
-                {"label": "教授+副教授", "value": f"{senior_n}人"},
+                {"label": "教授/副教授", "value": f"{senior_n}人"},
                 {"label": "博士比例", "value": phd_label},
                 {"label": "硕/博导", "value": f"{master_supervisors}/{doctoral_supervisors}"},
             ],

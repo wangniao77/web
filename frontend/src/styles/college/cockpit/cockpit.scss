@@ -310,7 +310,7 @@ $cp-metric-xl: 58px;
 }
 
 .cockpit-column--center {
-  grid-template-rows: minmax(320px, 1.15fr) minmax(220px, 0.85fr);
+  grid-template-rows: minmax(0, 0.88fr) minmax(260px, 1.12fr);
 }
 
 .cockpit-hero {
@@ -3257,23 +3257,25 @@ $cp-metric-xl: 58px;
 .core-hero-stage {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(176px, 0.95fr) minmax(0, 1.2fr) minmax(176px, 0.95fr);
+  /* 侧卡略宽、中心略收，保证文字能排开且表盘仍有成圆空间 */
+  grid-template-columns: minmax(210px, 1.08fr) minmax(156px, 0.84fr) minmax(210px, 1.08fr);
   grid-template-rows: minmax(0, 1fr) auto;
   align-items: stretch;
-  gap: 8px 12px;
+  gap: 8px 10px;
   width: 100%;
   height: 100%;
   min-height: 0;
   padding: 6px 8px 4px;
   overflow: hidden;
+  container-type: size;
 
   &::before {
     position: absolute;
-    top: 50%;
+    top: 42%;
     left: 50%;
-    width: min(52%, 420px);
-    height: min(78%, 420px);
-    transform: translate(-50%, -54%);
+    width: min(38cqmin, 240px);
+    height: min(38cqmin, 240px);
+    transform: translate(-50%, -50%);
     border: 1px dashed rgba(0, 242, 255, 0.14);
     border-radius: 50%;
     animation: stageRingPulse 6s ease-in-out infinite;
@@ -3284,11 +3286,11 @@ $cp-metric-xl: 58px;
 
   &::after {
     position: absolute;
-    top: 50%;
+    top: 42%;
     left: 50%;
-    width: min(64%, 500px);
-    height: min(90%, 500px);
-    transform: translate(-50%, -54%);
+    width: min(50cqmin, 300px);
+    height: min(50cqmin, 300px);
+    transform: translate(-50%, -50%);
     border: 1px solid rgba(0, 242, 255, 0.06);
     border-radius: 50%;
     animation: stageRingPulse 8s ease-in-out infinite reverse;
@@ -3299,22 +3301,28 @@ $cp-metric-xl: 58px;
 }
 
 @keyframes stageRingPulse {
-  0%, 100% { opacity: 0.3; transform: translate(-50%, -54%) scale(0.95); }
-  50% { opacity: 0.95; transform: translate(-50%, -54%) scale(1.03); }
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.95); }
+  50% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.03); }
 }
 
 .core-hero-stage__glow {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  inset: 0;
   z-index: 0;
-  width: min(55%, 440px);
-  height: min(80%, 440px);
-  transform: translate(-50%, -54%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 200, 255, 0.22) 0, rgba(0, 100, 200, 0.08) 45%, transparent 70%);
-  filter: blur(8px);
   pointer-events: none;
+
+  &::before {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    width: min(42cqmin, 260px);
+    height: min(42cqmin, 260px);
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 200, 255, 0.22) 0, rgba(0, 100, 200, 0.08) 45%, transparent 70%);
+    filter: blur(8px);
+    content: "";
+  }
 }
 
 .core-hero-stage__rail {
@@ -3322,17 +3330,21 @@ $cp-metric-xl: 58px;
   z-index: 3;
   display: grid;
   grid-template-rows: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   min-height: 0;
   height: 100%;
   align-content: stretch;
 
   &--left {
+    grid-column: 1;
+    grid-row: 1;
     justify-items: stretch;
   }
 
   &--right {
+    grid-column: 3;
+    grid-row: 1;
     justify-items: stretch;
   }
 }
@@ -3340,14 +3352,15 @@ $cp-metric-xl: 58px;
 .core-hero-core {
   position: relative;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  place-items: center;
   min-width: 0;
   min-height: 0;
   height: 100%;
+  overflow: visible;
+  container-type: size;
 }
 
 .core-hero-diagnosis {
@@ -3455,6 +3468,7 @@ $cp-metric-xl: 58px;
   position: relative;
   z-index: 4;
   grid-column: 1 / -1;
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3464,9 +3478,9 @@ $cp-metric-xl: 58px;
 .core-hero-highlights__caption {
   margin: 0;
   color: #8fd8ef;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-align: center;
 }
 
@@ -3490,8 +3504,8 @@ $cp-metric-xl: 58px;
   &__icon {
     display: grid;
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     place-items: center;
     border-radius: 50%;
     border: 1px solid rgba(255, 210, 90, 0.45);
@@ -3503,20 +3517,25 @@ $cp-metric-xl: 58px;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    overflow: hidden;
 
     span {
       color: #ffe6b0;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     strong {
       color: #fff;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 900;
-      line-height: 1.1;
+      line-height: 1.15;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
   }
 
@@ -3535,10 +3554,13 @@ $cp-metric-xl: 58px;
 
 .core-gauge-square {
   position: relative;
-  width: min(240px, 64%);
-  aspect-ratio: 1;
-  flex-shrink: 0;
-  max-height: min(240px, 58%);
+  /* 取中心区较短边成正圆，并预留外环，避免 overflow 裁成椭圆 */
+  width: min(84cqmin, 220px);
+  height: min(84cqmin, 220px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  flex: none;
+  container-type: size;
 }
 
 .core-orbit-metric {
@@ -3546,12 +3568,12 @@ $cp-metric-xl: 58px;
   z-index: 4;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   width: 100%;
   max-width: 100%;
   height: 100%;
   min-height: 0;
-  padding: 8px 12px;
+  padding: 8px 10px 9px;
   border: 1px solid rgba(0, 229, 255, 0.55);
   border-radius: 10px;
   background:
@@ -3565,10 +3587,6 @@ $cp-metric-xl: 58px;
   overflow: hidden;
   will-change: box-shadow;
   cursor: default;
-
-  .core-orbit-metric__breaks {
-    overflow: hidden;
-  }
 
   &::after {
     position: absolute;
@@ -3608,8 +3626,8 @@ $cp-metric-xl: 58px;
   &__icon {
     display: grid;
     flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     place-items: center;
     border-radius: 50%;
     border: 1px solid rgba(0, 242, 255, 0.45);
@@ -3619,8 +3637,8 @@ $cp-metric-xl: 58px;
     color: #9fefff;
 
     :deep(svg) {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       color: #9fefff;
     }
   }
@@ -3629,9 +3647,7 @@ $cp-metric-xl: 58px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 4px;
-    min-width: 0;
-    flex: 1;
+    gap: 3px;
   }
 
   &__head {
@@ -3647,7 +3663,7 @@ $cp-metric-xl: 58px;
     font-size: 15px;
     font-weight: 700;
     line-height: 1.2;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3655,8 +3671,8 @@ $cp-metric-xl: 58px;
 
   &__value {
     color: #fff;
-    font-size: clamp(22px, 1.6vw, 30px);
-    line-height: 1.05;
+    font-size: clamp(22px, 1.7vw, 28px);
+    line-height: 1.1;
     font-weight: 900;
     letter-spacing: 0.01em;
     font-variant-numeric: tabular-nums;
@@ -3676,14 +3692,14 @@ $cp-metric-xl: 58px;
 
   &__badge {
     flex-shrink: 0;
-    padding: 3px 8px;
-    border-radius: 6px;
+    padding: 2px 6px;
+    border-radius: 5px;
     border: 1px solid rgba(45, 255, 154, 0.45);
     background: rgba(45, 255, 154, 0.12);
     color: #2dff9a;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     line-height: 1.2;
 
     &--healthy {
@@ -3714,21 +3730,24 @@ $cp-metric-xl: 58px;
   &__breaks {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 2px 6px;
     min-width: 0;
+    max-width: 100%;
   }
 
   &__chip {
-    padding: 1px 6px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 229, 255, 0.22);
-    background: rgba(0, 40, 90, 0.45);
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
     color: #b8e8f8;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     line-height: 1.35;
-    letter-spacing: 0.02em;
+    letter-spacing: 0;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     &--watch { color: #ffe08a; border-color: rgba(255, 194, 45, 0.4); }
     &--alert { color: #ffb0b8; border-color: rgba(255, 92, 110, 0.45); }
@@ -3863,6 +3882,7 @@ $cp-metric-xl: 58px;
   width: 100%;
   height: 100%;
   display: block;
+  border-radius: 50%;
   transform: none;
   animation: gaugePulse 3.5s ease-in-out infinite;
 }
@@ -3881,12 +3901,12 @@ $cp-metric-xl: 58px;
   pointer-events: none;
 
   &--1 {
-    inset: -18px;
+    inset: -8px;
     animation: gaugeSpinReverse 50s linear infinite;
   }
 
   &--2 {
-    inset: -32px;
+    inset: -16px;
     border-style: dotted;
     opacity: 0.6;
     animation: gaugeSpin 60s linear infinite;
@@ -3937,7 +3957,7 @@ $cp-metric-xl: 58px;
 
 .core-gauge--hero .core-gauge__outer-ring {
   position: absolute;
-  inset: -10px;
+  inset: -6px;
   z-index: 0;
   border-radius: 50%;
   border: 2px solid rgba(57, 230, 255, 0.28);
@@ -3981,29 +4001,32 @@ $cp-metric-xl: 58px;
   align-items: center;
   justify-content: center;
   text-align: center;
-  width: 46%;
-  height: 46%;
-  aspect-ratio: 1;
+  width: 58%;
+  height: 58%;
+  aspect-ratio: 1 / 1;
   margin: 0;
   padding: 4px 6px;
+  overflow: hidden;
   border: 1px solid rgba(0, 242, 255, 0.2);
   border-radius: 50%;
   background: radial-gradient(circle, rgba(3, 26, 54, 0.94), rgba(1, 8, 25, 0.96));
   box-shadow: inset 0 0 40px rgba(57, 230, 255, 0.35), 0 0 30px rgba(0, 120, 255, 0.25);
+  container-type: size;
 
   span {
     color: #f2fbff;
     width: 100%;
-    font-size: 14px;
+    font-size: clamp(12px, 16cqi, 15px);
     font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: 0.08em;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
   }
 
   strong {
     color: #ffffff;
-    font-size: clamp(48px, 4.6vw, 64px);
+    font-size: clamp(28px, 40cqi, 52px);
     line-height: 1;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
@@ -4015,11 +4038,11 @@ $cp-metric-xl: 58px;
   }
 
   small {
-    margin-top: 6px;
+    margin-top: 2px;
     color: #9fefff;
-    font-size: 13px;
+    font-size: clamp(11px, 13cqi, 14px);
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-shadow: 0 1px 2px rgba(0, 10, 30, 0.85);
   }
 }
@@ -4030,12 +4053,15 @@ $cp-metric-xl: 58px;
 }
 
 .core-hero-platform {
-  position: relative;
-  width: 300px;
-  height: 72px;
-  margin-top: -12px;
-  flex-shrink: 0;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 1;
+  width: min(160px, 78%);
+  height: 36px;
+  transform: translateX(-50%);
   pointer-events: none;
+  overflow: visible;
 }
 
 .core-hero-platform__disc {
@@ -4048,27 +4074,27 @@ $cp-metric-xl: 58px;
     conic-gradient(from 0deg, transparent, rgba(57, 230, 255, 0.45), transparent, rgba(57, 230, 255, 0.45), transparent);
 
   &--1 {
-    bottom: 8px;
+    bottom: 4px;
     width: 92%;
-    height: 36px;
+    height: 22px;
     box-shadow: 0 0 32px rgba(57, 230, 255, 0.5);
     transform: translateX(-50%) perspective(280px) rotateX(74deg);
     animation: platformSpin 16s linear infinite;
   }
 
   &--2 {
-    bottom: 18px;
+    bottom: 10px;
     width: 72%;
-    height: 28px;
+    height: 16px;
     opacity: 0.75;
     transform: translateX(-50%) perspective(260px) rotateX(74deg);
     animation: platformSpin2 22s linear infinite reverse;
   }
 
   &--3 {
-    bottom: 26px;
+    bottom: 16px;
     width: 52%;
-    height: 20px;
+    height: 12px;
     opacity: 0.55;
     transform: translateX(-50%) perspective(240px) rotateX(74deg);
     animation: platformSpin3 28s linear infinite;
@@ -4077,7 +4103,7 @@ $cp-metric-xl: 58px;
 
 .core-hero-platform__beam {
   position: absolute;
-  bottom: 42px;
+  bottom: 20px;
   left: 50%;
   width: 2px;
   background: linear-gradient(180deg, rgba(0, 242, 255, 0.85), transparent);
@@ -4085,9 +4111,9 @@ $cp-metric-xl: 58px;
   transform-origin: bottom center;
   animation: beamPulse 3s ease-in-out infinite;
 
-  &--1 { height: 48px; margin-left: -40px; transform: rotate(-18deg); animation-delay: 0s; }
-  &--2 { height: 56px; margin-left: 0; transform: rotate(0deg); animation-delay: 0.6s; }
-  &--3 { height: 48px; margin-left: 40px; transform: rotate(18deg); animation-delay: 1.2s; }
+  &--1 { height: 18px; margin-left: -22px; transform: rotate(-16deg); animation-delay: 0s; }
+  &--2 { height: 22px; margin-left: 0; transform: rotate(0deg); animation-delay: 0.6s; }
+  &--3 { height: 18px; margin-left: 22px; transform: rotate(16deg); animation-delay: 1.2s; }
 }
 
 @keyframes beamPulse {
@@ -4098,15 +4124,16 @@ $cp-metric-xl: 58px;
 .core-hero-platform__city {
   position: absolute;
   left: 50%;
-  bottom: 38px;
+  bottom: 22px;
   z-index: 3;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 4px;
-  width: 240px;
-  height: 58px;
-  transform: translateX(-50%);
+  gap: 2px;
+  width: 120px;
+  height: 24px;
+  transform: translateX(-50%) scale(0.5);
+  transform-origin: center bottom;
 
   span {
     display: block;

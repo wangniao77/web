@@ -11,6 +11,7 @@ from Utils.DB.Models.college_ext_models import AchievementItem, ResearchPlatform
 from Utils.DB.Models.external_data_models import ResearchIp, ResearchPaper, ResearchProject
 from Utils.DB.Models.student_extra_models import CompetitionAward
 from Utils.DB.read.college_db import resolve_college
+from Utils.DB.read.schema_compat import fetch_compat
 
 # section → 一级页六大类
 _SECTION_CATEGORY: dict[str, tuple[str, str]] = {
@@ -487,13 +488,13 @@ class BenchmarkService:
             teacher_qs = teacher_qs.filter(college_id=cid)
             award_qs = award_qs.filter(college_id=cid)
 
-        achievements = list(await ach_qs.order_by("-id"))
-        projects = list(await proj_qs)
-        papers = list(await paper_qs)
-        ips = list(await ip_qs)
-        platforms = list(await plat_qs)
-        teachers = list(await teacher_qs)
-        awards = list(await award_qs)
+        achievements = await fetch_compat(ach_qs.order_by("-id"), AchievementItem)
+        projects = await fetch_compat(proj_qs, ResearchProject)
+        papers = await fetch_compat(paper_qs, ResearchPaper)
+        ips = await fetch_compat(ip_qs, ResearchIp)
+        platforms = await fetch_compat(plat_qs, ResearchPlatform)
+        teachers = await fetch_compat(teacher_qs, Teacher)
+        awards = await fetch_compat(award_qs, CompetitionAward)
 
         synth_competition = self._competition_as_achievements(awards)
 

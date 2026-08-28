@@ -16,6 +16,24 @@ _DEFAULT_STUB_TASKS = [
 
 
 class UniversityService:
+    async def _load_overview_source(self) -> tuple[int, list, list, int]:
+        """校级总览数据源：在校生规模 + 校级任务 + 大事记。"""
+        from Utils.DB.Models.college_student_models import StudentProfile
+
+        try:
+            student_count = await StudentProfile.filter(status="active").count()
+        except Exception:
+            student_count = 0
+        if not student_count:
+            student_count = _DEFAULT_STUDENT_COUNT
+
+        tasks = list(await KeyTask.filter(scope=KeyTask.SCOPE_UNIVERSITY).all())
+        events = list(await SchoolEvent.all().order_by("-event_date").limit(30))
+        overdue = sum(1 for t in tasks if getattr(t, "status", "") == "overdue")
+        if not tasks:
+            overdue = _DEFAULT_OVERDUE
+        return student_count, tasks, events, overdue
+
     async def get_overview(
         self,
         *,

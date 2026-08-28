@@ -17,6 +17,7 @@ from Utils.DB.read.college_db import (
     resolve_college,
     to_float,
 )
+from Utils.DB.read.schema_compat import fetch_compat
 
 MISSING = "**"
 
@@ -305,9 +306,9 @@ class DisciplineService:
             award_qs = award_qs.filter(college_id=college_pk)
             teacher_qs = teacher_qs.filter(college_id=college_pk)
             ach_qs = ach_qs.filter(college_id=college_pk)
-        awards = list(await award_qs)
-        teachers = list(await teacher_qs)
-        achievements = list(await ach_qs)
+        awards = await fetch_compat(award_qs, CompetitionAward)
+        teachers = await fetch_compat(teacher_qs, Teacher)
+        achievements = await fetch_compat(ach_qs, AchievementItem)
 
         awards_by_major: dict[str, int] = Counter()
         awards_by_dept: dict[str, int] = Counter()

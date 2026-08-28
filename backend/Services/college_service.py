@@ -86,6 +86,7 @@ class CollegeService:
         )
         from Utils.DB.Models.major_models import Major
         from Utils.DB.Models.student_extra_models import TeachingCourseHour
+        from Utils.DB.read.schema_compat import values_list_aligned
 
         college = await resolve_college(college_id)
 
@@ -132,19 +133,30 @@ class CollegeService:
             undergrad_majors,
             ach_dept_rows,
         ) = await asyncio.gather(
-            teacher_qs.values_list("name", "title", "title_level", "degree", "education", "is_phd", "source", "department"),
-            student_qs.values_list("education_level", "major_name", "advisor_name"),
+            values_list_aligned(
+                teacher_qs,
+                Teacher,
+                "name",
+                "title",
+                "title_level",
+                "degree",
+                "education",
+                "is_phd",
+                "source",
+                "department",
+            ),
+            values_list_aligned(student_qs, StudentProfile, "education_level", "major_name", "advisor_name"),
             course_qs.values_list("level", "hours", "name"),
             hour_qs.distinct().values_list("term", flat=True),
-            paper_qs.values_list("level", "venue", "published_at"),
+            values_list_aligned(paper_qs, ResearchPaper, "level", "venue", "published_at"),
             project_qs.count(),
-            patent_qs.values_list("status", flat=True),
-            platform_qs.values_list("name", "category", "level", "approved_by"),
-            award_qs.values_list("name", "category", "level"),
-            service_qs.values_list("name", "category", "level"),
-            emp_qs.values_list("education_level", "education_status"),
+            values_list_aligned(patent_qs, ResearchIp, "status", flat=True),
+            values_list_aligned(platform_qs, ResearchPlatform, "name", "category", "level", "approved_by"),
+            values_list_aligned(award_qs, AchievementItem, "name", "category", "level"),
+            values_list_aligned(service_qs, AchievementItem, "name", "category", "level"),
+            values_list_aligned(emp_qs, EmploymentRecord, "education_level", "education_status"),
             major_qs.count(),
-            ach_qs.values_list("department", flat=True),
+            values_list_aligned(ach_qs, AchievementItem, "department", flat=True),
         )
 
         # —— 师资结构 ——
@@ -381,7 +393,8 @@ class CollegeService:
         groups_map: dict[str, dict[str, Any]] = {}
         metrics: list[dict[str, Any]] = []
         for t in tasks:
-            extra = t.extra or {}
+            raw_extra = getattr(t, "extra", None)
+            extra = raw_extra if isinstance(raw_extra, dict) else {}
             cat = (t.category or extra.get("groupId") or "discipline").strip()
             title, subtitle = group_meta.get(cat, (cat, ""))
             title = extra.get("groupTitle") or title

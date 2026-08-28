@@ -36,7 +36,7 @@ export const mockOverviewHub: OverviewHubDTO = {
       status: 'healthy',
       hint: '师资规模可支撑当前运行',
       breakdowns: [
-        { label: '教授+副教授', value: '79人' },
+        { label: '教授/副教授', value: '79人' },
         { label: '博士比例', value: '62.4%' },
         { label: '硕/博导', value: '48/12' },
       ],

@@ -14,6 +14,7 @@ from Utils.DB.Models.college_student_models import StudentProfile
 from Utils.DB.Models.external_data_models import ResearchPaper, ResearchProject
 from Utils.DB.Models.student_extra_models import TeachingCourseHour
 from Utils.DB.read.college_db import resolve_college
+from Utils.DB.read.schema_compat import fetch_compat
 
 MISSING = "**"
 
@@ -245,7 +246,7 @@ class FacultyService:
             teachers_qs = teachers_qs.filter(college_id=college.id)
             students_qs = students_qs.filter(college_id=college.id)
 
-        teachers = list(await teachers_qs)
+        teachers = await fetch_compat(teachers_qs, Teacher)
         student_n = await students_qs.count()
 
         college_pk = college.id if college else None
@@ -263,7 +264,7 @@ class FacultyService:
             hours_qs = hours_qs.filter(term=active_term)
         else:
             hours_qs = hours_qs.filter(id=-1)  # 无学期可选时不返回任何课时
-        hour_rows = list(await hours_qs)
+        hour_rows = await fetch_compat(hours_qs, TeachingCourseHour)
 
         talent_qs = AchievementItem.filter(section="talent")
         if college:
@@ -273,7 +274,8 @@ class FacultyService:
         honor_qs = TeacherHonor.all()
         if college:
             honor_qs = honor_qs.filter(college_id=college.id)
-        honor_people_n = len({h.teacher_name for h in await honor_qs})
+        honor_rows = await fetch_compat(honor_qs, TeacherHonor)
+        honor_people_n = len({h.teacher_name for h in honor_rows})
         # 高层次人才人数优先按荣誉称号去重人数；无荣誉表数据时回退成果 talent 条目数
         talent_people_n = honor_people_n or talent_n
 
@@ -282,8 +284,8 @@ class FacultyService:
         if college:
             project_qs = project_qs.filter(college_id=college.id)
             paper_qs = paper_qs.filter(college_id=college.id)
-        projects = list(await project_qs)
-        papers = list(await paper_qs)
+        projects = await fetch_compat(project_qs, ResearchProject)
+        papers = await fetch_compat(paper_qs, ResearchPaper)
 
         total = len(teachers)
         phd_n = sum(1 for t in teachers if _is_phd(t))

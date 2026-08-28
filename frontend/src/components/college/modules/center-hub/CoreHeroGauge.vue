@@ -124,7 +124,7 @@ const rightKpis = computed(() =>
           :title="item.hint || undefined"
         >
           <div class="core-hero-highlight__icon">
-            <DashIcon :kind="highlightLayout[item.key]?.icon ?? 'award'" :size="18" />
+            <DashIcon :kind="highlightLayout[item.key]?.icon ?? 'award'" :size="20" />
           </div>
           <div class="core-hero-highlight__body">
             <span>{{ item.label }}</span>
