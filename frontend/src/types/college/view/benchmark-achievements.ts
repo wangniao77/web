@@ -58,6 +58,8 @@ export interface BenchmarkGaugeItemVM {
   gap: number
   statusLabel: string
   fact: string
+  /** 短板说明：规则先填，Agent 接通后覆盖 */
+  note?: string
 }
 
 export interface BenchmarkSwotBoardVM {

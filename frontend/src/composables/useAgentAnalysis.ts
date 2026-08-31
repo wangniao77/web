@@ -8,6 +8,8 @@ export interface UseAgentAnalysisOptions {
   enabled?: Ref<boolean> | boolean
   /** 是否在 context 就绪后自动分析 */
   auto?: boolean
+  /** 非 Mock 时强制打后端 /agent/analyze（一级卡片、二级总览） */
+  force?: boolean
 }
 
 /**
@@ -36,11 +38,14 @@ export function useAgentAnalysis(
     loading.value = true
     error.value = null
     try {
-      analysis.value = await analyzePage({
-        context: ctx,
-        sessionId: refresh ? undefined : analysis.value?.sessionId,
-        refresh,
-      })
+      analysis.value = await analyzePage(
+        {
+          context: ctx,
+          sessionId: refresh ? undefined : analysis.value?.sessionId,
+          refresh,
+        },
+        options.force ? { force: true } : undefined,
+      )
     } catch (e: unknown) {
       error.value = e instanceof Error ? e.message : '分析失败'
     } finally {

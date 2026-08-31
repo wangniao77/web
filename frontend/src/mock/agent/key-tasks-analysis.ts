@@ -5,6 +5,10 @@ import {
 } from '@/utils/agent/academic-risk-insights'
 import { mockEmploymentAnalysisReport } from '@/utils/agent/employment-insights'
 import {
+  buildBenchmarkOverviewRuleAnalysis,
+  isBenchmarkOverviewSnapshot,
+} from '@/utils/agent/benchmark-overview-insights'
+import {
   buildBenchmarkSwotRuleAnalysis,
   isBenchmarkSwotSnapshot,
 } from '@/utils/agent/benchmark-swot-insights'
@@ -87,6 +91,20 @@ export function mockAgentAnalyze(req: AgentAnalyzeRequestDTO): AgentAnalyzeRespo
     }
   }
 
+  if (page === 'college-benchmark-overview' || isBenchmarkOverviewSnapshot(snapshot)) {
+    if (isBenchmarkOverviewSnapshot(snapshot)) {
+      const vm = buildBenchmarkOverviewRuleAnalysis(snapshot, sessionId)
+      return {
+        insights: vm.insights,
+        actions: vm.actions,
+        sessionId: vm.sessionId,
+        traceId: `mock-${vm.traceId}`,
+        source: 'mock',
+        headline: vm.headline,
+      }
+    }
+  }
+
   if (page === 'college-benchmark-swot' || isBenchmarkSwotSnapshot(snapshot)) {
     if (isBenchmarkSwotSnapshot(snapshot)) {
       const vm = buildBenchmarkSwotRuleAnalysis(snapshot, sessionId)
@@ -162,7 +180,7 @@ export function mockAgentChatReply(req: AgentChatRequestDTO): string {
   if (page === 'enrollment-employment' || page === 'employment') {
     return `（Mock）已结合就业分析快照理解：「${req.message}」。可从落实率、高质量六类、专业差距与待就业四方面继续追问。`
   }
-  if (page === 'college-benchmark-swot') {
+  if (page === 'college-benchmark-swot' || page === 'college-benchmark-overview') {
     return `（Mock）已结合精品成果对标快照理解：「${req.message}」。可从达标项、缺口项与还差数量继续追问，不要改写事实数字。`
   }
   if (page === 'graduate-cultivation' || page === 'graduate') {

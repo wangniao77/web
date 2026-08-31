@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import type { AgentAnalysisVM } from '@/types/agent/view'
 
-defineProps<{
-  data: AgentAnalysisVM | null
-  loading?: boolean
-  error?: string | null
-}>()
+withDefaults(
+  defineProps<{
+    data: AgentAnalysisVM | null
+    loading?: boolean
+    error?: string | null
+    title?: string
+  }>(),
+  { title: '深度挖掘' },
+)
 
 defineEmits<{
   refresh: []
@@ -17,10 +21,7 @@ defineEmits<{
   <section class="analysis-insight">
     <header class="analysis-insight__head">
       <div>
-        <h2 class="analysis-insight__title">
-          <span class="analysis-insight__title-icon">🔍</span>
-          深度挖掘 · Agent 分析
-        </h2>
+        <h2 class="analysis-insight__title">{{ title }}</h2>
         <p class="analysis-insight__desc">
           结构结论与可执行建议；支持刷新重算。来源：
           <em>{{ data?.source || '—' }}</em>
@@ -81,15 +82,8 @@ defineEmits<{
 
 .analysis-insight__title {
   margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-size: 22px;
   color: #e8f7ff;
-}
-
-.analysis-insight__title-icon {
-  font-style: normal;
 }
 
 .analysis-insight__desc {

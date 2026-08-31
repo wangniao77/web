@@ -43,8 +43,12 @@ const analyzeService = createService<AgentAnalyzeRequestDTO, AgentAnalyzeRespons
   },
 })
 
-export async function analyzePage(req: AgentAnalyzeRequestDTO): Promise<AgentAnalysisVM> {
-  if (!isAgentEnabled() && !isMockMode()) {
+export async function analyzePage(
+  req: AgentAnalyzeRequestDTO,
+  options?: { force?: boolean },
+): Promise<AgentAnalysisVM> {
+  // force：一级卡片等场景必须走后端分析链路（未配模型时后端仍回规则句）
+  if (!options?.force && !isAgentEnabled() && !isMockMode()) {
     const fallback = mockAgentAnalyze(req)
     return toVM({ ...fallback, source: 'rule' }, true, 'Agent 未启用')
   }

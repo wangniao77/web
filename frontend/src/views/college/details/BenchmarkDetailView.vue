@@ -2,17 +2,18 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
+import BenchmarkOverviewPanel from '@/components/college/modules/benchmark/BenchmarkOverviewPanel.vue'
 import BenchmarkPillarDeepDive from '@/components/college/modules/benchmark/BenchmarkPillarDeepDive.vue'
 import { benchmarkService } from '@/api/college/services/benchmark'
 import {
   BENCHMARK_PILLAR_META,
   collectPillarEvidence,
   refinePartyPillar,
-  resolvePillarFromQuery,
+  resolveDetailTabFromQuery,
+  type BenchmarkDetailTab,
 } from '@/api/college/adapters/benchmark-pillars'
 import { useScope } from '@/composables/useScope'
 import { ROUTES } from '@/constants/routes'
-import type { BenchmarkPillarKey } from '@/types/college/api/benchmark-achievements'
 import type {
   BenchmarkAchievementsDetailVM,
   BenchmarkFeaturedVM,
@@ -26,15 +27,18 @@ const data = ref<BenchmarkAchievementsDetailVM | null>(null)
 const featured = ref<BenchmarkFeaturedVM | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
-const currentPillar = ref<BenchmarkPillarKey>('research')
+const currentTab = ref<BenchmarkDetailTab>('overview')
 const tabBarRef = ref<HTMLElement | null>(null)
 
+const currentPillar = computed(() => (currentTab.value === 'overview' ? null : currentTab.value))
+
 const evidence = computed(() => {
-  if (!data.value) return []
+  if (!data.value || !currentPillar.value) return []
   return collectPillarEvidence(currentPillar.value, data.value.achievements, featured.value)
 })
 
 const pillar = computed(() => {
+  if (!currentPillar.value) return null
   const raw = data.value?.pillars.find((item) => item.key === currentPillar.value)
   if (!raw) return null
   return refinePartyPillar(raw, evidence.value.length)
@@ -46,11 +50,11 @@ function getDetailScroller() {
 }
 
 function applyRouteQuery() {
-  currentPillar.value = resolvePillarFromQuery(route.query)
+  currentTab.value = resolveDetailTabFromQuery(route.query)
 }
 
-function switchPillar(key: BenchmarkPillarKey) {
-  currentPillar.value = key
+function switchTab(key: BenchmarkDetailTab) {
+  currentTab.value = key
   router.replace({ path: ROUTES.college.benchmarkDetail, query: { pillar: key } })
   nextTick(() => {
     getDetailScroller()?.scrollTo({ top: 0, behavior: 'auto' })
@@ -59,11 +63,11 @@ function switchPillar(key: BenchmarkPillarKey) {
 
 onMounted(async () => {
   applyRouteQuery()
-  // 旧 tab/filter 链接统一落到 pillar，避免空白页
+  // 旧 tab/filter 链接统一落到 pillar/overview
   if (route.query.tab != null || (route.query.filter && !route.query.pillar)) {
     router.replace({
       path: ROUTES.college.benchmarkDetail,
-      query: { pillar: currentPillar.value },
+      query: { pillar: currentTab.value },
     })
   }
   loading.value = true
@@ -91,12 +95,20 @@ watch(() => route.query, () => applyRouteQuery())
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
         <button
+          type="button"
+          class="tab-btn"
+          :class="{ 'tab-btn--active': currentTab === 'overview' }"
+          @click="switchTab('overview')"
+        >
+          总览
+        </button>
+        <button
           v-for="item in BENCHMARK_PILLAR_META"
           :key="item.key"
           type="button"
           class="tab-btn"
-          :class="{ 'tab-btn--active': currentPillar === item.key }"
-          @click="switchPillar(item.key)"
+          :class="{ 'tab-btn--active': currentTab === item.key }"
+          @click="switchTab(item.key)"
         >
           {{ item.label }}
         </button>
@@ -105,6 +117,12 @@ watch(() => route.query, () => applyRouteQuery())
 
     <div v-if="loading" class="detail-placeholder">加载中...</div>
     <div v-else-if="error" class="detail-placeholder detail-error">{{ error }}</div>
+    <BenchmarkOverviewPanel
+      v-else-if="currentTab === 'overview' && data"
+      :data="data"
+      :featured="featured"
+      @open="switchTab"
+    />
     <BenchmarkPillarDeepDive v-else-if="pillar" :pillar="pillar" :evidence="evidence" />
     <div v-else class="detail-placeholder">该板块数据暂不可用</div>
   </CollegeDetailLayout>

@@ -20,8 +20,10 @@ import type {
   BenchmarkSwotBoardVM,
   BenchmarkTriageVM,
 } from '@/types/college/view/benchmark-achievements'
+import { buildWeaknessNote } from '@/utils/agent/benchmark-swot-insights'
 
 export type BenchmarkSwotSide = 'strengths' | 'weaknesses'
+export { buildWeaknessNote }
 
 /** 与派生研判同一套门槛：优势页看「证明强」，劣势页看「暴露弱」 */
 const SWOT_GAUGES: Record<
@@ -204,18 +206,23 @@ export function buildStrengthShowcase(input: {
   }
 }
 
+function withNote(item: BenchmarkGaugeItemVM): BenchmarkGaugeItemVM {
+  return { ...item, note: buildWeaknessNote(item) }
+}
+
 /** 劣势页：只保留最需要补的缺口，按还差数量排序 */
 export function buildWeaknessTriage(pillars: BenchmarkPillarDTO[]): BenchmarkTriageVM {
   const board = buildSwotBoard(pillars, 'weaknesses')
   const queue = board.items
     .filter((item) => item.status === 'gap' || item.status === 'near' || item.status === 'empty')
     .sort((a, b) => b.gap - a.gap || a.ratio - b.ratio)
+    .map(withNote)
   const worst = queue[0] ?? null
   return {
     headline: worst
       ? worst.status === 'empty'
-        ? `${worst.label}缺少可展示条目，需先补口径`
-        : `最紧缺口：${worst.metricLabel}还差${worst.gap}${worst.unit}`
+        ? `${worst.label}可展示条目为0，先补口径与台账`
+        : `最紧缺口在${worst.label}：${worst.metricLabel}${worst.value}/${worst.target}${worst.unit}`
       : '核心对标项均已达标',
     worst,
     rest: queue.slice(1),
@@ -356,14 +363,30 @@ export function resolveItemPillar(item: {
   return CATEGORY_TO_PILLAR[item.category] ?? null
 }
 
+export type BenchmarkDetailTab = 'overview' | BenchmarkPillarKey
+
+/** 二级 Tab：无 pillar / 旧 tab=overview 落到总览；旧 filter 仍映射板块 */
+export function resolveDetailTabFromQuery(query: {
+  pillar?: unknown
+  filter?: unknown
+  tab?: unknown
+}): BenchmarkDetailTab {
+  const raw = typeof query.pillar === 'string' ? query.pillar : ''
+  if (raw === 'overview') return 'overview'
+  if (BENCHMARK_PILLAR_META.some((p) => p.key === raw)) return raw as BenchmarkPillarKey
+  const filter = typeof query.filter === 'string' ? query.filter : ''
+  if (filter && OLD_FILTER_TO_PILLAR[filter]) return OLD_FILTER_TO_PILLAR[filter]
+  const tab = typeof query.tab === 'string' ? query.tab : ''
+  if (tab && BENCHMARK_PILLAR_META.some((p) => p.key === tab)) return tab as BenchmarkPillarKey
+  return 'overview'
+}
+
 export function resolvePillarFromQuery(query: {
   pillar?: unknown
   filter?: unknown
 }): BenchmarkPillarKey {
-  const raw = typeof query.pillar === 'string' ? query.pillar : ''
-  if (BENCHMARK_PILLAR_META.some((p) => p.key === raw)) return raw as BenchmarkPillarKey
-  const filter = typeof query.filter === 'string' ? query.filter : ''
-  return OLD_FILTER_TO_PILLAR[filter] ?? 'research'
+  const tab = resolveDetailTabFromQuery(query)
+  return tab === 'overview' ? 'research' : tab
 }
 
 function catCount(dto: BenchmarkAchievementsDTO, category: AchievementCategory): number {

@@ -28,8 +28,8 @@ function fill(value: number, target: number) {
           <span>
             <em>{{ item.label }}</em>
             <i>{{ item.metricLabel }} {{ item.value }}/{{ item.target }}{{ item.unit }}</i>
+            <p>{{ item.note }}</p>
           </span>
-          <strong>{{ item.status === 'empty' ? '不足' : `差${item.gap}` }}</strong>
         </button>
       </li>
     </ol>
@@ -54,6 +54,7 @@ function fill(value: number, target: number) {
         {{ triage.worst.value }} / {{ triage.worst.target }}{{ triage.worst.unit }}
       </small>
       <small v-else>数据不足</small>
+      <p v-if="triage.worst.note">{{ triage.worst.note }}</p>
     </button>
     <p v-else class="bm-seal__empty">{{ triage.headline }}</p>
   </div>
@@ -109,7 +110,7 @@ function fill(value: number, target: number) {
 
   button {
     display: grid;
-    grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-columns: 34px minmax(0, 1fr);
     align-items: center;
     gap: 8px;
     width: 100%;
@@ -149,11 +150,16 @@ function fill(value: number, target: number) {
       font-weight: 600;
     }
 
-    strong {
-      color: var(--accent);
-      font-size: 20px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
+    p {
+      display: -webkit-box;
+      margin: 4px 0 0;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     &:hover {
@@ -242,6 +248,18 @@ function fill(value: number, target: number) {
     color: var(--mute);
     font-size: 13px;
     font-weight: 600;
+  }
+
+  p {
+    margin: 2px 0 0;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   &:hover {

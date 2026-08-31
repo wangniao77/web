@@ -14,14 +14,20 @@ from Utils.Agent.OpenViking import get_openviking_client
 from Utils.Agent.OpenViking.paths import (
     ACADEMIC_RISK_SKILL_DOC,
     EMPLOYMENT_SKILL_DOC,
+    BENCHMARK_OVERVIEW_SKILL_DOC,
+    BENCHMARK_SWOT_SKILL_DOC,
     GRADUATE_CULTIVATION_SKILL_DOC,
     KEY_TASKS_SKILL_DOC,
     resource_academic_risk,
+    resource_benchmark_overview,
+    resource_benchmark_swot,
     resource_enrollment_employment,
     resource_enrollment_employment_report,
     resource_graduate_cultivation,
     resource_key_tasks,
     skill_academic_risk_analysis,
+    skill_benchmark_overview_analysis,
+    skill_benchmark_swot_analysis,
     skill_enrollment_employment_analysis,
     skill_graduate_cultivation_analysis,
     skill_key_tasks_analysis,
@@ -186,6 +192,216 @@ def _is_graduate_page(page: str) -> bool:
     return page in {"graduate-cultivation", "graduate", "student-dev-graduate"}
 
 
+def _is_benchmark_swot_page(page: str) -> bool:
+    return page in {"college-benchmark-swot", "benchmark-swot"}
+
+
+def _is_benchmark_overview_page(page: str) -> bool:
+    return page in {"college-benchmark-overview", "benchmark-overview", "benchmark-achievements"}
+
+
+_BENCHMARK_PILLAR_KEYS = ("research", "teaching", "talent", "discipline", "party")
+_BENCHMARK_TITLE_ALIASES = {
+    "research": "research",
+    "teaching": "teaching",
+    "talent": "talent",
+    "discipline": "discipline",
+    "party": "party",
+    "科研": "research",
+    "教学": "teaching",
+    "人才培养": "talent",
+    "人才": "talent",
+    "学科建设": "discipline",
+    "学科": "discipline",
+    "党建": "party",
+}
+
+
+def _normalize_benchmark_key(title: str, snapshot: dict[str, Any]) -> str | None:
+    raw = (title or "").strip()
+    if raw in _BENCHMARK_TITLE_ALIASES:
+        return _BENCHMARK_TITLE_ALIASES[raw]
+    items = snapshot.get("items") if isinstance(snapshot.get("items"), list) else []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get("key") or "")
+        if key not in _BENCHMARK_PILLAR_KEYS:
+            continue
+        label = str(item.get("label") or "")
+        metric = str(item.get("metricLabel") or "")
+        if raw in {label, metric} or (label and raw.startswith(label)) or (metric and metric in raw):
+            return key
+    return None
+
+
+def _strip_repeated_metric(detail: str, item: dict[str, Any]) -> str:
+    text = (detail or "").strip()
+    names = [str(item.get("metricLabel") or ""), str(item.get("label") or "")]
+    names = [n for n in names if n]
+    value, target, gap = item.get("value"), item.get("target"), item.get("gap")
+    unit = str(item.get("unit") or "")
+    prefixes = []
+    for name in names:
+        prefixes.extend(
+            [
+                f"{name}{value}/{target}{unit}",
+                f"{name} {value}/{target}{unit}",
+                f"{name}{value}/{target}",
+                f"{name} {value}/{target}",
+            ]
+        )
+    for prefix in prefixes:
+        if text.startswith(prefix):
+            text = text[len(prefix) :].lstrip(" ，,、：:")
+            break
+    for lead in (f"缺口{gap}{unit}", f"还差{gap}{unit}", f"缺口{gap}", f"还差{gap}"):
+        if text.startswith(lead):
+            text = text[len(lead) :].lstrip(" ，,、：:")
+            break
+    return text.strip() or (detail or "").strip()
+
+
+def _snapshot_item(snapshot: dict[str, Any], key: str) -> dict[str, Any]:
+    items = snapshot.get("items") if isinstance(snapshot.get("items"), list) else []
+    for raw in items:
+        if isinstance(raw, dict) and str(raw.get("key") or "") == key:
+            return raw
+    return {}
+
+
+def _rule_note_benchmark_item(item: dict[str, Any]) -> str:
+    unit = str(item.get("unit") or "")
+    status = str(item.get("status") or "")
+    gap = item.get("gap")
+    value = item.get("value")
+    target = item.get("target")
+    if status == "empty":
+        return "台账或口径缺失，需先补齐"
+    if status == "near":
+        return f"再补{gap}{unit}即可达标"
+    try:
+        ratio = float(value) / float(target) if target else 0.0
+    except (TypeError, ValueError, ZeroDivisionError):
+        ratio = 0.0
+    if ratio <= 0.25:
+        return "培育与申报明显滞后"
+    if ratio < 0.7:
+        return "尚未达到对标门槛，申报与培育要加力"
+    return "补齐缺口要进计划"
+
+
+def _rule_insights_benchmark_swot(snapshot: dict[str, Any]) -> AgentAnalyzeData:
+    items = snapshot.get("items") if isinstance(snapshot.get("items"), list) else []
+    insights: list[AgentInsight] = []
+    actions: list[str] = []
+    for raw in items:
+        if not isinstance(raw, dict):
+            continue
+        status = str(raw.get("status") or "")
+        if status not in {"gap", "near", "empty"}:
+            continue
+        key = str(raw.get("key") or "")
+        if not key:
+            continue
+        insights.append(
+            AgentInsight(
+                title=key,
+                detail=_rule_note_benchmark_item(raw),
+                tone="warn",
+            )
+        )
+        label = str(raw.get("label") or "")
+        metric = str(raw.get("metricLabel") or "")
+        if status == "empty":
+            actions.append(f"补齐{label}「{metric}」口径与台账")
+        else:
+            actions.append(
+                f"把{label}「{metric}」从 {raw.get('value')} 补到 {raw.get('target')}{raw.get('unit') or ''}"
+            )
+    return AgentAnalyzeData(
+        insights=insights,
+        actions=actions[:3],
+        sessionId="",
+        traceId="",
+        source="rule",
+        headline=str(snapshot.get("headline") or ""),
+    )
+
+
+def _rule_insights_benchmark_overview(snapshot: dict[str, Any]) -> AgentAnalyzeData:
+    gauges = snapshot.get("gauges") if isinstance(snapshot.get("gauges"), list) else []
+    rows = [g for g in gauges if isinstance(g, dict)]
+    met = [g for g in rows if str(g.get("status") or "") == "met"]
+    weak = [g for g in rows if str(g.get("status") or "") in {"gap", "near", "empty"}]
+    worst = sorted(weak, key=lambda g: int(g.get("gap") or 0), reverse=True)
+    worst_item = worst[0] if worst else None
+    summary = snapshot.get("summary") if isinstance(snapshot.get("summary"), dict) else {}
+    insights: list[AgentInsight] = []
+    if met:
+        insights.append(
+            AgentInsight(
+                title="高光已形成支点",
+                detail="、".join(
+                    f"{g.get('metricLabel')}{g.get('value')}{g.get('unit') or ''}" for g in met
+                )
+                + "已过门槛，可固化为可复制机制。",
+                tone="good",
+            )
+        )
+    if worst_item:
+        status = str(worst_item.get("status") or "")
+        label = str(worst_item.get("label") or "")
+        metric = str(worst_item.get("metricLabel") or "")
+        if status == "empty":
+            insights.append(
+                AgentInsight(
+                    title=f"{label}台账待补",
+                    detail=f"{metric}可展示条目为0，先补口径再谈对标。",
+                    tone="warn",
+                )
+            )
+        else:
+            insights.append(
+                AgentInsight(
+                    title=f"{label}是最紧缺口",
+                    detail=(
+                        f"{metric}{worst_item.get('value')}/{worst_item.get('target')}"
+                        f"{worst_item.get('unit') or ''}，申报与培育要提速。"
+                    ),
+                    tone="warn",
+                )
+            )
+    insights.append(
+        AgentInsight(
+            title="对标结构不均衡",
+            detail=(
+                f"达标{summary.get('met', 0)}项、接近{summary.get('near', 0)}项、"
+                f"缺口{summary.get('gap', 0)}项、数据不足{summary.get('empty', 0)}项。"
+            ),
+            tone="info",
+        )
+    )
+    actions: list[str] = []
+    for raw in weak[:3]:
+        label = str(raw.get("label") or "")
+        metric = str(raw.get("metricLabel") or "")
+        if str(raw.get("status") or "") == "empty":
+            actions.append(f"补齐{label}「{metric}」口径与台账")
+        else:
+            actions.append(
+                f"把{label}「{metric}」从 {raw.get('value')} 补到 {raw.get('target')}{raw.get('unit') or ''}"
+            )
+    return AgentAnalyzeData(
+        insights=insights[:5],
+        actions=actions,
+        sessionId="",
+        traceId="",
+        source="rule",
+        headline=str(snapshot.get("headline") or ""),
+    )
+
+
 def _rule_insights_graduate(snapshot: dict[str, Any]) -> AgentAnalyzeData:
     payload = rule_insights_from_graduate(snapshot)
     return _payload_to_analyze_data(payload)
@@ -215,6 +431,8 @@ async def _load_snapshot(context: AgentAnalyzeContext, college_service: CollegeS
         )
     if context.page == "key-tasks":
         return await college_service.get_key_tasks_detail(college_id=context.collegeId)
+    if _is_benchmark_swot_page(context.page) or _is_benchmark_overview_page(context.page):
+        return context.summarySnapshot or {"items": [], "gauges": [], "headline": ""}
     return {"summary": {}}
 
 
@@ -255,6 +473,16 @@ async def run_analyze(
         resource_path = resource_graduate_cultivation(college_id)
         skill_doc = GRADUATE_CULTIVATION_SKILL_DOC
         result = _rule_insights_graduate(snapshot)
+    elif _is_benchmark_overview_page(context.page):
+        skill_path = skill_benchmark_overview_analysis()
+        resource_path = resource_benchmark_overview(college_id)
+        skill_doc = BENCHMARK_OVERVIEW_SKILL_DOC
+        result = _rule_insights_benchmark_overview(snapshot)
+    elif _is_benchmark_swot_page(context.page):
+        skill_path = skill_benchmark_swot_analysis()
+        resource_path = resource_benchmark_swot(college_id)
+        skill_doc = BENCHMARK_SWOT_SKILL_DOC
+        result = _rule_insights_benchmark_swot(snapshot)
     else:
         skill_path = skill_key_tasks_analysis()
         resource_path = resource_key_tasks(college_id)
@@ -291,6 +519,20 @@ async def run_analyze(
                 "tone 只能是 good|warn|info；evidence.source 为 db|openviking|web。"
                 "禁止输出任何学生姓名或学号；数值须来自快照。"
             )
+        elif _is_benchmark_overview_page(context.page):
+            system = (
+                "你是学院精品成果总览分析助手。严格按技能说明输出 JSON。"
+                "insights.title 用中文；detail 40～80字，必须引用快照原数字；"
+                "禁止改数或编造成果。"
+            )
+        elif _is_benchmark_swot_page(context.page):
+            system = (
+                "你是学院精品成果短板分析助手。严格按技能说明输出 JSON。"
+                "insights.title 必须是 research|teaching|talent|discipline|party；"
+                "detail 只写研判和补齐方向，不超过28字；"
+                "不要重复指标名或 x/y（卡片上已有「教学成果 1/8项」）；"
+                "禁止只输出「不足」「差3」这类标签；禁止改数或编造成果。"
+            )
         else:
             system = (
                 "你是高校治理驾驶舱分析助手。严格按技能说明输出 JSON，"
@@ -324,6 +566,28 @@ async def run_analyze(
                 }
                 if isinstance(merged.get("insights"), list) and merged["insights"]:
                     result = _payload_to_analyze_data(merged)
+                    source = "agent"
+            elif _is_benchmark_swot_page(context.page):
+                insights = []
+                seen: set[str] = set()
+                for item in parsed["insights"][:8]:
+                    if not isinstance(item, dict):
+                        continue
+                    key = _normalize_benchmark_key(str(item.get("title") or ""), snapshot)
+                    detail = _strip_repeated_metric(str(item.get("detail") or ""), _snapshot_item(snapshot, key or ""))
+                    if not key or key in seen or not detail:
+                        continue
+                    seen.add(key)
+                    insights.append(AgentInsight(title=key, detail=detail[:28], tone="warn"))
+                if insights:
+                    result = AgentAnalyzeData(
+                        insights=insights,
+                        actions=[str(a) for a in (parsed.get("actions") or []) if a][:5] or result.actions,
+                        sessionId=sid,
+                        traceId=trace_id,
+                        source="agent",
+                        headline=str(parsed.get("headline") or result.headline or ""),
+                    )
                     source = "agent"
             else:
                 insights = []

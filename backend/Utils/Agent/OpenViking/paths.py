@@ -44,6 +44,24 @@ def skill_graduate_cultivation_analysis() -> str:
     return "viking://agent/skills/college/graduate-cultivation-analysis/SKILL.md"
 
 
+def resource_benchmark_swot(college_id: str) -> str:
+    cid = college_id or "default"
+    return f"viking://resources/college/{cid}/benchmark-swot/snapshot.json"
+
+
+def skill_benchmark_swot_analysis() -> str:
+    return "viking://agent/skills/college/benchmark-swot-analysis/SKILL.md"
+
+
+def resource_benchmark_overview(college_id: str) -> str:
+    cid = college_id or "default"
+    return f"viking://resources/college/{cid}/benchmark-overview/snapshot.json"
+
+
+def skill_benchmark_overview_analysis() -> str:
+    return "viking://agent/skills/college/benchmark-overview-analysis/SKILL.md"
+
+
 def resource_cultivation_plans(year: str = "2024") -> str:
     """培养方案知识库根目录（导入脚本目标 parent）。"""
     return f"viking://resources/college/cultivation-plans/{year}/"
@@ -155,4 +173,64 @@ GRADUATE_CULTIVATION_SKILL_DOC = """# 学院研究生培养分析技能
 - 每条 insight 至少 1 条 source=db 的 evidence，数值必须来自快照
 - 关注：研究生规模与占比、专业集中度、导师覆盖、论文/课题科研参与、研究生就业出口
 - 建议动作面向研究生秘书/导师组/学院科研与就业协同
+"""
+
+BENCHMARK_SWOT_SKILL_DOC = """# 学院精品成果短板分析技能
+
+## 目标
+根据对标快照，为每个缺口写一句研判，供一级劣势卡片展示。
+
+## 输出 JSON Schema
+{
+  "headline": "一句话总判断",
+  "insights": [
+    {
+      "title": "research|teaching|talent|discipline|party",
+      "detail": "不超过40字的研判",
+      "tone": "warn"
+    }
+  ],
+  "actions": ["可执行建议"]
+}
+
+## 写法
+- detail 只写研判和补齐方向，卡片上已有指标名和 x/y，不要再写一遍
+- 例如：「培育与申报明显滞后」「台账或口径缺失，需尽快补齐」
+- 不要写成「教学成果1/8项，缺口7项，…」
+- empty：写台账/口径缺失，不要编造成果
+
+## 硬性约束
+- insights.title 必须是快照 items[].key，禁止改成中文标题
+- detail 必须引用快照里的原数字，禁止改数、禁止编造成果名称
+- 只为 status=gap|near|empty 的条目写说明
+- 不要输出学生姓名或学号
+"""
+
+BENCHMARK_OVERVIEW_SKILL_DOC = """# 学院精品成果总览分析技能
+
+## 目标
+根据五维对标快照，输出 3～5 条结构化洞察与 3 条可执行建议，供二级总览页展示。
+
+## 输出 JSON Schema
+{
+  "headline": "一句话总判断",
+  "insights": [
+    {
+      "title": "中文标题",
+      "detail": "40～80字研判，须引用快照原数字",
+      "tone": "good|warn|info"
+    }
+  ],
+  "actions": ["可执行建议"]
+}
+
+## 关注
+- gauges[].status / value / target / gap
+- summary.met / near / gap / empty
+- heroes 与 evidenceCounts
+- 优势支点与最紧缺口
+
+## 硬性约束
+- 禁止改数、禁止编造成果名称
+- 不要输出学生姓名或学号
 """
