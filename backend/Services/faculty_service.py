@@ -9,9 +9,34 @@ from collections import Counter, defaultdict
 from decimal import Decimal
 from typing import Any
 
+from Utils.Analytics.faculty_psi import (
+    NEW_TARGET_PHD,
+    NEW_TARGET_SENIOR,
+    NEW_TARGET_TALENT,
+    RESEARCH_TARGET_FUNDING,
+    RESEARCH_TARGET_PAPERS,
+    RESEARCH_TARGET_PROJECTS,
+    build_warning_center,
+    collect_output_years,
+    compose_psi,
+    current_year,
+    eval_course_support,
+    eval_new,
+    eval_research,
+    five_year_cutoff,
+    health_from_psi,
+    is_ns_provincial,
+    match_student_count,
+    metrics_from_psi,
+    parse_funding,
+    parse_year,
+    scale_target,
+    suggestions_from_scores,
+)
 from Utils.DB.Models.college_ext_models import AchievementItem, Teacher, TeacherHonor
 from Utils.DB.Models.college_student_models import StudentProfile
-from Utils.DB.Models.external_data_models import ResearchPaper, ResearchProject
+from Utils.DB.Models.course_models import Course
+from Utils.DB.Models.external_data_models import ResearchIp, ResearchPaper, ResearchProject
 from Utils.DB.Models.student_extra_models import TeachingCourseHour
 from Utils.DB.read.college_db import resolve_college
 from Utils.DB.read.schema_compat import fetch_compat
@@ -94,6 +119,12 @@ def _edu_bucket(t: Teacher) -> str:
     if "学士" in blob or "本科" in blob:
         return "学士及其他"
     return MISSING
+
+
+def _hire_year(t: Teacher) -> int | None:
+    return parse_year(getattr(t, "school_hire_date", None)) or parse_year(
+        getattr(t, "hire_date", None)
+    )
 
 
 def _title_bucket(t: Teacher) -> str:
@@ -267,25 +298,38 @@ class FacultyService:
         hour_rows = await fetch_compat(hours_qs, TeachingCourseHour)
 
         talent_qs = AchievementItem.filter(section="talent")
+        ach_qs = AchievementItem.all()
+        honor_qs = TeacherHonor.all()
+        project_qs = ResearchProject.all()
+        paper_qs = ResearchPaper.all()
+        ip_qs = ResearchIp.all()
+        course_qs = Course.all()
         if college:
             talent_qs = talent_qs.filter(college_id=college.id)
-        talent_n = await talent_qs.count()
-
-        honor_qs = TeacherHonor.all()
-        if college:
+            ach_qs = ach_qs.filter(college_id=college.id)
             honor_qs = honor_qs.filter(college_id=college.id)
+            project_qs = project_qs.filter(college_id=college.id)
+            paper_qs = paper_qs.filter(college_id=college.id)
+            ip_qs = ip_qs.filter(college_id=college.id)
+            course_qs = course_qs.filter(college_id=college.id)
+        talent_n = await talent_qs.count()
         honor_rows = await fetch_compat(honor_qs, TeacherHonor)
+        achievements = await fetch_compat(ach_qs, AchievementItem)
         honor_people_n = len({h.teacher_name for h in honor_rows})
         # 高层次人才人数优先按荣誉称号去重人数；无荣誉表数据时回退成果 talent 条目数
         talent_people_n = honor_people_n or talent_n
 
-        project_qs = ResearchProject.all()
-        paper_qs = ResearchPaper.all()
-        if college:
-            project_qs = project_qs.filter(college_id=college.id)
-            paper_qs = paper_qs.filter(college_id=college.id)
         projects = await fetch_compat(project_qs, ResearchProject)
         papers = await fetch_compat(paper_qs, ResearchPaper)
+        ips = await fetch_compat(ip_qs, ResearchIp)
+        courses = await fetch_compat(course_qs, Course)
+
+        student_rows = await students_qs.values_list("teaching_department", "major_name")
+        student_by_dept: Counter[str] = Counter()
+        for td, mn in student_rows:
+            key = _s(td) or _s(mn)
+            if key:
+                student_by_dept[key] += 1
 
         total = len(teachers)
         phd_n = sum(1 for t in teachers if _is_phd(t))
@@ -296,15 +340,23 @@ class FacultyService:
         # 课时：仅汇总当前学期内按教师姓名
         hours_by_name: dict[str, float] = defaultdict(float)
         courses_by_name: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        teachers_by_course: dict[str, set[str]] = defaultdict(set)
+        course_dept: dict[str, set[str]] = defaultdict(set)
         for h in hour_rows:
             name = _s(h.teacher_name)
+            cname = _s(h.course_name)
+            if name and cname:
+                teachers_by_course[cname].add(name)
+                dept_hint = _s(getattr(h, "teacher_department", None))
+                if dept_hint:
+                    course_dept[cname].add(dept_hint)
             if not name:
                 continue
             hrs = _f(h.total_hours)
             hours_by_name[name] += hrs
             courses_by_name[name].append(
                 {
-                    "name": _s(h.course_name) or MISSING,
+                    "name": cname or MISSING,
                     "hours": hrs,
                     "studentCount": 0,
                     "semester": _s(h.term) or active_term or MISSING,
@@ -326,21 +378,98 @@ class FacultyService:
             for k, v in sorted(title_counter.items(), key=lambda x: (-x[1], x[0]))
         ]
 
-        structure_lv = _health_level_structure(phd_ratio or 0, senior_ratio or 0)
         load_lv = _health_level_load(avg_hours, overload_n, total or 1)
-        risk_lv = _health_level_risk(False, overload_n, stu_ratio)
-        score = _score_from_levels(structure_lv, load_lv, risk_lv)
 
-        term_label = active_term or MISSING
-        metrics = self._build_metrics(
+        year_now = current_year()
+        cutoff = five_year_cutoff(year_now)
+        ns_projects = [p for p in projects if is_ns_provincial(getattr(p, "level", None))]
+        funding_total = sum(parse_funding(getattr(p, "funding", None)) for p in projects)
+        research_score, research_meaning, research_incomplete = eval_research(
+            project_n=len(ns_projects),
+            paper_n=len(papers),
+            funding=funding_total,
+        )
+
+        new_phd_n = sum(
+            1
+            for t in teachers
+            if _hire_year(t) is not None and _hire_year(t) >= cutoff and _is_phd(t)
+        )
+        new_senior_n = sum(
+            1
+            for t in teachers
+            if _hire_year(t) is not None and _hire_year(t) >= cutoff and _is_senior(t)
+        )
+        new_talent_n = len(
+            {
+                _s(h.teacher_name)
+                for h in honor_rows
+                if _s(h.teacher_name)
+                and parse_year(h.year) is not None
+                and parse_year(h.year) >= cutoff
+            }
+        )
+        new_score, new_meaning, new_incomplete = eval_new(
+            new_phd=new_phd_n,
+            new_talent=new_talent_n,
+            new_senior=new_senior_n,
+        )
+
+        course_leaders = {
+            _s(c.name) for c in courses if _s(c.name) and _s(getattr(c, "leader", None))
+        }
+        course_rate, course_meaning, course_incomplete = eval_course_support(
+            course_names_with_leader=course_leaders,
+            teachers_by_course=teachers_by_course,
+        )
+
+        psi = compose_psi(
+            stu_ratio=stu_ratio,
             phd_ratio=phd_ratio,
             senior_ratio=senior_ratio,
-            total=total,
-            avg_hours=avg_hours,
-            overload_n=overload_n,
-            stu_ratio=stu_ratio,
-            term=term_label,
+            course_rate=course_rate,
+            course_incomplete=course_incomplete,
+            course_meaning=course_meaning,
+            research_score=research_score,
+            research_meaning=research_meaning,
+            research_incomplete=research_incomplete,
+            new_score=new_score,
+            new_meaning=new_meaning,
+            new_incomplete=new_incomplete,
+            research_raw=research_score,
+            new_raw=new_score,
         )
+        metrics = metrics_from_psi(psi)
+
+        research_by_year, output_years = collect_output_years(
+            papers=papers,
+            projects=projects,
+            ips=ips,
+            achievements=achievements,
+            honors=honor_rows,
+            split_names=re_split_names,
+        )
+        term_year = parse_year(active_term) or year_now
+        teaching_by_year: dict[int, dict[str, float]] = {
+            term_year: {
+                n: min(100.0, v * 100.0 / OVERLOAD_HOURS) for n, v in hours_by_name.items()
+            }
+        }
+        hire_year_by_name = {_s(t.name): _hire_year(t) for t in teachers if _s(t.name)}
+        warning_center = build_warning_center(
+            teacher_by_name=teacher_by_name,
+            hours_by_name=hours_by_name,
+            avg_hours=avg_hours,
+            research_by_year=research_by_year,
+            teaching_by_year=teaching_by_year,
+            output_years=output_years,
+            hire_year_by_name=hire_year_by_name,
+        )
+        warn_sum = warning_center["summary"]
+        risk_lv = _health_level_risk(warn_sum["totalWarnings"] > 0, overload_n, stu_ratio)
+        health = health_from_psi(psi["score"], load_lv, risk_lv)
+
+        term_label = active_term or MISSING
         insights = self._build_insights(
             total=total,
             phd_ratio=phd_ratio,
@@ -351,6 +480,8 @@ class FacultyService:
             talent_n=talent_people_n,
             title_counter=title_counter,
             term=term_label,
+            psi=psi,
+            warning_summary=warn_sum,
         )
 
         analytics: dict[str, Any] = {
@@ -360,12 +491,9 @@ class FacultyService:
             "availableTerms": available_terms,
             "standardHours": STANDARD_HOURS,
             "overloadHours": OVERLOAD_HOURS,
-            "health": {
-                "score": score,
-                "structure": structure_lv,
-                "load": load_lv,
-                "risk": risk_lv,
-            },
+            "health": health,
+            "supportIndex": psi,
+            "warningSummary": warn_sum,
             "metrics": metrics,
             "insights": insights,
             "summary": {
@@ -374,7 +502,7 @@ class FacultyService:
                 "seniorTitleRatio": senior_ratio if senior_ratio is not None else MISSING,
                 "avgTeachingHours": avg_hours if avg_hours is not None else MISSING,
                 "modelTeacherCount": MISSING,
-                "warningCount": MISSING,
+                "warningCount": warn_sum["totalWarnings"],
                 "publicService": {"count": MISSING, "hours": MISSING},
                 "highLevelTalentCount": talent_people_n if talent_people_n else MISSING,
                 "studentTeacherRatio": f"1:{stu_ratio}" if stu_ratio is not None else MISSING,
@@ -416,6 +544,12 @@ class FacultyService:
             stu_ratio=stu_ratio,
             talent_n=talent_people_n,
             term=term_label,
+            honor_rows=honor_rows,
+            teachers_by_course=teachers_by_course,
+            course_leaders=course_leaders,
+            student_by_dept=student_by_dept,
+            warning_center=warning_center,
+            cutoff=cutoff,
         )
         return {"analytics": analytics, "detail": detail}
 
@@ -560,8 +694,23 @@ class FacultyService:
         talent_n: int,
         title_counter: Counter,
         term: str,
+        psi: dict[str, Any] | None = None,
+        warning_summary: dict[str, Any] | None = None,
     ) -> list[str]:
         tips: list[str] = []
+        if psi:
+            tips.append(
+                f"专业支撑指数 {psi['score']}，{psi['gradeLabel']}（{psi['grade']}）{'★' * psi['stars']}"
+            )
+            if psi.get("strengths"):
+                tips.append("优势：" + "、".join(psi["strengths"]))
+            if psi.get("weaknesses"):
+                tips.append("待提升：" + "、".join(psi["weaknesses"]))
+        if warning_summary:
+            tips.append(
+                f"预警 {warning_summary.get('totalWarnings', 0)} 条"
+                f"（红 {warning_summary.get('redCount', 0)} / 黄 {warning_summary.get('yellowCount', 0)}）"
+            )
         if total:
             tips.append(f"当前在职教职工/专任花名册共 {total} 人")
         if phd_ratio is not None:
@@ -648,6 +797,12 @@ class FacultyService:
         stu_ratio: float | None,
         talent_n: int,
         term: str,
+        honor_rows: list[TeacherHonor] | None = None,
+        teachers_by_course: dict[str, set[str]] | None = None,
+        course_leaders: set[str] | None = None,
+        student_by_dept: Counter[str] | None = None,
+        warning_center: dict[str, Any] | None = None,
+        cutoff: int | None = None,
     ) -> dict[str, Any]:
         edu_counter = Counter(_edu_bucket(t) for t in teachers)
         title_rows = self._ratio_rows(title_counter, total)
@@ -812,14 +967,121 @@ class FacultyService:
         for t in teachers:
             by_dept[_s(getattr(t, "department", None)) or MISSING].append(t)
 
+        honor_rows = honor_rows or []
+        teachers_by_course = teachers_by_course or {}
+        course_leaders = course_leaders or set()
+        student_by_dept = student_by_dept or Counter()
+        cutoff = cutoff or five_year_cutoff()
+
+        proj_names_ns = []
+        funding_by_name: Counter[str] = Counter()
+        for p in projects:
+            fund = parse_funding(getattr(p, "funding", None))
+            leaders = re_split_names(_s(p.leader))
+            if is_ns_provincial(getattr(p, "level", None)):
+                proj_names_ns.extend(leaders)
+            for name in leaders:
+                funding_by_name[name] += fund
+
+        honor_talent_5yr = {
+            _s(h.teacher_name)
+            for h in honor_rows
+            if _s(h.teacher_name)
+            and parse_year(h.year) is not None
+            and parse_year(h.year) >= cutoff
+        }
+        honor_all = {_s(h.teacher_name) for h in honor_rows if _s(h.teacher_name)}
+
+        _skip_dept = ("办公室", "学院党政", "行政办", "党委")
         major_comparison = []
         for dept, group in sorted(by_dept.items(), key=lambda x: -len(x[1])):
+            if dept == MISSING or any(k in dept for k in _skip_dept):
+                continue
             n = len(group)
             phd_r = _pct(sum(1 for t in group if _is_phd(t)), n)
             senior_r = _pct(sum(1 for t in group if _is_senior(t)), n)
-            names = {_s(t.name) for t in group}
-            dept_hours = [hours_by_name[n] for n in names if n in hours_by_name]
+            names = {_s(t.name) for t in group if _s(t.name)}
+            dept_hours = [hours_by_name[nm] for nm in names if nm in hours_by_name]
             avg_h = _round1(sum(dept_hours) / len(dept_hours)) if dept_hours else MISSING
+            stu_n = match_student_count(dept, student_by_dept)
+            dept_ratio = _round1(stu_n / n) if stu_n and n else None
+            incomplete: list[str] = []
+            if dept_ratio is None:
+                incomplete.append("ratio")
+
+            dept_courses = {
+                cname: {tn for tn in tset if tn in names}
+                for cname, tset in teachers_by_course.items()
+                if any(tn in names for tn in tset)
+            }
+            # 建设课若无法按系所对齐，用该系开课课代理
+            use_leaders = {c for c in course_leaders if c in dept_courses}
+            c_rate, c_meaning, c_inc = eval_course_support(
+                course_names_with_leader=use_leaders,
+                teachers_by_course=dept_courses,
+            )
+            if c_inc or c_rate is None:
+                incomplete.append("course")
+
+            dept_proj = sum(1 for nm in proj_names_ns if nm in names)
+            dept_paper = sum(paper_by_author.get(nm, 0) for nm in names)
+            dept_fund = sum(funding_by_name.get(nm, 0) for nm in names)
+            r_score, r_meaning, r_inc = eval_research(
+                project_n=dept_proj,
+                paper_n=dept_paper,
+                funding=dept_fund,
+                project_target=scale_target(RESEARCH_TARGET_PROJECTS, n, total or n),
+                paper_target=scale_target(RESEARCH_TARGET_PAPERS, n, total or n),
+                funding_target=scale_target(RESEARCH_TARGET_FUNDING, n, total or n),
+            )
+            if r_inc:
+                incomplete.append("research")
+
+            dept_new_phd = sum(
+                1
+                for t in group
+                if _hire_year(t) is not None and _hire_year(t) >= cutoff and _is_phd(t)
+            )
+            dept_new_senior = sum(
+                1
+                for t in group
+                if _hire_year(t) is not None and _hire_year(t) >= cutoff and _is_senior(t)
+            )
+            dept_new_talent = len(names & honor_talent_5yr)
+            n_score, n_meaning, n_inc = eval_new(
+                new_phd=dept_new_phd,
+                new_talent=dept_new_talent,
+                new_senior=dept_new_senior,
+                phd_target=scale_target(NEW_TARGET_PHD, n, total or n),
+                talent_target=scale_target(NEW_TARGET_TALENT, n, total or n),
+                senior_target=scale_target(NEW_TARGET_SENIOR, n, total or n),
+            )
+            if n_inc:
+                incomplete.append("new")
+
+            dept_psi = compose_psi(
+                stu_ratio=dept_ratio,
+                phd_ratio=phd_r,
+                senior_ratio=senior_r,
+                course_rate=c_rate,
+                course_incomplete=c_inc or c_rate is None,
+                course_meaning=c_meaning,
+                research_score=r_score,
+                research_meaning=r_meaning,
+                research_incomplete=r_inc,
+                new_score=n_score,
+                new_meaning=n_meaning,
+                new_incomplete=n_inc,
+                research_raw=r_score,
+                new_raw=n_score,
+            )
+            score_map = {
+                d["key"]: d["score"] if isinstance(d["score"], (int, float)) else None
+                for d in dept_psi["dimensions"]
+            }
+            new_5yr = sum(
+                1 for t in group if _hire_year(t) is not None and _hire_year(t) >= cutoff
+            )
             major_comparison.append(
                 {
                     "major": dept,
@@ -828,24 +1090,15 @@ class FacultyService:
                     "phdRatio": phd_r,
                     "seniorRatio": senior_r,
                     "avgHours": avg_h,
-                    "studentTeacherRatio": MISSING,
-                    "coreCourseSupportRate": MISSING,
+                    "studentTeacherRatio": f"1:{dept_ratio}" if dept_ratio is not None else MISSING,
+                    "coreCourseSupportRate": c_rate if c_rate is not None else MISSING,
                     "youngTeacherRatio": MISSING,
-                    "highTalentCount": MISSING,
-                    "newTeachers5yr": sum(
-                        1
-                        for t in group
-                        if (
-                            _s(getattr(t, "school_hire_date", None))[:4].isdigit()
-                            and int(_s(getattr(t, "school_hire_date", None))[:4]) >= 2021
-                        )
-                    ),
-                    "supportIndex": int(round((phd_r + senior_r) / 2)),
-                    "suggestions": [
-                        f"博士占比 {phd_r}%",
-                        f"高级职称占比 {senior_r}%",
-                        "生师比/核心课支撑/青年占比等细项：待补专业归属与年龄字段",
-                    ],
+                    "highTalentCount": len(names & honor_all) or MISSING,
+                    "newTeachers5yr": new_5yr,
+                    "supportIndex": dept_psi["score"],
+                    "scores": score_map,
+                    "incompleteFlags": incomplete,
+                    "suggestions": suggestions_from_scores(score_map),
                 }
             )
 
@@ -966,12 +1219,13 @@ class FacultyService:
                 },
                 "teachers": perf_teachers[:80],
             },
-            "warningCenter": {
+            "warningCenter": warning_center
+            or {
                 "summary": {
-                    "totalWarnings": MISSING,
-                    "redCount": MISSING,
-                    "yellowCount": MISSING,
-                    "blueCount": MISSING,
+                    "totalWarnings": 0,
+                    "redCount": 0,
+                    "yellowCount": 0,
+                    "blueCount": 0,
                 },
                 "categories": [],
             },

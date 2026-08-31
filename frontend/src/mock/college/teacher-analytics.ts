@@ -22,72 +22,53 @@ const base: TeacherAnalyticsDTO = {
   standardHours: 120,
   overloadHours: 160,
   health: {
-    score: 82,
+    score: 88,
     structure: '优',
     load: '紧',
     risk: '中',
   },
+  supportIndex: {
+    score: 87.6,
+    grade: 'A',
+    gradeLabel: '优秀',
+    stars: 5,
+    strengths: ['科研支撑', '生师比'],
+    weaknesses: ['博士占比', '高级职称'],
+    formula: 'PSI=0.20生师比+0.10博士+0.20高级职称+0.15课程支撑+0.25科研+0.10近五年新增',
+    targets: {
+      stuTeacher: 15,
+      phdRatio: 80,
+      seniorRatio: 55,
+      researchProjects: 8,
+      researchPapers: 40,
+      researchFunding: 500,
+      newPhd: 5,
+      newTalent: 3,
+      newSenior: 4,
+    },
+    dimensions: [
+      { key: 'ratio', label: '生师比', raw: 14.6, unit: ':1', score: 100, meaning: '目标≤15:1，当前 1:14.6', tone: 'ok' },
+      { key: 'doctor', label: '博士占比', raw: 52, unit: '%', score: 65, meaning: '目标80%，当前 52%', tone: 'risk' },
+      { key: 'title', label: '高级职称', raw: 36, unit: '%', score: 65.5, meaning: '目标55%，当前 36%', tone: 'risk' },
+      { key: 'course', label: '课程支撑', raw: 88, unit: '%', score: 88, meaning: '建设课代理：核心课覆盖 88%', tone: 'ok', incomplete: true },
+      { key: 'research', label: '科研支撑', raw: 94, unit: '分', score: 94, meaning: '项目/论文/经费完成率加权', tone: 'ok', incomplete: true },
+      { key: 'new', label: '近五年新增', raw: 76, unit: '分', score: 76, meaning: '新增博士/人才/高级职称完成率', tone: 'warn', incomplete: true },
+    ],
+  },
+  warningSummary: { totalWarnings: 18, redCount: 5, yellowCount: 8, blueCount: 5 },
   metrics: [
-    {
-      key: 'phd',
-      label: '博士占比',
-      value: 78.5,
-      unit: '%',
-      meaning: '目标80%，还差1.5pp',
-      tone: 'warn',
-      target: 80,
-      yoyChange: 6,
-    },
-    {
-      key: 'senior',
-      label: '高级职称',
-      value: seniorTitleRatio,
-      unit: '%',
-      meaning: '同比↑4pp',
-      tone: 'up',
-      yoyChange: 4,
-    },
-    {
-      key: 'headcount',
-      label: '队伍规模',
-      value: totalTeachers,
-      unit: '人',
-      meaning: '缺编7人',
-      tone: 'warn',
-      target: totalTeachers + 7,
-    },
-    {
-      key: 'load',
-      label: '教学负荷',
-      value: 246,
-      unit: '学时',
-      meaning: '超负荷教师18人',
-      tone: 'risk',
-    },
-    {
-      key: 'warning',
-      label: '预警态势',
-      value: 8,
-      unit: '人',
-      meaning: '同比↑3人 · 科研/教学',
-      tone: 'risk',
-      yoyChange: 3,
-    },
-    {
-      key: 'stuTeacher',
-      label: '生师比',
-      value: 17.2,
-      unit: ':1',
-      meaning: '目标≤16，偏紧',
-      tone: 'warn',
-      target: 16,
-    },
+    { key: 'ratio', label: '生师比', value: 17.2, unit: ':1', meaning: '目标≤15:1，当前偏紧', tone: 'warn', target: 15 },
+    { key: 'doctor', label: '博士占比', value: 78.5, unit: '%', meaning: '目标80%，还差1.5pp', tone: 'warn', target: 80 },
+    { key: 'title', label: '高级职称', value: seniorTitleRatio, unit: '%', meaning: `目标55%，当前 ${seniorTitleRatio}%`, tone: 'ok', target: 55 },
+    { key: 'course', label: '课程支撑', value: 82, unit: '%', meaning: '建设课代理覆盖率', tone: 'ok', incomplete: true },
+    { key: 'research', label: '科研支撑', value: 91, unit: '分', meaning: '项目/论文/经费加权', tone: 'ok', incomplete: true },
+    { key: 'new', label: '近五年新增', value: 68, unit: '分', meaning: '博士/人才/高级职称完成率', tone: 'warn', incomplete: true },
   ],
   insights: [
-    '软件工程专业高级职称占比偏低，建议重点引进/晋升',
-    '青年教师比例较高，但副教授储备不足',
-    'AI专业平均课时超过学院均值28%，负荷偏紧',
-    '未来三年预计退休教师9人，需提前布局接替',
+    '专业支撑指数 87.6，优秀（A）★★★★★',
+    '优势：科研支撑、生师比',
+    '待提升：博士占比、高级职称',
+    '预警 18 条（红 5 / 黄 8）',
   ],
   summary: {
     totalTeachers,
@@ -245,6 +226,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
   majorComparison: [
     {
       major: '计算机科学与技术', headcount: 52, phdRatio: 82, seniorRatio: 58, avgHours: 242, studentTeacherRatio: '1:17.8', coreCourseSupportRate: 92, youngTeacherRatio: 28, highTalentCount: 5, newTeachers5yr: 12, supportIndex: 91,
+      scores: { ratio: 72, doctor: 100, title: 100, course: 92, research: 88, new: 80 },
+      incompleteFlags: ['course', 'research', 'new'],
       suggestions: [
         '维持博士占比 82%，支持 2 名青年教师在职攻读博士，目标提升至 85% 以上',
         '新增副教授 1 名，强化系统结构与编译方向师资梯队',
@@ -255,6 +238,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
     },
     {
       major: '软件工程', headcount: 38, phdRatio: 76, seniorRatio: 45, avgHours: 268, studentTeacherRatio: '1:22.4', coreCourseSupportRate: 68, youngTeacherRatio: 42, highTalentCount: 3, newTeachers5yr: 8, supportIndex: 72,
+      scores: { ratio: 26, doctor: 95, title: 81.8, course: 68, research: 70, new: 62 },
+      incompleteFlags: ['course', 'research', 'new'],
       suggestions: [
         '新增副教授 1 名，弥补高级职称梯队短板',
         '引进博士 2 名，充实软件工程科研与教学梯队',
@@ -265,6 +250,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
     },
     {
       major: '人工智能', headcount: 34, phdRatio: 88, seniorRatio: 52, avgHours: 224, studentTeacherRatio: '1:16.5', coreCourseSupportRate: 85, youngTeacherRatio: 35, highTalentCount: 4, newTeachers5yr: 10, supportIndex: 83,
+      scores: { ratio: 85, doctor: 100, title: 94.5, course: 85, research: 76, new: 74 },
+      incompleteFlags: ['course', 'research', 'new'],
       suggestions: [
         '引进博士 2 名，充实智能方向科研梯队',
         '新增副教授 1 名，强化机器学习与认知方向力量',
@@ -575,7 +562,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
     categories: [
       {
         id: 'research-warning', label: '科研预警', level: 'red', count: 4,
-        description: '连续两年科研考核不达标，论文/项目/经费三项均低于学院平均水平的60%',
+        description: '连续2年院内后30%或本年后15%为黄；连续2年后15%或本年后10%为红。',
+        sourceNote: '科研按论文/项目粗分院内百分位',
         teachers: [
           {
             name: '赵某', title: '讲师', major: '大数据管理与应用', detail: '近2年无新立项项目，论文仅发表1篇普刊', status: '已约谈',
@@ -609,7 +597,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
       },
       {
         id: 'teaching-warning', label: '教学预警', level: 'yellow', count: 3,
-        description: '学生评教分数低于80分或连续两学期排名末位10%',
+        description: '一般事故1次为黄；连续2次一般或1次严重为红。教学绩效按院内百分位。',
+        sourceNote: '教学事故源未接入；此处为课时粗分近似',
         teachers: [
           {
             name: '杨某', title: '讲师', major: '软件工程', detail: '学生评教79.6分，连续2学期排名靠后', status: '跟踪中',
@@ -636,7 +625,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
       },
       {
         id: 'hours-anomaly', label: '课时异常', level: 'red', count: 3,
-        description: '学年课时超过350学时（严重超负荷）或低于100学时（教学投入不足）',
+        description: '高于院均2倍或低于25%为黄；高于院均3倍或低于15%为红。',
+        sourceNote: '按当前分析学期课时实算',
         teachers: [
           {
             name: '陈老师', title: '讲师', major: '软件工程', detail: '学年课时388学时，超标准62%，承担7门课程', status: '已约谈',
@@ -663,7 +653,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
       },
       {
         id: 'no-output', label: '长期无成果', level: 'yellow', count: 3,
-        description: '连续3年未发表高水平论文或未获批任何科研/教学项目',
+        description: '连续2年无论文/专利/项目/获奖为黄；连续3年为红。',
+        sourceNote: '成果年从发表/立项/授权/获评日期解析',
         teachers: [
           {
             name: '王某', title: '讲师', major: '大数据管理与应用', detail: '近3年无C刊以上论文，无省部级以上项目', status: '已约谈',
@@ -690,7 +681,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
       },
       {
         id: 'low-performance', label: '连续低绩效', level: 'yellow', count: 3,
-        description: '连续2年年度考核排名末位15%，教学和科研综合评分均低于60分',
+        description: '综合排名连续2年后20%为黄；连续2年后10%为红。',
+        sourceNote: '综合分＝教学课时粗分与科研粗分均值',
         teachers: [
           {
             name: '孙老师', title: '讲师', major: '大数据管理与应用', detail: '教学48分/科研38分，连续2年综合评分末位', status: '已约谈',
@@ -717,7 +709,8 @@ export const mockTeacherAnalyticsDetail: TeacherAnalyticsDetailDTO = {
       },
       {
         id: 'retirement-gap', label: '即将退休无人接替', level: 'blue', count: 2,
-        description: '未来2年内退休且所在方向无明确接班人选的教师',
+        description: '课程保障率：>80% 正常 · 60–80% 蓝色 · 40–60% 黄色 · <40% 红色。',
+        sourceNote: '缺出生/退休日期与核心课名册时仅作示意',
         teachers: [
           {
             name: '郑教授', title: '教授', major: '计算机科学与技术', detail: '2027年退休，编译原理方向仅有1名讲师，无接班人', status: '新发现',

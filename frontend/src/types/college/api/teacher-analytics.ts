@@ -7,12 +7,14 @@ export type FacultyNum = number | MissingMark
 export type FacultyHealthLevel = '优' | '中' | '紧' | '警'
 
 export type FacultyMetricKey =
-  | 'phd'
-  | 'senior'
-  | 'headcount'
-  | 'load'
-  | 'warning'
-  | 'stuTeacher'
+  | 'ratio'
+  | 'doctor'
+  | 'title'
+  | 'course'
+  | 'research'
+  | 'new'
+
+export type FacultySupportGrade = 'A' | 'B' | 'C' | 'D' | 'E'
 
 export type FacultyMetricTone = 'ok' | 'warn' | 'risk' | 'up' | 'down'
 
@@ -21,6 +23,46 @@ export interface FacultyHealthDTO {
   structure: FacultyHealthLevel
   load: FacultyHealthLevel
   risk: FacultyHealthLevel
+}
+
+export interface FacultySupportDimensionDTO {
+  key: FacultyMetricKey
+  label: string
+  raw: FacultyNum
+  unit: string
+  score: FacultyNum
+  meaning: string
+  tone?: FacultyMetricTone
+  incomplete?: boolean
+}
+
+export interface FacultySupportIndexDTO {
+  score: number
+  grade: FacultySupportGrade
+  gradeLabel: string
+  stars: number
+  strengths: string[]
+  weaknesses: string[]
+  formula: string
+  dimensions: FacultySupportDimensionDTO[]
+  targets?: {
+    stuTeacher: number
+    phdRatio: number
+    seniorRatio: number
+    researchProjects: number
+    researchPapers: number
+    researchFunding: number
+    newPhd: number
+    newTalent: number
+    newSenior: number
+  }
+}
+
+export interface FacultyWarningSummaryDTO {
+  totalWarnings: FacultyNum
+  redCount: FacultyNum
+  yellowCount: FacultyNum
+  blueCount: FacultyNum
 }
 
 export interface FacultyMetricDTO {
@@ -33,6 +75,7 @@ export interface FacultyMetricDTO {
   tone?: FacultyMetricTone
   target?: number
   yoyChange?: number
+  incomplete?: boolean
 }
 
 export interface TeacherAnalyticsDTO {
@@ -48,9 +91,13 @@ export interface TeacherAnalyticsDTO {
   standardHours: number
   /** 学期超负荷阈值 */
   overloadHours: number
-  /** L1 健康度总览 */
+  /** 兼容旧字段：由 PSI 映射 */
   health: FacultyHealthDTO
-  /** L1 指标+目标差距卡 */
+  /** 专业支撑指数 */
+  supportIndex: FacultySupportIndexDTO
+  /** 预警条数摘要（首页底栏） */
+  warningSummary?: FacultyWarningSummaryDTO
+  /** L1 六维 PSI 卡 */
   metrics: FacultyMetricDTO[]
   /** L1 诊断结论 */
   insights: string[]
@@ -170,6 +217,16 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
     newTeachers5yr: number
     /** 专业支撑综合指数 0-100 */
     supportIndex: number
+    /** 六维 S_* 得分 */
+    scores?: {
+      ratio?: FacultyNum
+      doctor?: FacultyNum
+      title?: FacultyNum
+      course?: FacultyNum
+      research?: FacultyNum
+      new?: FacultyNum
+    }
+    incompleteFlags?: string[]
     /** 专业支撑详细建议（怎么做） */
     suggestions: string[]
   }>
@@ -288,18 +345,14 @@ export interface TeacherAnalyticsDetailDTO extends TeacherAnalyticsDTO {
   }
   /** 预警中心 */
   warningCenter: {
-    summary: {
-      totalWarnings: FacultyNum
-      redCount: FacultyNum
-      yellowCount: FacultyNum
-      blueCount: FacultyNum
-    }
+    summary: FacultyWarningSummaryDTO
     categories: Array<{
       id: string
       label: string
       level: 'red' | 'yellow' | 'blue'
       count: number
       description: string
+      sourceNote?: string
       teachers: Array<{
         name: string
         title: string

@@ -1,12 +1,16 @@
 import type {
   FacultyHealthDTO,
   FacultyMetricDTO,
+  FacultySupportIndexDTO,
+  FacultyWarningSummaryDTO,
   TeacherAnalyticsDetailDTO,
   TeacherAnalyticsDTO,
 } from '@/types/college/api/teacher-analytics'
 
 export type FacultyHealthVM = FacultyHealthDTO
 export type FacultyMetricVM = FacultyMetricDTO
+export type FacultySupportIndexVM = FacultySupportIndexDTO
+export type FacultyWarningSummaryVM = FacultyWarningSummaryDTO
 
 export interface TeacherAnalyticsVM {
   term: string
@@ -16,6 +20,8 @@ export interface TeacherAnalyticsVM {
   standardHours: number
   overloadHours: number
   health: FacultyHealthVM
+  supportIndex: FacultySupportIndexVM
+  warningSummary?: FacultyWarningSummaryVM
   metrics: FacultyMetricVM[]
   insights: string[]
   summary: TeacherAnalyticsDTO['summary']
@@ -33,6 +39,8 @@ export interface TeacherAnalyticsDetailVM {
   standardHours: number
   overloadHours: number
   health: FacultyHealthVM
+  supportIndex: FacultySupportIndexVM
+  warningSummary?: FacultyWarningSummaryVM
   metrics: FacultyMetricVM[]
   insights: string[]
   summary: TeacherAnalyticsDTO['summary']

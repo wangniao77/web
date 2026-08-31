@@ -7,6 +7,26 @@ import type {
   TeacherAnalyticsVM,
 } from '@/types/college/view/teacher-analytics'
 
+function adaptSupportIndex(dto: TeacherAnalyticsDTO['supportIndex'] | undefined): TeacherAnalyticsVM['supportIndex'] {
+  const src = dto ?? {
+    score: 0,
+    grade: 'E' as const,
+    gradeLabel: '薄弱',
+    stars: 1,
+    strengths: [],
+    weaknesses: [],
+    formula: '',
+    dimensions: [],
+  }
+  return {
+    ...src,
+    strengths: [...(src.strengths ?? [])],
+    weaknesses: [...(src.weaknesses ?? [])],
+    dimensions: (src.dimensions ?? []).map((d) => ({ ...d })),
+    targets: src.targets ? { ...src.targets } : undefined,
+  }
+}
+
 function adaptBase(dto: TeacherAnalyticsDTO): TeacherAnalyticsVM {
   return {
     term: dto.term,
@@ -16,6 +36,8 @@ function adaptBase(dto: TeacherAnalyticsDTO): TeacherAnalyticsVM {
     standardHours: dto.standardHours ?? 120,
     overloadHours: dto.overloadHours ?? 160,
     health: { ...dto.health },
+    supportIndex: adaptSupportIndex(dto.supportIndex),
+    warningSummary: dto.warningSummary ? { ...dto.warningSummary } : undefined,
     metrics: dto.metrics.map((m) => ({ ...m })),
     insights: [...dto.insights],
     summary: {
@@ -66,7 +88,12 @@ export function adaptTeacherAnalyticsDetail(
       ...i,
       trend: i.trend ? { ...i.trend } : undefined,
     })),
-    majorComparison: dto.majorComparison.map((i) => ({ ...i })),
+    majorComparison: dto.majorComparison.map((i) => ({
+      ...i,
+      scores: i.scores ? { ...i.scores } : undefined,
+      incompleteFlags: i.incompleteFlags ? [...i.incompleteFlags] : undefined,
+      suggestions: [...(i.suggestions ?? [])],
+    })),
     filters: dto.filters
       ? {
           departments: [...(dto.filters.departments || [])],
@@ -119,7 +146,12 @@ export function adaptTeacherAnalyticsDetail(
       summary: { ...dto.warningCenter.summary },
       categories: dto.warningCenter.categories.map((c) => ({
         ...c,
-        teachers: c.teachers.map((t) => ({ ...t })),
+        teachers: c.teachers.map((t) => ({
+          ...t,
+          reasons: [...t.reasons],
+          suggestions: [...t.suggestions],
+          closedLoop: { ...t.closedLoop },
+        })),
       })),
     },
   }

@@ -125,25 +125,35 @@ function scrollToSection(id: string) {
   })
 }
 
+function applyHash(hash?: string) {
+  const id = hash?.replace('#', '')
+  if (!id) return
+  const tabIds: TabKey[] = [
+    'resource-base',
+    'structure-analysis',
+    'teaching-investment',
+    'capacity-building',
+    'performance-analysis',
+    'warning-center',
+    'major-support',
+  ]
+  if (tabIds.includes(id as TabKey)) {
+    currentTab.value = id as TabKey
+    return
+  }
+  if (sections.some((s) => s.id === id)) {
+    currentTab.value = 'resource-base'
+    setTimeout(() => scrollToSection(id), 200)
+  }
+}
+
 onMounted(async () => {
   await loadDetail()
-  const hash = route.hash?.replace('#', '')
-  if (hash) {
-    if (sections.some((s) => s.id === hash)) {
-      currentTab.value = 'resource-base'
-      setTimeout(() => scrollToSection(hash), 300)
-    } else if (hash === 'structure-analysis') {
-      currentTab.value = 'structure-analysis'
-    }
-  }
+  applyHash(route.hash)
 })
 
 watch(() => route.hash, (hash) => {
-  const id = hash?.replace('#', '')
-  if (id && sections.some((s) => s.id === id)) {
-    currentTab.value = 'resource-base'
-    setTimeout(() => scrollToSection(id), 100)
-  }
+  applyHash(hash)
 })
 
 // ============ Part 1 图表 ============
@@ -745,9 +755,9 @@ const supportIndexBarOption = computed(() => {
         value: i.supportIndex,
         itemStyle: {
           borderRadius: [0, 4, 4, 0],
-          color: i.supportIndex >= 80
+          color: i.supportIndex >= 85
             ? { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#6effc2' }, { offset: 1, color: '#2ea87a' }] }
-            : i.supportIndex >= 60
+            : i.supportIndex >= 70
               ? { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#ffd56a' }, { offset: 1, color: '#d4a017' }] }
               : { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#ff8a65' }, { offset: 1, color: '#e64a19' }] },
         },
@@ -757,11 +767,14 @@ const supportIndexBarOption = computed(() => {
   }
 })
 
+function psiScore(m: TeacherAnalyticsDetailVM['majorComparison'][number], key: 'ratio' | 'doctor' | 'title' | 'course' | 'research' | 'new') {
+  const sc = m.scores?.[key]
+  return typeof sc === 'number' ? sc : 0
+}
+
 const supportRadarOption = computed(() => {
   if (!data.value) return {}
   const list = data.value.majorComparison
-  const maxTalent = Math.max(...list.map((m) => facultyNumOrZero(m.highTalentCount)), 1)
-  const maxNew = Math.max(...list.map((m) => m.newTeachers5yr), 1)
   const palette = ['#5cecff', '#ffd56a', '#6effc2', '#ff8a65', '#a78bfa', '#ff6b9d']
   return {
     tooltip: { trigger: 'item' },
@@ -773,12 +786,12 @@ const supportRadarOption = computed(() => {
     },
     radar: {
       indicator: [
+        { name: '生师比', max: 100 },
         { name: '博士占比', max: 100 },
-        { name: '高级职称比', max: 100 },
-        { name: '核心课程支撑', max: 100 },
-        { name: '青年活力', max: 100 },
-        { name: '高层次人才', max: 100 },
-        { name: '近5年新增', max: 100 },
+        { name: '高级职称', max: 100 },
+        { name: '课程支撑', max: 100 },
+        { name: '科研支撑', max: 100 },
+        { name: '近五年新增', max: 100 },
       ],
       radius: '64%',
       center: ['50%', '58%'],
@@ -794,12 +807,12 @@ const supportRadarOption = computed(() => {
         return {
           name: m.major,
           value: [
-            m.phdRatio,
-            m.seniorRatio,
-            facultyNumOrZero(m.coreCourseSupportRate),
-            facultyNumOrZero(m.youngTeacherRatio),
-            Math.round((facultyNumOrZero(m.highTalentCount) / maxTalent) * 100),
-            Math.round((m.newTeachers5yr / maxNew) * 100),
+            psiScore(m, 'ratio'),
+            psiScore(m, 'doctor'),
+            psiScore(m, 'title'),
+            psiScore(m, 'course'),
+            psiScore(m, 'research'),
+            psiScore(m, 'new'),
           ],
           symbolSize: 4,
           lineStyle: { color: c, width: 2 },
@@ -1809,8 +1822,12 @@ const supportRadarOption = computed(() => {
                 </span>
               </div>
               <p class="warn-category__desc">{{ cat.description }}</p>
+              <p v-if="cat.sourceNote" class="warn-category__note">{{ cat.sourceNote }}</p>
             </div>
-            <div class="warn-category__list">
+            <div v-if="!cat.teachers.length" class="warn-category__empty">
+              暂无命中名单
+            </div>
+            <div v-else class="warn-category__list">
               <div
                 v-for="t in cat.teachers"
                 :key="t.name"
@@ -1879,10 +1896,11 @@ const supportRadarOption = computed(() => {
           <section class="resource-section">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">📊</span>专业支撑综合指数</h2>
             <p class="resource-section__desc">
-              综合考量师资规模、博士占比、高级职称、核心课程支撑率、青年教师比例、高层次人才覆盖、近五年新增教师等维度。
-              <strong style="color:#6effc2;">≥80 良好</strong> ·
-              <strong style="color:#ffd56a;">60-79 一般</strong> ·
-              <strong style="color:#ff8a65;">< 60 薄弱</strong>
+              PSI＝0.20 生师比＋0.10 博士占比＋0.20 高级职称＋0.15 课程支撑＋0.25 科研支撑＋0.10 近五年新增。
+              目标：生师比 ≤15:1、博士 80%、高级职称 55%；课程为负责人且≥2 人可承担的覆盖率；科研/新增按管理口径目标完成率。
+              <strong style="color:#6effc2;">≥85 优秀</strong> ·
+              <strong style="color:#ffd56a;">70-84 良好</strong> ·
+              <strong style="color:#ff8a65;">< 70 待提升</strong>
             </p>
             <div style="height:380px;"><ChartContainer :option="supportIndexBarOption" /></div>
           </section>
@@ -1891,7 +1909,14 @@ const supportRadarOption = computed(() => {
           <section class="resource-section">
             <h2 class="resource-section__title"><span class="resource-section__title-icon">🕸️</span>多维支撑能力对比</h2>
             <p class="resource-section__desc">
-              从 <strong style="color:#5cecff;">博士占比</strong>、<strong style="color:#ffd56a;">高级职称</strong>、<strong style="color:#6effc2;">核心课程支撑</strong>、<strong style="color:#ff8a65;">青年活力</strong>、<strong style="color:#a78bfa;">高层次人才</strong>、<strong style="color:#ff6b9d;">近五年新增</strong> 六个维度对比各专业师资支撑能力（高层次人才、近五年新增按最大值归一化至 0-100）。
+              与指数同一套六维得分：
+              <strong style="color:#5cecff;">生师比</strong>、
+              <strong style="color:#ffd56a;">博士占比</strong>、
+              <strong style="color:#6effc2;">高级职称</strong>、
+              <strong style="color:#ff8a65;">课程支撑</strong>、
+              <strong style="color:#a78bfa;">科研支撑</strong>、
+              <strong style="color:#ff6b9d;">近五年新增</strong>
+              （均为 0–100 的 S_* 得分）。
             </p>
             <div style="height:380px;"><ChartContainer :option="supportRadarOption" /></div>
           </section>
@@ -1904,18 +1929,18 @@ const supportRadarOption = computed(() => {
             :key="m.major"
             class="major-card"
             :class="{
-              'major-card--good': m.supportIndex >= 80,
-              'major-card--mid': m.supportIndex >= 60 && m.supportIndex < 80,
-              'major-card--weak': m.supportIndex < 60,
+              'major-card--good': m.supportIndex >= 85,
+              'major-card--mid': m.supportIndex >= 70 && m.supportIndex < 85,
+              'major-card--weak': m.supportIndex < 70,
             }"
           >
             <div class="major-card__head">
               <div class="major-card__title">
                 <h3>{{ m.major }}</h3>
                 <div class="major-card__index" :class="{
-                  'major-card__index--good': m.supportIndex >= 80,
-                  'major-card__index--mid': m.supportIndex >= 60 && m.supportIndex < 80,
-                  'major-card__index--weak': m.supportIndex < 60,
+                  'major-card__index--good': m.supportIndex >= 85,
+                  'major-card__index--mid': m.supportIndex >= 70 && m.supportIndex < 85,
+                  'major-card__index--weak': m.supportIndex < 70,
                 }">
                   <span>支撑指数</span>
                   <em>{{ m.supportIndex }}</em>
@@ -1948,15 +1973,15 @@ const supportRadarOption = computed(() => {
                 <strong>{{ fmtFacultyNum(m.coreCourseSupportRate, '%') }}</strong>
               </div>
               <div class="major-metric">
-                <span>青年教师比例</span>
-                <strong>{{ fmtFacultyNum(m.youngTeacherRatio, '%') }}</strong>
+                <span>科研支撑</span>
+                <strong>{{ fmtFacultyNum(m.scores?.research, '分') }}</strong>
               </div>
               <div class="major-metric">
-                <span>高层次人才</span>
-                <strong>{{ fmtFacultyNum(m.highTalentCount) }}<small>人</small></strong>
+                <span>近五年新增</span>
+                <strong>{{ fmtFacultyNum(m.scores?.new, '分') }}</strong>
               </div>
               <div class="major-metric">
-                <span>近5年新增</span>
+                <span>近5年新进</span>
                 <strong>{{ m.newTeachers5yr }}<small>人</small></strong>
               </div>
             </div>
@@ -2306,6 +2331,18 @@ const supportRadarOption = computed(() => {
   }
 
   &__desc { margin: 0; font-size: 18px; line-height: 1.55; color: #8eaec8; }
+
+  &__note { margin: 6px 0 0; font-size: 15px; line-height: 1.5; color: #7aa0bc; }
+
+  &__empty {
+    margin: 0 16px 16px;
+    padding: 14px 12px;
+    border-radius: 8px;
+    border: 1px dashed rgba(0, 200, 255, 0.2);
+    color: #7aa0bc;
+    font-size: 16px;
+    text-align: center;
+  }
 
   &__list { padding: 8px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
 }
