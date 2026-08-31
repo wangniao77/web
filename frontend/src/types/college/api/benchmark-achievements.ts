@@ -6,6 +6,34 @@ export type AchievementCategory =
   | 'faculty'
   | 'social'
 
+/** 一、二级统一的五大办学板块 */
+export type BenchmarkPillarKey =
+  | 'research'
+  | 'teaching'
+  | 'talent'
+  | 'discipline'
+  | 'party'
+
+/** 板块主 KPI */
+export interface BenchmarkPillarMetric {
+  label: string
+  value: string | number
+  unit?: string
+}
+
+/** 五大板块：优劣势 + 深挖三段（后端可透传，缺省由前端派生） */
+export interface BenchmarkPillarDTO {
+  key: BenchmarkPillarKey
+  label: string
+  metrics: BenchmarkPillarMetric[]
+  strengths: string[]
+  weaknesses: string[]
+  /** 采用原因分析 */
+  adoptionReasons: string[]
+  actions: string[]
+  nextPlans: string[]
+}
+
 export type MilestoneBadge =
   | '历史突破'
   | '科研攻坚'
@@ -105,6 +133,8 @@ export interface BenchmarkAchievementsDTO {
     label: string
     count: number
   }>
+  /** 可选：五大板块研判；缺省由前端从现有字段派生 */
+  pillars?: BenchmarkPillarDTO[]
 }
 
 export interface BenchmarkAchievementsDetailDTO extends BenchmarkAchievementsDTO {

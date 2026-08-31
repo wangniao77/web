@@ -86,6 +86,15 @@ const gallery: BenchmarkAchievementsDTO['gallery'] = [
     date: '2025-04',
     leader: '郑教授',
   },
+  {
+    id: 'g10',
+    title: '师生党支部获评省级样板支部',
+    category: 'teaching',
+    categoryLabel: '党建思政',
+    level: '省部级',
+    date: '2025-06',
+    leader: '党委',
+  },
 ]
 
 const base: BenchmarkAchievementsDTO = {
@@ -219,6 +228,15 @@ export const mockBenchmarkAchievementsDetail: BenchmarkAchievementsDetailDTO = {
       level: '省部级',
       date: '2024-11',
       leader: '林教授',
+    },
+    {
+      id: '15',
+      title: '计算机学院党委理论学习中心组获评优秀',
+      category: 'teaching',
+      categoryLabel: '党建思政',
+      level: '校级',
+      date: '2025-03',
+      leader: '党委',
     },
   ],
   categoryPanels: [

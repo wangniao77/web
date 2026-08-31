@@ -8,6 +8,7 @@ import type {
   BenchmarkAchievementsVM,
   BenchmarkFeaturedVM,
 } from '@/types/college/view/benchmark-achievements'
+import { deriveBenchmarkPillars } from '@/api/college/adapters/benchmark-pillars'
 
 export function adaptBenchmarkAchievements(dto: BenchmarkAchievementsDTO): BenchmarkAchievementsVM {
   return {
@@ -27,6 +28,7 @@ export function adaptBenchmarkAchievements(dto: BenchmarkAchievementsDTO): Bench
     summary: { ...dto.summary },
     highlights: dto.highlights.map((h) => ({ ...h })),
     byCategory: dto.byCategory.map((c) => ({ ...c })),
+    pillars: deriveBenchmarkPillars(dto),
   }
 }
 

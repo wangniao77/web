@@ -122,6 +122,8 @@ export type {
   BenchmarkFacultyLeaderDTO,
   BenchmarkKeyProjectsDTO,
   BenchmarkMilestoneDTO,
+  BenchmarkPillarDTO,
+  BenchmarkPillarKey,
   BenchmarkSummaryDTO,
   BenchmarkTopPapersDTO,
   MilestoneBadge,
