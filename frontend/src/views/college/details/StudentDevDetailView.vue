@@ -620,11 +620,11 @@ function goEmploymentPage() {
   <CollegeDetailLayout module="人才培养纵览">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">📋 画像总览</button>
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'admission' }" @click="switchTab('admission')">📝 招生质量</button>
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'employment' }" @click="switchTab('employment')">💼 就业分析</button>
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'high-potential' }" @click="switchTab('high-potential')">⭐ 高潜分析</button>
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'warning-center' }" @click="switchTab('warning-center')">🚨 预警中心</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">画像总览</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'admission' }" @click="switchTab('admission')">招生质量</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'employment' }" @click="switchTab('employment')">就业分析</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'high-potential' }" @click="switchTab('high-potential')">高潜分析</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'warning-center' }" @click="switchTab('warning-center')">预警中心</button>
       </div>
     </template>
 
@@ -1002,40 +1002,35 @@ function goEmploymentPage() {
 <style scoped lang="scss">
 .tab-bar {
   display: flex;
-  gap: 0;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 242, 255, 0.18);
-  overflow: hidden;
+  gap: 18px;
   width: fit-content;
   max-width: 100%;
-  flex-wrap: wrap;
 
   &--header {
-    margin-bottom: 0;
     flex-wrap: nowrap;
-    background: rgba(0, 40, 90, 0.35);
+    background: transparent;
   }
 }
 
 .tab-btn {
-  padding: 10px 22px;
+  padding: 6px 0 8px;
   border: none;
-  border-right: 1px solid rgba(0, 242, 255, 0.12);
-  background: rgba(0, 60, 120, 0.18);
-  color: #8ec8e8;
-  font-size: 20px;
-  font-weight: 700;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #8fb4cc;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   cursor: pointer;
-  transition: all 0.22s;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
 
-  &:last-child { border-right: none; }
-  &:hover { background: rgba(0, 90, 160, 0.28); color: #b8ecff; }
+  &:hover { color: #e8f4fc; }
+  &:focus-visible { outline: 2px solid #7ad8ee; outline-offset: 3px; }
 
   &--active {
-    background: linear-gradient(180deg, rgba(0, 140, 220, 0.35), rgba(0, 70, 140, 0.3));
-    color: #eaf7ff;
-    box-shadow: inset 0 0 18px rgba(0, 200, 255, 0.15);
+    color: #e8f4fc;
+    border-bottom-color: #7ad8ee;
   }
 }
 

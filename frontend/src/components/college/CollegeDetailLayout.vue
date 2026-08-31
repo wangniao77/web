@@ -6,7 +6,7 @@ import { useSlots } from 'vue'
 defineProps<{
   title?: string
   subtitle?: string
-  /** 模块名称，显示在「返回驾驶舱」之后的面包屑，如「精品成果集萃」 */
+  /** 模块名称，显示在「返回驾驶舱」右侧，如「精品成果集萃」 */
   module?: string
 }>()
 
@@ -22,11 +22,10 @@ function goBack() {
   <div class="college-detail">
     <div class="college-detail__mesh" aria-hidden="true" />
     <header class="college-detail__header">
-      <button type="button" class="college-detail__back" @click="goBack">← 返回驾驶舱</button>
-      <div v-if="module" class="college-detail__crumb">
-        <span class="college-detail__crumb-root">数智洞察视界</span>
-        <span class="college-detail__crumb-sep">·</span>
-        <span class="college-detail__crumb-module">{{ module }}</span>
+      <div class="college-detail__lead">
+        <button type="button" class="college-detail__back" @click="goBack">← 返回驾驶舱</button>
+        <span v-if="module" class="college-detail__lead-rule" aria-hidden="true" />
+        <h2 v-if="module" class="college-detail__module">{{ module }}</h2>
       </div>
       <div v-if="slots.nav" class="college-detail__header-nav">
         <slot name="nav" />
@@ -113,64 +112,54 @@ function goBack() {
   pointer-events: none;
 }
 
-.college-detail__back {
+.college-detail__lead {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  max-width: 36%;
+}
+
+.college-detail__back {
   flex-shrink: 0;
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 6px;
-  border: 1px solid rgba(0, 242, 255, 0.32);
-  background:
-    linear-gradient(180deg, rgba(0, 184, 255, 0.14), rgba(4, 18, 48, 0.58)),
-    rgba(0, 184, 255, 0.08);
+  border: 1px solid rgba(0, 242, 255, 0.28);
+  background: rgba(0, 184, 255, 0.08);
   color: #8ef6ff;
   cursor: pointer;
   font-size: $college-fs-label;
-  font-weight: 800;
-  box-shadow: inset 0 0 14px rgba(0, 242, 255, 0.08);
-  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s, background 0.2s;
+  font-weight: 700;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
 
   &:hover {
-    border-color: rgba(0, 242, 255, 0.72);
-    background:
-      linear-gradient(180deg, rgba(0, 242, 255, 0.22), rgba(4, 18, 48, 0.66)),
-      rgba(0, 184, 255, 0.12);
+    border-color: rgba(0, 242, 255, 0.7);
+    background: rgba(0, 184, 255, 0.16);
     color: #ffffff;
-    box-shadow: 0 0 18px rgba(0, 242, 255, 0.22), inset 0 0 16px rgba(0, 242, 255, 0.12);
   }
 }
 
-.college-detail__crumb {
-  position: relative;
-  z-index: 1;
-  flex: 0 1 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+.college-detail__lead-rule {
+  flex-shrink: 0;
+  width: 1px;
+  height: 22px;
+  background: linear-gradient(180deg, transparent, rgba(0, 242, 255, 0.55), transparent);
+}
+
+.college-detail__module {
+  margin: 0;
   min-width: 0;
-  max-width: 42%;
-  white-space: nowrap;
   overflow: hidden;
-  font-size: 20px;
+  color: #f6fbff;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: 0.02em;
-
-  &-root {
-    color: rgba(184, 236, 255, 0.82);
-  }
-
-  &-sep {
-    color: rgba(0, 242, 255, 0.55);
-    font-weight: 700;
-  }
-
-  &-module {
-    color: #f6fbff;
-    font-size: 24px;
-    text-shadow: 0 0 14px rgba(0, 242, 255, 0.32);
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 12px rgba(0, 242, 255, 0.28);
 }
 
 .college-detail__header-nav {
@@ -190,19 +179,53 @@ function goBack() {
     display: none;
   }
 
+  // 二级菜单统一为「精品成果集萃」下划线导航，覆盖各页遗留的分段盒样式
   :deep(.tab-bar) {
+    display: flex;
+    gap: 8px;
     margin: 0;
     width: max-content;
     max-width: 100%;
-    border-width: 1.5px;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
   }
 
   :deep(.tab-btn) {
-    padding: 12px 26px;
+    padding: 12px 18px 10px;
+    border: none;
+    border-right: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    box-shadow: none;
+    color: #8fb4cc;
     font-size: 20px;
     font-weight: 800;
     letter-spacing: 0.02em;
     white-space: nowrap;
+    transition: color 0.2s ease, border-color 0.2s ease;
+
+    &:last-child {
+      border-right: none;
+    }
+
+    &:hover {
+      background: transparent;
+      color: #e8f4fc;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #7ad8ee;
+      outline-offset: 3px;
+    }
+
+    &.tab-btn--active {
+      background: transparent;
+      box-shadow: none;
+      color: #f6fbff;
+      border-bottom-color: #7ad8ee;
+    }
   }
 }
 

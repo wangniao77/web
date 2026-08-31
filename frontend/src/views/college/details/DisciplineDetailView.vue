@@ -340,7 +340,7 @@ const disciplineSnapshot = computed(() => {
   })
 })
 
-const agentEnabled = computed(() => currentTab.value === 'overview' || currentTab.value === 'insights')
+const agentEnabled = computed(() => currentTab.value === 'insights')
 
 const agentContext = computed<AgentAnalyzeContextDTO | null>(() => {
   if (!disciplineSnapshot.value) return null
@@ -846,10 +846,10 @@ watch(activeMajor, (name) => {
   <CollegeDetailLayout module="专业发展全景">
     <template #nav>
       <div ref="tabBarRef" class="tab-bar tab-bar--header">
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">📋 专业总览</button>
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'profile' }" @click="switchTab('profile')">🎓 单专业全景</button>
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'benchmark' }" @click="switchTab('benchmark')">📊 趋势对标</button>
-        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'insights' }" @click="switchTab('insights')">🔍 深度挖掘</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'overview' }" @click="switchTab('overview')">专业总览</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'profile' }" @click="switchTab('profile')">单专业全景</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'benchmark' }" @click="switchTab('benchmark')">趋势对标</button>
+        <button type="button" class="tab-btn" :class="{ 'tab-btn--active': currentTab === 'insights' }" @click="switchTab('insights')">深度挖掘</button>
       </div>
     </template>
 
@@ -858,15 +858,6 @@ watch(activeMajor, (name) => {
     <template v-else-if="data">
       <!-- ===================== 专业总览 ===================== -->
       <template v-if="currentTab === 'overview'">
-        <DisciplineAiBriefPanel
-          :data="displayAnalysis"
-          :snapshot="disciplineSnapshot"
-          :loading="agentLoading"
-          :error="agentError"
-          @refresh="refreshAgentAnalysis"
-          @retry="() => runAgentAnalysis(false)"
-        />
-
         <div class="resource-summary resource-summary--4">
           <div
             v-for="item in data.majorRankings"
@@ -926,7 +917,7 @@ watch(activeMajor, (name) => {
             评价指标细分 · {{ data.dimensions.length ? '软科五维' : '排名与办学指标' }}
             <em class="resource-section__hint">{{ data.dimensions.length ? '学院均值 vs 对标，并落到各专业' : '五维缺源时先用排名与落实率拆到专业' }}</em>
           </h2>
-          <p class="resource-section__desc">总览页的 AI 分析直接读取下方排名与五维细分，弱维会落到具体专业。</p>
+          <p class="resource-section__desc">按专业拆开排名与办学指标，深度挖掘页的 AI 研判会读取这些细分项。</p>
           <div v-if="data.dimensions.length" class="soft-dim-grid">
             <article v-for="dim in data.dimensions" :key="dim.key" class="soft-dim-card">
               <header>
@@ -1415,41 +1406,35 @@ watch(activeMajor, (name) => {
 
 .tab-bar {
   display: flex;
-  gap: 0;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 242, 255, 0.18);
-  overflow: hidden;
+  gap: 18px;
   width: fit-content;
   max-width: 100%;
-  flex-wrap: wrap;
 
   &--header {
-    margin-bottom: 0;
     flex-wrap: nowrap;
-    background: rgba(0, 40, 90, 0.35);
+    background: transparent;
   }
 }
 
 .tab-btn {
-  padding: 10px 22px;
+  padding: 6px 0 8px;
   border: none;
-  border-right: 1px solid rgba(0, 242, 255, 0.12);
-  background: rgba(0, 60, 120, 0.18);
-  color: #8ec8e8;
-  font-size: 22px;
-  font-weight: 700;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #8fb4cc;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   cursor: pointer;
-  transition: all 0.22s;
+  transition: color 0.2s ease, border-color 0.2s ease;
   white-space: nowrap;
 
-  &:last-child { border-right: none; }
-  &:hover { background: rgba(0, 90, 160, 0.28); color: #b8ecff; }
+  &:hover { color: #e8f4fc; }
+  &:focus-visible { outline: 2px solid #7ad8ee; outline-offset: 3px; }
 
   &--active {
-    background: linear-gradient(180deg, rgba(0, 140, 220, 0.35), rgba(0, 70, 140, 0.3));
-    color: #eaf7ff;
-    box-shadow: inset 0 0 18px rgba(0, 200, 255, 0.15);
+    color: #e8f4fc;
+    border-bottom-color: #7ad8ee;
   }
 }
 
