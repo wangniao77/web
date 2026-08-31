@@ -775,6 +775,22 @@ $cp-metric-xl: 58px;
       background: rgba(2, 14, 40, 0.45);
       border: 1px solid rgba(0, 229, 255, 0.2);
     }
+
+    &--named {
+      align-items: center;
+      gap: 10px;
+      padding: 3px 10px 3px 8px;
+      background: rgba(4, 16, 36, 0.35);
+      border-color: rgba(160, 214, 236, 0.14);
+    }
+  }
+
+  &__name {
+    color: #c5deee;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    line-height: 1;
   }
 
   &__dot {
@@ -791,6 +807,19 @@ $cp-metric-xl: 58px;
       background: #39e6ff;
       box-shadow: 0 0 8px rgba(57, 230, 255, 0.65);
       transform: scale(1.15);
+    }
+  }
+
+  &__dots--named &__dot {
+    width: 6px;
+    height: 6px;
+
+    &--active {
+      width: 16px;
+      border-radius: 999px;
+      background: #9ed4e8;
+      box-shadow: none;
+      transform: none;
     }
   }
 

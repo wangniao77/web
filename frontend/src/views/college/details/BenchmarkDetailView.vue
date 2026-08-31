@@ -123,38 +123,35 @@ watch(() => route.query, () => applyRouteQuery())
 
 .tab-bar {
   display: flex;
-  gap: 0;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 242, 255, 0.18);
-  overflow: hidden;
+  gap: 18px;
   width: fit-content;
   max-width: 100%;
 
   &--header {
     flex-wrap: nowrap;
-    background: rgba(0, 40, 90, 0.35);
+    background: transparent;
   }
 }
 
 .tab-btn {
-  padding: 10px 22px;
+  padding: 6px 0 8px;
   border: none;
-  border-right: 1px solid rgba(0, 242, 255, 0.12);
-  background: rgba(0, 60, 120, 0.18);
-  color: #8ec8e8;
-  font-size: 22px;
-  font-weight: 700;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #8fb4cc;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   cursor: pointer;
-  transition: all 0.22s;
+  transition: color 0.2s ease, border-color 0.2s ease;
   white-space: nowrap;
 
-  &:last-child { border-right: none; }
-  &:hover { background: rgba(0, 90, 160, 0.28); color: #b8ecff; }
+  &:hover { color: #e8f4fc; }
+  &:focus-visible { outline: 2px solid #7ad8ee; outline-offset: 3px; }
 
   &--active {
-    background: linear-gradient(180deg, rgba(0, 140, 220, 0.35), rgba(0, 70, 140, 0.3));
-    color: #eaf7ff;
-    box-shadow: inset 0 0 18px rgba(0, 200, 255, 0.15);
+    color: #e8f4fc;
+    border-bottom-color: #7ad8ee;
   }
 }
 </style>

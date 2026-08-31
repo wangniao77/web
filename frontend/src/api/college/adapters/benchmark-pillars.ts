@@ -8,60 +8,295 @@ import type {
   FeaturedSectionKey,
 } from '@/types/college/api/benchmark-achievements'
 import type {
+  BenchmarkAchievementItemVM,
+  BenchmarkDataCardVM,
+  BenchmarkGaugeItemVM,
+  BenchmarkGaugeStatus,
+  BenchmarkHeroKpiVM,
+  BenchmarkMilestoneVM,
   BenchmarkPillarEvidenceVM,
-  BenchmarkSwotRowVM,
+  BenchmarkShowcaseHighlightVM,
+  BenchmarkShowcaseVM,
+  BenchmarkSwotBoardVM,
+  BenchmarkTriageVM,
 } from '@/types/college/view/benchmark-achievements'
 
 export type BenchmarkSwotSide = 'strengths' | 'weaknesses'
 
-/** 优势页用「证明强」的指标，劣势页用「暴露弱」的指标 */
-const SWOT_METRIC_LABELS: Record<BenchmarkSwotSide, Record<BenchmarkPillarKey, string[]>> = {
+/** 与派生研判同一套门槛：优势页看「证明强」，劣势页看「暴露弱」 */
+const SWOT_GAUGES: Record<
+  BenchmarkSwotSide,
+  Record<BenchmarkPillarKey, { metricLabel: string; target: number; unit: string }>
+> = {
   strengths: {
-    research: ['一区论文', '科研成果'],
-    teaching: ['教学成果', '年度荣誉'],
-    talent: ['名师头雁', '竞赛国奖'],
-    discipline: ['平台成果'],
-    party: ['党建相关成果'],
+    research: { metricLabel: '一区论文', target: 15, unit: '篇' },
+    teaching: { metricLabel: '教学成果', target: 8, unit: '项' },
+    talent: { metricLabel: '名师头雁', target: 3, unit: '人' },
+    discipline: { metricLabel: '平台成果', target: 5, unit: '项' },
+    party: { metricLabel: '党建相关成果', target: 3, unit: '项' },
   },
   weaknesses: {
-    research: ['国家级课题', '一区论文'],
-    teaching: ['教学成果'],
-    talent: ['金奖 / 特等', '竞赛国奖'],
-    discipline: ['平台成果'],
-    party: ['党建相关成果'],
+    research: { metricLabel: '国家级课题', target: 8, unit: '项' },
+    teaching: { metricLabel: '教学成果', target: 8, unit: '项' },
+    talent: { metricLabel: '竞赛国奖', target: 5, unit: '项' },
+    discipline: { metricLabel: '平台成果', target: 5, unit: '项' },
+    party: { metricLabel: '党建相关成果', target: 3, unit: '项' },
   },
 }
 
-function pickSwotMetric(pillar: BenchmarkPillarDTO, side: BenchmarkSwotSide) {
-  for (const label of SWOT_METRIC_LABELS[side][pillar.key]) {
-    const hit = pillar.metrics.find((item) => item.label === label)
-    if (hit) return hit
-  }
-  return pillar.metrics[0]
+const STATUS_LABEL: Record<BenchmarkGaugeStatus, string> = {
+  met: '达标',
+  near: '接近',
+  gap: '缺口',
+  empty: '不足',
 }
 
-/** 一级两页轮播：五大板块各一行 */
-export function buildSwotRows(
+function asMetricNumber(value: string | number | undefined): number {
+  const n = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
+function gaugeStatus(value: number, target: number, empty: boolean): BenchmarkGaugeStatus {
+  if (empty) return 'empty'
+  if (target <= 0) return value > 0 ? 'met' : 'empty'
+  if (value >= target) return 'met'
+  if (value / target >= 0.7) return 'near'
+  return 'gap'
+}
+
+function buildHeadline(side: BenchmarkSwotSide, items: BenchmarkGaugeItemVM[]): string {
+  const met = items.filter((item) => item.status === 'met')
+  const weak = items.filter((item) => item.status === 'gap' || item.status === 'empty')
+  if (items.every((item) => item.status === 'empty')) {
+    return '对标项数据不足，暂无法研判'
+  }
+  if (side === 'strengths') {
+    if (met.length && weak.length) {
+      return `${met.map((item) => item.metricLabel).join('、')}已达标；${weak.map((item) => item.metricLabel).join('、')}仍是缺口`
+    }
+    if (met.length) return `${met.map((item) => item.metricLabel).join('、')}已达标`
+    return `${weak.map((item) => item.metricLabel).join('、')}尚未达标`
+  }
+  if (!weak.length) return '核心对标项均已达标，短板转为能级跃迁'
+  const top = [...weak].sort((a, b) => b.gap - a.gap)[0]
+  const bits = weak.map((item) =>
+    item.status === 'empty'
+      ? `${item.metricLabel}数据不足`
+      : `${item.metricLabel}还差${item.gap}${item.unit}`,
+  )
+  return `${bits.join('，')}；改进空间集中在${top.label}`
+}
+
+/** 一级优势/劣势：五大板块对标条 + 可供 Agent 复用的事实快照 */
+export function buildSwotBoard(
   pillars: BenchmarkPillarDTO[],
   side: BenchmarkSwotSide,
-): BenchmarkSwotRowVM[] {
+): BenchmarkSwotBoardVM {
   const map = new Map(pillars.map((item) => [item.key, item]))
-  return BENCHMARK_PILLAR_META.flatMap((meta) => {
+  const items = BENCHMARK_PILLAR_META.flatMap((meta): BenchmarkGaugeItemVM[] => {
     const pillar = map.get(meta.key)
+    const spec = SWOT_GAUGES[side][meta.key]
     if (!pillar) return []
-    const metric = pickSwotMetric(pillar, side)
-    const lines = side === 'strengths' ? pillar.strengths : pillar.weaknesses
+    const metric = pillar.metrics.find((item) => item.label === spec.metricLabel)
+    const value = asMetricNumber(metric?.value)
+    const empty = meta.key === 'party' && value === 0
+    const status = gaugeStatus(value, spec.target, empty)
+    const gap = Math.max(0, spec.target - value)
+    const ratio = spec.target > 0 ? value / spec.target : 0
+    const fact = empty
+      ? `${meta.label}·${spec.metricLabel} ${value}/${spec.target}${spec.unit} · 数据不足`
+      : `${meta.label}·${spec.metricLabel} ${value}/${spec.target}${spec.unit} · ${STATUS_LABEL[status]}${status === 'gap' || status === 'near' ? ` · 还差${gap}${spec.unit}` : ''}`
     return [
       {
         key: meta.key,
         label: meta.label,
-        metricLabel: metric?.label ?? '—',
-        metricValue: metric?.value ?? '—',
-        metricUnit: metric?.unit,
-        text:
-          lines[0] ??
-          (side === 'strengths' ? '暂无足够数据研判优势' : '暂无突出短板'),
-        empty: lines.length === 0,
+        shortLabel: PILLAR_SHORT[meta.key],
+        metricLabel: spec.metricLabel,
+        value,
+        target: spec.target,
+        unit: spec.unit,
+        ratio,
+        status,
+        gap,
+        statusLabel: empty ? '不足' : STATUS_LABEL[status],
+        fact,
+      },
+    ]
+  })
+  const summary = {
+    met: items.filter((item) => item.status === 'met').length,
+    near: items.filter((item) => item.status === 'near').length,
+    gap: items.filter((item) => item.status === 'gap').length,
+    empty: items.filter((item) => item.status === 'empty').length,
+    totalGap: items.reduce((sum, item) => sum + item.gap, 0),
+  }
+  return {
+    side,
+    items,
+    summary,
+    headline: buildHeadline(side, items),
+  }
+}
+
+function rankShowcase(a: BenchmarkGaugeItemVM, b: BenchmarkGaugeItemVM) {
+  const rank = (item: BenchmarkGaugeItemVM) =>
+    (item.status === 'met' ? 2 : item.status === 'near' ? 1 : 0) * 1000 + item.ratio * 100 + item.value
+  return rank(b) - rank(a)
+}
+
+function levelWeight(level?: string) {
+  if (!level) return 0
+  if (/国家|SCI|一区|顶刊|金奖|特等/.test(level)) return 3
+  if (/省|部/.test(level)) return 2
+  return 1
+}
+
+/** 优势页：只展最好的对标项 + 代表性成果标题 */
+export function buildStrengthShowcase(input: {
+  pillars: BenchmarkPillarDTO[]
+  gallery?: BenchmarkAchievementItemVM[]
+  highlights?: BenchmarkAchievementItemVM[]
+  milestones?: BenchmarkMilestoneVM[]
+}): BenchmarkShowcaseVM {
+  const board = buildSwotBoard(input.pillars, 'strengths')
+  const best = board.items
+    .filter((item) => item.status === 'met' || item.status === 'near')
+    .sort(rankShowcase)
+  const star = best[0] ?? null
+  const medals = best.filter((item) => item.key !== star?.key).slice(0, 3)
+  const preferred = new Set(best.map((item) => item.key))
+
+  const pool: BenchmarkShowcaseHighlightVM[] = []
+  const seen = new Set<string>()
+  const push = (id: string, title: string, pillar: BenchmarkPillarKey | null, level?: string) => {
+    const key = title.trim()
+    if (!key || seen.has(key) || !pillar) return
+    seen.add(key)
+    pool.push({
+      id,
+      title: key,
+      pillar,
+      pillarLabel: BENCHMARK_PILLAR_META.find((item) => item.key === pillar)?.label ?? pillar,
+      level,
+    })
+  }
+
+  for (const item of [...(input.highlights ?? []), ...(input.gallery ?? [])]) {
+    push(item.id, item.title, resolveItemPillar(item), item.level)
+  }
+  for (const item of input.milestones ?? []) {
+    push(item.id, item.title, null)
+  }
+
+  const ranked = [...pool].sort((a, b) => {
+    const pref = Number(preferred.has(b.pillar)) - Number(preferred.has(a.pillar))
+    if (pref) return pref
+    return levelWeight(b.level) - levelWeight(a.level)
+  })
+
+  return {
+    headline: star
+      ? `高光在${star.label}：${star.metricLabel} ${star.value}${star.unit}`
+      : '暂无足够数据展示优势成果',
+    star,
+    medals,
+    highlights: ranked.slice(0, 3),
+  }
+}
+
+/** 劣势页：只保留最需要补的缺口，按还差数量排序 */
+export function buildWeaknessTriage(pillars: BenchmarkPillarDTO[]): BenchmarkTriageVM {
+  const board = buildSwotBoard(pillars, 'weaknesses')
+  const queue = board.items
+    .filter((item) => item.status === 'gap' || item.status === 'near' || item.status === 'empty')
+    .sort((a, b) => b.gap - a.gap || a.ratio - b.ratio)
+  const worst = queue[0] ?? null
+  return {
+    headline: worst
+      ? worst.status === 'empty'
+        ? `${worst.label}缺少可展示条目，需先补口径`
+        : `最紧缺口：${worst.metricLabel}还差${worst.gap}${worst.unit}`
+      : '核心对标项均已达标',
+    worst,
+    rest: queue.slice(1),
+  }
+}
+
+function metricNumber(pillars: BenchmarkPillarDTO[], label: string): number {
+  for (const pillar of pillars) {
+    const hit = pillar.metrics.find((item) => item.label === label)
+    if (!hit) continue
+    const value = typeof hit.value === 'number' ? hit.value : Number(hit.value)
+    if (Number.isFinite(value)) return value
+  }
+  return 0
+}
+
+function pickCardMetrics(pillar: BenchmarkPillarDTO, labels: string[]) {
+  const picked = labels.flatMap((label) => {
+    const hit = pillar.metrics.find((item) => item.label === label)
+    return hit ? [{ ...hit }] : []
+  })
+  return picked.length ? picked : pillar.metrics.slice(0, 2)
+}
+
+const PILLAR_SHORT: Record<BenchmarkPillarKey, string> = {
+  research: '科研',
+  teaching: '教学',
+  talent: '人才',
+  discipline: '学科',
+  party: '党建',
+}
+
+const DATA_CARD_LABELS: Record<BenchmarkPillarKey, string[]> = {
+  research: ['一区论文', '国家级课题'],
+  teaching: ['教学成果', '年度荣誉'],
+  talent: ['名师头雁', '竞赛国奖'],
+  discipline: ['平台成果'],
+  party: ['党建相关成果'],
+}
+
+/** 一级数据页：1 个刊头主数 + 2 个侧记 */
+export function buildHeroKpis(pillars: BenchmarkPillarDTO[]): BenchmarkHeroKpiVM[] {
+  return [
+    {
+      key: 'signature',
+      label: '标志性成果',
+      value:
+        metricNumber(pillars, '科研成果') +
+        metricNumber(pillars, '教学成果') +
+        metricNumber(pillars, '竞赛国奖') +
+        metricNumber(pillars, '平台成果') +
+        metricNumber(pillars, '党建相关成果'),
+      unit: '项',
+    },
+    {
+      key: 'tier',
+      label: '国省能级',
+      value: metricNumber(pillars, '国家级课题') + metricNumber(pillars, '竞赛国奖'),
+      unit: '项',
+    },
+    {
+      key: 'highlight',
+      label: '高光产出',
+      value: metricNumber(pillars, '一区论文') + metricNumber(pillars, '金奖 / 特等'),
+      unit: '项',
+    },
+  ]
+}
+
+/** 一级数据页五大板块，每块最多两个数 */
+export function buildDataCards(pillars: BenchmarkPillarDTO[]): BenchmarkDataCardVM[] {
+  const map = new Map(pillars.map((item) => [item.key, item]))
+  return BENCHMARK_PILLAR_META.flatMap((meta) => {
+    const pillar = map.get(meta.key)
+    if (!pillar) return []
+    return [
+      {
+        key: meta.key,
+        label: meta.label,
+        shortLabel: PILLAR_SHORT[meta.key],
+        metrics: pickCardMetrics(pillar, DATA_CARD_LABELS[meta.key]),
       },
     ]
   })

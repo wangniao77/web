@@ -4,6 +4,10 @@ import {
   type AcademicRiskSnapshot,
 } from '@/utils/agent/academic-risk-insights'
 import { mockEmploymentAnalysisReport } from '@/utils/agent/employment-insights'
+import {
+  buildBenchmarkSwotRuleAnalysis,
+  isBenchmarkSwotSnapshot,
+} from '@/utils/agent/benchmark-swot-insights'
 import { buildKeyTasksRuleAnalysis } from '@/utils/agent/key-tasks-insights'
 import type { KeyTasksDetailVM } from '@/types/college/view/details'
 
@@ -83,6 +87,20 @@ export function mockAgentAnalyze(req: AgentAnalyzeRequestDTO): AgentAnalyzeRespo
     }
   }
 
+  if (page === 'college-benchmark-swot' || isBenchmarkSwotSnapshot(snapshot)) {
+    if (isBenchmarkSwotSnapshot(snapshot)) {
+      const vm = buildBenchmarkSwotRuleAnalysis(snapshot, sessionId)
+      return {
+        insights: vm.insights,
+        actions: vm.actions,
+        sessionId: vm.sessionId,
+        traceId: `mock-${vm.traceId}`,
+        source: 'mock',
+        headline: vm.headline,
+      }
+    }
+  }
+
   if (page === 'academic-risk' || page === 'warning' || isAcademicRiskSnapshot(snapshot)) {
     if (isAcademicRiskSnapshot(snapshot)) {
       const vm = buildAcademicRiskRuleAnalysis(snapshot, sessionId)
@@ -143,6 +161,9 @@ export function mockAgentChatReply(req: AgentChatRequestDTO): string {
   }
   if (page === 'enrollment-employment' || page === 'employment') {
     return `（Mock）已结合就业分析快照理解：「${req.message}」。可从落实率、高质量六类、专业差距与待就业四方面继续追问。`
+  }
+  if (page === 'college-benchmark-swot') {
+    return `（Mock）已结合精品成果对标快照理解：「${req.message}」。可从达标项、缺口项与还差数量继续追问，不要改写事实数字。`
   }
   if (page === 'graduate-cultivation' || page === 'graduate') {
     return `（Mock）已结合研究生培养快照理解：「${req.message}」。可从规模占比、专业集中、导师覆盖与科研参与继续追问。`

@@ -3,9 +3,15 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import PanelSlideCarousel from '@/components/college/PanelSlideCarousel.vue'
 import BenchmarkMetricsSlide from '@/components/college/modules/benchmark/BenchmarkMetricsSlide.vue'
-import BenchmarkSwotSlide from '@/components/college/modules/benchmark/BenchmarkSwotSlide.vue'
+import BenchmarkStrengthSlide from '@/components/college/modules/benchmark/BenchmarkStrengthSlide.vue'
+import BenchmarkWeaknessSlide from '@/components/college/modules/benchmark/BenchmarkWeaknessSlide.vue'
 import { ROUTES } from '@/constants/routes'
-import { buildSwotRows } from '@/api/college/adapters/benchmark-pillars'
+import {
+  buildDataCards,
+  buildHeroKpis,
+  buildStrengthShowcase,
+  buildWeaknessTriage,
+} from '@/api/college/adapters/benchmark-pillars'
 import type { BenchmarkPillarKey } from '@/types/college/api/benchmark-achievements'
 import type { BenchmarkAchievementsVM } from '@/types/college/view/benchmark-achievements'
 
@@ -21,8 +27,17 @@ const slides = [
   { id: 'weaknesses', label: '劣势' },
 ]
 
-const strengthRows = computed(() => buildSwotRows(props.data.pillars, 'strengths'))
-const weaknessRows = computed(() => buildSwotRows(props.data.pillars, 'weaknesses'))
+const heroes = computed(() => buildHeroKpis(props.data.pillars))
+const cards = computed(() => buildDataCards(props.data.pillars))
+const showcase = computed(() =>
+  buildStrengthShowcase({
+    pillars: props.data.pillars,
+    gallery: props.data.gallery,
+    highlights: props.data.highlights,
+    milestones: props.data.milestones,
+  }),
+)
+const triage = computed(() => buildWeaknessTriage(props.data.pillars))
 
 function openDetail(pillar: BenchmarkPillarKey) {
   router.push({
@@ -33,15 +48,15 @@ function openDetail(pillar: BenchmarkPillarKey) {
 </script>
 
 <template>
-  <PanelSlideCarousel :slides="slides" :interval="12000" hide-chrome>
+  <PanelSlideCarousel :slides="slides" :interval="12000" hide-chrome overlay-caption>
     <template #metrics>
-      <BenchmarkMetricsSlide :pillars="data.pillars" @open="openDetail" />
+      <BenchmarkMetricsSlide :heroes="heroes" :cards="cards" @open="openDetail" />
     </template>
     <template #strengths>
-      <BenchmarkSwotSlide tone="good" :rows="strengthRows" @open="openDetail" />
+      <BenchmarkStrengthSlide :showcase="showcase" @open="openDetail" />
     </template>
     <template #weaknesses>
-      <BenchmarkSwotSlide tone="weak" :rows="weaknessRows" @open="openDetail" />
+      <BenchmarkWeaknessSlide :triage="triage" @open="openDetail" />
     </template>
   </PanelSlideCarousel>
 </template>
