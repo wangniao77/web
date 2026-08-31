@@ -238,6 +238,7 @@ const majorProfiles: DisciplineMajorProfileDTO[] = [
       priorities: ['冲击更高等级平台', '强化产教融合标志性成果', '提升研究生源质量'],
       dataNote: '成果按第一完成单位归属本专业统计；对标数据仅取公开信息。',
     },
+    softDimensions: majors[0].softDimensions,
   },
   {
     name: '软件工程',
@@ -314,6 +315,7 @@ const majorProfiles: DisciplineMajorProfileDTO[] = [
       priorities: ['完成工程认证闭环', '提升纵向项目层级', '打造 1–2 门国家级一流课程'],
       dataNote: '横向项目按到账归属统计；认证进度取自评节点信息。',
     },
+    softDimensions: majors[1].softDimensions,
   },
   {
     name: '人工智能',
@@ -390,6 +392,7 @@ const majorProfiles: DisciplineMajorProfileDTO[] = [
       priorities: ['夯实课程矩阵与实训平台', '扩大标志性科研成果', '沉淀特色培养案例'],
       dataNote: '部分课程团队与平台存在跨专业共享，按主责专业归集。',
     },
+    softDimensions: majors[2].softDimensions,
   },
 ]
 

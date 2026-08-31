@@ -22,6 +22,7 @@ defineEmits<{
     <header class="analysis-insight__head">
       <div>
         <h2 class="analysis-insight__title">{{ title }}</h2>
+        <p v-if="data?.headline" class="analysis-insight__headline">{{ data.headline }}</p>
         <p class="analysis-insight__desc">
           结构结论与可执行建议；支持刷新重算。来源：
           <em>{{ data?.source || '—' }}</em>
@@ -84,6 +85,14 @@ defineEmits<{
   margin: 0;
   font-size: 22px;
   color: #e8f7ff;
+}
+
+.analysis-insight__headline {
+  margin: 8px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #9fe8ff;
+  line-height: 1.5;
 }
 
 .analysis-insight__desc {

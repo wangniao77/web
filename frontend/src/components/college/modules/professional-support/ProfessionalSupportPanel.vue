@@ -500,16 +500,16 @@ const peerOption = computed<EChartsOption>(() => {
             </div>
             <div class="pro-panorama__stats">
               <div class="pro-panorama__stat">
-                <span>在校</span>
-                <strong>{{ fmtNum(active.studentCount) }}</strong>
+                <span>在校生</span>
+                <strong>{{ fmtNum(active.studentCount) }}<small>人</small></strong>
               </div>
               <div class="pro-panorama__stat">
-                <span>落实率</span>
+                <span>去向落实率</span>
                 <strong>{{ fmtNum(active.employmentRate) }}<small>%</small></strong>
               </div>
               <div class="pro-panorama__stat">
-                <span>均分</span>
-                <strong>{{ fmtNum(active.avgScore) }}</strong>
+                <span>录取均分</span>
+                <strong>{{ fmtNum(active.avgScore) }}<small>分</small></strong>
               </div>
             </div>
           </div>
@@ -889,10 +889,10 @@ const peerOption = computed<EChartsOption>(() => {
   justify-content: flex-end;
   gap: 0;
   min-width: 0;
-  max-width: 220px;
-  border-radius: 6px;
-  border: 1px solid rgba(0, 200, 255, 0.12);
-  background: rgba(0, 50, 100, 0.2);
+  max-width: 360px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 200, 255, 0.14);
+  background: rgba(0, 50, 100, 0.22);
   overflow: hidden;
 }
 
@@ -902,9 +902,9 @@ const peerOption = computed<EChartsOption>(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
-  padding: 6px 4px;
+  padding: 8px 10px;
   text-align: center;
 
   & + & {
@@ -913,25 +913,25 @@ const peerOption = computed<EChartsOption>(() => {
 
   span {
     color: #8ec8e8;
-    font-size: 11px;
-    font-weight: 650;
+    font-size: 14px;
+    font-weight: 700;
     letter-spacing: 0.02em;
-    line-height: 1.1;
+    line-height: 1.2;
     white-space: nowrap;
   }
 
   strong {
     color: #eaf7ff;
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 800;
-    line-height: 1.15;
+    line-height: 1.1;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 
     small {
-      margin-left: 1px;
+      margin-left: 2px;
       color: #9ecae8;
-      font-size: 10px;
+      font-size: 13px;
       font-weight: 650;
     }
   }

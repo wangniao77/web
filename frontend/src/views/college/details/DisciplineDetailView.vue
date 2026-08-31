@@ -3,13 +3,22 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CollegeDetailLayout from '@/components/college/CollegeDetailLayout.vue'
 import ChartContainer from '@/components/charts/ChartContainer.vue'
+import DisciplineAiBriefPanel from '@/components/college/modules/discipline/DisciplineAiBriefPanel.vue'
+import AgentFollowUpChat from '@/components/ai/AgentFollowUpChat.vue'
 import { disciplineService } from '@/api/college/services/discipline'
 import { useScope } from '@/composables/useScope'
+import { useAgentAnalysis } from '@/composables/useAgentAnalysis'
+import type { AgentAnalyzeContextDTO } from '@/types/agent/api'
 import { ROUTES } from '@/constants/routes'
 import { AXIS_LABEL, CHART_FONT } from '@/styles/echarts-theme'
 import type { DisciplineOverviewDetailVM } from '@/types/college/view/discipline-overview'
-import type { DisciplineNum } from '@/types/college/api/discipline-overview'
+import type { DisciplineNum, SoftDimensionDTO } from '@/types/college/api/discipline-overview'
 import { fmtFacultyNum, isMissingMark } from '@/utils/facultyDisplay'
+import {
+  attachDisciplineEvidence,
+  buildDisciplineOverviewRuleAnalysis,
+  buildDisciplineOverviewSnapshot,
+} from '@/utils/agent/discipline-overview-insights'
 import type { EChartsOption } from 'echarts'
 
 const route = useRoute()
@@ -96,6 +105,7 @@ function numOrZero(v: DisciplineNum | undefined): number {
 }
 
 function rankOf(value: number, values: number[]): DimStatus {
+  if (!values.some((v) => v > 0)) return 'mid'
   const sorted = [...values].sort((a, b) => b - a)
   const idx = sorted.indexOf(value)
   if (idx === 0) return 'best'
@@ -297,35 +307,305 @@ const judgmentAnalysis = computed(() => {
   return `${bestTrend}。${lead.major} 与 ${worst.major} 全国排名相差约 ${gap} 位，呈明显梯队分布；建议以 ${lead.major} 为标杆，把增量资源向 ${worst.major} 倾斜，优先落实：${worstPrio.join('、')}。`
 })
 
-const insights = computed(() => {
-  if (!data.value) return []
-  const lead = leadMajor.value
-  const rising = data.value.majorRankings.filter((m) => typeof m.yoyChange === 'number' && m.yoyChange > 0)
-  const flat = data.value.majorRankings.filter((m) => m.yoyChange === 0)
-  const hasRank = typeof lead?.currentRank === 'number'
+function majorCardOf(name?: string) {
+  if (!name || !data.value) return null
+  return data.value.majors.find((m) => m.name === name) ?? null
+}
+
+function softDimsOf(name?: string): SoftDimensionDTO[] {
+  if (!name) return []
+  const fromProfile = data.value?.majorProfiles.find((p) => p.name === name)?.softDimensions
+  if (fromProfile?.length) return fromProfile
+  return majorCardOf(name)?.softDimensions ?? []
+}
+
+const disciplineSnapshot = computed(() => {
+  if (!data.value) return null
+  return buildDisciplineOverviewSnapshot({
+    ranking: data.value.ranking,
+    dimensions: data.value.dimensions,
+    radarConclusion: data.value.radarConclusion,
+    majors: data.value.majors.map((m) => ({
+      name: m.name,
+      grade: m.grade,
+      nationalRank: m.nationalRank,
+      yoyChange: m.yoyChange,
+      provincialRank: m.provincialRank,
+      financePeerRank: m.financePeerRank,
+      studentCount: m.studentCount,
+      employmentRate: m.employmentRate,
+      avgScore: m.avgScore,
+      softDimensions: m.softDimensions,
+    })),
+  })
+})
+
+const agentEnabled = computed(() => currentTab.value === 'overview' || currentTab.value === 'insights')
+
+const agentContext = computed<AgentAnalyzeContextDTO | null>(() => {
+  if (!disciplineSnapshot.value) return null
+  return {
+    scope: 'college',
+    page: 'college-discipline-overview',
+    collegeId: collegeScope.value.collegeId,
+    summarySnapshot: disciplineSnapshot.value as unknown as Record<string, unknown>,
+  }
+})
+
+const {
+  analysis: agentAnalysis,
+  loading: agentLoading,
+  error: agentError,
+  sessionId: agentSessionId,
+  refresh: refreshAgentAnalysis,
+  run: runAgentAnalysis,
+} = useAgentAnalysis(agentContext, { enabled: agentEnabled, auto: true, force: true })
+
+const displayAnalysis = computed(() => {
+  const snap = disciplineSnapshot.value
+  const raw =
+    agentAnalysis.value ?? (snap ? buildDisciplineOverviewRuleAnalysis(snap) : null)
+  if (!raw || !snap) return raw
+  return attachDisciplineEvidence(raw, snap)
+})
+
+type MetricGroup = {
+  key: string
+  icon: string
+  title: string
+  status: DimStatus
+  summary: string
+  items: Array<{ label: string; value: string }>
+}
+
+const profileMetricGroups = computed<MetricGroup[]>(() => {
+  const p = profile.value
+  const all = data.value?.majorProfiles
+  if (!p || !all?.length) return []
+  const dims = softDimsOf(p.name)
+  const others = all.filter((x) => x.name !== p.name).map((x) => x.name)
+
+  const dimLead = [...dims]
+    .filter((d) => typeof d.score === 'number' && typeof d.peerAverage === 'number')
+    .sort((a, b) => Number(b.score) - Number(b.peerAverage) - (Number(a.score) - Number(a.peerAverage)))[0]
+  const dimWeak = [...dims]
+    .filter((d) => typeof d.score === 'number' && typeof d.peerAverage === 'number')
+    .sort((a, b) => Number(a.score) - Number(a.peerAverage) - (Number(b.score) - Number(b.peerAverage)))[0]
+  const dimAvg = dims.filter((d) => typeof d.score === 'number')
+  const dimScore = dimAvg.length
+    ? dimAvg.reduce((s, d) => s + Number(d.score), 0) / dimAvg.length
+    : 0
+  const dimStatus = rankOf(
+    dimScore,
+    all.map((x) => {
+      const xs = softDimsOf(x.name).filter((d) => typeof d.score === 'number')
+      return xs.length ? xs.reduce((s, d) => s + Number(d.score), 0) / xs.length : 0
+    }),
+  )
+
+  const facultyStatus = rankOf(
+    numOrZero(p.faculty.phdRatio),
+    all.map((x) => numOrZero(x.faculty.phdRatio)),
+  )
+  const outcomeStatus = rankOf(
+    numOrZero(p.outcomes.eliteCourses) + numOrZero(p.outcomes.papers),
+    all.map((x) => numOrZero(x.outcomes.eliteCourses) + numOrZero(x.outcomes.papers)),
+  )
+  const enrollStatus = rankOf(
+    numOrZero(p.enrollment.firstChoiceRate) || numOrZero(p.enrollment.avgScore),
+    all.map((x) => numOrZero(x.enrollment.firstChoiceRate) || numOrZero(x.enrollment.avgScore)),
+  )
+  const cultStatus = rankOf(
+    numOrZero(p.cultivation.employmentRate) + numOrZero(p.cultivation.furtherStudyRate),
+    all.map((x) => numOrZero(x.cultivation.employmentRate) + numOrZero(x.cultivation.furtherStudyRate)),
+  )
+
+  const why = (status: DimStatus, good: string, mid: string, bad: string) =>
+    status === 'best' ? good : status === 'worst' ? bad : mid
+
   return [
     {
-      title: hasRank ? '头部专业带动明显' : '专业规模快览',
-      detail: lead
-        ? hasRank
-          ? `${lead.major} 全国第 ${lead.currentRank}、${lead.grade} 级，较上年 ${formatChange(lead.yoyChange)}，是学院专业矩阵的压舱石。`
-          : `${lead.major} 在校生规模居前；排名/等级缺源，待导入软科快照后补全。`
-        : '暂无专业学籍数据。',
-      tone: 'good' as const,
+      key: 'soft',
+      icon: '📡',
+      title: '软科五维',
+      status: dimStatus,
+      summary: dims.length
+        ? `${dimLead ? `相对对标最强是${dimLead.label}（${fmtNum(dimLead.score)} / ${fmtNum(dimLead.peerAverage)}）` : '五维可观测'}${
+            dimWeak ? `；最紧是${dimWeak.label}（${fmtNum(dimWeak.score)} / ${fmtNum(dimWeak.peerAverage)}）` : ''
+          }`
+        : '缺软科五维明细，待导入排名快照。',
+      items: dims.length
+        ? dims.map((d) => ({
+            label: d.label,
+            value: `${fmtNum(d.score)} / 对标 ${fmtNum(d.peerAverage)}`,
+          }))
+        : [{ label: '五维', value: '**' }],
     },
     {
-      title: rising.length ? '上升通道仍在打开' : '出口与生源可观测',
-      detail: rising.length
-        ? `${rising.map((m) => shortMajor(m.major)).join('、')} 排名上行；建议把增量资源继续投向可冲击更高等级的赛道。`
-        : (data.value.strengths[0] || data.value.suggestions[0] || '可基于就业落实率与录取均分跟踪各专业出口质量。'),
-      tone: rising.length ? ('info' as const) : ('warn' as const),
+      key: 'faculty',
+      icon: '👨‍🏫',
+      title: '师资结构',
+      status: facultyStatus,
+      summary: why(
+        facultyStatus,
+        `博士占比 ${fmtNum(p.faculty.phdRatio)}%、专任 ${fmtNum(p.faculty.total)} 人，院内领先。`,
+        `博士占比 ${fmtNum(p.faculty.phdRatio)}%，居于 ${others.join('、') || '其他专业'} 之间。`,
+        `博士占比 ${fmtNum(p.faculty.phdRatio)}%，低于 ${others.join('、')}，高水平师资偏薄。`,
+      ),
+      items: [
+        { label: '专任', value: `${fmtNum(p.faculty.total)} 人` },
+        { label: '正高 / 副高', value: `${fmtNum(p.faculty.professor)} / ${fmtNum(p.faculty.associate)}` },
+        { label: '博士占比', value: `${fmtNum(p.faculty.phdRatio)}%` },
+        { label: '省级人才', value: `${fmtNum(p.faculty.talentCount)} 人` },
+        { label: '教学名师', value: `${fmtNum(p.faculty.teachingMasters)} 人` },
+      ],
     },
     {
-      title: '对标差距可拆解',
-      detail: data.value.radarConclusion || data.value.benchmarkNote || '五维诊断与横向对标可定位短板优先级。',
-      tone: 'info' as const,
+      key: 'outcomes',
+      icon: '🏆',
+      title: '教学与成果',
+      status: outcomeStatus,
+      summary: why(
+        outcomeStatus,
+        `一流课程 ${fmtNum(p.outcomes.eliteCourses)} 门、论文 ${fmtNum(p.outcomes.papers)} 篇，成果厚度居首。`,
+        `一流课程 ${fmtNum(p.outcomes.eliteCourses)} 门、论文 ${fmtNum(p.outcomes.papers)} 篇，处于中游。`,
+        `一流课程 ${fmtNum(p.outcomes.eliteCourses)} 门、论文 ${fmtNum(p.outcomes.papers)} 篇，少于 ${others.join('、')}。`,
+      ),
+      items: [
+        { label: '一流课程', value: `${fmtNum(p.outcomes.eliteCourses)} 门` },
+        { label: '教改 / 获奖', value: `${fmtNum(p.outcomes.reformProjects)} / ${fmtNum(p.outcomes.teachingAwards)}` },
+        { label: '高水平论文', value: `${fmtNum(p.outcomes.papers)} 篇` },
+        { label: '纵向项目', value: `${fmtNum(p.outcomes.verticalProjects)} 项` },
+        { label: '专利 / 软著', value: `${fmtNum(p.outcomes.patents)} / ${fmtNum(p.outcomes.softwares)}` },
+      ],
+    },
+    {
+      key: 'enrollment',
+      icon: '📝',
+      title: '生源入口',
+      status: enrollStatus,
+      summary: why(
+        enrollStatus,
+        `第一志愿率 ${fmtNum(p.enrollment.firstChoiceRate)}%、均分 ${fmtNum(p.enrollment.avgScore)}，吸引力居首。`,
+        `第一志愿率 ${fmtNum(p.enrollment.firstChoiceRate)}%、均分 ${fmtNum(p.enrollment.avgScore)}，表现居中。`,
+        `第一志愿率 ${fmtNum(p.enrollment.firstChoiceRate)}%、均分 ${fmtNum(p.enrollment.avgScore)}，弱于 ${others.join('、')}。`,
+      ),
+      items: [
+        { label: '录取均分', value: `${fmtNum(p.enrollment.avgScore)}` },
+        { label: '最低分', value: `${fmtNum(p.enrollment.minScore)}` },
+        { label: '第一志愿率', value: `${fmtNum(p.enrollment.firstChoiceRate)}%` },
+        { label: '省内生源', value: `${fmtNum(p.enrollment.provinceInRatio)}%` },
+        { label: '在校生', value: `${fmtNum(p.studentCount)} 人` },
+      ],
+    },
+    {
+      key: 'cultivation',
+      icon: '🌱',
+      title: '育人出口',
+      status: cultStatus,
+      summary: why(
+        cultStatus,
+        `落实率 ${fmtNum(p.cultivation.employmentRate)}%、升学 ${fmtNum(p.cultivation.furtherStudyRate)}%，出口质量领先。`,
+        `落实率 ${fmtNum(p.cultivation.employmentRate)}%、升学 ${fmtNum(p.cultivation.furtherStudyRate)}%，居于中游。`,
+        `落实率 ${fmtNum(p.cultivation.employmentRate)}%、升学 ${fmtNum(p.cultivation.furtherStudyRate)}%，弱于 ${others.join('、')}。`,
+      ),
+      items: [
+        { label: '落实率', value: `${fmtNum(p.cultivation.employmentRate)}%` },
+        { label: '升学率', value: `${fmtNum(p.cultivation.furtherStudyRate)}%` },
+        { label: '优质就业', value: `${fmtNum(p.cultivation.qualityJobRatio)}%` },
+        { label: '竞赛获奖', value: `${fmtNum(p.cultivation.competitionAwards)} 项` },
+        { label: '大创立项', value: `${fmtNum(p.cultivation.innovationProjects)} 项` },
+      ],
     },
   ]
+})
+
+const benchMajor = computed(() => majorCardOf(activeMajor.value) ?? data.value?.majors[0] ?? null)
+
+const benchPeers = computed(() =>
+  (benchMajor.value?.peerSchools ?? []).filter((p) => typeof p.rank === 'number'),
+)
+
+const benchFinance = computed(() => {
+  const list = (benchMajor.value?.financePeerSchools ?? []).filter((p) => typeof p.rank === 'number')
+  const sorted = [...list].sort((a, b) => Number(a.rank) - Number(b.rank))
+  const selfIdx = sorted.findIndex((p) => p.isSelf)
+  if (selfIdx < 0) return sorted.slice(0, 8)
+  const start = Math.max(0, selfIdx - 3)
+  const end = Math.min(sorted.length, selfIdx + 4)
+  return sorted.slice(start, end)
+})
+
+const overviewMetricRows = computed(() => {
+  const majors = data.value?.majors ?? []
+  if (!majors.length) return []
+  const rows: Array<{
+    key: string
+    label: string
+    lead: string
+    cells: Array<{ major: string; value: string }>
+  }> = [
+    {
+      key: 'rank',
+      label: '全国排名',
+      lead: '',
+      cells: majors.map((m) => ({ major: m.name, value: `第${fmtNum(m.nationalRank)}` })),
+    },
+    {
+      key: 'yoy',
+      label: '较上年',
+      lead: '',
+      cells: majors.map((m) => ({ major: m.name, value: formatChange(m.yoyChange) })),
+    },
+    {
+      key: 'prov',
+      label: '省内位次',
+      lead: '',
+      cells: majors.map((m) => ({ major: m.name, value: `第${fmtNum(m.provincialRank)}` })),
+    },
+    {
+      key: 'fin',
+      label: '财经类位次',
+      lead: '',
+      cells: majors.map((m) => ({ major: m.name, value: `第${fmtNum(m.financePeerRank)}` })),
+    },
+    {
+      key: 'emp',
+      label: '去向落实率',
+      lead: '',
+      cells: majors.map((m) => ({ major: m.name, value: `${fmtNum(m.employmentRate)}%` })),
+    },
+  ]
+  return rows.map((row) => ({
+    ...row,
+    lead: row.cells[0] ? shortMajor(row.cells[0].major) : '',
+  }))
+})
+
+const dimKeys: Array<{ key: SoftDimensionDTO['key']; label: string }> = [
+  { key: 'school', label: '学校条件' },
+  { key: 'discipline', label: '学科支撑' },
+  { key: 'source', label: '专业生源' },
+  { key: 'employment', label: '专业就业' },
+  { key: 'program', label: '专业条件' },
+]
+
+const dimCompareRows = computed(() => {
+  const majors = data.value?.majors ?? []
+  return dimKeys.map((dim) => ({
+    ...dim,
+    cells: majors.map((m) => {
+      const hit = m.softDimensions?.find((d) => d.key === dim.key)
+      const score = typeof hit?.score === 'number' ? hit.score : null
+      const peer = typeof hit?.peerAverage === 'number' ? hit.peerAverage : null
+      return {
+        major: m.name,
+        score,
+        peer,
+        gap: score != null && peer != null ? Number((score - peer).toFixed(1)) : null,
+      }
+    }),
+  }))
 })
 
 // 学科等级 → 数值映射（用于折线图纵轴；数值越大代表等级越高）
@@ -447,9 +727,51 @@ const nationalTrendOption = computed<EChartsOption>(() => {
   }
 })
 
+const dimCompareRadarOption = computed<EChartsOption>(() => {
+  const majors = data.value?.majors ?? []
+  if (!majors.length) return {}
+  const colors = ['#39e6ff', '#ffd56a', '#63ffe1', '#ff8a65', '#a78bfa']
+  return {
+    legend: { top: 0, textStyle: { color: '#c6e6ff', fontSize: CHART_FONT.legend } },
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(2,14,38,0.94)',
+      borderColor: 'rgba(0,242,255,0.5)',
+      textStyle: { color: '#f4fbff', fontSize: 16 },
+    },
+    radar: {
+      center: ['50%', '58%'],
+      radius: '68%',
+      indicator: dimKeys.map((d) => ({ name: d.label, max: 100 })),
+      axisName: { color: '#c6e6ff', fontSize: 14, fontWeight: 700 },
+      splitLine: { lineStyle: { color: 'rgba(57,230,255,0.12)' } },
+      splitArea: { show: false },
+      axisLine: { lineStyle: { color: 'rgba(57,230,255,0.18)' } },
+    },
+    series: [
+      {
+        type: 'radar',
+        data: majors.map((m, index) => ({
+          name: shortMajor(m.name),
+          value: dimKeys.map((d) => {
+            const hit = m.softDimensions?.find((x) => x.key === d.key)
+            return typeof hit?.score === 'number' ? hit.score : 0
+          }),
+          lineStyle: { width: 2, color: colors[index % colors.length] },
+          itemStyle: { color: colors[index % colors.length] },
+          areaStyle: { color: colors[index % colors.length], opacity: 0.12 },
+        })),
+      },
+    ],
+  }
+})
+
 const provincialBarOption = computed<EChartsOption>(() => {
-  if (!data.value) return {}
-  const items = [...data.value.provincialComparison].reverse()
+  const source = benchPeers.value.length
+    ? benchPeers.value
+    : (data.value?.provincialComparison ?? [])
+  if (!source.length) return {}
+  const items = [...source].reverse()
   return {
     grid: { left: 8, right: 40, top: 8, bottom: 4, outerBoundsMode: 'same', outerBoundsContain: 'axisLabel' },
     xAxis: {
@@ -460,7 +782,7 @@ const provincialBarOption = computed<EChartsOption>(() => {
     },
     yAxis: {
       type: 'category',
-      data: items.map((i) => i.school.replace('大学', '')),
+      data: items.map((i) => String(i.school).replace('大学', '')),
       axisLabel: { ...AXIS_LABEL, color: '#c6e6ff', fontSize: 16 },
       axisLine: { show: false },
       axisTick: { show: false },
@@ -536,6 +858,15 @@ watch(activeMajor, (name) => {
     <template v-else-if="data">
       <!-- ===================== 专业总览 ===================== -->
       <template v-if="currentTab === 'overview'">
+        <DisciplineAiBriefPanel
+          :data="displayAnalysis"
+          :snapshot="disciplineSnapshot"
+          :loading="agentLoading"
+          :error="agentError"
+          @refresh="refreshAgentAnalysis"
+          @retry="() => runAgentAnalysis(false)"
+        />
+
         <div class="resource-summary resource-summary--4">
           <div
             v-for="item in data.majorRankings"
@@ -586,6 +917,51 @@ watch(activeMajor, (name) => {
                 <div><span>财经类</span><b>第{{ item.financePeerRank }}</b></div>
               </div>
             </button>
+          </div>
+        </section>
+
+        <section class="resource-section">
+          <h2 class="resource-section__title">
+            <span class="resource-section__title-icon">📡</span>
+            评价指标细分 · {{ data.dimensions.length ? '软科五维' : '排名与办学指标' }}
+            <em class="resource-section__hint">{{ data.dimensions.length ? '学院均值 vs 对标，并落到各专业' : '五维缺源时先用排名与落实率拆到专业' }}</em>
+          </h2>
+          <p class="resource-section__desc">总览页的 AI 分析直接读取下方排名与五维细分，弱维会落到具体专业。</p>
+          <div v-if="data.dimensions.length" class="soft-dim-grid">
+            <article v-for="dim in data.dimensions" :key="dim.key" class="soft-dim-card">
+              <header>
+                <strong>{{ dim.label }}</strong>
+                <em :class="typeof dim.score === 'number' && typeof dim.peerAverage === 'number' && dim.score >= dim.peerAverage ? 'is-up' : 'is-down'">
+                  {{ typeof dim.score === 'number' && typeof dim.peerAverage === 'number'
+                    ? `${dim.score >= dim.peerAverage ? '+' : ''}${(Number(dim.score) - Number(dim.peerAverage)).toFixed(1)}`
+                    : '**' }}
+                </em>
+              </header>
+              <div class="soft-dim-card__nums">
+                <span>本院 <b>{{ fmtNum(dim.score) }}</b></span>
+                <span>对标 <b>{{ fmtNum(dim.peerAverage) }}</b></span>
+              </div>
+              <ul>
+                <li v-for="m in data.majors" :key="`${dim.key}-${m.name}`">
+                  <span>{{ shortMajor(m.name) }}</span>
+                  <b>{{ fmtNum(m.softDimensions?.find((d) => d.key === dim.key)?.score) }}</b>
+                </li>
+              </ul>
+            </article>
+          </div>
+          <div v-else class="soft-dim-grid">
+            <article v-for="row in overviewMetricRows" :key="row.key" class="soft-dim-card">
+              <header>
+                <strong>{{ row.label }}</strong>
+                <em class="is-up">{{ row.lead }}</em>
+              </header>
+              <ul>
+                <li v-for="cell in row.cells" :key="`${row.key}-${cell.major}`">
+                  <span>{{ shortMajor(cell.major) }}</span>
+                  <b>{{ cell.value }}</b>
+                </li>
+              </ul>
+            </article>
           </div>
         </section>
 
@@ -664,6 +1040,34 @@ watch(activeMajor, (name) => {
               <span>在校 {{ fmtNum(profile.studentCount) }} 人</span>
             </div>
           </div>
+
+          <section class="resource-section">
+            <h2 class="resource-section__title">
+              <span class="resource-section__title-icon">🧩</span>
+              细分指标归纳
+              <em class="resource-section__hint">院内横向对比后给出优势 / 持平 / 劣势</em>
+            </h2>
+            <div class="metric-groups">
+              <article
+                v-for="group in profileMetricGroups"
+                :key="group.key"
+                class="metric-group"
+                :class="`metric-group--${group.status}`"
+              >
+                <header>
+                  <h3>{{ group.icon }} {{ group.title }}</h3>
+                  <span class="analysis-tag" :class="`analysis-tag--${group.status}`">{{ STATUS_LABEL[group.status] }}</span>
+                </header>
+                <p>{{ group.summary }}</p>
+                <ul>
+                  <li v-for="item in group.items" :key="item.label">
+                    <span>{{ item.label }}</span>
+                    <strong>{{ item.value }}</strong>
+                  </li>
+                </ul>
+              </article>
+            </div>
+          </section>
 
           <div class="dim-tabs dim-tabs--sub">
             <button type="button" class="dim-tab" :class="{ 'dim-tab--active': profileSection === 'basic' }" @click="profileSection = 'basic'">基础概况</button>
@@ -762,29 +1166,96 @@ watch(activeMajor, (name) => {
 
       <!-- ===================== 趋势对标 ===================== -->
       <template v-else-if="currentTab === 'benchmark'">
+        <div class="dim-tabs">
+          <button
+            v-for="item in data.majors"
+            :key="`bench-${item.name}`"
+            type="button"
+            class="dim-tab"
+            :class="{ 'dim-tab--active': activeMajor === item.name }"
+            @click="activeMajor = item.name"
+          >
+            {{ item.name }}
+          </button>
+        </div>
+
         <section class="resource-section">
           <h2 class="resource-section__title"><span class="resource-section__title-icon">📉</span>全国排名近年趋势</h2>
-          <p class="resource-section__desc">排名越低越好（图中纵轴已反转）。可观察三专业全国位次演化。</p>
+          <p class="resource-section__desc">排名越低越好（图中纵轴已反转）。折线覆盖全部本科专业，便于看梯队演化。</p>
           <div class="resource-card">
             <div class="resource-card__chart resource-card__chart--lg"><ChartContainer :option="nationalTrendOption" /></div>
           </div>
         </section>
 
         <section class="resource-section">
-          <h2 class="resource-section__title"><span class="resource-section__title-icon">🗺️</span>省内位置对比</h2>
+          <h2 class="resource-section__title">
+            <span class="resource-section__title-icon">⚖️</span>
+            评价指标对比 · {{ benchMajor?.name || '分专业' }}
+            <em class="resource-section__hint">软科五维拆到专业，含本院 vs 对标</em>
+          </h2>
           <div class="resource-section__grid resource-section__grid--2">
             <div class="resource-card">
-              <h3>省内高校对比</h3>
-              <div class="resource-card__chart"><ChartContainer :option="provincialBarOption" /></div>
+              <h3>各专业五维雷达</h3>
+              <div class="resource-card__chart resource-card__chart--lg"><ChartContainer :option="dimCompareRadarOption" /></div>
             </div>
             <div class="resource-card">
-              <h3>财经类位置（前序高校）</h3>
-              <ul class="rank-list">
-                <li v-for="item in data.financeAheadSchools" :key="item.school">
+              <h3>五维得分对照表</h3>
+              <div class="table-wrap">
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th>维度</th>
+                      <th v-for="m in data.majors" :key="`th-${m.name}`">{{ shortMajor(m.name) }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in dimCompareRows" :key="row.key">
+                      <td>{{ row.label }}</td>
+                      <td
+                        v-for="cell in row.cells"
+                        :key="`${row.key}-${cell.major}`"
+                        :class="{
+                          'cell-best': cell.gap != null && cell.gap >= 3,
+                          'cell-weak': cell.gap != null && cell.gap < 0,
+                          'cell-active': cell.major === activeMajor,
+                        }"
+                      >
+                        <b>{{ cell.score ?? '**' }}</b>
+                        <small v-if="cell.gap != null">{{ cell.gap > 0 ? `+${cell.gap}` : cell.gap }}</small>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="resource-section">
+          <h2 class="resource-section__title">
+            <span class="resource-section__title-icon">🗺️</span>
+            {{ benchMajor?.name || '本专业' }} · 省内 / 财经对标
+          </h2>
+          <p class="resource-section__desc">对标名单随上方专业切换，不再只用学院默认专业。</p>
+          <div class="resource-section__grid resource-section__grid--2">
+            <div class="resource-card">
+              <h3>综合院校全国位次</h3>
+              <div v-if="benchPeers.length" class="resource-card__chart"><ChartContainer :option="provincialBarOption" /></div>
+              <p v-else class="resource-section__desc">该专业暂无综合对标院校名单。</p>
+            </div>
+            <div class="resource-card">
+              <h3>财经类院校全国位次</h3>
+              <ul v-if="benchFinance.length" class="rank-list">
+                <li
+                  v-for="item in benchFinance"
+                  :key="item.school"
+                  :class="{ 'is-self': item.isSelf }"
+                >
                   <span>{{ item.school }}</span>
                   <strong>第{{ item.rank }}名</strong>
                 </li>
               </ul>
+              <p v-else class="resource-section__desc">该专业暂无财经类对标名单。</p>
             </div>
           </div>
         </section>
@@ -820,14 +1291,22 @@ watch(activeMajor, (name) => {
       <!-- ===================== 深度挖掘 ===================== -->
       <template v-else-if="currentTab === 'insights'">
         <section class="resource-section">
-          <h2 class="resource-section__title"><span class="resource-section__title-icon">🔍</span>深度挖掘 · 专业发展</h2>
-          <p class="resource-section__desc">在看板之外给出结构结论与可执行建议，支撑下一年度建设优先级。</p>
-          <div class="insight-grid">
-            <article v-for="item in insights" :key="item.title" class="insight-card" :class="`insight-card--${item.tone}`">
-              <h4>{{ item.title }}</h4>
-              <p>{{ item.detail }}</p>
-            </article>
-          </div>
+          <DisciplineAiBriefPanel
+            :data="displayAnalysis"
+            :snapshot="disciplineSnapshot"
+            :loading="agentLoading"
+            :error="agentError"
+            @refresh="refreshAgentAnalysis"
+            @retry="() => runAgentAnalysis(false)"
+          />
+          <AgentFollowUpChat
+            v-if="agentContext"
+            :session-id="agentSessionId"
+            :context="agentContext"
+            :disabled="agentLoading"
+            hint="可追问某专业为何回落、哪一维最弱、对标校差在哪里。"
+            placeholder="例如：计科排名落后主要卡在哪一维？"
+          />
         </section>
 
         <section class="resource-section">
@@ -1456,6 +1935,141 @@ watch(activeMajor, (name) => {
   border: 1px dashed rgba(0, 200, 255, 0.2);
 }
 
+.soft-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.soft-dim-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 200, 255, 0.16);
+  background: rgba(0, 40, 90, 0.22);
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    strong { font-size: 16px; color: #eaf7ff; }
+    em {
+      font-style: normal;
+      font-size: 15px;
+      font-weight: 800;
+      &.is-up { color: #6effc2; }
+      &.is-down { color: #ff9a7a; }
+    }
+  }
+
+  &__nums {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #8ec8e8;
+    b { color: #5cecff; font-size: 18px; }
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #9fb6d2;
+    b { color: #eaf7ff; font-weight: 800; }
+  }
+}
+
+.metric-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric-group {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 200, 255, 0.16);
+  background: rgba(0, 40, 90, 0.2);
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    h3 { margin: 0; font-size: 18px; color: #eaf7ff; }
+  }
+
+  p {
+    margin: 0 0 10px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #cfe6ff;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(2, 14, 38, 0.35);
+
+    span { font-size: 13px; color: #8ec8e8; }
+    strong { font-size: 14px; color: #eaf7ff; }
+  }
+
+  &--best { border-color: rgba(110, 255, 194, 0.28); }
+  &--worst { border-color: rgba(255, 154, 122, 0.3); }
+}
+
+.analysis-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+
+  &--best { color: #6effc2; background: rgba(20, 80, 60, 0.4); border: 1px solid rgba(110, 255, 194, 0.45); }
+  &--mid { color: #ffd56a; background: rgba(90, 70, 10, 0.35); border: 1px solid rgba(255, 213, 106, 0.45); }
+  &--worst { color: #ff9a7a; background: rgba(90, 30, 10, 0.4); border: 1px solid rgba(255, 154, 122, 0.45); }
+}
+
+.cell-best { color: #6effc2 !important; }
+.cell-weak { color: #ff9a7a !important; }
+.cell-active { box-shadow: inset 0 0 0 1px rgba(0, 242, 255, 0.35); }
+
+.rank-list li.is-self {
+  color: #ffd56a;
+  font-weight: 800;
+}
+
 .analysis-table {
   th,
   td {
@@ -1501,24 +2115,6 @@ watch(activeMajor, (name) => {
 
   .analysis-status {
     text-align: center;
-  }
-
-  .analysis-tag {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 28px;
-    padding: 0 10px;
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: 14px;
-    line-height: 1;
-    white-space: nowrap;
-    box-sizing: border-box;
-
-    &--best { color: #6effc2; background: rgba(20, 80, 60, 0.4); border: 1px solid rgba(110, 255, 194, 0.45); }
-    &--mid { color: #ffd56a; background: rgba(90, 70, 10, 0.35); border: 1px solid rgba(255, 213, 106, 0.45); }
-    &--worst { color: #ff9a7a; background: rgba(90, 30, 10, 0.4); border: 1px solid rgba(255, 154, 122, 0.45); }
   }
 
   .analysis-why {
@@ -1576,7 +2172,9 @@ watch(activeMajor, (name) => {
   .resource-summary,
   .major-cards,
   .grade-history,
-  .insight-grid { grid-template-columns: 1fr; }
+  .insight-grid,
+  .soft-dim-grid,
+  .metric-groups { grid-template-columns: 1fr; }
   .resource-section__grid--2,
   .kv-grid { grid-template-columns: 1fr; }
   .profile-hero { flex-direction: column; align-items: flex-start; }

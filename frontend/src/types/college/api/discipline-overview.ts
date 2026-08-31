@@ -159,6 +159,8 @@ export interface DisciplineMajorProfileDTO {
     priorities: string[]
     dataNote: string
   }
+  /** 软科五维细分（与一级专业卡同源） */
+  softDimensions?: SoftDimensionDTO[]
 }
 
 export interface DisciplineBenchmarkDTO {

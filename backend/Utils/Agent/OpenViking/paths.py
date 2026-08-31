@@ -62,6 +62,15 @@ def skill_benchmark_overview_analysis() -> str:
     return "viking://agent/skills/college/benchmark-overview-analysis/SKILL.md"
 
 
+def resource_discipline_overview(college_id: str) -> str:
+    cid = college_id or "default"
+    return f"viking://resources/college/{cid}/discipline-overview/snapshot.json"
+
+
+def skill_discipline_overview_analysis() -> str:
+    return "viking://agent/skills/college/discipline-overview-analysis/SKILL.md"
+
+
 def resource_cultivation_plans(year: str = "2024") -> str:
     """培养方案知识库根目录（导入脚本目标 parent）。"""
     return f"viking://resources/college/cultivation-plans/{year}/"
@@ -232,5 +241,40 @@ BENCHMARK_OVERVIEW_SKILL_DOC = """# 学院精品成果总览分析技能
 
 ## 硬性约束
 - 禁止改数、禁止编造成果名称
+- 不要输出学生姓名或学号
+"""
+
+DISCIPLINE_OVERVIEW_SKILL_DOC = """# 学院专业发展全景分析技能
+
+## 目标
+根据专业排名与软科五维细分快照，输出一句总判断、3 条有依据的研判与 3 条可执行建议。
+第一条写学院矩阵总势，后两条落到具体专业，禁止三条并列空话。
+
+## 输出 JSON Schema
+{
+  "headline": "一句话总判断",
+  "insights": [
+    {
+      "title": "中文标题",
+      "detail": "40～90字研判，须引用快照原数字",
+      "tone": "good|warn|info",
+      "evidence": [
+        { "source": "db", "label": "指标名", "value": "指标值" }
+      ]
+    }
+  ],
+  "actions": ["可执行建议"]
+}
+
+## 关注
+- majors[].name / nationalRank / grade / yoyChange / provincialRank / financePeerRank
+- majors[].softDimensions[]（学校条件、学科支撑、专业生源、专业就业、专业条件）
+- dimensions[] 学院五维均值 vs peerAverage
+- ranking 学院中位排名
+- 把学院弱维落到具体专业，不要只写“整体一般”
+
+## 硬性约束
+- 禁止改数、禁止编造未上榜专业的全国名次
+- 缺源字段用「缺源」表述，不要补假数
 - 不要输出学生姓名或学号
 """

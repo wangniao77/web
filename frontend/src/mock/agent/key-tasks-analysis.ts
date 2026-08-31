@@ -13,6 +13,10 @@ import {
   isBenchmarkSwotSnapshot,
 } from '@/utils/agent/benchmark-swot-insights'
 import { buildKeyTasksRuleAnalysis } from '@/utils/agent/key-tasks-insights'
+import {
+  buildDisciplineOverviewRuleAnalysis,
+  isDisciplineOverviewSnapshot,
+} from '@/utils/agent/discipline-overview-insights'
 import type { KeyTasksDetailVM } from '@/types/college/view/details'
 
 function isAcademicRiskSnapshot(snapshot: unknown): snapshot is AcademicRiskSnapshot {
@@ -105,6 +109,20 @@ export function mockAgentAnalyze(req: AgentAnalyzeRequestDTO): AgentAnalyzeRespo
     }
   }
 
+  if (page === 'college-discipline-overview' || page === 'discipline-overview' || isDisciplineOverviewSnapshot(snapshot)) {
+    if (isDisciplineOverviewSnapshot(snapshot)) {
+      const vm = buildDisciplineOverviewRuleAnalysis(snapshot, sessionId)
+      return {
+        insights: vm.insights,
+        actions: vm.actions,
+        sessionId: vm.sessionId,
+        traceId: `mock-${vm.traceId}`,
+        source: 'mock',
+        headline: vm.headline,
+      }
+    }
+  }
+
   if (page === 'college-benchmark-swot' || isBenchmarkSwotSnapshot(snapshot)) {
     if (isBenchmarkSwotSnapshot(snapshot)) {
       const vm = buildBenchmarkSwotRuleAnalysis(snapshot, sessionId)
@@ -182,6 +200,9 @@ export function mockAgentChatReply(req: AgentChatRequestDTO): string {
   }
   if (page === 'college-benchmark-swot' || page === 'college-benchmark-overview') {
     return `（Mock）已结合精品成果对标快照理解：「${req.message}」。可从达标项、缺口项与还差数量继续追问，不要改写事实数字。`
+  }
+  if (page === 'college-discipline-overview' || page === 'discipline-overview') {
+    return `（Mock）已结合专业排名与五维细分理解：「${req.message}」。可从头部专业、位次涨跌、最弱五维与对标校差距继续追问。`
   }
   if (page === 'graduate-cultivation' || page === 'graduate') {
     return `（Mock）已结合研究生培养快照理解：「${req.message}」。可从规模占比、专业集中、导师覆盖与科研参与继续追问。`

@@ -9,9 +9,10 @@ from typing import Any
 
 from Routers.Models.req.agent_model import AgentAnalyzeContext
 from Utils.Agent.API.llm import LLMClient
-from Utils.Agent.OpenViking import (
-    get_openviking_client,
+from Utils.Agent.OpenViking import get_openviking_client
+from Utils.Agent.OpenViking.paths import (
     resource_academic_risk,
+    resource_discipline_overview,
     resource_enrollment_employment,
     resource_key_tasks,
 )
@@ -23,6 +24,8 @@ def _resource_path(context: AgentAnalyzeContext) -> str:
         return resource_academic_risk(college_id)
     if context.page in {"enrollment-employment", "employment"}:
         return resource_enrollment_employment(college_id)
+    if context.page in {"college-discipline-overview", "discipline-overview", "discipline"}:
+        return resource_discipline_overview(college_id)
     return resource_key_tasks(college_id)
 
 
@@ -88,6 +91,26 @@ async def run_chat_stream(
                             f"建议明确责任人（{delayed[0].get('leadDept') or '承办单位'}）"
                             "并在两周内复核里程碑材料。"
                         )
+                elif data.get("majors") and data.get("dimensions"):
+                    majors = data.get("majors") or []
+                    dims = data.get("dimensions") or []
+                    top = min(
+                        (m for m in majors if isinstance(m.get("nationalRank"), (int, float))),
+                        key=lambda m: m["nationalRank"],
+                        default=None,
+                    )
+                    weak = min(
+                        (d for d in dims if isinstance(d.get("score"), (int, float))),
+                        key=lambda d: d["score"],
+                        default=None,
+                    )
+                    hint = (
+                        f"当前领跑专业「{top.get('name')}」全国第 {top.get('nationalRank')}。"
+                        if top
+                        else "可从专业排名与五维细分继续追问。"
+                    )
+                    if weak:
+                        hint += f"学院最弱五维是{weak.get('label')}（{weak.get('score')} 分）。"
                 elif data.get("placementRate") is not None:
                     hint = (
                         f"当前届次落实率 {data.get('placementRate')}%、"

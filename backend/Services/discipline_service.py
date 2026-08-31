@@ -989,6 +989,7 @@ class DisciplineService:
                 "priorities": priorities,
                 "dataNote": "排名/对标来自《排名汇总》软科口径（major_rank_snapshots）；师资与成果等字段待补源",
             },
+            "softDimensions": card.get("softDimensions") or [],
         }
 
     def _insights(

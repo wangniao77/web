@@ -16,11 +16,13 @@ from Utils.Agent.OpenViking.paths import (
     EMPLOYMENT_SKILL_DOC,
     BENCHMARK_OVERVIEW_SKILL_DOC,
     BENCHMARK_SWOT_SKILL_DOC,
+    DISCIPLINE_OVERVIEW_SKILL_DOC,
     GRADUATE_CULTIVATION_SKILL_DOC,
     KEY_TASKS_SKILL_DOC,
     resource_academic_risk,
     resource_benchmark_overview,
     resource_benchmark_swot,
+    resource_discipline_overview,
     resource_enrollment_employment,
     resource_enrollment_employment_report,
     resource_graduate_cultivation,
@@ -28,6 +30,7 @@ from Utils.Agent.OpenViking.paths import (
     skill_academic_risk_analysis,
     skill_benchmark_overview_analysis,
     skill_benchmark_swot_analysis,
+    skill_discipline_overview_analysis,
     skill_enrollment_employment_analysis,
     skill_graduate_cultivation_analysis,
     skill_key_tasks_analysis,
@@ -198,6 +201,10 @@ def _is_benchmark_swot_page(page: str) -> bool:
 
 def _is_benchmark_overview_page(page: str) -> bool:
     return page in {"college-benchmark-overview", "benchmark-overview", "benchmark-achievements"}
+
+
+def _is_discipline_overview_page(page: str) -> bool:
+    return page in {"college-discipline-overview", "discipline-overview", "discipline"}
 
 
 _BENCHMARK_PILLAR_KEYS = ("research", "teaching", "talent", "discipline", "party")
@@ -407,6 +414,148 @@ def _rule_insights_graduate(snapshot: dict[str, Any]) -> AgentAnalyzeData:
     return _payload_to_analyze_data(payload)
 
 
+def _num(v: Any) -> float | None:
+    try:
+        if v is None or v == "**":
+            return None
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _rule_insights_discipline_overview(snapshot: dict[str, Any]) -> AgentAnalyzeData:
+    majors = [m for m in (snapshot.get("majors") or []) if isinstance(m, dict)]
+    ranked = [m for m in majors if _num(m.get("nationalRank")) is not None]
+    best = min(ranked, key=lambda m: _num(m.get("nationalRank")) or 0) if ranked else None
+    worst = max(ranked, key=lambda m: _num(m.get("nationalRank")) or 0) if ranked else None
+    rising = [m for m in majors if (_num(m.get("yoyChange")) or 0) > 0]
+    falling = [m for m in majors if (_num(m.get("yoyChange")) or 0) < 0]
+
+    dim_gaps: list[dict[str, Any]] = []
+    for d in snapshot.get("dimensions") or []:
+        if not isinstance(d, dict):
+            continue
+        score, peer = _num(d.get("score")), _num(d.get("peerAverage"))
+        if score is None or peer is None:
+            continue
+        dim_gaps.append(
+            {
+                "label": str(d.get("label") or ""),
+                "score": score,
+                "peer": peer,
+                "gap": score - peer,
+            }
+        )
+    dim_gaps.sort(key=lambda x: x["gap"])
+    weakest = dim_gaps[0] if dim_gaps else None
+    strongest = max(dim_gaps, key=lambda x: x["gap"]) if dim_gaps else None
+
+    weak_major = None
+    if weakest:
+        rows = []
+        for m in majors:
+            for dim in m.get("softDimensions") or []:
+                if not isinstance(dim, dict) or str(dim.get("label") or "") != weakest["label"]:
+                    continue
+                score = _num(dim.get("score"))
+                if score is None:
+                    continue
+                rows.append(
+                    {
+                        "major": str(m.get("name") or ""),
+                        "score": score,
+                        "peer": _num(dim.get("peerAverage")) or weakest["peer"],
+                    }
+                )
+        if rows:
+            weak_major = min(rows, key=lambda x: x["score"])
+
+    insights: list[AgentInsight] = []
+    if best:
+        yoy = _num(best.get("yoyChange"))
+        yoy_txt = f"↑{int(yoy)}" if yoy and yoy > 0 else f"↓{int(abs(yoy))}" if yoy and yoy < 0 else "持平" if yoy == 0 else "**"
+        insights.append(
+            AgentInsight(
+                title="头部专业稳住矩阵",
+                detail=(
+                    f"{best.get('name')} 全国第 {int(_num(best.get('nationalRank')) or 0)}、"
+                    f"{best.get('grade') or '**'} 级，较上年 {yoy_txt}，"
+                    f"落实率 {best.get('employmentRate', '**')}%，是学院专业矩阵的压舱石。"
+                ),
+                tone="good",
+            )
+        )
+    if rising or falling:
+        rise_txt = "、".join(f"{m.get('name')}↑{int(_num(m.get('yoyChange')) or 0)}" for m in rising) or "暂无上行"
+        fall_txt = "；" + "、".join(
+            f"{m.get('name')}↓{int(abs(_num(m.get('yoyChange')) or 0))}" for m in falling
+        ) if falling else ""
+        insights.append(
+            AgentInsight(
+                title="位次通道仍在打开" if rising else "排名波动需盯紧",
+                detail=f"{rise_txt}{fall_txt}。建议把增量资源投向可冲击更高等级的赛道。",
+                tone="warn" if falling else "info",
+            )
+        )
+    if strongest and weakest:
+        wm = (
+            f"；短板主要落在「{weak_major['major']}」（{weak_major['score']} / 对标 {weak_major['peer']}）"
+            if weak_major
+            else ""
+        )
+        insights.append(
+            AgentInsight(
+                title=f"{weakest['label']}是最紧五维",
+                detail=(
+                    f"学院{strongest['label']} {strongest['score']} 分（对标 {strongest['peer']}），"
+                    f"{weakest['label']} {weakest['score']} 分（对标 {weakest['peer']}）{wm}。"
+                ),
+                tone="warn" if weakest["gap"] < 0 else "info",
+            )
+        )
+    if worst and best and worst.get("name") != best.get("name"):
+        gap = int((_num(worst.get("nationalRank")) or 0) - (_num(best.get("nationalRank")) or 0))
+        insights.append(
+            AgentInsight(
+                title="梯队差距可拆到专业",
+                detail=(
+                    f"{best.get('name')} 与 {worst.get('name')} 全国位次相差约 {gap} 位；"
+                    f"{worst.get('name')} 省内第 {worst.get('provincialRank', '**')}、"
+                    f"财经类第 {worst.get('financePeerRank', '**')}。"
+                ),
+                tone="info",
+            )
+        )
+
+    actions: list[str] = []
+    if weak_major:
+        actions.append(
+            f"优先补齐「{weak_major['major']}」的{weakest['label'] if weakest else '弱维'}"
+            f"（当前 {weak_major['score']}，对标 {weak_major['peer']}）"
+        )
+    if falling:
+        actions.append(f"对「{falling[0].get('name')}」建立排名回落复盘")
+    if rising:
+        actions.append(f"把「{rising[0].get('name')}」的增量资源锁定在可冲击更高等级的赛道")
+    if not actions:
+        actions.append("继续更新软科快照与五维明细，补齐缺源专业后再做横向对标")
+
+    headline = (
+        f"{best.get('name')} 领跑（全国第 {int(_num(best.get('nationalRank')) or 0)}）"
+        + (f" · {weakest['label']}待补" if weakest else "")
+        if best
+        else str(snapshot.get("radarConclusion") or "专业排名与五维待补源后研判")
+    )
+    return AgentAnalyzeData(
+        insights=insights[:4],
+        actions=actions[:3],
+        sessionId="",
+        traceId="",
+        source="rule",
+        headline=headline,
+    )
+
+
 async def _load_snapshot(context: AgentAnalyzeContext, college_service: CollegeService) -> dict[str, Any]:
     if context.summarySnapshot:
         return context.summarySnapshot
@@ -433,6 +582,8 @@ async def _load_snapshot(context: AgentAnalyzeContext, college_service: CollegeS
         return await college_service.get_key_tasks_detail(college_id=context.collegeId)
     if _is_benchmark_swot_page(context.page) or _is_benchmark_overview_page(context.page):
         return context.summarySnapshot or {"items": [], "gauges": [], "headline": ""}
+    if _is_discipline_overview_page(context.page):
+        return context.summarySnapshot or {"majors": [], "dimensions": [], "ranking": {}}
     return {"summary": {}}
 
 
@@ -483,6 +634,11 @@ async def run_analyze(
         resource_path = resource_benchmark_swot(college_id)
         skill_doc = BENCHMARK_SWOT_SKILL_DOC
         result = _rule_insights_benchmark_swot(snapshot)
+    elif _is_discipline_overview_page(context.page):
+        skill_path = skill_discipline_overview_analysis()
+        resource_path = resource_discipline_overview(college_id)
+        skill_doc = DISCIPLINE_OVERVIEW_SKILL_DOC
+        result = _rule_insights_discipline_overview(snapshot)
     else:
         skill_path = skill_key_tasks_analysis()
         resource_path = resource_key_tasks(college_id)
@@ -532,6 +688,14 @@ async def run_analyze(
                 "detail 只写研判和补齐方向，不超过28字；"
                 "不要重复指标名或 x/y（卡片上已有「教学成果 1/8项」）；"
                 "禁止只输出「不足」「差3」这类标签；禁止改数或编造成果。"
+            )
+        elif _is_discipline_overview_page(context.page):
+            system = (
+                "你是学院专业发展全景首席研判助手。严格按技能说明输出 JSON。"
+                "headline 必须是一句带数字的总判断；"
+                "insights 3 条：第一条写矩阵总势，后两条落到具体专业；"
+                "每条 insight 必须带 evidence（source=db，数值来自快照）；"
+                "禁止改数或编造未上榜名次。"
             )
         else:
             system = (
@@ -595,11 +759,22 @@ async def run_analyze(
                     if not isinstance(item, dict):
                         continue
                     tone = item.get("tone") if item.get("tone") in {"good", "warn", "info"} else "info"
+                    evidence = [
+                        AgentEvidence(
+                            source=e.get("source") if e.get("source") in {"db", "openviking", "web"} else "db",
+                            label=str(e.get("label") or ""),
+                            value=str(e.get("value") or ""),
+                            ref=str(e["ref"]) if e.get("ref") else None,
+                        )
+                        for e in (item.get("evidence") or [])
+                        if isinstance(e, dict) and e.get("label") and e.get("value")
+                    ]
                     insights.append(
                         AgentInsight(
                             title=str(item.get("title") or "洞察"),
                             detail=str(item.get("detail") or ""),
                             tone=tone,
+                            evidence=evidence,
                         )
                     )
                 actions = [str(a) for a in (parsed.get("actions") or []) if a][:5]
@@ -610,6 +785,7 @@ async def run_analyze(
                         sessionId=sid,
                         traceId=trace_id,
                         source="agent",
+                        headline=str(parsed.get("headline") or result.headline or ""),
                     )
                     source = "agent"
 

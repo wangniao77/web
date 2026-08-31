@@ -4,11 +4,19 @@ import type { AgentAnalyzeContextDTO } from '@/types/agent/api'
 import type { AgentChatMessageVM } from '@/types/agent/view'
 import { chatFollowUp } from '@/api/agent/services'
 
-const props = defineProps<{
-  sessionId: string
-  context: AgentAnalyzeContextDTO
-  disabled?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    sessionId: string
+    context: AgentAnalyzeContextDTO
+    disabled?: boolean
+    hint?: string
+    placeholder?: string
+  }>(),
+  {
+    hint: '基于当前详情页上下文，向 Agent 提问（如风险原因、督导建议）。',
+    placeholder: '例如：最紧的任务下一步该怎么督？',
+  },
+)
 
 const input = ref('')
 const messages = ref<AgentChatMessageVM[]>([])
@@ -97,7 +105,7 @@ async function send() {
   <section class="agent-chat">
     <header class="agent-chat__head">
       <h3>继续追问</h3>
-      <p>基于当前详情页上下文，向 Agent 提问（如风险原因、督导建议）。</p>
+      <p>{{ hint }}</p>
     </header>
 
     <div ref="listRef" class="agent-chat__list">
@@ -117,7 +125,7 @@ async function send() {
       <input
         v-model="input"
         type="text"
-        placeholder="例如：最紧的任务下一步该怎么督？"
+        :placeholder="placeholder"
         :disabled="disabled || sending || !sessionId"
       />
       <button type="submit" :disabled="disabled || sending || !sessionId || !input.trim()">
